@@ -1,6 +1,5 @@
 // Captivo Access — Manager veritabanı şeması.
-// Dilim 0: yalnız iskelet (bağlantı doğrulaması için tek placeholder model).
-// Gerçek modeller (User, Passkey, AccessGrant, Connector, AuditLog) Dilim 1+.
+// Dilim 1: kimlik + passkey (User, Passkey, TotpSecret, Invite, Session).
 // Çok-tenant YOK — tek-org self-host.
 
 generator client {
@@ -12,8 +11,76 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Placeholder — şema/bağlantı kanıtı; Dilim 1'de kaldırılabilir.
-model HealthCheck {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+enum Role {
+  ADMIN
+  VENDOR
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+model User {
+  id             String      @id @default(cuid())
+  email          String      @unique
+  name           String
+  role           Role
+  status         UserStatus  @default(ACTIVE)
+  createdAt      DateTime    @default(now())
+  passkeys       Passkey[]
+  totp           TotpSecret?
+  sessions       Session[]
+  invitesCreated Invite[]    @relation("InviteCreator")
+}
+
+model Passkey {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialId String    @unique // base64url
+  publicKey    Bytes // COSE public key (hassas değil — public)
+  counter      BigInt    @default(0)
+  transports   String[] // usb/nfc/ble/internal/hybrid
+  label        String // "iPhone", "Dizüstü" — kullanıcı etiketi
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+
+  @@index([userId])
+}
+
+model TotpSecret {
+  userId      String    @id // 1:1
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret      String // AES-256-GCM şifreli (crypto.ts)
+  confirmedAt DateTime? // enroll doğrulanınca
+}
+
+model Invite {
+  id          String    @id @default(cuid())
+  email       String
+  name        String
+  role        Role
+  tokenHash   String    @unique // argon2(random 32B); plaintext yalnız linkte
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdById String
+  createdBy   User      @relation("InviteCreator", fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@index([email])
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique // sha256(opak random); cookie'de plaintext token
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  userAgent  String?
+  ip         String?
+
+  @@index([userId])
 }
