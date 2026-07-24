@@ -1,0 +1,19 @@
+// Captivo Access — Manager veritabanı şeması.
+// Dilim 0: yalnız iskelet (bağlantı doğrulaması için tek placeholder model).
+// Gerçek modeller (User, Passkey, AccessGrant, Connector, AuditLog) Dilim 1+.
+// Çok-tenant YOK — tek-org self-host.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Placeholder — şema/bağlantı kanıtı; Dilim 1'de kaldırılabilir.
+model HealthCheck {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+}
