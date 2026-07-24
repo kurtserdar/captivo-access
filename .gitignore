@@ -13,3 +13,6 @@ next-env.d.ts
 prisma/*.db
 *.tsbuildinfo
 src/generated/
+
+# İç tasarım/plan dokümanları — public repo'ya girmez (ekip diskte tutar)
+docs/design/
