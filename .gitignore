@@ -12,3 +12,4 @@ next-env.d.ts
 .turbo/
 prisma/*.db
 *.tsbuildinfo
+src/generated/
