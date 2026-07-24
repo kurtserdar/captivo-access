@@ -8,6 +8,7 @@ import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
 import { hasAnyUser } from "@/lib/auth/bootstrap";
 import { verifyInvite } from "@/lib/auth/invite";
 import { readRecoverToken, clearRecoverToken } from "@/lib/auth/recover-token";
+import { getCurrentUser } from "@/lib/current-user";
 
 function sessionMaxAgeSeconds(): number {
   const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
@@ -25,6 +26,43 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const mode = body.mode;
 
+  if (mode === "add") {
+    const user = await getCurrentUser();
+    const response = body.response as RegistrationResponseJSON | undefined;
+    const label = typeof body.label === "string" ? body.label.trim() : "";
+    if (!user) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    if (!response || !label) {
+      return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+    }
+
+    const expectedChallenge = await readChallenge("reg");
+    if (!expectedChallenge) {
+      return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
+    }
+
+    const result = await verifyRegistration(response, expectedChallenge, req.nextUrl.origin);
+    if (!result.verified || !result.registrationInfo) {
+      return NextResponse.json({ error: "verification_failed" }, { status: 401 });
+    }
+    const { credential } = result.registrationInfo;
+
+    // Zaten giriş yapılmış — yeni Session OLUŞTURULMAZ, sadece Passkey eklenir.
+    await db.passkey.create({
+      data: {
+        userId: user.id,
+        credentialId: credential.id,
+        publicKey: Buffer.from(credential.publicKey),
+        counter: BigInt(credential.counter ?? 0),
+        transports: credential.transports ?? [],
+        label,
+      },
+    });
+    await clearChallenge();
+
+    return NextResponse.json({ ok: true });
+  }
   if (mode === "recover") {
     const userId = await readRecoverToken();
     const response = body.response as RegistrationResponseJSON | undefined;
