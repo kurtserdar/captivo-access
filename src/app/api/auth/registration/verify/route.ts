@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
 import { hasAnyUser } from "@/lib/auth/bootstrap";
 import { verifyInvite } from "@/lib/auth/invite";
+import { readRecoverToken, clearRecoverToken } from "@/lib/auth/recover-token";
 
 function sessionMaxAgeSeconds(): number {
   const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
@@ -24,6 +25,54 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const mode = body.mode;
 
+  if (mode === "recover") {
+    const userId = await readRecoverToken();
+    const response = body.response as RegistrationResponseJSON | undefined;
+    if (!userId || !response) {
+      return NextResponse.json({ error: "recover_invalid" }, { status: 401 });
+    }
+
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (!user || user.status !== "ACTIVE") {
+      return NextResponse.json({ error: "recover_invalid" }, { status: 401 });
+    }
+
+    const expectedChallenge = await readChallenge("reg");
+    if (!expectedChallenge) {
+      return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
+    }
+
+    const result = await verifyRegistration(response, expectedChallenge, req.nextUrl.origin);
+    if (!result.verified || !result.registrationInfo) {
+      return NextResponse.json({ error: "verification_failed" }, { status: 401 });
+    }
+    const { credential } = result.registrationInfo;
+
+    // Mevcut kullanıcıya YENİ passkey eklenir — yeni User YARATILMAZ.
+    await db.passkey.create({
+      data: {
+        userId: user.id,
+        credentialId: credential.id,
+        publicKey: Buffer.from(credential.publicKey),
+        counter: BigInt(credential.counter ?? 0),
+        transports: credential.transports ?? [],
+        label: "Kurtarma passkey'i",
+      },
+    });
+
+    const token = await createSession(user.id, requestMeta(req));
+    (await cookies()).set(SESSION_COOKIE, token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: sessionMaxAgeSeconds(),
+    });
+    await clearChallenge();
+    await clearRecoverToken();
+
+    return NextResponse.json({ ok: true });
+  }
   if (mode === "invite") {
     const inviteToken = typeof body.inviteToken === "string" ? body.inviteToken : "";
     const response = body.response as RegistrationResponseJSON | undefined;
