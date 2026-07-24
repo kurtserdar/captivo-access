@@ -4,12 +4,32 @@ import { genRegistrationOptions } from "@/lib/auth/webauthn";
 import { setChallenge } from "@/lib/auth/challenge";
 import { verifyInvite } from "@/lib/auth/invite";
 import { readRecoverToken } from "@/lib/auth/recover-token";
+import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const mode = body.mode;
 
+  if (mode === "add") {
+    // Giriş yapmış kullanıcı hesabına ek passkey kaydı — redirect()'e
+    // dayanmadan JSON 401 döner (fetch() istemcisi için).
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    const existing = await db.passkey.findMany({
+      where: { userId: user.id },
+      select: { credentialId: true, transports: true },
+    });
+
+    const options = await genRegistrationOptions(
+      { id: user.id, email: user.email, name: user.name },
+      existing.map((p) => ({ credentialId: p.credentialId, transports: p.transports })),
+    );
+    await setChallenge(options.challenge, "reg");
+    return NextResponse.json(options);
+  }
   if (mode === "recover") {
     const userId = await readRecoverToken();
     const user = userId ? await db.user.findUnique({ where: { id: userId }, include: { passkeys: true } }) : null;

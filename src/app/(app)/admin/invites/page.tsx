@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { InviteForm } from "./invite-form";
@@ -17,6 +18,14 @@ export default async function AdminInvitesPage() {
 
   return (
     <main>
+      <nav className="sub-nav">
+        <Link href="/admin/users">Kullanıcılar</Link>
+        <Link href="/admin/sessions">Oturumlar</Link>
+        <Link href="/admin/invites" className="active">
+          Davetler
+        </Link>
+      </nav>
+
       <h1>Davetler</h1>
       <p>Yeni bir tedarikçi veya yönetici davet edin. Davet bağlantısı yalnızca bir kez gösterilir.</p>
       <InviteForm />
