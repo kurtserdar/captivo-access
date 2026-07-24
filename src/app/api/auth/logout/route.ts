@@ -6,6 +6,6 @@ export async function POST() {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (token) await destroySession(token);
-  store.delete(SESSION_COOKIE);
+  store.delete({ name: SESSION_COOKIE, path: "/" });
   return NextResponse.json({ ok: true });
 }

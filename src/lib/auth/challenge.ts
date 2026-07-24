@@ -30,5 +30,5 @@ export async function readChallenge(purpose: "reg" | "auth"): Promise<string | n
 }
 
 export async function clearChallenge(): Promise<void> {
-  (await cookies()).delete(COOKIE);
+  (await cookies()).delete({ name: COOKIE, path: "/" });
 }
