@@ -2,11 +2,13 @@
 
 **Open-source, self-hosted Zero-Trust / VPNless secure remote access for third-party vendors and contractors.**
 
-> ⚠️ **Status: early development (Slice 0 — skeleton).** This repository currently
-> contains the project scaffold (Next.js app, Postgres/Prisma, Docker packaging,
-> CI) and **no product functionality yet** (no identity/Passkey, no connector
-> tunnel, no access model, no proxy, no audit trail). **Not production-ready.**
-> Do not deploy this for real vendor access today — track the roadmap below.
+> ⚠️ **Status: early development (Slice 1 — Identity & Passkey).** This
+> repository has the project scaffold (Next.js app, Postgres/Prisma, Docker
+> packaging, CI) plus identity: admin/vendor accounts, WebAuthn passkey
+> register/login, TOTP-backed recovery, and invites. There is **no connector
+> tunnel, no access model, no proxy, and no audit trail yet**.
+> **Not production-ready.** Do not deploy this for real vendor access today —
+> track the roadmap below.
 
 ## What it is
 
@@ -41,7 +43,7 @@ Vendor browser ──HTTPS+Passkey──▶ MANAGER (customer cloud/DMZ) ◀─�
 | Slice | Delivers |
 |---|---|
 | **0 (this repo)** | Repo, app skeleton, Postgres/Prisma, Docker self-host packaging, license/security policy/README, CI |
-| 1 | Identity + Passkey — admin & vendor users, WebAuthn register/login, TOTP fallback, sessions |
+| **1 (this repo)** | Identity + Passkey — admin & vendor users, WebAuthn register/login, TOTP fallback, sessions |
 | 2 | Connector tunnel — Go connector (outbound-only), Manager↔Connector protocol |
 | 3 | Access model — `AccessGrant` (role + time window + approval-dormant), admin UI |
 | 4 | Identity-aware proxy — route an authorized vendor through the connector to the internal app |
@@ -62,8 +64,59 @@ docker compose up -d
 Then open **http://localhost:3100**.
 
 The Manager is meant to run on an internet-reachable host (cloud VPS / DMZ)
-in real deployments — `.env` lets you set `WEBAUTHN_RP_ID` to your domain
-once Passkey support lands (Slice 1).
+in real deployments.
+
+## Identity & Passkey
+
+Captivo Access has no default/seed account — the first person to open the
+Manager sets it up.
+
+- **First run — `/setup`**: open the Manager, go to `/setup`, and register
+  the first account as a passkey. It's created with the `ADMIN` role. A
+  race guard prevents two concurrent visitors from both completing setup;
+  once an admin exists, `/setup` locks itself for good.
+- **Inviting vendors**: an admin generates a one-time invite link at
+  `/admin/invites` (email + role + expiry, default `INVITE_TTL_HOURS=48`).
+  The vendor opens the link at `/invite/[token]` and registers their own
+  passkey — no shared credentials ever exist.
+- **Login**: `/login` uses discoverable (resident) passkeys — no username
+  field, the authenticator itself picks the credential.
+- **Recovery**: if a user loses every passkey, `/recover` accepts their
+  email + a TOTP code (set up ahead of time under account settings) and, on
+  success, lets them register a brand-new passkey. The response never
+  reveals whether the email exists, whether TOTP is configured, or which
+  check failed — all failure paths return the same generic error to avoid
+  user enumeration.
+
+### ⚠️ Critical: `WEBAUTHN_RP_ID` must match your real domain
+
+WebAuthn passkeys are bound to the *Relying Party ID* (RP ID) at
+registration time and checked again on every login. **`WEBAUTHN_RP_ID` must
+be set to the exact domain the Manager is served from** (no scheme, no
+port):
+
+- Local development: `WEBAUTHN_RP_ID=localhost`
+- Production: `WEBAUTHN_RP_ID=access.firma.com` (your Manager's real host)
+
+If this value doesn't match the browser's address bar, passkey registration
+and login **fail silently** — the authenticator won't offer or accept the
+credential, and there is no meaningful client-side error to debug from. Set
+it correctly *before* anyone registers a passkey: changing `WEBAUTHN_RP_ID`
+later invalidates every passkey already enrolled against the old value. In
+production the origin also **must be HTTPS** — browsers refuse WebAuthn
+over plain HTTP for any RP ID other than `localhost`.
+
+### Generating secrets
+
+`SESSION_SECRET` and `ENCRYPTION_KEY` (the latter encrypts TOTP secrets at
+rest, AES-256-GCM) are both 32-byte hex secrets:
+
+```bash
+openssl rand -hex 32
+```
+
+Generate a separate value for each — never reuse one secret for both, and
+never commit real values to `.env`.
 
 ## Development
 
@@ -104,11 +157,12 @@ bir Zero-Trust uzaktan erişim ürünüdür. CyberArk Alero / Remote Access
 muadili; Türk pazarı için KVKK/5651 uyumluluğu gözetilerek geliştiriliyor.
 SaaS işletmiyoruz — yazılımı siz kendi altyapınızda barındırırsınız.
 
-**Durum: erken geliştirme aşaması (Dilim 0 — iskelet).** Bu depo şu an yalnızca
-proje iskeletini (Next.js uygulaması, Postgres/Prisma, Docker paketleme, CI)
-içerir; kimlik doğrulama, connector tüneli, erişim modeli, proxy ve denetim
-kaydı gibi ürün özellikleri **henüz yok**. **Üretime hazır değildir** — gerçek
-tedarikçi erişimi için bugün kullanmayın.
+**Durum: erken geliştirme aşaması (Dilim 1 — Kimlik & Passkey).** Bu depo
+proje iskeletinin (Next.js uygulaması, Postgres/Prisma, Docker paketleme, CI)
+yanı sıra kimlik doğrulamayı da içerir: admin/tedarikçi hesapları, WebAuthn
+passkey kayıt/giriş, TOTP ile kurtarma ve davet akışı. Connector tüneli,
+erişim modeli, proxy ve denetim kaydı gibi özellikler **henüz yok**.
+**Üretime hazır değildir** — gerçek tedarikçi erişimi için bugün kullanmayın.
 
 Self-host kurulumu ve geliştirme adımları için yukarıdaki İngilizce bölümlere
 bakınız; komutlar dile bağlı değildir. Lisans: Apache-2.0. Güvenlik açığı
