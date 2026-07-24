@@ -1,0 +1,35 @@
+{
+  "name": "captivo-access",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.14.2",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push"
+  },
+  "dependencies": {
+    "next": "^16.2.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "prisma": "^7.9.0",
+    "@prisma/client": "^7.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19.2",
+    "@types/react-dom": "^19.2",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "^16.2.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  }
+}
