@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { verifyTotp } from "@/lib/auth/totp";
 import { setRecoverToken } from "@/lib/auth/recover-token";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Kullanıcı numaralandırmasını sızdırmamak için: kullanıcı yok / TOTP kurulu
 // değil / kod yanlış — hepsi AYNI 401 + "recover_failed" döner. Yalnızca
@@ -12,6 +13,12 @@ function failed(): NextResponse {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const key = `${ip}:${new URL(req.url).pathname}`;
+  if (!checkRateLimit(key, 10, 60_000)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
+
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const email = typeof body.email === "string" ? body.email.trim() : "";
   const totp = typeof body.totp === "string" ? body.totp.trim() : "";

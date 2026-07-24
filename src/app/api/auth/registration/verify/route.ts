@@ -9,6 +9,7 @@ import { hasAnyUser } from "@/lib/auth/bootstrap";
 import { verifyInvite } from "@/lib/auth/invite";
 import { readRecoverToken, clearRecoverToken } from "@/lib/auth/recover-token";
 import { getCurrentUser } from "@/lib/current-user";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 function sessionMaxAgeSeconds(): number {
   const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
@@ -23,6 +24,12 @@ function requestMeta(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const key = `${ip}:${new URL(req.url).pathname}`;
+  if (!checkRateLimit(key, 10, 60_000)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
+
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const mode = body.mode;
 

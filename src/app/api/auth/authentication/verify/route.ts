@@ -5,6 +5,7 @@ import { verifyAuthentication } from "@/lib/auth/webauthn";
 import { readChallenge, clearChallenge } from "@/lib/auth/challenge";
 import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 function sessionMaxAgeSeconds(): number {
   const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
@@ -19,6 +20,12 @@ function requestMeta(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const key = `${ip}:${new URL(req.url).pathname}`;
+  if (!checkRateLimit(key, 10, 60_000)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
+
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const response = body.response as AuthenticationResponseJSON | undefined;
   if (!response?.id) {
