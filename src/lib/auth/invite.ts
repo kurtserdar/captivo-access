@@ -30,7 +30,3 @@ export async function verifyInvite(token: string) {
   }
   return null;
 }
-
-export async function consumeInvite(id: string) {
-  await db.invite.update({ where: { id }, data: { usedAt: new Date() } });
-}

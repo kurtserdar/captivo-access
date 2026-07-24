@@ -6,6 +6,7 @@ import { readChallenge, clearChallenge } from "@/lib/auth/challenge";
 import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getRpId, originMatchesRp } from "@/lib/auth/rp";
 
 function sessionMaxAgeSeconds(): number {
   const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
@@ -42,9 +43,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "verification_failed" }, { status: 401 });
   }
 
+  const origin = req.nextUrl.origin;
+  if (!originMatchesRp(origin, getRpId())) {
+    return NextResponse.json({ error: "origin_mismatch" }, { status: 400 });
+  }
+
   let result;
   try {
-    result = await verifyAuthentication(response, expectedChallenge, req.nextUrl.origin, {
+    result = await verifyAuthentication(response, expectedChallenge, origin, {
       credentialId: passkey.credentialId,
       publicKey: passkey.publicKey,
       counter: Number(passkey.counter),

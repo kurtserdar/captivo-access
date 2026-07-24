@@ -9,8 +9,10 @@ function secret(): Uint8Array {
   return new TextEncoder().encode(s);
 }
 
-export async function setChallenge(challenge: string, purpose: "reg" | "auth"): Promise<void> {
-  const jwt = await new SignJWT({ challenge, purpose })
+export async function setChallenge(challenge: string, purpose: "reg" | "auth", uid?: string): Promise<void> {
+  const payload: Record<string, string> = { challenge, purpose };
+  if (uid !== undefined) payload.uid = uid;
+  const jwt = await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("5m")
     .sign(secret());
@@ -24,6 +26,20 @@ export async function readChallenge(purpose: "reg" | "auth"): Promise<string | n
     const { payload } = await jwtVerify(c, secret());
     if (payload.purpose !== purpose) return null;
     return String(payload.challenge);
+  } catch {
+    return null;
+  }
+}
+
+/** setChallenge'a "reg" için uid geçildiyse okur (setup/invite — kalıcı User.id'yi
+ *  WebAuthn userHandle ile hizalamak için). auth/add/recover uid set etmez → null döner. */
+export async function readChallengeUid(purpose: "reg" | "auth"): Promise<string | null> {
+  const c = (await cookies()).get(COOKIE)?.value;
+  if (!c) return null;
+  try {
+    const { payload } = await jwtVerify(c, secret());
+    if (payload.purpose !== purpose) return null;
+    return typeof payload.uid === "string" ? payload.uid : null;
   } catch {
     return null;
   }
