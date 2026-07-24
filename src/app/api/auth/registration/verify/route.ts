@@ -53,10 +53,10 @@ export async function POST(req: NextRequest) {
     try {
       // User + Passkey + davet-tüketimi tek transaction'ında: biri başarısız
       // olursa hiçbiri commit edilmez (çift-enroll yarışını da engeller —
-      // invite.update usedAt:null koşuluyla eşzamanlı iki verify'dan yalnız
-      // biri başarılı olur çünkü ikincisi tx.invite.update sırasında farklı
-      // bir satır durumu görmez; asıl garanti verifyInvite'ın yeniden
-      // taranmasından gelir).
+      // invite.updateMany({ id, usedAt: null }) koşullu güncellemesi
+      // eşzamanlı iki verify'dan yalnız birinin count:1 dönmesini sağlar;
+      // diğeri count:0 görüp INVITE_ALREADY_USED fırlatır ve transaction
+      // rollback olur, böylece iki User da commit edilmez).
       const user = await db.$transaction(async (tx) => {
         const created = await tx.user.create({
           data: { email: invite.email, name: invite.name, role: invite.role, status: "ACTIVE" },
@@ -71,11 +71,20 @@ export async function POST(req: NextRequest) {
             label: "Passkey",
           },
         });
-        await tx.invite.update({ where: { id: invite.id }, data: { usedAt: new Date() } });
+        const consumed = await tx.invite.updateMany({
+          where: { id: invite.id, usedAt: null },
+          data: { usedAt: new Date() },
+        });
+        if (consumed.count === 0) {
+          throw new Error("INVITE_ALREADY_USED");
+        }
         return created;
       });
       userId = user.id;
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.message === "INVITE_ALREADY_USED") {
+        return NextResponse.json({ error: "invite_invalid" }, { status: 410 });
+      }
       return NextResponse.json({ error: "email_taken" }, { status: 409 });
     }
 
