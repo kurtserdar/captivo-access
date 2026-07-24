@@ -5,6 +5,7 @@ import { verifyRegistration } from "@/lib/auth/webauthn";
 import { readChallenge, clearChallenge } from "@/lib/auth/challenge";
 import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
+import { hasAnyUser } from "@/lib/auth/bootstrap";
 
 function sessionMaxAgeSeconds(): number {
   const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
@@ -48,24 +49,37 @@ export async function POST(req: NextRequest) {
   }
   const { credential } = result.registrationInfo;
 
+  // Yarış guard: options çağrısından verify'a kadar geçen sürede biri kurulumu
+  // tamamlamış olabilir. Bu kontrol ile create arasında yine küçük bir pencere
+  // kalır (tam kilit için unique constraint + tek satırlık "setup lock" tablosu
+  // gerekir) ama pratikte iki eşzamanlı setup'ın ikisinin de ADMIN oluşturmasını
+  // engeller.
+  if (await hasAnyUser()) {
+    return NextResponse.json({ error: "already_setup" }, { status: 409 });
+  }
+
   let userId: string;
   try {
-    const user = await db.user.create({ data: { email, name, role: "ADMIN", status: "ACTIVE" } });
+    // User + Passkey oluşturma tek DB transaction'ında: biri başarısız olursa
+    // diğeri de geri alınır (passkey'siz "kilitli" ADMIN kalmaz).
+    const user = await db.$transaction(async (tx) => {
+      const created = await tx.user.create({ data: { email, name, role: "ADMIN", status: "ACTIVE" } });
+      await tx.passkey.create({
+        data: {
+          userId: created.id,
+          credentialId: credential.id,
+          publicKey: Buffer.from(credential.publicKey),
+          counter: BigInt(credential.counter ?? 0),
+          transports: credential.transports ?? [],
+          label: "Passkey",
+        },
+      });
+      return created;
+    });
     userId = user.id;
   } catch {
     return NextResponse.json({ error: "email_taken" }, { status: 409 });
   }
-
-  await db.passkey.create({
-    data: {
-      userId,
-      credentialId: credential.id,
-      publicKey: Buffer.from(credential.publicKey),
-      counter: BigInt(credential.counter ?? 0),
-      transports: credential.transports ?? [],
-      label: "Passkey",
-    },
-  });
 
   const token = await createSession(userId, requestMeta(req));
   (await cookies()).set(SESSION_COOKIE, token, {
