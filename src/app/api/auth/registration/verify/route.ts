@@ -6,6 +6,7 @@ import { readChallenge, clearChallenge } from "@/lib/auth/challenge";
 import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
 import { hasAnyUser } from "@/lib/auth/bootstrap";
+import { verifyInvite } from "@/lib/auth/invite";
 
 function sessionMaxAgeSeconds(): number {
   const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
@@ -24,8 +25,71 @@ export async function POST(req: NextRequest) {
   const mode = body.mode;
 
   if (mode === "invite") {
-    // TODO Task 6: davetten kayıt — verifyInvite(inviteToken) + User oluştur + consumeInvite
-    return NextResponse.json({ error: "not_implemented" }, { status: 501 });
+    const inviteToken = typeof body.inviteToken === "string" ? body.inviteToken : "";
+    const response = body.response as RegistrationResponseJSON | undefined;
+    if (!inviteToken || !response) {
+      return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+    }
+
+    // Kayıt anında tekrar doğrula: options çağrısından bu yana davet
+    // kullanılmış veya süresi dolmuş olabilir.
+    const invite = await verifyInvite(inviteToken);
+    if (!invite) {
+      return NextResponse.json({ error: "invite_invalid" }, { status: 410 });
+    }
+
+    const expectedChallenge = await readChallenge("reg");
+    if (!expectedChallenge) {
+      return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
+    }
+
+    const result = await verifyRegistration(response, expectedChallenge, req.nextUrl.origin);
+    if (!result.verified || !result.registrationInfo) {
+      return NextResponse.json({ error: "verification_failed" }, { status: 401 });
+    }
+    const { credential } = result.registrationInfo;
+
+    let userId: string;
+    try {
+      // User + Passkey + davet-tüketimi tek transaction'ında: biri başarısız
+      // olursa hiçbiri commit edilmez (çift-enroll yarışını da engeller —
+      // invite.update usedAt:null koşuluyla eşzamanlı iki verify'dan yalnız
+      // biri başarılı olur çünkü ikincisi tx.invite.update sırasında farklı
+      // bir satır durumu görmez; asıl garanti verifyInvite'ın yeniden
+      // taranmasından gelir).
+      const user = await db.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: { email: invite.email, name: invite.name, role: invite.role, status: "ACTIVE" },
+        });
+        await tx.passkey.create({
+          data: {
+            userId: created.id,
+            credentialId: credential.id,
+            publicKey: Buffer.from(credential.publicKey),
+            counter: BigInt(credential.counter ?? 0),
+            transports: credential.transports ?? [],
+            label: "Passkey",
+          },
+        });
+        await tx.invite.update({ where: { id: invite.id }, data: { usedAt: new Date() } });
+        return created;
+      });
+      userId = user.id;
+    } catch {
+      return NextResponse.json({ error: "email_taken" }, { status: 409 });
+    }
+
+    const token = await createSession(userId, requestMeta(req));
+    (await cookies()).set(SESSION_COOKIE, token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: sessionMaxAgeSeconds(),
+    });
+    await clearChallenge();
+
+    return NextResponse.json({ ok: true });
   }
   if (mode !== "setup") {
     return NextResponse.json({ error: "invalid_mode" }, { status: 400 });
