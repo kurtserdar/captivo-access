@@ -11,7 +11,3 @@ export function originMatchesRp(origin: string, rpId: string): boolean {
     return false;
   }
 }
-
-export function getExpectedOrigin(reqOrigin: string): string {
-  return reqOrigin;
-}

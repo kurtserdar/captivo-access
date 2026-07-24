@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import type { RegistrationResponseJSON } from "@simplewebauthn/server";
 import { verifyRegistration } from "@/lib/auth/webauthn";
-import { readChallenge, clearChallenge } from "@/lib/auth/challenge";
+import { readChallenge, readChallengeUid, clearChallenge } from "@/lib/auth/challenge";
 import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
 import { hasAnyUser } from "@/lib/auth/bootstrap";
@@ -10,6 +10,7 @@ import { verifyInvite } from "@/lib/auth/invite";
 import { readRecoverToken, clearRecoverToken } from "@/lib/auth/recover-token";
 import { getCurrentUser } from "@/lib/current-user";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getRpId, originMatchesRp } from "@/lib/auth/rp";
 
 function sessionMaxAgeSeconds(): number {
   const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
@@ -49,7 +50,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
     }
 
-    const result = await verifyRegistration(response, expectedChallenge, req.nextUrl.origin);
+    const origin = req.nextUrl.origin;
+    if (!originMatchesRp(origin, getRpId())) {
+      return NextResponse.json({ error: "origin_mismatch" }, { status: 400 });
+    }
+
+    const result = await verifyRegistration(response, expectedChallenge, origin);
     if (!result.verified || !result.registrationInfo) {
       return NextResponse.json({ error: "verification_failed" }, { status: 401 });
     }
@@ -87,7 +93,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
     }
 
-    const result = await verifyRegistration(response, expectedChallenge, req.nextUrl.origin);
+    const origin = req.nextUrl.origin;
+    if (!originMatchesRp(origin, getRpId())) {
+      return NextResponse.json({ error: "origin_mismatch" }, { status: 400 });
+    }
+
+    const result = await verifyRegistration(response, expectedChallenge, origin);
     if (!result.verified || !result.registrationInfo) {
       return NextResponse.json({ error: "verification_failed" }, { status: 401 });
     }
@@ -137,11 +148,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
     }
 
-    const result = await verifyRegistration(response, expectedChallenge, req.nextUrl.origin);
+    const origin = req.nextUrl.origin;
+    if (!originMatchesRp(origin, getRpId())) {
+      return NextResponse.json({ error: "origin_mismatch" }, { status: 400 });
+    }
+
+    const result = await verifyRegistration(response, expectedChallenge, origin);
     if (!result.verified || !result.registrationInfo) {
       return NextResponse.json({ error: "verification_failed" }, { status: 401 });
     }
     const { credential } = result.registrationInfo;
+
+    // options aşamasında üretilen uid, WebAuthn userHandle olarak resident
+    // credential'a gömüldü — User.id burada aynı değeri almalı, aksi halde
+    // userHandle != User.id olur (bkz. registration/options/route.ts notu).
+    const uid = await readChallengeUid("reg");
 
     let userId: string;
     try {
@@ -153,7 +174,13 @@ export async function POST(req: NextRequest) {
       // rollback olur, böylece iki User da commit edilmez).
       const user = await db.$transaction(async (tx) => {
         const created = await tx.user.create({
-          data: { email: invite.email, name: invite.name, role: invite.role, status: "ACTIVE" },
+          data: {
+            ...(uid ? { id: uid } : {}),
+            email: invite.email,
+            name: invite.name,
+            role: invite.role,
+            status: "ACTIVE",
+          },
         });
         await tx.passkey.create({
           data: {
@@ -210,7 +237,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
   }
 
-  const result = await verifyRegistration(response, expectedChallenge, req.nextUrl.origin);
+  const origin = req.nextUrl.origin;
+  if (!originMatchesRp(origin, getRpId())) {
+    return NextResponse.json({ error: "origin_mismatch" }, { status: 400 });
+  }
+
+  const result = await verifyRegistration(response, expectedChallenge, origin);
   if (!result.verified || !result.registrationInfo) {
     return NextResponse.json({ error: "verification_failed" }, { status: 401 });
   }
@@ -225,12 +257,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "already_setup" }, { status: 409 });
   }
 
+  // options aşamasında üretilen uid, WebAuthn userHandle olarak resident
+  // credential'a gömüldü — User.id burada aynı değeri almalı, aksi halde
+  // userHandle != User.id olur (bkz. registration/options/route.ts notu).
+  const uid = await readChallengeUid("reg");
+
   let userId: string;
   try {
     // User + Passkey oluşturma tek DB transaction'ında: biri başarısız olursa
     // diğeri de geri alınır (passkey'siz "kilitli" ADMIN kalmaz).
     const user = await db.$transaction(async (tx) => {
-      const created = await tx.user.create({ data: { email, name, role: "ADMIN", status: "ACTIVE" } });
+      const created = await tx.user.create({
+        data: { ...(uid ? { id: uid } : {}), email, name, role: "ADMIN", status: "ACTIVE" },
+      });
       await tx.passkey.create({
         data: {
           userId: created.id,

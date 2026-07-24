@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/current-user";
+import { getCurrentUser } from "@/lib/current-user";
 import { createInvite } from "@/lib/auth/invite";
 import type { Role } from "@/generated/prisma/enums";
 
 const VALID_ROLES: Role[] = ["ADMIN", "VENDOR"];
 
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin();
+  const admin = await getCurrentUser();
+  if (!admin) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  if (admin.role !== "ADMIN") {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const name = typeof body.name === "string" ? body.name.trim() : "";

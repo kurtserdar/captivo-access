@@ -7,6 +7,7 @@ import { readRecoverToken } from "@/lib/auth/recover-token";
 import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { hasAnyUser } from "@/lib/auth/bootstrap";
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
@@ -58,12 +59,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "invite_invalid" }, { status: 410 });
     }
 
-    const options = await genRegistrationOptions({ id: randomUUID(), email: invite.email, name: invite.name }, []);
-    await setChallenge(options.challenge, "reg");
+    // uid, verify aşamasında User.id olarak kullanılacak — WebAuthn userHandle
+    // ile kalıcı User.id aynı olsun diye (bkz. setup dalındaki not).
+    const uid = randomUUID();
+    const options = await genRegistrationOptions({ id: uid, email: invite.email, name: invite.name }, []);
+    await setChallenge(options.challenge, "reg", uid);
     return NextResponse.json(options);
   }
   if (mode !== "setup") {
     return NextResponse.json({ error: "invalid_mode" }, { status: 400 });
+  }
+
+  if (await hasAnyUser()) {
+    return NextResponse.json({ error: "already_setup" }, { status: 409 });
   }
 
   const email = typeof body.email === "string" ? body.email.trim() : "";
@@ -72,9 +80,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "email_and_name_required" }, { status: 400 });
   }
 
-  // Kullanıcı henüz DB'de yok (verify aşamasında oluşturulacak) — WebAuthn
-  // userHandle için geçici bir kimlik yeterli, kalıcı değil.
-  const options = await genRegistrationOptions({ id: randomUUID(), email, name }, []);
-  await setChallenge(options.challenge, "reg");
+  // Kullanıcı henüz DB'de yok (verify aşamasında oluşturulacak). uid burada
+  // üretilip hem WebAuthn userHandle hem de verify'da User.id olarak kullanılır
+  // — böylece resident credential'a gömülen userHandle, kalıcı User.id ile
+  // aynı olur (aksi halde 2. passkey eklendiğinde platform şifre yöneticisi
+  // aynı kişiyi iki farklı hesap gibi gösterir).
+  const uid = randomUUID();
+  const options = await genRegistrationOptions({ id: uid, email, name }, []);
+  await setChallenge(options.challenge, "reg", uid);
   return NextResponse.json(options);
 }
