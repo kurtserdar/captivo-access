@@ -18,7 +18,7 @@ func main() {
 	secret := os.Getenv("DATAPLANE_SECRET")
 	ctrl := NewControlClient(env("CONTROL_PLANE_URL", "http://access-manager:3100"), secret)
 	reg := NewRegistry()
-	srv := &Server{reg: reg, ctrl: ctrl}
+	srv := &Server{reg: reg, ctrl: ctrl, rl: newRateLimiter()}
 
 	// WSS listener (exposed to connectors).
 	wss := http.NewServeMux()
@@ -57,6 +57,24 @@ func main() {
 			"bodyPreview": base64.StdEncoding.EncodeToString(res.Body),
 			"truncated":   res.Truncated,
 		})
+	})
+	in.HandleFunc("/kick", func(w http.ResponseWriter, r *http.Request) {
+		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		var body struct {
+			ConnectorID string `json:"connectorId"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConnectorID == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_body"})
+			return
+		}
+		if s := reg.Get(body.ConnectorID); s != nil && s.mux != nil {
+			s.mux.Close()
+		}
+		reg.Remove(body.ConnectorID)
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	})
 	in.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok")) })
 	log.Fatal(http.ListenAndServe(env("INTERNAL_ADDR", ":3102"), in))

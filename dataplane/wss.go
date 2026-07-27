@@ -2,11 +2,23 @@ package main
 
 import (
 	"context"
+	"net"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/coder/websocket"
 	"github.com/hashicorp/yamux"
 	"github.com/kurtserdar/captivo-access/tunnel"
+)
+
+// tunnelRateLimit and tunnelRateWindow bound how many /tunnel connection
+// attempts a single source IP may make before its connector-token auth is
+// even attempted, since AuthConnector's argon2 verify is expensive and
+// otherwise cheap to amplify by spamming random bearer tokens.
+const (
+	tunnelRateLimit  = 10
+	tunnelRateWindow = 60 * time.Second
 )
 
 // Server handles connector WSS connections and hosts the connector
@@ -14,6 +26,7 @@ import (
 type Server struct {
 	reg  *Registry
 	ctrl *ControlClient
+	rl   *rateLimiter
 }
 
 // HandleTunnel upgrades a connector's WSS connection to a yamux server
@@ -21,6 +34,11 @@ type Server struct {
 // blocks for the lifetime of the session and cleans up (deregister +
 // report OFFLINE) on exit.
 func (s *Server) HandleTunnel(w http.ResponseWriter, r *http.Request) {
+	if s.rl != nil && !s.rl.allow(clientIP(r), tunnelRateLimit, tunnelRateWindow) {
+		http.Error(w, "rate limited", http.StatusTooManyRequests)
+		return
+	}
+
 	token := bearer(r.Header.Get("Authorization"))
 	connectorID, err := s.ctrl.AuthConnector(token)
 	if err != nil || connectorID == "" {
@@ -61,4 +79,22 @@ func bearer(h string) string {
 		return h[len(p):]
 	}
 	return ""
+}
+
+// clientIP returns the rate-limit key for a request: the first hop of
+// X-Forwarded-For if present (the dataplane may sit behind a proxy/LB),
+// otherwise the host part of RemoteAddr (falling back to the raw value if
+// it has no port to split).
+func clientIP(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		if i := strings.IndexByte(xff, ','); i >= 0 {
+			return strings.TrimSpace(xff[:i])
+		}
+		return strings.TrimSpace(xff)
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }

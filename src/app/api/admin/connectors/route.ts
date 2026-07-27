@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { createPairing } from "@/lib/connector/enrollment";
+import { kickConnector } from "@/lib/connector/dataplane";
 
 function buildInstallCommand(code: string, managerUrl: string): string {
   return (
@@ -73,5 +74,6 @@ export async function DELETE(req: NextRequest) {
   }
 
   await db.connector.update({ where: { id }, data: { status: "REVOKED" } });
+  await kickConnector(id);
   return NextResponse.json({ ok: true });
 }

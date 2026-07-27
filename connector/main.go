@@ -8,6 +8,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -49,5 +50,5 @@ func readToken(f string) string {
 	if err != nil {
 		return ""
 	}
-	return string(b)
+	return strings.TrimSpace(string(b))
 }

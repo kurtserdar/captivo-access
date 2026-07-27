@@ -15,10 +15,20 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const site = await db.site.findUnique({
     where: { id },
-    select: { connectorId: true, upstreamName: true },
+    select: {
+      connectorId: true,
+      upstreamName: true,
+      connector: { select: { status: true } },
+    },
   });
   if (!site) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+  if (site.connector.status === "REVOKED") {
+    // Guards the race between a revoke and the /kick call landing on the
+    // data-plane: even if the connector's yamux session is still briefly
+    // alive, never proxy to a connector we've already revoked.
+    return NextResponse.json({ error: "connector_revoked" });
   }
 
   const result = await proxyThroughConnector({
