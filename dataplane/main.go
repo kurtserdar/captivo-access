@@ -29,7 +29,7 @@ func main() {
 	// Internal API (compose-internal only; guarded by x-dataplane-secret).
 	in := http.NewServeMux()
 	in.HandleFunc("/proxy", func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("x-dataplane-secret") != secret {
+		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
