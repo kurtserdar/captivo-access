@@ -20,16 +20,22 @@ export async function redeemPairing(
     if (await verifyTokenHash(code, p.codeHash)) {
       const token = generateToken();
       const tokenHash = await hashToken(token);
-      const connector = await db.$transaction(async (tx) => {
-        const consumed = await tx.connectorPairing.updateMany({
-          where: { id: p.id, usedAt: null },
-          data: { usedAt: new Date() },
+      let connector;
+      try {
+        connector = await db.$transaction(async (tx) => {
+          const consumed = await tx.connectorPairing.updateMany({
+            where: { id: p.id, usedAt: null },
+            data: { usedAt: new Date() },
+          });
+          if (consumed.count === 0) throw new Error("PAIRING_ALREADY_USED");
+          return tx.connector.create({
+            data: { name: meta.name?.trim() || p.name, tokenHash, status: "PENDING", version: meta.version ?? null },
+          });
         });
-        if (consumed.count === 0) throw new Error("PAIRING_ALREADY_USED");
-        return tx.connector.create({
-          data: { name: meta.name?.trim() || p.name, tokenHash, status: "PENDING", version: meta.version ?? null },
-        });
-      });
+      } catch (err) {
+        if (err instanceof Error && err.message === "PAIRING_ALREADY_USED") return null;
+        throw err;
+      }
       return { connectorId: connector.id, token };
     }
   }

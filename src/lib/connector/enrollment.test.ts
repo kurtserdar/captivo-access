@@ -123,7 +123,9 @@ describe("redeemPairing", () => {
     // Two concurrent callers can both read the same unused/unexpired pairing
     // before either commits. The transactional `updateMany` guard is what
     // must stop the loser: `count === 0` means someone else already
-    // consumed it, and redeemPairing should not create a second connector.
+    // consumed it. redeemPairing should not create a second connector, and
+    // the lost race should surface as `null` (same contract as "no match"),
+    // not as a thrown error.
     const code = generateToken();
     const codeHash = await hashToken(code);
     const pairing = {
@@ -138,7 +140,7 @@ describe("redeemPairing", () => {
     mockDb.connectorPairing.findMany.mockResolvedValueOnce([pairing]);
     tx.connectorPairing.updateMany.mockResolvedValueOnce({ count: 0 });
 
-    await expect(redeemPairing(code, {})).rejects.toThrow("PAIRING_ALREADY_USED");
+    expect(await redeemPairing(code, {})).toBeNull();
     expect(tx.connector.create).not.toHaveBeenCalled();
   });
 });
