@@ -33,6 +33,10 @@ services:
       DATABASE_URL: postgresql://access:${POSTGRES_PASSWORD:?required}@access-postgres:5432/captivo_access
       SESSION_SECRET: ${SESSION_SECRET:?required}
       WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-localhost}
+      # TOTP recovery-secret encryption (AES-256-GCM) — required by the identity layer (Slice 1)
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?required}
+      INVITE_TTL_HOURS: ${INVITE_TTL_HOURS:-48}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-12}
       NODE_ENV: production
     ports:
       - "3100:3100"
