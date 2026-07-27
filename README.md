@@ -1,0 +1,148 @@
+# Captivo Access
+
+**Open-source, self-hosted Zero-Trust / VPNless secure remote access for third-party vendors and contractors.**
+
+> ⚠️ **Status: early development (Slice 1 — Identity & Passkey).** This
+> repository has the project scaffold (Next.js app, Postgres/Prisma, Docker
+> packaging, CI) plus identity: admin/vendor accounts, WebAuthn passkey
+> register/login, TOTP-backed recovery, and invites. There is **no connector
+> tunnel, no access model, no proxy, and no audit trail yet**.
+> **Not production-ready.** Do not deploy this for real vendor access today —
+> track the roadmap below.
+
+## What it is
+
+Captivo Access lets you grant external vendors and contractors time-boxed,
+identity-aware access to specific internal applications — without a VPN,
+without exposing inbound ports, and without handing out standing credentials.
+It's a self-hosted alternative in the spirit of CyberArk Alero / Remote
+Access, aimed at vendor-heavy organizations, with Turkish-market data
+residency and KVKK/5651 compliance in mind.
+
+We don't run a SaaS for this — **you host it.**
+
+## Architecture
+
+Three components:
+
+```
+Vendor browser ──HTTPS+Passkey──▶ MANAGER (customer cloud/DMZ) ◀──outbound tunnel── CONNECTOR (customer DC) ──▶ internal web app
+```
+
+- **Manager** — internet-reachable (cloud VPS / DMZ). Handles identity &
+  WebAuthn, access policy, the identity-aware proxy edge, and session
+  auditing. This repo.
+- **Connector** — runs deep inside the customer's network, makes **only
+  outbound** connections, and opens no inbound ports. Bridges the Manager to
+  internal applications. (Planned — Slice 2, written in Go.)
+- **Vendor** — the external user, authenticating with a passkey/biometric,
+  granted a time-boxed role over the Manager's proxy.
+
+## Roadmap
+
+| Slice | Delivers |
+|---|---|
+| **0 (this repo)** | Repo, app skeleton, Postgres/Prisma, Docker self-host packaging, license/security policy/README, CI |
+| **1 (this repo)** | Identity + Passkey — admin & vendor users, WebAuthn register/login, TOTP fallback, sessions |
+| 2 | Connector tunnel — Go connector (outbound-only), Manager↔Connector protocol |
+| 3 | Access model — `AccessGrant` (role + time window + approval-dormant), admin UI |
+| 4 | Identity-aware proxy — route an authorized vendor through the connector to the internal app |
+| 5 | Session audit + KVKK/5651 — signed audit trail (who/when/what app/how long) |
+
+## Self-host quickstart
+
+Requires Docker + Docker Compose.
+
+```bash
+git clone https://github.com/kurtserdar/captivo-access.git
+cd captivo-access
+cp .env.example .env
+# edit .env: set POSTGRES_PASSWORD and SESSION_SECRET (openssl rand -hex 32)
+docker compose up -d
+```
+
+Then open **http://localhost:3100**.
+
+The Manager is meant to run on an internet-reachable host (cloud VPS / DMZ)
+in real deployments.
+
+## Identity & Passkey
+
+Captivo Access has no default/seed account — the first person to open the
+Manager sets it up.
+
+- **First run — `/setup`**: open the Manager, go to `/setup`, and register
+  the first account as a passkey. It's created with the `ADMIN` role. A
+  race guard prevents two concurrent visitors from both completing setup;
+  once an admin exists, `/setup` locks itself for good.
+- **Inviting vendors**: an admin generates a one-time invite link at
+  `/admin/invites` (email + role + expiry, default `INVITE_TTL_HOURS=48`).
+  The vendor opens the link at `/invite/[token]` and registers their own
+  passkey — no shared credentials ever exist.
+- **Login**: `/login` uses discoverable (resident) passkeys — no username
+  field, the authenticator itself picks the credential.
+- **Recovery**: if a user loses every passkey, `/recover` accepts their
+  email + a TOTP code (set up ahead of time under account settings) and, on
+  success, lets them register a brand-new passkey. The response never
+  reveals whether the email exists, whether TOTP is configured, or which
+  check failed — all failure paths return the same generic error to avoid
+  user enumeration.
+
+### ⚠️ Critical: `WEBAUTHN_RP_ID` must match your real domain
+
+WebAuthn passkeys are bound to the *Relying Party ID* (RP ID) at
+registration time and checked again on every login. **`WEBAUTHN_RP_ID` must
+be set to the exact domain the Manager is served from** (no scheme, no
+port):
+
+- Local development: `WEBAUTHN_RP_ID=localhost`
+- Production: `WEBAUTHN_RP_ID=access.firma.com` (your Manager's real host)
+
+If this value doesn't match the browser's address bar, passkey registration
+and login **fail silently** — the authenticator won't offer or accept the
+credential, and there is no meaningful client-side error to debug from. Set
+it correctly *before* anyone registers a passkey: changing `WEBAUTHN_RP_ID`
+later invalidates every passkey already enrolled against the old value. In
+production the origin also **must be HTTPS** — browsers refuse WebAuthn
+over plain HTTP for any RP ID other than `localhost`.
+
+### Generating secrets
+
+`SESSION_SECRET` and `ENCRYPTION_KEY` (the latter encrypts TOTP secrets at
+rest, AES-256-GCM) are both 32-byte hex secrets:
+
+```bash
+openssl rand -hex 32
+```
+
+Generate a separate value for each — never reuse one secret for both, and
+never commit real values to `.env`.
+
+## Development
+
+Requirements: **Node 20**, **pnpm 9.14.2**, Docker (for the local Postgres).
+
+```bash
+pnpm install
+pnpm dev          # http://localhost:3100
+pnpm build        # production build
+pnpm test         # vitest
+pnpm lint
+pnpm typecheck
+pnpm db:generate  # regenerate the Prisma client after a schema change
+pnpm db:push      # push schema to the database (no migration files yet)
+```
+
+## License
+
+[Apache License 2.0](./LICENSE).
+
+## Security
+
+This is a security product — please report vulnerabilities responsibly.
+See [SECURITY.md](./SECURITY.md). Do not open public issues for security
+reports.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
