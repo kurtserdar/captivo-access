@@ -1,0 +1,27 @@
+# ---- build ----
+FROM golang:1.23-alpine AS build
+WORKDIR /src
+
+# NOTE on the go.work workspace: the repo root has a go.work file that lists all
+# three Go modules (connector, dataplane, tunnel). This image only needs
+# dataplane + the shared tunnel module, so we deliberately do NOT copy go.work
+# into the build context — if we did, `go build` would try to resolve every
+# `use` entry in it (including ./connector), which we haven't copied, and the
+# build would fail with a missing-directory error.
+#
+# Instead we rely on dataplane's own go.mod, which already declares
+#   replace github.com/kurtserdar/captivo-access/tunnel => ../tunnel
+# With no go.work present anywhere on the path, `go build` runs in plain
+# single-module mode and resolves that replace against the tunnel/ directory
+# copied below. No connector/ checkout is required.
+COPY tunnel ./tunnel
+COPY dataplane ./dataplane
+RUN cd dataplane && CGO_ENABLED=0 go build -o /out/dataplane .
+
+# ---- run ----
+FROM alpine:3.20
+RUN adduser -D -H -u 10001 dataplane
+COPY --from=build /out/dataplane /usr/local/bin/dataplane
+USER dataplane
+EXPOSE 3101
+ENTRYPOINT ["/usr/local/bin/dataplane"]

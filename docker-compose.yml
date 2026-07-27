@@ -38,8 +38,29 @@ services:
       INVITE_TTL_HOURS: ${INVITE_TTL_HOURS:-48}
       SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-12}
       NODE_ENV: production
+      # Data-plane wiring (Slice 2) — the Manager talks to the data-plane's
+      # internal API (not the public WSS port) to proxy requests to connectors.
+      DATAPLANE_URL: http://access-dataplane:3102
+      DATAPLANE_SECRET: ${DATAPLANE_SECRET:?required}
     ports:
       - "3100:3100"
+
+  access-dataplane:
+    build:
+      context: .
+      dockerfile: dataplane/Dockerfile
+    container_name: access-dataplane
+    restart: unless-stopped
+    depends_on:
+      access-manager:
+        condition: service_started
+    environment:
+      DATAPLANE_SECRET: ${DATAPLANE_SECRET:?required}
+      CONTROL_PLANE_URL: http://access-manager:3100
+      WSS_ADDR: ":3101"
+      INTERNAL_ADDR: ":3102"
+    ports:
+      - "3101:3101" # connector WSS (exposed); 3102 internal API is NOT published
 
 volumes:
   access_pgdata: {}
