@@ -32,6 +32,9 @@ model User {
   totp           TotpSecret?
   sessions       Session[]
   invitesCreated Invite[]    @relation("InviteCreator")
+  grantsSubject  AccessGrant[] @relation("GrantSubject")
+  grantsApproved AccessGrant[] @relation("GrantApprover")
+  grantsCreated  AccessGrant[] @relation("GrantCreator")
 }
 
 model Passkey {
@@ -121,4 +124,33 @@ model Site {
   upstreamName String
   description  String?
   createdAt    DateTime  @default(now())
+  grants       AccessGrant[]
+}
+
+enum GrantStatus {
+  ACTIVE
+  REVOKED
+}
+
+model AccessGrant {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation("GrantSubject", fields: [userId], references: [id], onDelete: Cascade)
+  siteId       String
+  site         Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  startsAt     DateTime?
+  endsAt       DateTime?
+  status       GrantStatus @default(ACTIVE)
+  note         String?
+
+  requiresApproval Boolean   @default(false)
+  approvedAt       DateTime?
+  approvedById     String?
+  approvedBy       User?     @relation("GrantApprover", fields: [approvedById], references: [id])
+
+  createdById  String
+  createdBy    User        @relation("GrantCreator", fields: [createdById], references: [id])
+  createdAt    DateTime    @default(now())
+
+  @@index([userId, siteId])
 }
