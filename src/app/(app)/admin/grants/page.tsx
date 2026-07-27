@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { listGrants } from "@/lib/access/grants";
 import { GrantForm } from "./grant-form";
 import { RevokeGrantButton } from "./revoke-grant-button";
+import { TestAccessWidget } from "./test-access-widget";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +91,8 @@ export default async function AdminGrantsPage() {
           </tbody>
         </table>
       )}
+
+      {users.length > 0 && sites.length > 0 && <TestAccessWidget users={users} sites={sites} />}
     </main>
   );
 }
