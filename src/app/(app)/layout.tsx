@@ -2,12 +2,12 @@ import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
 import { LogoutButton } from "./logout-button";
 
-// requireUser() her istekte DB'den taze okunmalı (session/rol değişikliği anında yansısın).
+// requireUser() must be read fresh from the DB on every request (session/role changes reflect immediately).
 export const dynamic = "force-dynamic";
 
 const ROLE_LABEL: Record<string, string> = {
-  ADMIN: "Yönetici",
-  VENDOR: "Tedarikçi",
+  ADMIN: "Admin",
+  VENDOR: "Vendor",
 };
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -20,9 +20,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           Captivo Access
         </Link>
         <div className="app-nav-links">
-          <Link href="/">Panel</Link>
-          <Link href="/settings/passkeys">Ayarlar</Link>
-          {user.role === "ADMIN" && <Link href="/admin/users">Yönetim</Link>}
+          <Link href="/">Dashboard</Link>
+          <Link href="/settings/passkeys">Settings</Link>
+          {user.role === "ADMIN" && <Link href="/admin/users">Admin</Link>}
           <span className="app-nav-user">
             {user.name} · {ROLE_LABEL[user.role] ?? user.role}
           </span>

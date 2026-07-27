@@ -14,5 +14,5 @@ prisma/*.db
 *.tsbuildinfo
 src/generated/
 
-# İç tasarım/plan dokümanları — public repo'ya girmez (ekip diskte tutar)
+# Internal design/planning docs — never enter the public repo (kept on the team's disk)
 docs/design/

@@ -5,9 +5,9 @@ import { verifyTotp } from "@/lib/auth/totp";
 import { setRecoverToken } from "@/lib/auth/recover-token";
 import { checkRateLimit } from "@/lib/rate-limit";
 
-// Kullanıcı numaralandırmasını sızdırmamak için: kullanıcı yok / TOTP kurulu
-// değil / kod yanlış — hepsi AYNI 401 + "recover_failed" döner. Yalnızca
-// tam geçerli e-posta+TOTP kombinasyonu kurtarma cookie'si kazanır.
+// To avoid leaking user enumeration: user doesn't exist / TOTP not set up /
+// wrong code — all return the SAME 401 + "recover_failed". Only a fully
+// valid email+TOTP combination earns a recovery cookie.
 function failed(): NextResponse {
   return NextResponse.json({ error: "recover_failed" }, { status: 401 });
 }

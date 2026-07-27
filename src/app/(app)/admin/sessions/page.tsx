@@ -24,26 +24,26 @@ export default async function AdminSessionsPage() {
   return (
     <main>
       <nav className="sub-nav">
-        <Link href="/admin/users">Kullanıcılar</Link>
+        <Link href="/admin/users">Users</Link>
         <Link href="/admin/sessions" className="active">
-          Oturumlar
+          Sessions
         </Link>
-        <Link href="/admin/invites">Davetler</Link>
+        <Link href="/admin/invites">Invites</Link>
       </nav>
 
-      <h1>Oturumlar</h1>
-      <p>Şu anda aktif olan (süresi dolmamış) tüm oturumlar.</p>
+      <h1>Sessions</h1>
+      <p>All currently active (non-expired) sessions.</p>
 
       {sessions.length === 0 ? (
-        <p>Aktif oturum yok.</p>
+        <p>No active sessions.</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>Kullanıcı</th>
+              <th>User</th>
               <th>IP</th>
-              <th>Tarayıcı</th>
-              <th>Son görülme</th>
+              <th>Browser</th>
+              <th>Last seen</th>
               <th></th>
             </tr>
           </thead>
@@ -55,7 +55,7 @@ export default async function AdminSessionsPage() {
                 </td>
                 <td>{s.ip ?? "—"}</td>
                 <td>{s.userAgent ?? "—"}</td>
-                <td>{s.lastSeenAt.toLocaleString("tr-TR")}</td>
+                <td>{s.lastSeenAt.toLocaleString("en-US")}</td>
                 <td>
                   <RevokeSessionButton id={s.id} />
                 </td>

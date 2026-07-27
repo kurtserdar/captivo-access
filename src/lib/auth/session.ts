@@ -26,7 +26,7 @@ export async function getSessionUser(token: string) {
   const s = await db.session.findUnique({ where: { tokenHash: sha256(token) }, include: { user: true } });
   if (!s || s.expiresAt < new Date()) return null;
   if (s.user.status !== "ACTIVE") return null;
-  // sliding: son görülme güncelle (expiry uzatma opsiyonel — MVP'de sadece lastSeenAt)
+  // sliding: update last-seen (extending expiry is optional — MVP only updates lastSeenAt)
   await db.session.update({ where: { id: s.id }, data: { lastSeenAt: new Date() } }).catch(() => {});
   return s.user;
 }

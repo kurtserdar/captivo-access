@@ -5,7 +5,7 @@ const COOKIE = "ca_challenge";
 
 function secret(): Uint8Array {
   const s = process.env.SESSION_SECRET;
-  if (!s) throw new Error("SESSION_SECRET gerekli");
+  if (!s) throw new Error("SESSION_SECRET is required");
   return new TextEncoder().encode(s);
 }
 
@@ -31,8 +31,9 @@ export async function readChallenge(purpose: "reg" | "auth"): Promise<string | n
   }
 }
 
-/** setChallenge'a "reg" için uid geçildiyse okur (setup/invite — kalıcı User.id'yi
- *  WebAuthn userHandle ile hizalamak için). auth/add/recover uid set etmez → null döner. */
+/** Reads the uid if it was passed to setChallenge for "reg" (setup/invite — to
+ *  align the persistent User.id with the WebAuthn userHandle). auth/add/recover
+ *  don't set a uid → returns null. */
 export async function readChallengeUid(purpose: "reg" | "auth"): Promise<string | null> {
   const c = (await cookies()).get(COOKIE)?.value;
   if (!c) return null;

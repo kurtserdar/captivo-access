@@ -4,8 +4,8 @@ import { InviteEnrollForm } from "./invite-enroll-form";
 export const dynamic = "force-dynamic";
 
 const ROLE_LABEL: Record<string, string> = {
-  ADMIN: "Yönetici",
-  VENDOR: "Tedarikçi",
+  ADMIN: "Admin",
+  VENDOR: "Vendor",
 };
 
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
@@ -15,19 +15,19 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   if (!invite) {
     return (
       <main>
-        <h1>Geçersiz veya süresi dolmuş davet</h1>
-        <p>Bu davet bağlantısı artık geçerli değil. Yöneticinizden yeni bir davet isteyin.</p>
+        <h1>Invalid or expired invitation</h1>
+        <p>This invite link is no longer valid. Ask your admin for a new invitation.</p>
       </main>
     );
   }
 
   return (
     <main>
-      <h1>Davetinizi tamamlayın</h1>
+      <h1>Complete your invitation</h1>
       <p>
-        {invite.name} ({invite.email}) — {ROLE_LABEL[invite.role] ?? invite.role} olarak davet edildiniz.
+        {invite.name} ({invite.email}) — you&apos;ve been invited as {ROLE_LABEL[invite.role] ?? invite.role}.
       </p>
-      <p>Hesabınızı oluşturmak için cihazınızın passkey&apos;iyle kaydolun.</p>
+      <p>Register with your device&apos;s passkey to create your account.</p>
       <InviteEnrollForm token={token} />
     </main>
   );

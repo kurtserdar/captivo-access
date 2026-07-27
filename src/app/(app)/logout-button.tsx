@@ -16,7 +16,7 @@ export function LogoutButton() {
 
   return (
     <button type="button" className="link-button" onClick={handleClick} disabled={busy}>
-      {busy ? "Çıkış yapılıyor…" : "Çıkış yap"}
+      {busy ? "Signing out…" : "Log out"}
     </button>
   );
 }

@@ -3,12 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Captivo Access",
-  description: "Açık kaynak, self-hosted Zero-Trust güvenli tedarikçi erişimi.",
+  description: "Open-source, self-hosted Zero Trust secure vendor access.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="tr">
+    <html lang="en">
       <body>{children}</body>
     </html>
   );

@@ -6,11 +6,11 @@ function errorMessage(code: string | undefined): string {
   switch (code) {
     case "invalid_body":
     case "name_email_role_required":
-      return "Ad, e-posta ve rol gerekli.";
+      return "Name, email, and role are required.";
     case "forbidden":
-      return "Bu işlem için yönetici yetkisi gerekli.";
+      return "Admin privileges are required for this action.";
     default:
-      return "Davet oluşturulamadı, lütfen tekrar deneyin.";
+      return "Couldn't create the invite, please try again.";
   }
 }
 
@@ -45,7 +45,7 @@ export function InviteForm() {
       setEmail("");
       setRole("VENDOR");
     } catch {
-      setError("Davet oluşturulamadı, lütfen tekrar deneyin.");
+      setError("Couldn't create the invite, please try again.");
     } finally {
       setBusy(false);
     }
@@ -65,32 +65,32 @@ export function InviteForm() {
     <div>
       <form onSubmit={handleSubmit}>
         <label>
-          Ad Soyad
+          Full name
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" />
         </label>
         <label>
-          E-posta
+          Email
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
         </label>
         <label>
-          Rol
+          Role
           <select value={role} onChange={(e) => setRole(e.target.value as "VENDOR" | "ADMIN")}>
-            <option value="VENDOR">Tedarikçi</option>
-            <option value="ADMIN">Yönetici</option>
+            <option value="VENDOR">Vendor</option>
+            <option value="ADMIN">Admin</option>
           </select>
         </label>
         {error && <p role="alert">{error}</p>}
         <button type="submit" disabled={busy}>
-          {busy ? "Oluşturuluyor…" : "Davet oluştur"}
+          {busy ? "Creating…" : "Create invite"}
         </button>
       </form>
 
       {link && (
         <div role="status">
-          <p>Bu bağlantı yalnızca bir kez gösterilir. Kaydetmeden bu sayfadan ayrılmayın.</p>
+          <p>This link is shown only once. Don&apos;t leave this page without saving it.</p>
           <input type="text" readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
           <button type="button" onClick={handleCopy}>
-            {copied ? "Kopyalandı" : "Kopyala"}
+            {copied ? "Copied" : "Copy"}
           </button>
         </div>
       )}

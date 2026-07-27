@@ -6,18 +6,18 @@ import { startRegistration } from "@simplewebauthn/browser";
 function errorMessage(code: string | undefined): string {
   switch (code) {
     case "already_setup":
-      return "Bu sistem zaten kuruldu. Lütfen giriş yapın.";
+      return "This system has already been set up. Please sign in.";
     case "email_taken":
-      return "Bu e-posta adresi zaten kullanımda.";
+      return "This email address is already in use.";
     case "challenge_expired":
-      return "Oturum süresi doldu, lütfen tekrar deneyin.";
+      return "The session timed out, please try again.";
     case "verification_failed":
-      return "Passkey doğrulaması başarısız oldu.";
+      return "Passkey verification failed.";
     case "invalid_body":
     case "email_and_name_required":
-      return "Ad ve e-posta gerekli.";
+      return "Name and email are required.";
     default:
-      return "Bir hata oluştu, lütfen tekrar deneyin.";
+      return "Something went wrong, please try again.";
   }
 }
 
@@ -58,7 +58,7 @@ export function SetupForm() {
 
       window.location.href = "/";
     } catch {
-      setError("Bir hata oluştu, lütfen tekrar deneyin.");
+      setError("Something went wrong, please try again.");
     } finally {
       setBusy(false);
     }
@@ -67,7 +67,7 @@ export function SetupForm() {
   return (
     <form onSubmit={handleSubmit}>
       <label>
-        Ad Soyad
+        Full name
         <input
           type="text"
           value={name}
@@ -77,7 +77,7 @@ export function SetupForm() {
         />
       </label>
       <label>
-        E-posta
+        Email
         <input
           type="email"
           value={email}
@@ -88,7 +88,7 @@ export function SetupForm() {
       </label>
       {error && <p role="alert">{error}</p>}
       <button type="submit" disabled={busy}>
-        {busy ? "Oluşturuluyor…" : "Passkey ile hesabı oluştur"}
+        {busy ? "Creating…" : "Create account with passkey"}
       </button>
     </form>
   );

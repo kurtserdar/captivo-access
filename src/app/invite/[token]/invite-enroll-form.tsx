@@ -6,15 +6,15 @@ import { startRegistration } from "@simplewebauthn/browser";
 function errorMessage(code: string | undefined): string {
   switch (code) {
     case "invite_invalid":
-      return "Bu davet artık geçerli değil. Yöneticinizden yeni bir davet isteyin.";
+      return "This invite is no longer valid. Ask your admin for a new invitation.";
     case "challenge_expired":
-      return "Oturum süresi doldu, lütfen tekrar deneyin.";
+      return "The session timed out, please try again.";
     case "verification_failed":
-      return "Passkey doğrulaması başarısız oldu.";
+      return "Passkey verification failed.";
     case "invalid_body":
-      return "Geçersiz istek.";
+      return "Invalid request.";
     default:
-      return "Bir hata oluştu, lütfen tekrar deneyin.";
+      return "Something went wrong, please try again.";
   }
 }
 
@@ -52,7 +52,7 @@ export function InviteEnrollForm({ token }: { token: string }) {
 
       window.location.href = "/";
     } catch {
-      setError("Bir hata oluştu, lütfen tekrar deneyin.");
+      setError("Something went wrong, please try again.");
     } finally {
       setBusy(false);
     }
@@ -62,7 +62,7 @@ export function InviteEnrollForm({ token }: { token: string }) {
     <div>
       {error && <p role="alert">{error}</p>}
       <button type="button" onClick={handleClick} disabled={busy}>
-        {busy ? "Kaydediliyor…" : "Passkey ile kayıt ol"}
+        {busy ? "Registering…" : "Register with passkey"}
       </button>
     </div>
   );

@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { startRegistration } from "@simplewebauthn/browser";
 
-// Adım 1 (e-posta+TOTP doğrulama) için TEK genel hata mesajı — "kullanıcı
-// yok" / "TOTP kurulu değil" / "kod yanlış" ayrımı yapılmaz (numaralandırma
-// sızıntısı olmasın diye). Adım 2 (yeni passkey kaydı) hataları da aynı
-// mesaja düşer; saldırgana ek bilgi vermez.
+// A SINGLE generic error message for step 1 (email+TOTP verification) —
+// "user doesn't exist" / "TOTP not set up" / "wrong code" are never
+// distinguished (to avoid an enumeration leak). Step 2 (new passkey
+// registration) errors fall into the same message; gives an attacker no
+// extra information.
 const GENERIC_ERROR =
-  "Doğrulama kodu geçersiz veya hesap kurtarılamıyor — yöneticinizden yeni davet isteyin.";
+  "Invalid verification code or account can't be recovered — ask your admin for a new invitation.";
 
 export function RecoverForm() {
   const [email, setEmail] = useState("");
@@ -32,7 +33,7 @@ export function RecoverForm() {
         return;
       }
 
-      // Adım 2: doğrulama başarılı — hemen yeni passkey kaydına geç.
+      // Step 2: verification succeeded — proceed straight to new passkey registration.
       const optionsRes = await fetch("/api/auth/registration/options", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -68,7 +69,7 @@ export function RecoverForm() {
   return (
     <form onSubmit={handleSubmit}>
       <label>
-        E-posta
+        Email
         <input
           type="email"
           value={email}
@@ -78,7 +79,7 @@ export function RecoverForm() {
         />
       </label>
       <label>
-        Doğrulama kodu
+        Verification code
         <input
           type="text"
           inputMode="numeric"
@@ -92,7 +93,7 @@ export function RecoverForm() {
       </label>
       {error && <p role="alert">{error}</p>}
       <button type="submit" disabled={busy}>
-        {busy ? "Doğrulanıyor…" : "Yeni passkey oluştur"}
+        {busy ? "Verifying…" : "Create new passkey"}
       </button>
     </form>
   );

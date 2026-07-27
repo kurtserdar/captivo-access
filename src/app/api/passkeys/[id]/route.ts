@@ -14,7 +14,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  // Son passkey guard: kullanıcı kendini hesaptan kilitleyemesin.
+  // Last-passkey guard: prevent the user from locking themselves out of the account.
   const count = await db.passkey.count({ where: { userId: user.id } });
   if (count <= 1) {
     return NextResponse.json({ error: "last_passkey" }, { status: 400 });

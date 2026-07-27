@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
   const mode = body.mode;
 
   if (mode === "add") {
-    // Giriş yapmış kullanıcı hesabına ek passkey kaydı — redirect()'e
-    // dayanmadan JSON 401 döner (fetch() istemcisi için).
+    // Adding an extra passkey to an already logged-in user's account — returns
+    // a JSON 401 instead of relying on redirect() (for the fetch() client).
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -59,8 +59,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "invite_invalid" }, { status: 410 });
     }
 
-    // uid, verify aşamasında User.id olarak kullanılacak — WebAuthn userHandle
-    // ile kalıcı User.id aynı olsun diye (bkz. setup dalındaki not).
+    // uid will be used as User.id in the verify step — so the WebAuthn
+    // userHandle matches the persistent User.id (see the note in the setup
+    // branch).
     const uid = randomUUID();
     const options = await genRegistrationOptions({ id: uid, email: invite.email, name: invite.name }, []);
     await setChallenge(options.challenge, "reg", uid);
@@ -80,11 +81,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "email_and_name_required" }, { status: 400 });
   }
 
-  // Kullanıcı henüz DB'de yok (verify aşamasında oluşturulacak). uid burada
-  // üretilip hem WebAuthn userHandle hem de verify'da User.id olarak kullanılır
-  // — böylece resident credential'a gömülen userHandle, kalıcı User.id ile
-  // aynı olur (aksi halde 2. passkey eklendiğinde platform şifre yöneticisi
-  // aynı kişiyi iki farklı hesap gibi gösterir).
+  // The user doesn't exist in the DB yet (will be created in the verify step).
+  // uid is generated here and used both as the WebAuthn userHandle and later
+  // as User.id in verify — so the userHandle embedded in the resident
+  // credential matches the persistent User.id (otherwise, when a 2nd passkey
+  // is added, the platform password manager would show the same person as
+  // two different accounts).
   const uid = randomUUID();
   const options = await genRegistrationOptions({ id: uid, email, name }, []);
   await setChallenge(options.challenge, "reg", uid);

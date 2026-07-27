@@ -5,13 +5,13 @@ import { useState } from "react";
 function errorMessage(code: string | undefined): string {
   switch (code) {
     case "last_passkey":
-      return "Son passkey silinemez.";
+      return "You can't delete your last passkey.";
     case "not_found":
-      return "Passkey bulunamadı.";
+      return "Passkey not found.";
     case "unauthorized":
-      return "Oturumunuz sona ermiş, lütfen tekrar giriş yapın.";
+      return "Your session has expired, please sign in again.";
     default:
-      return "Passkey silinemedi, lütfen tekrar deneyin.";
+      return "Couldn't delete the passkey, please try again.";
   }
 }
 
@@ -20,7 +20,7 @@ export function DeletePasskeyButton({ id, disabled }: { id: string; disabled: bo
   const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
-    if (!window.confirm("Bu passkey'i silmek istediğinize emin misiniz?")) return;
+    if (!window.confirm("Are you sure you want to delete this passkey?")) return;
 
     setError(null);
     setBusy(true);
@@ -33,7 +33,7 @@ export function DeletePasskeyButton({ id, disabled }: { id: string; disabled: bo
       }
       window.location.reload();
     } catch {
-      setError("Passkey silinemedi, lütfen tekrar deneyin.");
+      setError("Couldn't delete the passkey, please try again.");
     } finally {
       setBusy(false);
     }
@@ -46,9 +46,9 @@ export function DeletePasskeyButton({ id, disabled }: { id: string; disabled: bo
         className="link-button"
         onClick={handleClick}
         disabled={busy || disabled}
-        title={disabled ? "Son passkey silinemez" : undefined}
+        title={disabled ? "You can't delete your last passkey" : undefined}
       >
-        {busy ? "Siliniyor…" : "Sil"}
+        {busy ? "Deleting…" : "Delete"}
       </button>
       {error && <p role="alert">{error}</p>}
     </span>

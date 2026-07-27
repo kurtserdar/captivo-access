@@ -18,22 +18,22 @@ export default async function RecoveryPage() {
   return (
     <main>
       <nav className="sub-nav">
-        <Link href="/settings/passkeys">Passkey&apos;lerim</Link>
+        <Link href="/settings/passkeys">My passkeys</Link>
         <Link href="/settings/recovery" className="active">
-          Kurtarma
+          Recovery
         </Link>
       </nav>
 
-      <h1>Kurtarma kurulumu</h1>
+      <h1>Recovery setup</h1>
       <p>
-        Tüm passkey&apos;lerinizi kaybederseniz hesabınıza erişimi geri
-        kazanmak için bir doğrulama uygulaması (Google Authenticator, 1Password
-        vb.) ile kurtarma kodu ekleyin.
+        Add a recovery code using an authenticator app (Google Authenticator,
+        1Password, etc.) so you can regain access to your account if you lose
+        all your passkeys.
       </p>
 
       {active ? (
         <div>
-          <p className="badge">Kurtarma etkin</p>
+          <p className="badge">Recovery enabled</p>
           <RemoveRecoveryButton />
         </div>
       ) : (

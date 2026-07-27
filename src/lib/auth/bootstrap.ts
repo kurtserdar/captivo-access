@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 
-/** İlk-kurulum durumu: sistemde en az bir kullanıcı var mı? */
+/** Initial-setup state: does the system have at least one user? */
 export async function hasAnyUser(): Promise<boolean> {
   return (await db.user.count()) > 0;
 }

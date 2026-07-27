@@ -146,24 +146,3 @@ reports.
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
-
----
-
-## Türkçe özet
-
-**Captivo Access**, tedarikçilere ve dış yüklenicilere VPN gerektirmeden,
-kimlik-farkındalıklı ve süreli erişim veren, **açık kaynak ve self-hosted**
-bir Zero-Trust uzaktan erişim ürünüdür. CyberArk Alero / Remote Access
-muadili; Türk pazarı için KVKK/5651 uyumluluğu gözetilerek geliştiriliyor.
-SaaS işletmiyoruz — yazılımı siz kendi altyapınızda barındırırsınız.
-
-**Durum: erken geliştirme aşaması (Dilim 1 — Kimlik & Passkey).** Bu depo
-proje iskeletinin (Next.js uygulaması, Postgres/Prisma, Docker paketleme, CI)
-yanı sıra kimlik doğrulamayı da içerir: admin/tedarikçi hesapları, WebAuthn
-passkey kayıt/giriş, TOTP ile kurtarma ve davet akışı. Connector tüneli,
-erişim modeli, proxy ve denetim kaydı gibi özellikler **henüz yok**.
-**Üretime hazır değildir** — gerçek tedarikçi erişimi için bugün kullanmayın.
-
-Self-host kurulumu ve geliştirme adımları için yukarıdaki İngilizce bölümlere
-bakınız; komutlar dile bağlı değildir. Lisans: Apache-2.0. Güvenlik açığı
-bildirimi için [SECURITY.md](./SECURITY.md) dosyasına bakınız.

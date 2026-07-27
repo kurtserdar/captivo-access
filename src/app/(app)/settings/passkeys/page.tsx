@@ -4,15 +4,15 @@ import { db } from "@/lib/db";
 import { AddPasskeyButton } from "./add-passkey-button";
 import { DeletePasskeyButton } from "./delete-passkey-button";
 
-// Passkey listesi her istekte taze okunmalı (ekleme/silme sonrası tam sayfa yenileme).
+// The passkey list must be read fresh on every request (full page reload after add/delete).
 export const dynamic = "force-dynamic";
 
 export default async function PasskeysPage() {
   const user = await requireUser();
 
-  // Yalnızca serileştirilebilir alanlar seçilir — counter (BigInt) ve
-  // publicKey (Bytes) burada gerekmiyor ve Server→Client bileşen sınırında
-  // BigInt zaten serileştirilemez.
+  // Only serializable fields are selected — counter (BigInt) and
+  // publicKey (Bytes) aren't needed here, and BigInt can't be serialized
+  // across the Server→Client component boundary anyway.
   const passkeys = await db.passkey.findMany({
     where: { userId: user.id },
     select: { id: true, label: true, createdAt: true, lastUsedAt: true },
@@ -25,15 +25,15 @@ export default async function PasskeysPage() {
     <main>
       <nav className="sub-nav">
         <Link href="/settings/passkeys" className="active">
-          Passkey&apos;lerim
+          My passkeys
         </Link>
-        <Link href="/settings/recovery">Kurtarma</Link>
+        <Link href="/settings/recovery">Recovery</Link>
       </nav>
 
-      <h1>Passkey&apos;lerim</h1>
+      <h1>My passkeys</h1>
       <p>
-        Bu hesaba bağlı passkey&apos;leri yönetin. Hesabınızın kilitlenmemesi
-        için en az bir passkey kalmalıdır.
+        Manage the passkeys linked to this account. At least one passkey must
+        remain so your account doesn&apos;t get locked out.
       </p>
 
       <AddPasskeyButton />
@@ -41,9 +41,9 @@ export default async function PasskeysPage() {
       <table>
         <thead>
           <tr>
-            <th>Etiket</th>
-            <th>Oluşturma</th>
-            <th>Son kullanım</th>
+            <th>Label</th>
+            <th>Created</th>
+            <th>Last used</th>
             <th></th>
           </tr>
         </thead>
@@ -51,8 +51,8 @@ export default async function PasskeysPage() {
           {passkeys.map((pk) => (
             <tr key={pk.id}>
               <td>{pk.label}</td>
-              <td>{pk.createdAt.toLocaleString("tr-TR")}</td>
-              <td>{pk.lastUsedAt ? pk.lastUsedAt.toLocaleString("tr-TR") : "—"}</td>
+              <td>{pk.createdAt.toLocaleString("en-US")}</td>
+              <td>{pk.lastUsedAt ? pk.lastUsedAt.toLocaleString("en-US") : "—"}</td>
               <td>
                 <DeletePasskeyButton id={pk.id} disabled={!canDelete} />
               </td>

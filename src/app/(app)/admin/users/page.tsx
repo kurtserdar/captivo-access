@@ -6,13 +6,13 @@ import { ToggleStatusButton } from "./toggle-status-button";
 export const dynamic = "force-dynamic";
 
 const ROLE_LABEL: Record<string, string> = {
-  ADMIN: "Yönetici",
-  VENDOR: "Tedarikçi",
+  ADMIN: "Admin",
+  VENDOR: "Vendor",
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  ACTIVE: "Aktif",
-  DISABLED: "Devre dışı",
+  ACTIVE: "Active",
+  DISABLED: "Disabled",
 };
 
 export default async function AdminUsersPage() {
@@ -35,23 +35,23 @@ export default async function AdminUsersPage() {
     <main>
       <nav className="sub-nav">
         <Link href="/admin/users" className="active">
-          Kullanıcılar
+          Users
         </Link>
-        <Link href="/admin/sessions">Oturumlar</Link>
-        <Link href="/admin/invites">Davetler</Link>
+        <Link href="/admin/sessions">Sessions</Link>
+        <Link href="/admin/invites">Invites</Link>
       </nav>
 
-      <h1>Kullanıcılar</h1>
-      <p>Kayıtlı tüm kullanıcıları ve erişim durumlarını yönetin.</p>
+      <h1>Users</h1>
+      <p>Manage all registered users and their access status.</p>
 
       <table>
         <thead>
           <tr>
-            <th>Ad Soyad</th>
-            <th>E-posta</th>
-            <th>Rol</th>
-            <th>Durum</th>
-            <th>Passkey</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Passkeys</th>
             <th></th>
           </tr>
         </thead>
@@ -65,7 +65,7 @@ export default async function AdminUsersPage() {
               <td>{u._count.passkeys}</td>
               <td>
                 {u.id === admin.id ? (
-                  <span title="Kendinizi devre dışı bırakamazsınız">(bu hesap)</span>
+                  <span title="You can't disable yourself">(this account)</span>
                 ) : (
                   <ToggleStatusButton userId={u.id} status={u.status} />
                 )}

@@ -23,7 +23,7 @@ export async function createInvite(input: { email: string; name: string; role: R
 }
 
 export async function verifyInvite(token: string) {
-  // argon2 hash → tokenHash unique lookup mümkün değil; tüm geçerli davetleri tara.
+  // argon2 hash → a unique tokenHash lookup isn't possible; scan all valid invites.
   const candidates = await db.invite.findMany({ where: { usedAt: null, expiresAt: { gt: new Date() } } });
   for (const inv of candidates) {
     if (await verifyTokenHash(token, inv.tokenHash)) return inv;

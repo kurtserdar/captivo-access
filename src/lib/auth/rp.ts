@@ -2,7 +2,7 @@ export function getRpId(): string {
   return process.env.WEBAUTHN_RP_ID?.trim() || "localhost";
 }
 
-/** Origin'in host'u RP-ID ile aynı mı (WebAuthn origin doğrulaması). */
+/** Whether the origin's host matches the RP-ID (WebAuthn origin verification). */
 export function originMatchesRp(origin: string, rpId: string): boolean {
   try {
     const host = new URL(origin).hostname;

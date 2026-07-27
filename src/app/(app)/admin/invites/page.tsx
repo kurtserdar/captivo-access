@@ -6,9 +6,9 @@ import { InviteForm } from "./invite-form";
 export const dynamic = "force-dynamic";
 
 function inviteStatus(inv: { usedAt: Date | null; expiresAt: Date }): string {
-  if (inv.usedAt) return "Kullanıldı";
-  if (inv.expiresAt < new Date()) return "Süresi doldu";
-  return "Bekliyor";
+  if (inv.usedAt) return "Used";
+  if (inv.expiresAt < new Date()) return "Expired";
+  return "Pending";
 }
 
 export default async function AdminInvitesPage() {
@@ -19,29 +19,29 @@ export default async function AdminInvitesPage() {
   return (
     <main>
       <nav className="sub-nav">
-        <Link href="/admin/users">Kullanıcılar</Link>
-        <Link href="/admin/sessions">Oturumlar</Link>
+        <Link href="/admin/users">Users</Link>
+        <Link href="/admin/sessions">Sessions</Link>
         <Link href="/admin/invites" className="active">
-          Davetler
+          Invites
         </Link>
       </nav>
 
-      <h1>Davetler</h1>
-      <p>Yeni bir tedarikçi veya yönetici davet edin. Davet bağlantısı yalnızca bir kez gösterilir.</p>
+      <h1>Invites</h1>
+      <p>Invite a new vendor or admin. The invite link is shown only once.</p>
       <InviteForm />
 
-      <h2>Gönderilen davetler</h2>
+      <h2>Sent invites</h2>
       {invites.length === 0 ? (
-        <p>Henüz davet gönderilmedi.</p>
+        <p>No invites have been sent yet.</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>Ad Soyad</th>
-              <th>E-posta</th>
-              <th>Rol</th>
-              <th>Durum</th>
-              <th>Son geçerlilik</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Expires</th>
             </tr>
           </thead>
           <tbody>
@@ -51,7 +51,7 @@ export default async function AdminInvitesPage() {
                 <td>{inv.email}</td>
                 <td>{inv.role}</td>
                 <td>{inviteStatus(inv)}</td>
-                <td>{inv.expiresAt.toLocaleString("tr-TR")}</td>
+                <td>{inv.expiresAt.toLocaleString("en-US")}</td>
               </tr>
             ))}
           </tbody>

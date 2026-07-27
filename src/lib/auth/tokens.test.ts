@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { generateToken, hashToken, verifyTokenHash, sha256 } from "./tokens";
 
 describe("tokens", () => {
-  it("generateToken yüksek-entropi, url-safe, benzersiz", () => {
+  it("generateToken is high-entropy, url-safe, unique", () => {
     const a = generateToken(), b = generateToken();
     expect(a).not.toBe(b);
     expect(a).toMatch(/^[A-Za-z0-9_-]+$/);
@@ -13,9 +13,9 @@ describe("tokens", () => {
     const h = await hashToken(t);
     expect(h).not.toBe(t);
     expect(await verifyTokenHash(t, h)).toBe(true);
-    expect(await verifyTokenHash("yanlis", h)).toBe(false);
+    expect(await verifyTokenHash("wrong", h)).toBe(false);
   });
-  it("sha256 deterministik + hex", () => {
+  it("sha256 is deterministic + hex", () => {
     expect(sha256("abc")).toBe(sha256("abc"));
     expect(sha256("abc")).toMatch(/^[a-f0-9]{64}$/);
     expect(sha256("abc")).not.toBe(sha256("abd"));

@@ -7,7 +7,7 @@ export function RemoveRecoveryButton() {
   const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
-    if (!window.confirm("Kurtarma kodunu kaldırmak istediğinize emin misiniz?")) return;
+    if (!window.confirm("Are you sure you want to remove the recovery code?")) return;
 
     setError(null);
     setBusy(true);
@@ -15,12 +15,12 @@ export function RemoveRecoveryButton() {
       const res = await fetch("/api/recovery", { method: "DELETE" });
       const result = await res.json().catch(() => ({}));
       if (!res.ok || !result?.ok) {
-        setError("Kurtarma kaldırılamadı, lütfen tekrar deneyin.");
+        setError("Couldn't remove recovery, please try again.");
         return;
       }
       window.location.reload();
     } catch {
-      setError("Kurtarma kaldırılamadı, lütfen tekrar deneyin.");
+      setError("Couldn't remove recovery, please try again.");
     } finally {
       setBusy(false);
     }
@@ -30,7 +30,7 @@ export function RemoveRecoveryButton() {
     <div>
       {error && <p role="alert">{error}</p>}
       <button type="button" className="link-button" onClick={handleClick} disabled={busy}>
-        {busy ? "Kaldırılıyor…" : "Kurtarmayı kaldır"}
+        {busy ? "Removing…" : "Remove recovery"}
       </button>
     </div>
   );

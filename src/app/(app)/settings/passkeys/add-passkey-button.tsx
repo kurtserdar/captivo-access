@@ -6,15 +6,15 @@ import { startRegistration } from "@simplewebauthn/browser";
 function errorMessage(code: string | undefined): string {
   switch (code) {
     case "unauthorized":
-      return "Oturumunuz sona ermiş, lütfen tekrar giriş yapın.";
+      return "Your session has expired, please sign in again.";
     case "invalid_body":
-      return "Etiket gerekli.";
+      return "A label is required.";
     case "challenge_expired":
-      return "Oturum süresi doldu, lütfen tekrar deneyin.";
+      return "The session timed out, please try again.";
     case "verification_failed":
-      return "Passkey doğrulaması başarısız oldu.";
+      return "Passkey verification failed.";
     default:
-      return "Passkey eklenemedi, lütfen tekrar deneyin.";
+      return "Couldn't add the passkey, please try again.";
   }
 }
 
@@ -23,7 +23,7 @@ export function AddPasskeyButton() {
   const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
-    const label = window.prompt("Bu passkey için bir etiket girin (ör. \"İş dizüstü\"):");
+    const label = window.prompt("Enter a label for this passkey (e.g. \"Work laptop\"):");
     if (!label || !label.trim()) return;
 
     setError(null);
@@ -55,7 +55,7 @@ export function AddPasskeyButton() {
 
       window.location.reload();
     } catch {
-      setError("Passkey eklenemedi, lütfen tekrar deneyin.");
+      setError("Couldn't add the passkey, please try again.");
     } finally {
       setBusy(false);
     }
@@ -65,7 +65,7 @@ export function AddPasskeyButton() {
     <div>
       {error && <p role="alert">{error}</p>}
       <button type="button" onClick={handleClick} disabled={busy}>
-        {busy ? "Ekleniyor…" : "Yeni passkey ekle"}
+        {busy ? "Adding…" : "Add a new passkey"}
       </button>
     </div>
   );

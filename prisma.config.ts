@@ -1,6 +1,6 @@
-// Prisma 7 config — CLI (generate/db push/migrate) DATABASE_URL'i buradan okur.
-// Not: PrismaClient çalışma zamanı bağlantısı bu dosyayı KULLANMAZ — src/lib/db.ts
-// içinde @prisma/adapter-pg ile ayrıca kurulur (bkz. https://pris.ly/d/prisma7-client-config).
+// Prisma 7 config — the CLI (generate/db push/migrate) reads DATABASE_URL from here.
+// Note: the PrismaClient runtime connection does NOT use this file — it is set up
+// separately with @prisma/adapter-pg in src/lib/db.ts (see https://pris.ly/d/prisma7-client-config).
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 

@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-// NOT: SESSION_COOKIE burada @/lib/auth/session'dan import EDİLMEZ — o modül
-// db.ts (Prisma) ve tokens.ts (@node-rs/argon2 native binding) zincirini
-// sürüklüyor; middleware Edge runtime'da çalıştığı için bunlar build'i kırıyor
-// (node:url / argon2 wasm export hataları). Sabiti burada literal tutuyoruz;
-// session.ts'teki değerle senkron kalmalı ("ca_session").
+// NOTE: SESSION_COOKIE is NOT imported here from @/lib/auth/session — that
+// module drags in the db.ts (Prisma) and tokens.ts (@node-rs/argon2 native
+// binding) chain; since middleware runs on the Edge runtime, that breaks the
+// build (node:url / argon2 wasm export errors). We keep the constant as a
+// literal here; it must stay in sync with the value in session.ts ("ca_session").
 const SESSION_COOKIE = "ca_session";
 
-const PROTECTED = ["/settings", "/admin"]; // (app) altı
+const PROTECTED = ["/settings", "/admin"]; // under (app)
 const PUBLIC = ["/login", "/recover", "/setup", "/invite", "/api/auth", "/api/health"];
 
 export function middleware(req: NextRequest) {

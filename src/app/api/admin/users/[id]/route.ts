@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "invalid_status" }, { status: 400 });
   }
 
-  // Kendi-kendini-devre-dışı-bırakma guard: son yönetici hesabını kilitleme riski.
+  // Self-disable guard: risk of locking out the last admin account.
   if (id === admin.id && status === "DISABLED") {
     return NextResponse.json({ error: "cannot_disable_self" }, { status: 403 });
   }

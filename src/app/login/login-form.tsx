@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { startAuthentication } from "@simplewebauthn/browser";
 
-const GENERIC_ERROR = "Passkey bulunamadı veya doğrulanamadı.";
+const GENERIC_ERROR = "No passkey found or verification failed.";
 
 export function LoginForm() {
   const [busy, setBusy] = useState(false);
@@ -45,11 +45,11 @@ export function LoginForm() {
     <div>
       {error && (
         <p role="alert">
-          {error} <a href="/recover">Hesabınızı kurtarın</a>
+          {error} <a href="/recover">Recover your account</a>
         </p>
       )}
       <button type="button" onClick={handleClick} disabled={busy}>
-        {busy ? "Doğrulanıyor…" : "Passkey ile giriş"}
+        {busy ? "Verifying…" : "Sign in with passkey"}
       </button>
     </div>
   );

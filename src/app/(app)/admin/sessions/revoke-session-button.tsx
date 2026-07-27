@@ -7,7 +7,7 @@ export function RevokeSessionButton({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
-    if (!window.confirm("Bu oturumu iptal etmek istediğinize emin misiniz?")) return;
+    if (!window.confirm("Are you sure you want to revoke this session?")) return;
 
     setError(null);
     setBusy(true);
@@ -15,12 +15,12 @@ export function RevokeSessionButton({ id }: { id: string }) {
       const res = await fetch(`/api/admin/sessions/${id}`, { method: "DELETE" });
       const result = await res.json().catch(() => ({}));
       if (!res.ok || !result?.ok) {
-        setError("İptal edilemedi, lütfen tekrar deneyin.");
+        setError("Couldn't revoke the session, please try again.");
         return;
       }
       window.location.reload();
     } catch {
-      setError("İptal edilemedi, lütfen tekrar deneyin.");
+      setError("Couldn't revoke the session, please try again.");
     } finally {
       setBusy(false);
     }
@@ -29,7 +29,7 @@ export function RevokeSessionButton({ id }: { id: string }) {
   return (
     <span>
       <button type="button" className="link-button" onClick={handleClick} disabled={busy}>
-        {busy ? "İptal ediliyor…" : "İptal et"}
+        {busy ? "Revoking…" : "Revoke"}
       </button>
       {error && <p role="alert">{error}</p>}
     </span>

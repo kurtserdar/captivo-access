@@ -1,15 +1,15 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-// TOTP-kurtarma akışı için kısa ömürlü, jose-imzalı cookie — challenge.ts'deki
-// pattern'i yansıtır. `/api/auth/recover` e-posta+TOTP'yi doğruladıktan sonra
-// bu cookie'yi set eder; registration mode:"recover" bunu ister (mevcut
-// kullanıcıya yeni Passkey eklemek için).
+// Short-lived, jose-signed cookie for the TOTP recovery flow — mirrors the
+// pattern in challenge.ts. `/api/auth/recover` sets this cookie after
+// verifying email+TOTP; registration mode:"recover" requires it (to add
+// a new Passkey to an existing user).
 const COOKIE = "ca_recover";
 
 function secret(): Uint8Array {
   const s = process.env.SESSION_SECRET;
-  if (!s) throw new Error("SESSION_SECRET gerekli");
+  if (!s) throw new Error("SESSION_SECRET is required");
   return new TextEncoder().encode(s);
 }
 

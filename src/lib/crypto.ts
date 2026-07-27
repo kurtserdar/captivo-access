@@ -1,10 +1,10 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
-/** AES-256-GCM. ENCRYPTION_KEY = 32 byte hex (64 karakter). Format: base64(iv|tag|ct). */
+/** AES-256-GCM. ENCRYPTION_KEY = 32-byte hex (64 characters). Format: base64(iv|tag|ct). */
 function key(): Buffer {
   const hex = process.env.ENCRYPTION_KEY;
   if (!hex || hex.length !== 64) {
-    throw new Error("ENCRYPTION_KEY 32 byte hex (64 karakter) olmalı — openssl rand -hex 32");
+    throw new Error("ENCRYPTION_KEY must be 32-byte hex (64 characters) — openssl rand -hex 32");
   }
   return Buffer.from(hex, "hex");
 }
@@ -19,7 +19,7 @@ export function encrypt(plaintext: string): string {
 
 export function decrypt(payload: string): string {
   const buf = Buffer.from(payload, "base64");
-  if (buf.length < 28) throw new Error("Şifreli veri bozuk");
+  if (buf.length < 28) throw new Error("Encrypted data is corrupted");
   const iv = buf.subarray(0, 12);
   const tag = buf.subarray(12, 28);
   const ct = buf.subarray(28);

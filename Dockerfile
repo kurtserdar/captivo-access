@@ -18,15 +18,16 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-# Next standalone çıktısı
+# Next.js standalone output
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-# PRISMA 7 NOTU: generated client node_modules'de DEĞİL → src/generated/prisma'da
-# (Task 3). Slice 0'da hiçbir route db.ts'i import etmez → standalone'a girmez,
-# manuel COPY GEREKMEZ. Builder stage'de `db:generate` çalıştı (client src/generated'da
-# üretildi); Dilim 1'de db.ts import edilince Next file-tracing standalone'a otomatik
-# dahil eder. Eski `COPY node_modules/.prisma` satırları Prisma 7'de YANLIŞTI, kaldırıldı.
+# PRISMA 7 NOTE: the generated client is NOT in node_modules → it's in src/generated/prisma
+# (Task 3). In Slice 0 no route imports db.ts → it never enters the standalone bundle,
+# so no manual COPY is needed. The builder stage already ran `db:generate` (client
+# generated into src/generated); once db.ts is imported in Slice 1, Next's file tracing
+# will pull it into the standalone bundle automatically. The old `COPY node_modules/.prisma`
+# lines were WRONG under Prisma 7 and have been removed.
 EXPOSE 3100
 ENV PORT=3100
 CMD ["node", "server.js"]

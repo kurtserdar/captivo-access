@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
     const { credential } = result.registrationInfo;
 
-    // Zaten giriş yapılmış — yeni Session OLUŞTURULMAZ, sadece Passkey eklenir.
+    // Already logged in — no new Session is CREATED, only the Passkey is added.
     await db.passkey.create({
       data: {
         userId: user.id,
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     }
     const { credential } = result.registrationInfo;
 
-    // Mevcut kullanıcıya YENİ passkey eklenir — yeni User YARATILMAZ.
+    // A NEW passkey is added to the existing user — no new User is CREATED.
     await db.passkey.create({
       data: {
         userId: user.id,
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         publicKey: Buffer.from(credential.publicKey),
         counter: BigInt(credential.counter ?? 0),
         transports: credential.transports ?? [],
-        label: "Kurtarma passkey'i",
+        label: "Recovery passkey",
       },
     });
 
@@ -136,8 +136,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
     }
 
-    // Kayıt anında tekrar doğrula: options çağrısından bu yana davet
-    // kullanılmış veya süresi dolmuş olabilir.
+    // Re-verify at registration time: the invite may have been used or
+    // expired since the options call.
     const invite = await verifyInvite(inviteToken);
     if (!invite) {
       return NextResponse.json({ error: "invite_invalid" }, { status: 410 });
@@ -159,19 +159,20 @@ export async function POST(req: NextRequest) {
     }
     const { credential } = result.registrationInfo;
 
-    // options aşamasında üretilen uid, WebAuthn userHandle olarak resident
-    // credential'a gömüldü — User.id burada aynı değeri almalı, aksi halde
-    // userHandle != User.id olur (bkz. registration/options/route.ts notu).
+    // The uid generated during the options step was embedded in the resident
+    // credential as the WebAuthn userHandle — User.id must take the same
+    // value here, otherwise userHandle != User.id (see the note in
+    // registration/options/route.ts).
     const uid = await readChallengeUid("reg");
 
     let userId: string;
     try {
-      // User + Passkey + davet-tüketimi tek transaction'ında: biri başarısız
-      // olursa hiçbiri commit edilmez (çift-enroll yarışını da engeller —
-      // invite.updateMany({ id, usedAt: null }) koşullu güncellemesi
-      // eşzamanlı iki verify'dan yalnız birinin count:1 dönmesini sağlar;
-      // diğeri count:0 görüp INVITE_ALREADY_USED fırlatır ve transaction
-      // rollback olur, böylece iki User da commit edilmez).
+      // User + Passkey + invite-consumption in a single transaction: if one
+      // fails, none of it is committed (this also prevents a double-enroll
+      // race — the conditional update in invite.updateMany({ id, usedAt: null })
+      // ensures only one of two concurrent verifies gets count:1; the other
+      // sees count:0, throws INVITE_ALREADY_USED, and the transaction rolls
+      // back, so neither User gets committed).
       const user = await db.$transaction(async (tx) => {
         const created = await tx.user.create({
           data: {
@@ -248,24 +249,25 @@ export async function POST(req: NextRequest) {
   }
   const { credential } = result.registrationInfo;
 
-  // Yarış guard: options çağrısından verify'a kadar geçen sürede biri kurulumu
-  // tamamlamış olabilir. Bu kontrol ile create arasında yine küçük bir pencere
-  // kalır (tam kilit için unique constraint + tek satırlık "setup lock" tablosu
-  // gerekir) ama pratikte iki eşzamanlı setup'ın ikisinin de ADMIN oluşturmasını
-  // engeller.
+  // Race guard: someone else may have completed setup during the time
+  // between the options call and verify. A small window still remains
+  // between this check and create (a full lock would require a unique
+  // constraint + a single-row "setup lock" table), but in practice this
+  // prevents two concurrent setups from both creating an ADMIN.
   if (await hasAnyUser()) {
     return NextResponse.json({ error: "already_setup" }, { status: 409 });
   }
 
-  // options aşamasında üretilen uid, WebAuthn userHandle olarak resident
-  // credential'a gömüldü — User.id burada aynı değeri almalı, aksi halde
-  // userHandle != User.id olur (bkz. registration/options/route.ts notu).
+  // The uid generated during the options step was embedded in the resident
+  // credential as the WebAuthn userHandle — User.id must take the same
+  // value here, otherwise userHandle != User.id (see the note in
+  // registration/options/route.ts).
   const uid = await readChallengeUid("reg");
 
   let userId: string;
   try {
-    // User + Passkey oluşturma tek DB transaction'ında: biri başarısız olursa
-    // diğeri de geri alınır (passkey'siz "kilitli" ADMIN kalmaz).
+    // Creating the User + Passkey in a single DB transaction: if one fails,
+    // the other is rolled back too (no "locked" ADMIN without a passkey).
     const user = await db.$transaction(async (tx) => {
       const created = await tx.user.create({
         data: { ...(uid ? { id: uid } : {}), email, name, role: "ADMIN", status: "ACTIVE" },

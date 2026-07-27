@@ -5,13 +5,13 @@ import { useState } from "react";
 function errorMessage(code: string | undefined): string {
   switch (code) {
     case "cannot_disable_self":
-      return "Kendinizi devre dışı bırakamazsınız.";
+      return "You can't disable yourself.";
     case "forbidden":
-      return "Bu işlem için yönetici yetkisi gerekli.";
+      return "Admin privileges are required for this action.";
     case "not_found":
-      return "Kullanıcı bulunamadı.";
+      return "User not found.";
     default:
-      return "İşlem başarısız, lütfen tekrar deneyin.";
+      return "Action failed, please try again.";
   }
 }
 
@@ -20,7 +20,7 @@ export function ToggleStatusButton({ userId, status }: { userId: string; status:
   const [error, setError] = useState<string | null>(null);
 
   const nextStatus = status === "ACTIVE" ? "DISABLED" : "ACTIVE";
-  const label = status === "ACTIVE" ? "Devre dışı bırak" : "Aktifleştir";
+  const label = status === "ACTIVE" ? "Disable" : "Activate";
 
   async function handleClick() {
     setError(null);
@@ -38,7 +38,7 @@ export function ToggleStatusButton({ userId, status }: { userId: string; status:
       }
       window.location.reload();
     } catch {
-      setError("İşlem başarısız, lütfen tekrar deneyin.");
+      setError("Action failed, please try again.");
     } finally {
       setBusy(false);
     }
@@ -47,7 +47,7 @@ export function ToggleStatusButton({ userId, status }: { userId: string; status:
   return (
     <span>
       <button type="button" className="link-button" onClick={handleClick} disabled={busy}>
-        {busy ? "İşleniyor…" : label}
+        {busy ? "Processing…" : label}
       </button>
       {error && <p role="alert">{error}</p>}
     </span>

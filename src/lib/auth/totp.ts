@@ -1,5 +1,5 @@
-// otplib v13: eski `authenticator` singleton kaldırıldı — sync fonksiyonel API kullanılıyor
-// (generateSecret, generateSync, verifySync, generateURI). Bkz. node_modules/otplib/dist/functional.d.ts
+// otplib v13: the old `authenticator` singleton was removed — using the sync functional API
+// (generateSecret, generateSync, verifySync, generateURI). See node_modules/otplib/dist/functional.d.ts
 import { generateSecret, verifySync, generateURI } from "otplib";
 
 export function generateTotpSecret(): string {

@@ -57,8 +57,8 @@ export async function verifyAuthentication(
     expectedRPID: getRpId(),
     credential: {
       id: passkey.credentialId,
-      // Buffer'ın altındaki ArrayBufferLike (SharedArrayBuffer olabilir) tipini
-      // SimpleWebAuthn'ın beklediği Uint8Array<ArrayBuffer>'a daraltmak için kopyala.
+      // Copy to narrow Buffer's underlying ArrayBufferLike type (which could be a
+      // SharedArrayBuffer) to the Uint8Array<ArrayBuffer> that SimpleWebAuthn expects.
       publicKey: new Uint8Array(passkey.publicKey),
       counter: passkey.counter,
       transports: passkey.transports as AuthenticatorTransportFuture[],

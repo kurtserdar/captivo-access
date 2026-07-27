@@ -1,6 +1,6 @@
-// Bellek-içi, tek-instance rate-limit. Self-host tek container/replica
-// senaryosu için yeterli — çoklu instance/dağıtık deployment için (Redis vb.
-// paylaşımlı store) fast-follow gerekir.
+// In-memory, single-instance rate limit. Sufficient for the self-hosted
+// single container/replica scenario — a multi-instance/distributed deployment
+// (shared store such as Redis) will need a fast-follow.
 const hits = new Map<string, { count: number; reset: number }>();
 
 export function checkRateLimit(key: string, limit: number, windowMs: number): boolean {

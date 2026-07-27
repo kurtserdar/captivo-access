@@ -1,6 +1,6 @@
-// Captivo Access — Manager veritabanı şeması.
-// Dilim 1: kimlik + passkey (User, Passkey, TotpSecret, Invite, Session).
-// Çok-tenant YOK — tek-org self-host.
+// Captivo Access — Manager database schema.
+// Slice 1: identity + passkey (User, Passkey, TotpSecret, Invite, Session).
+// NOT multi-tenant — single-org self-host.
 
 generator client {
   provider = "prisma-client"
@@ -39,10 +39,10 @@ model Passkey {
   userId       String
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   credentialId String    @unique // base64url
-  publicKey    Bytes // COSE public key (hassas değil — public)
+  publicKey    Bytes // COSE public key (not sensitive — public)
   counter      BigInt    @default(0)
   transports   String[] // usb/nfc/ble/internal/hybrid
-  label        String // "iPhone", "Dizüstü" — kullanıcı etiketi
+  label        String // "iPhone", "Laptop" — user-facing label
   createdAt    DateTime  @default(now())
   lastUsedAt   DateTime?
 
@@ -52,8 +52,8 @@ model Passkey {
 model TotpSecret {
   userId      String    @id // 1:1
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  secret      String // AES-256-GCM şifreli (crypto.ts)
-  confirmedAt DateTime? // enroll doğrulanınca
+  secret      String // AES-256-GCM encrypted (crypto.ts)
+  confirmedAt DateTime? // set once enrollment is verified
 }
 
 model Invite {
@@ -61,7 +61,7 @@ model Invite {
   email       String
   name        String
   role        Role
-  tokenHash   String    @unique // argon2(random 32B); plaintext yalnız linkte
+  tokenHash   String    @unique // argon2(random 32B); plaintext only in the link
   expiresAt   DateTime
   usedAt      DateTime?
   createdById String
@@ -75,7 +75,7 @@ model Session {
   id         String   @id @default(cuid())
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash  String   @unique // sha256(opak random); cookie'de plaintext token
+  tokenHash  String   @unique // sha256(opaque random); plaintext token lives in the cookie
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   lastSeenAt DateTime @default(now())

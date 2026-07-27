@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/current-user";
 import { LoginForm } from "./login-form";
 
-// getCurrentUser() her istekte DB'den taze okunmalı.
+// getCurrentUser() must be read fresh from the DB on every request.
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
@@ -10,8 +10,8 @@ export default async function LoginPage() {
 
   return (
     <main>
-      <h1>Giriş yap</h1>
-      <p>Cihazınızın passkey&apos;iyle giriş yapın.</p>
+      <h1>Sign in</h1>
+      <p>Sign in with your device&apos;s passkey.</p>
       <LoginForm />
     </main>
   );

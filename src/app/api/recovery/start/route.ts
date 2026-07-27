@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { generateTotpSecret, totpKeyUri } from "@/lib/auth/totp";
 
-// Sır burada henüz KAYDEDİLMEZ — yalnızca /api/recovery POST ile kod
-// doğrulandıktan sonra şifrelenip saklanır (onaysız sır DB'de kalmaz).
+// The secret is NOT SAVED here yet — it's only encrypted and stored after
+// the code is verified via /api/recovery POST (an unconfirmed secret never
+// lands in the DB).
 export async function POST() {
   const user = await getCurrentUser();
   if (!user) {

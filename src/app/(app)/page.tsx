@@ -3,8 +3,8 @@ import { requireUser } from "@/lib/current-user";
 export const dynamic = "force-dynamic";
 
 const ROLE_LABEL: Record<string, string> = {
-  ADMIN: "Yönetici",
-  VENDOR: "Tedarikçi",
+  ADMIN: "Admin",
+  VENDOR: "Vendor",
 };
 
 export default async function DashboardPage() {
@@ -12,12 +12,12 @@ export default async function DashboardPage() {
 
   return (
     <main>
-      <h1>Hoş geldiniz, {user.name}</h1>
+      <h1>Welcome, {user.name}</h1>
       <span className="badge">{ROLE_LABEL[user.role] ?? user.role}</span>
       <p>
-        Erişim özellikleri (tedarikçi oturumları, onay akışları) sonraki
-        sürümde eklenecek. Şimdilik hesabınızı{" "}
-        <a href="/settings/passkeys">Ayarlar</a> altından yönetebilirsiniz.
+        Access features (vendor sessions, approval flows) will be added in a
+        future release. For now you can manage your account under{" "}
+        <a href="/settings/passkeys">Settings</a>.
       </p>
     </main>
   );
