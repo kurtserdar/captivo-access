@@ -118,6 +118,51 @@ openssl rand -hex 32
 Generate a separate value for each — never reuse one secret for both, and
 never commit real values to `.env`.
 
+## Connector tunnel
+
+The Manager (this Next.js app) never dials into the customer network
+directly. Instead, a small Go **connector** binary runs inside the customer's
+own network and makes an **outbound-only** WebSocket (WSS) connection to a
+Go **data-plane** service that sits alongside the Manager; the two ends
+multiplex that single connection with [yamux](https://github.com/hashicorp/yamux)
+so the Manager can open independent request/response streams over it without
+the connector ever accepting an inbound connection or opening a firewall
+port. This is the "Slice 2" piece of the architecture described above — it
+proves that a connector can enroll, stay connected, and relay a single
+proxied request end-to-end. It does **not** yet include the browser-facing
+identity-aware proxy or any per-user access gating — those land in a later
+slice (see Roadmap); today the only consumer of the tunnel is an admin
+"test connection" action.
+
+**Adding a connector**, as an admin:
+
+1. Go to `/admin/connectors` and create a connector by name. The Manager
+   generates a one-time pairing code and a ready-to-copy `docker run`
+   command.
+2. Run that command on a host inside the customer's network, filling in
+   `DATAPLANE_URL` (the data-plane's public WSS address) and `UPSTREAMS` (a
+   comma-separated `name=http://host:port` list of the internal services
+   this connector is allowed to reach). See [`connector/README.md`](./connector/README.md)
+   for the full environment variable reference.
+3. On first start, the connector redeems the pairing code, stores a
+   long-lived token in its `/data` volume, and dials the data-plane. It
+   shows up as online at `/admin/connectors`.
+4. Under `/admin/sites`, create a Site that references a connector and one
+   of its upstream **names** (not a host:port) to test connectivity to that
+   internal service.
+
+### Security: the connector's local allowlist
+
+The Manager and data-plane never know — and never send — an internal
+`host:port`. A connector's `UPSTREAMS` env var is a **local-only** allowlist
+of `name=url` pairs that lives solely inside the customer's own container;
+the Manager references upstreams purely by their name (e.g. `wiki`), and the
+connector resolves that name against its own allowlist before dialing
+anything. A name the connector doesn't recognize is rejected and the stream
+is closed — the connector fails closed. This means the real internal
+address of a customer's service is never transmitted to, stored on, or
+visible from the Manager: it never leaves the customer's network.
+
 ## Development
 
 Requirements: **Node 20**, **pnpm 9.14.2**, Docker (for the local Postgres).
