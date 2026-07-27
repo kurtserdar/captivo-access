@@ -12,14 +12,18 @@ export async function POST(req: NextRequest) {
   const connectorId = typeof body.connectorId === "string" ? body.connectorId : "";
   const status = body.status === "ONLINE" || body.status === "OFFLINE" ? body.status : null;
   if (!connectorId || !status) return NextResponse.json({ error: "invalid_body" }, { status: 400 });
-  await db.connector.update({
-    where: { id: connectorId },
+  // Never resurrect a REVOKED connector: the data-plane's automatic ONLINE/OFFLINE
+  // reports must not overwrite an admin revocation (otherwise an OFFLINE report on
+  // session teardown would clear REVOKED and let the connector re-authenticate).
+  // updateMany with a status guard also no-ops safely if the connector was deleted.
+  await db.connector.updateMany({
+    where: { id: connectorId, status: { not: "REVOKED" } },
     data: {
       status,
       lastSeenAt: new Date(),
       ...(typeof body.remoteAddr === "string" ? { remoteAddr: body.remoteAddr } : {}),
       ...(typeof body.version === "string" ? { version: body.version } : {}),
     },
-  }).catch(() => {}); // connector may have been deleted; ignore
+  });
   return NextResponse.json({ ok: true });
 }
