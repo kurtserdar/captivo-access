@@ -23,6 +23,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link href="/">Dashboard</Link>
           <Link href="/settings/passkeys">Settings</Link>
           {user.role === "ADMIN" && <Link href="/admin/users">Admin</Link>}
+          {user.role === "ADMIN" && <Link href="/admin/connectors">Connectors</Link>}
+          {user.role === "ADMIN" && <Link href="/admin/sites">Sites</Link>}
           <span className="app-nav-user">
             {user.name} · {ROLE_LABEL[user.role] ?? user.role}
           </span>
