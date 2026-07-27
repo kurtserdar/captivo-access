@@ -6,12 +6,24 @@ vi.mock("@/lib/db", () => ({
 
 import { db } from "@/lib/db";
 import { evaluateAccess, classifyGrant } from "./evaluate";
+import type { User, AccessGrant } from "@/generated/prisma/client";
+
+type TestGrant = {
+  status: "ACTIVE" | "REVOKED";
+  startsAt: Date | null;
+  endsAt: Date | null;
+  requiresApproval: boolean;
+  approvedAt: Date | null;
+};
 
 const mockUser = (status: string | null) =>
-  (db.user.findUnique as any).mockResolvedValue(status === null ? null : { status });
-const mockGrants = (g: any[]) => (db.accessGrant.findMany as any).mockResolvedValue(g);
+  vi.mocked(db.user.findUnique).mockResolvedValue(
+    status === null ? null : (({ status } as unknown) as User),
+  );
+const mockGrants = (g: TestGrant[]) =>
+  vi.mocked(db.accessGrant.findMany).mockResolvedValue(g as unknown as AccessGrant[]);
 const NOW = new Date("2026-07-27T12:00:00Z");
-const grant = (o: Partial<any> = {}) => ({
+const grant = (o: Partial<TestGrant> = {}): TestGrant => ({
   status: "ACTIVE", startsAt: null, endsAt: null, requiresApproval: false, approvedAt: null, ...o,
 });
 
@@ -62,5 +74,14 @@ describe("evaluateAccess", () => {
     // revoked (1) vs not_yet (3) → not_yet wins
     mockGrants([grant({ status: "REVOKED" }), grant({ startsAt: new Date("2026-07-28T00:00:00Z") })]);
     expect(await evaluateAccess("u", "s", NOW)).toEqual({ allow: false, reason: "not_yet" });
+  });
+});
+
+describe("classifyGrant", () => {
+  it("allows a permanent active grant", () => {
+    expect(classifyGrant(grant(), NOW)).toBe("allow");
+  });
+  it("reports revoked regardless of window", () => {
+    expect(classifyGrant(grant({ status: "REVOKED" }), NOW)).toBe("revoked");
   });
 });
