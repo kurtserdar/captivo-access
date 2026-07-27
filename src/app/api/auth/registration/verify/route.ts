@@ -5,6 +5,7 @@ import { verifyRegistration } from "@/lib/auth/webauthn";
 import { readChallenge, readChallengeUid, clearChallenge } from "@/lib/auth/challenge";
 import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
+import { cookieSecure } from "@/lib/auth/cookies";
 import { hasAnyUser } from "@/lib/auth/bootstrap";
 import { verifyInvite } from "@/lib/auth/invite";
 import { readRecoverToken, clearRecoverToken } from "@/lib/auth/recover-token";
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest) {
     const token = await createSession(user.id, requestMeta(req));
     (await cookies()).set(SESSION_COOKIE, token, {
       httpOnly: true,
-      secure: true,
+      secure: await cookieSecure(),
       sameSite: "lax",
       path: "/",
       maxAge: sessionMaxAgeSeconds(),
@@ -213,7 +214,7 @@ export async function POST(req: NextRequest) {
     const token = await createSession(userId, requestMeta(req));
     (await cookies()).set(SESSION_COOKIE, token, {
       httpOnly: true,
-      secure: true,
+      secure: await cookieSecure(),
       sameSite: "lax",
       path: "/",
       maxAge: sessionMaxAgeSeconds(),
@@ -292,7 +293,7 @@ export async function POST(req: NextRequest) {
   const token = await createSession(userId, requestMeta(req));
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: true,
+    secure: await cookieSecure(),
     sameSite: "lax",
     path: "/",
     maxAge: sessionMaxAgeSeconds(),

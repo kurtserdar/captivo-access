@@ -5,6 +5,7 @@ import { verifyAuthentication } from "@/lib/auth/webauthn";
 import { readChallenge, clearChallenge } from "@/lib/auth/challenge";
 import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
+import { cookieSecure } from "@/lib/auth/cookies";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getRpId, originMatchesRp } from "@/lib/auth/rp";
 
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
   const token = await createSession(passkey.userId, requestMeta(req));
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: true,
+    secure: await cookieSecure(),
     sameSite: "lax",
     path: "/",
     maxAge: sessionMaxAgeSeconds(),

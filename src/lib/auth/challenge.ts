@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { cookieSecure } from "./cookies";
 
 const COOKIE = "ca_challenge";
 
@@ -16,7 +17,7 @@ export async function setChallenge(challenge: string, purpose: "reg" | "auth", u
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("5m")
     .sign(secret());
-  (await cookies()).set(COOKIE, jwt, { httpOnly: true, secure: true, sameSite: "lax", maxAge: 300, path: "/" });
+  (await cookies()).set(COOKIE, jwt, { httpOnly: true, secure: await cookieSecure(), sameSite: "lax", maxAge: 300, path: "/" });
 }
 
 export async function readChallenge(purpose: "reg" | "auth"): Promise<string | null> {

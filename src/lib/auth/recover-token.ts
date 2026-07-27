@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { cookieSecure } from "./cookies";
 
 // Short-lived, jose-signed cookie for the TOTP recovery flow — mirrors the
 // pattern in challenge.ts. `/api/auth/recover` sets this cookie after
@@ -18,7 +19,7 @@ export async function setRecoverToken(userId: string): Promise<void> {
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("10m")
     .sign(secret());
-  (await cookies()).set(COOKIE, jwt, { httpOnly: true, secure: true, sameSite: "lax", maxAge: 600, path: "/" });
+  (await cookies()).set(COOKIE, jwt, { httpOnly: true, secure: await cookieSecure(), sameSite: "lax", maxAge: 600, path: "/" });
 }
 
 export async function readRecoverToken(): Promise<string | null> {
