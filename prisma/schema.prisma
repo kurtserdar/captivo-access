@@ -84,3 +84,41 @@ model Session {
 
   @@index([userId])
 }
+
+enum ConnectorStatus {
+  PENDING
+  ONLINE
+  OFFLINE
+  REVOKED
+}
+
+model Connector {
+  id         String          @id @default(cuid())
+  name       String
+  tokenHash  String          @unique
+  status     ConnectorStatus @default(PENDING)
+  lastSeenAt DateTime?
+  version    String?
+  remoteAddr String?
+  createdAt  DateTime        @default(now())
+  sites      Site[]
+}
+
+model ConnectorPairing {
+  id        String    @id @default(cuid())
+  codeHash  String
+  name      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Site {
+  id           String    @id @default(cuid())
+  connectorId  String
+  connector    Connector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  name         String
+  upstreamName String
+  description  String?
+  createdAt    DateTime  @default(now())
+}
