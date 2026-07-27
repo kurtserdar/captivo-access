@@ -1,0 +1,52 @@
+{
+  "name": "captivo-access",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.14.2",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2",
+    "@prisma/adapter-pg": "7.9.0",
+    "@prisma/client": "^7.9.0",
+    "@simplewebauthn/browser": "^13",
+    "@simplewebauthn/server": "^13",
+    "jose": "^6",
+    "next": "^16.2.0",
+    "otplib": "^13",
+    "pg": "8.16.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19.2",
+    "@types/react-dom": "^19.2",
+    "dotenv": "^17.4.2",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "^16.2.0",
+    "prisma": "^7.9.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "pnpm": {
+    "overrides": {
+      "next>postcss": ">=8.5.18",
+      "next>sharp": ">=0.35.0",
+      "@prisma/dev>find-my-way": ">=9.7.0",
+      "@prisma/dev>valibot": ">=1.4.2"
+    }
+  }
+}

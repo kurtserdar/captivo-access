@@ -1,0 +1,23 @@
+name: Security Audit
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Pazartesi 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pnpm-audit:
+    name: pnpm audit (moderate+)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9.14.2 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level=moderate --prod

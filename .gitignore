@@ -1,0 +1,18 @@
+node_modules/
+.next/
+out/
+dist/
+*.log
+.env
+.env.local
+.env.*.local
+coverage/
+.DS_Store
+next-env.d.ts
+.turbo/
+prisma/*.db
+*.tsbuildinfo
+src/generated/
+
+# Internal design/planning docs — never enter the public repo (kept on the team's disk)
+docs/design/
