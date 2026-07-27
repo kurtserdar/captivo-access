@@ -11,7 +11,7 @@ import { verifyInvite } from "@/lib/auth/invite";
 import { readRecoverToken, clearRecoverToken } from "@/lib/auth/recover-token";
 import { getCurrentUser } from "@/lib/current-user";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getRpId, originMatchesRp } from "@/lib/auth/rp";
+import { getRpId, originMatchesRp, requestOrigin } from "@/lib/auth/rp";
 
 function sessionMaxAgeSeconds(): number {
   const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
     }
 
-    const origin = req.nextUrl.origin;
+    const origin = requestOrigin(req);
     if (!originMatchesRp(origin, getRpId())) {
       return NextResponse.json({ error: "origin_mismatch" }, { status: 400 });
     }
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
     }
 
-    const origin = req.nextUrl.origin;
+    const origin = requestOrigin(req);
     if (!originMatchesRp(origin, getRpId())) {
       return NextResponse.json({ error: "origin_mismatch" }, { status: 400 });
     }
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
     }
 
-    const origin = req.nextUrl.origin;
+    const origin = requestOrigin(req);
     if (!originMatchesRp(origin, getRpId())) {
       return NextResponse.json({ error: "origin_mismatch" }, { status: 400 });
     }
@@ -239,7 +239,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
   }
 
-  const origin = req.nextUrl.origin;
+  const origin = requestOrigin(req);
   if (!originMatchesRp(origin, getRpId())) {
     return NextResponse.json({ error: "origin_mismatch" }, { status: 400 });
   }

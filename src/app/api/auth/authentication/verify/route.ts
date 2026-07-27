@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
 import { cookieSecure } from "@/lib/auth/cookies";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getRpId, originMatchesRp } from "@/lib/auth/rp";
+import { getRpId, originMatchesRp, requestOrigin } from "@/lib/auth/rp";
 
 function sessionMaxAgeSeconds(): number {
   const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "verification_failed" }, { status: 401 });
   }
 
-  const origin = req.nextUrl.origin;
+  const origin = requestOrigin(req);
   if (!originMatchesRp(origin, getRpId())) {
     return NextResponse.json({ error: "origin_mismatch" }, { status: 400 });
   }
