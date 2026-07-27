@@ -163,6 +163,32 @@ is closed — the connector fails closed. This means the real internal
 address of a customer's service is never transmitted to, stored on, or
 visible from the Manager: it never leaves the customer's network.
 
+## Access grants
+
+An **access grant** ties one vendor user to one site with a time window: an
+optional start (empty = immediately) and an optional end (empty =
+permanent). It's how an admin decides *which* vendor may reach *which*
+internal application, and *when*.
+
+- **Admins create and revoke grants** at `/admin/grants` — pick a user, a
+  site, and an optional start/end date, then save. Revoking a grant is
+  immediate and irreversible (a new grant can always be created later).
+- **Vendors see their own grants** at `/access` ("My access"), grouped into
+  **Active** (usable right now) and **Upcoming** (window hasn't started
+  yet). Expired and revoked grants drop off this list.
+- **Approval is a documented but dormant capability.** The data model has
+  `requiresApproval` / `approvedAt` fields and the decision logic already
+  accounts for a `pending_approval` state, but nothing in the admin UI sets
+  `requiresApproval: true` yet — every grant created today is active
+  immediately, with no approval step to wait on.
+- **What this slice does — and doesn't — enforce.** `evaluateAccess()`
+  computes a live allow/deny decision (with a reason) for a given
+  user+site+time, and the admin UI exposes a "test access" tool to preview
+  it. This is the decision logic only: there is **no proxy yet** applying
+  that decision to real vendor traffic. Wiring `evaluateAccess()` into the
+  connector-aware proxy path — so an actual browser request is allowed or
+  blocked based on this — is a later slice (see Roadmap).
+
 ## Development
 
 Requirements: **Node 20**, **pnpm 9.14.2**, Docker (for the local Postgres).
