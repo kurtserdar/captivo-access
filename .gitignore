@@ -19,3 +19,4 @@ docs/design/
 
 # Go build artifacts (compiled binaries from `go build ./...`)
 /dataplane/dataplane
+/connector/connector
