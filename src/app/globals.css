@@ -1,0 +1,27 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+body { min-height: 100vh; display: grid; place-items: center; background: #0a0a0f; color: #e5e7eb; }
+main { text-align: center; padding: 2rem; max-width: 40rem; }
+h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+p { color: #9ca3af; line-height: 1.6; }
+.badge { display: inline-block; margin-top: 1rem; padding: 0.35rem 0.9rem; border: 1px solid #3b82f6; border-radius: 999px; color: #60a5fa; font-size: 0.85rem; }
+
+.app-shell { width: min(92vw, 60rem); display: flex; flex-direction: column; gap: 1.5rem; padding: 2rem 0; }
+.app-shell main { text-align: left; max-width: none; padding: 0; }
+.app-nav { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #27272a; }
+.app-nav-brand { color: #e5e7eb; text-decoration: none; font-weight: 600; }
+.app-nav-links { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; }
+.app-nav-links a { color: #9ca3af; text-decoration: none; font-size: 0.9rem; }
+.app-nav-links a:hover { color: #e5e7eb; }
+.app-nav-user { color: #6b7280; font-size: 0.85rem; }
+.sub-nav { display: flex; gap: 1rem; margin: 1rem 0; }
+.sub-nav a { color: #9ca3af; text-decoration: none; font-size: 0.9rem; padding-bottom: 0.25rem; border-bottom: 2px solid transparent; }
+.sub-nav a:hover, .sub-nav a.active { color: #e5e7eb; border-bottom-color: #3b82f6; }
+.link-button { background: none; border: none; color: #9ca3af; cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
+.link-button:hover { color: #e5e7eb; }
+.link-button:disabled { color: #4b5563; cursor: not-allowed; text-decoration: none; }
+table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #27272a; font-size: 0.9rem; }
+th { color: #9ca3af; font-weight: 500; }
+code.secret { display: block; padding: 0.75rem; margin: 0.5rem 0; background: #18181b; border: 1px solid #27272a; border-radius: 0.375rem; word-break: break-all; font-size: 0.85rem; color: #e5e7eb; }
