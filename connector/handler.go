@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/yamux"
@@ -46,8 +48,46 @@ func handleStream(st io.ReadWriteCloser, upstreams map[string]string) {
 		return
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	req, err := http.NewRequest(orGet(dr.Method), base+dr.Path, nil)
+	baseURL, err := url.Parse(base)
+	if err != nil {
+		writeErr(st, "bad upstream config")
+		return
+	}
+	// dr.Path comes from the far end of the tunnel and MUST be treated as an
+	// untrusted, path-only reference — never as a string to concatenate onto
+	// the host. url.NewRequest re-parses a concatenated string as a URL, so a
+	// crafted Path like "@evil.com/" or "//evil.com/" would be reinterpreted
+	// with evil.com as the host (userinfo/scheme-relative confusion),
+	// silently defeating the allowlist below. Requiring a leading "/" and
+	// rejecting any parsed Path with a Host or absolute scheme closes that
+	// off before ResolveReference ever runs.
+	if !strings.HasPrefix(dr.Path, "/") {
+		writeErr(st, "invalid path")
+		return
+	}
+	ref, err := url.Parse(dr.Path)
+	if err != nil || ref.IsAbs() || ref.Host != "" {
+		writeErr(st, "invalid path")
+		return
+	}
+	target := baseURL.ResolveReference(ref)
+	// Defense in depth: the resolved target MUST stay on the allowlisted
+	// upstream's scheme+host. This should already be guaranteed by the
+	// checks above, but re-verifying against the final resolved URL means
+	// a future change to the validation logic above can't silently regress
+	// the core security boundary.
+	if target.Scheme != baseURL.Scheme || target.Host != baseURL.Host {
+		writeErr(st, "invalid path")
+		return
+	}
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	req, err := http.NewRequest(orGet(dr.Method), target.String(), nil)
 	if err != nil {
 		writeErr(st, "bad request")
 		return
