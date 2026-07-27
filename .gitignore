@@ -16,3 +16,6 @@ src/generated/
 
 # Internal design/planning docs — never enter the public repo (kept on the team's disk)
 docs/design/
+
+# Go build artifacts (compiled binaries from `go build ./...`)
+/dataplane/dataplane
