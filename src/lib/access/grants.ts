@@ -31,6 +31,8 @@ export async function listGrants() {
       startsAt: true,
       endsAt: true,
       status: true,
+      requiresApproval: true,
+      approvedAt: true,
       note: true,
       createdAt: true,
       user: { select: { name: true, email: true } },

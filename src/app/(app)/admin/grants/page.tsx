@@ -2,20 +2,25 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { listGrants } from "@/lib/access/grants";
+import { classifyGrant, type DecisionReason } from "@/lib/access/evaluate";
 import { GrantForm } from "./grant-form";
 import { RevokeGrantButton } from "./revoke-grant-button";
 import { TestAccessWidget } from "./test-access-widget";
 
 export const dynamic = "force-dynamic";
 
-type GrantStatusLabel = "Active" | "Upcoming" | "Expired" | "Revoked";
-
-function computeStatus(g: { status: string; startsAt: Date | null; endsAt: Date | null }, now: Date): GrantStatusLabel {
-  if (g.status === "REVOKED") return "Revoked";
-  if (g.startsAt && now < g.startsAt) return "Upcoming";
-  if (g.endsAt && now > g.endsAt) return "Expired";
-  return "Active";
-}
+// classifyGrant only ever returns these five reasons for a single grant window;
+// user_disabled/no_grant are evaluateAccess-level (multi-grant + user status),
+// never produced here, but included so the Record stays exhaustive over the type.
+const REASON_LABEL: Record<DecisionReason, string> = {
+  allow: "Active",
+  not_yet: "Upcoming",
+  expired: "Expired",
+  revoked: "Revoked",
+  pending_approval: "Awaiting approval",
+  user_disabled: "Active",
+  no_grant: "Active",
+};
 
 export default async function AdminGrantsPage() {
   await requireAdmin();
@@ -70,7 +75,7 @@ export default async function AdminGrantsPage() {
           </thead>
           <tbody>
             {grants.map((g) => {
-              const status = computeStatus(g, now);
+              const status = REASON_LABEL[classifyGrant(g, now)];
               const start = g.startsAt ? g.startsAt.toLocaleString("en-US") : "Immediately";
               const end = g.endsAt ? g.endsAt.toLocaleString("en-US") : "Permanent";
               return (
