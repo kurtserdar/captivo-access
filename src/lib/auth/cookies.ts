@@ -21,3 +21,16 @@ export async function cookieSecure(): Promise<boolean> {
     host.startsWith("[::1]")
   );
 }
+
+/**
+ * The `Domain` attribute for the session cookie, from `COOKIE_DOMAIN`.
+ *
+ * Set this (e.g. `.access.example.com`) so the cookie is shared across
+ * `*.access.example.com` subdomains — the manager sets it, and the proxy
+ * running on any site subdomain can read it. Unset by default, which
+ * leaves the cookie host-only (unaffected in dev).
+ */
+export function cookieDomain(): string | undefined {
+  const d = process.env.COOKIE_DOMAIN?.trim();
+  return d ? d : undefined;
+}

@@ -5,7 +5,7 @@ import { verifyRegistration } from "@/lib/auth/webauthn";
 import { readChallenge, readChallengeUid, clearChallenge } from "@/lib/auth/challenge";
 import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
-import { cookieSecure } from "@/lib/auth/cookies";
+import { cookieSecure, cookieDomain } from "@/lib/auth/cookies";
 import { hasAnyUser } from "@/lib/auth/bootstrap";
 import { verifyInvite } from "@/lib/auth/invite";
 import { readRecoverToken, clearRecoverToken } from "@/lib/auth/recover-token";
@@ -124,6 +124,7 @@ export async function POST(req: NextRequest) {
       sameSite: "lax",
       path: "/",
       maxAge: sessionMaxAgeSeconds(),
+      domain: cookieDomain(),
     });
     await clearChallenge();
     await clearRecoverToken();
@@ -218,6 +219,7 @@ export async function POST(req: NextRequest) {
       sameSite: "lax",
       path: "/",
       maxAge: sessionMaxAgeSeconds(),
+      domain: cookieDomain(),
     });
     await clearChallenge();
 
@@ -297,6 +299,7 @@ export async function POST(req: NextRequest) {
     sameSite: "lax",
     path: "/",
     maxAge: sessionMaxAgeSeconds(),
+    domain: cookieDomain(),
   });
   await clearChallenge();
 

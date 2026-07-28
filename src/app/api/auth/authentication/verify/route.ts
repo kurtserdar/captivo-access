@@ -5,7 +5,7 @@ import { verifyAuthentication } from "@/lib/auth/webauthn";
 import { readChallenge, clearChallenge } from "@/lib/auth/challenge";
 import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
-import { cookieSecure } from "@/lib/auth/cookies";
+import { cookieSecure, cookieDomain } from "@/lib/auth/cookies";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getRpId, originMatchesRp, requestOrigin } from "@/lib/auth/rp";
 
@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
     sameSite: "lax",
     path: "/",
     maxAge: sessionMaxAgeSeconds(),
+    domain: cookieDomain(),
   });
   await clearChallenge();
 

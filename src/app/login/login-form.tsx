@@ -5,7 +5,7 @@ import { startAuthentication } from "@simplewebauthn/browser";
 
 const GENERIC_ERROR = "No passkey found or verification failed.";
 
-export function LoginForm() {
+export function LoginForm({ returnTo = "/" }: { returnTo?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +33,7 @@ export function LoginForm() {
         return;
       }
 
-      window.location.href = "/";
+      window.location.href = returnTo;
     } catch {
       setError(GENERIC_ERROR);
     } finally {
