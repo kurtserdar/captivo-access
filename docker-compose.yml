@@ -42,6 +42,13 @@ services:
       # internal API (not the public WSS port) to proxy requests to connectors.
       DATAPLANE_URL: http://access-dataplane:3102
       DATAPLANE_SECRET: ${DATAPLANE_SECRET:?required}
+      # Cross-subdomain SSO cookie domain (Slice 4) — empty = host-only cookie.
+      # Set to e.g. .access.example.com in production so the session cookie
+      # is readable on both the Manager and every <site>.access.example.com.
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+      # The Manager's own public URL — used to build absolute login redirects
+      # (e.g. from the data-plane's proxy back to /login?returnTo=...).
+      MANAGER_PUBLIC_URL: ${MANAGER_PUBLIC_URL:-http://localhost:3100}
     ports:
       - "3100:3100"
 
@@ -59,8 +66,16 @@ services:
       CONTROL_PLANE_URL: http://access-manager:3100
       WSS_ADDR: ":3101"
       INTERNAL_ADDR: ":3102"
+      # Browser-facing identity-aware proxy listener (Slice 4) — this is the
+      # port a front reverse proxy forwards vendor HTTP(S) traffic to, keyed
+      # by hostname. See "Reverse proxy access" below.
+      PROXY_ADDR: ":3103"
+      # Used to build the absolute /login?returnTo= redirect for unauthenticated
+      # requests hitting the browser proxy directly.
+      MANAGER_PUBLIC_URL: ${MANAGER_PUBLIC_URL:-http://localhost:3100}
     ports:
-      - "3101:3101" # connector WSS (exposed); 3102 internal API is NOT published
+      - "3101:3101" # connector WSS (exposed)
+      - "3103:3103" # browser-facing identity-aware proxy (exposed); 3102 internal API is NOT published
 
 volumes:
   access_pgdata: {}

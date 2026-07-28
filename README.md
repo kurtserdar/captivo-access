@@ -189,6 +189,107 @@ internal application, and *when*.
   connector-aware proxy path — so an actual browser request is allowed or
   blocked based on this — is a later slice (see Roadmap).
 
+## Reverse proxy access
+
+Once a grant is active, a vendor reaches the internal application by
+browsing to a **per-site hostname** — `<site>.access.example.com` — which
+the data-plane's browser-facing proxy listener (`PROXY_ADDR`, default
+`:3103`) serves directly. This listener is a plain HTTP server; it expects
+to sit behind your own **front reverse proxy** that terminates TLS (ideally
+a wildcard certificate for `*.access.example.com`) and forwards by
+hostname:
+
+- `*.access.example.com` → `access-dataplane:3103` (the per-site proxy —
+  the `Host` header, or `X-Forwarded-Host`, is how the data-plane looks up
+  which `Site` and which connector/upstream a request belongs to)
+- `manager.access.example.com` → `access-manager:3100` (the Manager UI:
+  setup, invites, login, admin, `/access`)
+
+Minimal **Caddy** example (automatic wildcard TLS via your DNS provider's
+ACME DNS-01 plugin):
+
+```caddyfile
+*.access.example.com {
+    tls {
+        dns <your_dns_provider> <api_token>
+    }
+    @manager host manager.access.example.com
+    handle @manager {
+        reverse_proxy access-manager:3100
+    }
+    handle {
+        reverse_proxy access-dataplane:3103 {
+            header_up X-Forwarded-Host {host}
+        }
+    }
+}
+```
+
+Minimal **nginx** example (assumes a wildcard cert already issued, e.g. via
+`certbot` DNS-01):
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name manager.access.example.com;
+    ssl_certificate     /etc/ssl/access-wildcard/fullchain.pem;
+    ssl_certificate_key /etc/ssl/access-wildcard/privkey.pem;
+    location / {
+        proxy_pass http://access-manager:3100;
+        proxy_set_header Host $host;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name *.access.example.com;
+    ssl_certificate     /etc/ssl/access-wildcard/fullchain.pem;
+    ssl_certificate_key /etc/ssl/access-wildcard/privkey.pem;
+    location / {
+        proxy_pass http://access-dataplane:3103;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }
+}
+```
+
+### `COOKIE_DOMAIN` is required for cross-subdomain SSO
+
+The vendor's session cookie is set when they log in on the Manager
+(`manager.access.example.com`), but it has to be readable by the
+data-plane's proxy on every `<site>.access.example.com` hostname too — a
+different subdomain. For that, set `COOKIE_DOMAIN` to a **leading-dot**
+domain that covers both:
+
+```
+COOKIE_DOMAIN=.access.example.com
+```
+
+Leave it empty for local development (a host-only cookie, since
+`localhost` has no shared parent domain to scope to). If `COOKIE_DOMAIN` is
+unset or wrong in production, vendors will be redirected back to `/login`
+on every site request even though they're already logged in on the
+Manager.
+
+### What's enforced, and what isn't yet
+
+Every request that reaches the data-plane's proxy is evaluated **live, on
+every request** — there is no session-level cache: it resolves the session
+cookie to a user, resolves the request's hostname to a `Site`, and calls
+`evaluateAccess()` for that user+site+time before opening a connector
+stream. A missing/expired session redirects to `/login?returnTo=`; a
+resolved user without an active grant gets a 403 with the specific reason
+(no grant, expired, not yet started, revoked, pending approval, or the
+user account itself disabled). Revoking a grant takes effect on the vendor's
+very next request — nothing is cached.
+
+This slice does **not** yet include session isolation, session recording,
+or credential vaulting — those are a planned future **Pro tier**, not part
+of this open-source proxy. Signed audit trail / KVKK-5651-style session
+logging is also **not yet implemented**; it lands in a later slice (see
+Roadmap).
+
 ## Development
 
 Requirements: **Node 20**, **pnpm 9.14.2**, Docker (for the local Postgres).
