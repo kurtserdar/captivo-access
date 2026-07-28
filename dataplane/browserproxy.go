@@ -18,6 +18,20 @@ import (
 // back from /login.
 const sessionCookieName = "ca_session"
 
+// reservedAuthCookies are the proxy's own identity cookies (set by the
+// control plane: src/lib/auth/session.ts, challenge.ts, recover-token.ts).
+// Because the session cookie is shared across *.access.<domain> subdomains
+// (COOKIE_DOMAIN), an upstream app must never be allowed to set or overwrite
+// one of these via its own Set-Cookie response headers — otherwise a
+// compromised/malicious internal app could fixate or hijack the identity
+// cookie proxy-wide. copyRespHeaders drops any Set-Cookie whose name matches
+// one of these (case-insensitively).
+var reservedAuthCookies = map[string]bool{
+	"ca_session":   true,
+	"ca_challenge": true,
+	"ca_recover":   true,
+}
+
 // hopByHopHeaders are stripped in both directions across the proxy boundary,
 // per RFC 7230 §6.1 — they describe the state of a single hop's connection
 // and must never be blindly forwarded across it.
@@ -248,16 +262,39 @@ func remoteIP(r *http.Request) string {
 }
 
 // copyRespHeaders copies the upstream response headers into dst, stripping
-// hop-by-hop ones.
+// hop-by-hop ones. Set-Cookie is handled specially: it may appear multiple
+// times, and any value naming one of our reserved auth cookies (ca_session,
+// ca_challenge, ca_recover) is dropped so an upstream app can never set or
+// overwrite the proxy's own identity cookies (session fixation guard). All
+// other Set-Cookie values — the app's own cookies — are forwarded unchanged.
 func copyRespHeaders(dst http.Header, src map[string][]string) {
 	for k, vs := range src {
 		if hopByHopHeaders[strings.ToLower(k)] {
+			continue
+		}
+		if strings.EqualFold(k, "Set-Cookie") {
+			for _, v := range vs {
+				if reservedAuthCookies[strings.ToLower(setCookieName(v))] {
+					continue
+				}
+				dst.Add(k, v)
+			}
 			continue
 		}
 		for _, v := range vs {
 			dst.Add(k, v)
 		}
 	}
+}
+
+// setCookieName extracts the cookie name from a Set-Cookie header value —
+// the substring before the first '=', trimmed of surrounding whitespace.
+func setCookieName(setCookie string) string {
+	name := setCookie
+	if i := strings.IndexByte(setCookie, '='); i >= 0 {
+		name = setCookie[:i]
+	}
+	return strings.TrimSpace(name)
 }
 
 // denyPage writes a 403 response with a short, human-readable message for

@@ -137,6 +137,115 @@ func TestBrowserProxyStreamsRequestAndResponse(t *testing.T) {
 	}
 }
 
+// (b2) Security-sensitive header handling, both directions:
+//   - request: hop-by-hop headers (Connection/Upgrade) are stripped before
+//     forwarding to the connector, the proxy's own ca_session cookie is
+//     removed from the forwarded Cookie header (other cookies pass through),
+//     and X-Forwarded-For/X-Forwarded-Host are added.
+//   - response: an upstream trying to set/overwrite the proxy's reserved
+//     auth cookies (ca_session, here disguised as a cross-subdomain cookie)
+//     via Set-Cookie must be blocked, while the app's own Set-Cookie values
+//     still reach the browser (session-fixation guard, see copyRespHeaders).
+func TestBrowserProxySanitizesRequestAndResponseHeaders(t *testing.T) {
+	a, b := net.Pipe()
+	srv, err := yamux.Server(a, tunnel.SessionConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	cli, err := yamux.Client(b, tunnel.SessionConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srv.Close()
+	defer cli.Close()
+
+	var gotDR tunnel.DialRequest
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		st, err := cli.Accept()
+		if err != nil {
+			return
+		}
+		defer st.Close()
+		reqBytes, err := tunnel.ReadFrame(st)
+		if err != nil {
+			return
+		}
+		_ = json.Unmarshal(reqBytes, &gotDR)
+		_, _ = io.ReadAll(tunnel.NewBodyReader(st))
+
+		respBytes, _ := json.Marshal(tunnel.DialResponse{
+			Status: http.StatusOK,
+			Header: map[string][]string{
+				"Set-Cookie": {
+					"ca_session=evil; Domain=.access.example.com; Path=/",
+					"appsess=ok; Path=/",
+				},
+			},
+		})
+		if err := tunnel.WriteFrame(st, respBytes); err != nil {
+			return
+		}
+		_ = tunnel.WriteBody(st, strings.NewReader(""))
+	}()
+
+	reg := NewRegistry()
+	reg.Set("c1", &Session{mux: srv})
+	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "wiki", allow: true, reason: "allow"}
+	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example"}
+
+	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/", nil)
+	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
+	req.AddCookie(&http.Cookie{Name: "app", Value: "1"})
+	req.Header.Set("Connection", "close")
+	req.Header.Set("Upgrade", "websocket")
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	<-done
+
+	// --- request side ---
+	if _, ok := gotDR.Header["Connection"]; ok {
+		t.Fatalf("forwarded headers must not include hop-by-hop Connection: %+v", gotDR.Header)
+	}
+	if _, ok := gotDR.Header["Upgrade"]; ok {
+		t.Fatalf("forwarded headers must not include hop-by-hop Upgrade: %+v", gotDR.Header)
+	}
+	gotCookie := ""
+	if vs, ok := gotDR.Header["Cookie"]; ok && len(vs) > 0 {
+		gotCookie = vs[0]
+	}
+	if strings.Contains(gotCookie, "ca_session") {
+		t.Fatalf("forwarded Cookie must not include ca_session: %q", gotCookie)
+	}
+	if !strings.Contains(gotCookie, "app=1") {
+		t.Fatalf("forwarded Cookie must include app=1: %q", gotCookie)
+	}
+	if vs, ok := gotDR.Header["X-Forwarded-For"]; !ok || len(vs) == 0 || vs[0] == "" {
+		t.Fatalf("forwarded headers must include X-Forwarded-For: %+v", gotDR.Header)
+	}
+	if vs, ok := gotDR.Header["X-Forwarded-Host"]; !ok || len(vs) == 0 || vs[0] != "app.example.com" {
+		t.Fatalf("forwarded headers must include X-Forwarded-Host=app.example.com: %+v", gotDR.Header)
+	}
+
+	// --- response side ---
+	setCookies := w.Header()["Set-Cookie"]
+	for _, sc := range setCookies {
+		if strings.HasPrefix(sc, "ca_session=") {
+			t.Fatalf("browser response must not include upstream ca_session Set-Cookie, got: %v", setCookies)
+		}
+	}
+	found := false
+	for _, sc := range setCookies {
+		if strings.HasPrefix(sc, "appsess=ok") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("browser response must still include the app's own Set-Cookie, got: %v", setCookies)
+	}
+}
+
 // (c) allow=false -> 403 with the message mapped from the deny reason.
 func TestBrowserProxyDeniedShowsReason(t *testing.T) {
 	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "wiki", allow: false, reason: "expired"}
