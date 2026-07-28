@@ -77,7 +77,12 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	})
 	in.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok")) })
-	log.Fatal(http.ListenAndServe(env("INTERNAL_ADDR", ":3102"), in))
+	go func() { log.Fatal(http.ListenAndServe(env("INTERNAL_ADDR", ":3102"), in)) }()
+
+	// Browser-facing identity-aware proxy. A front TLS proxy sits in front
+	// of this listener in production; it terminates TLS and forwards here.
+	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: env("MANAGER_PUBLIC_URL", "")}
+	log.Fatal(http.ListenAndServe(env("PROXY_ADDR", ":3103"), proxy))
 }
 
 func env(k, d string) string {

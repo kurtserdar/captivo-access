@@ -1,0 +1,281 @@
+package main
+
+import (
+	"encoding/json"
+	"errors"
+	"io"
+	"log"
+	"net"
+	"net/http"
+	"net/url"
+	"strings"
+
+	"github.com/kurtserdar/captivo-access/tunnel"
+)
+
+// sessionCookieName is the browser cookie set by the control plane's login
+// flow (src/lib/auth/cookies.ts) after an authenticated user is redirected
+// back from /login.
+const sessionCookieName = "ca_session"
+
+// hopByHopHeaders are stripped in both directions across the proxy boundary,
+// per RFC 7230 §6.1 — they describe the state of a single hop's connection
+// and must never be blindly forwarded across it.
+var hopByHopHeaders = map[string]bool{
+	"connection":          true,
+	"keep-alive":          true,
+	"proxy-authenticate":  true,
+	"proxy-authorization": true,
+	"te":                  true,
+	"trailer":             true,
+	"transfer-encoding":   true,
+	"upgrade":             true,
+}
+
+// denyReasonText maps a DecisionReason (control-plane's evaluateAccess) to a
+// short, human-readable message shown on the 403 deny page.
+var denyReasonText = map[string]string{
+	"no_grant":         "You don't have access to this application.",
+	"expired":          "Your access has expired.",
+	"not_yet":          "Your access hasn't started yet.",
+	"revoked":          "Your access was revoked.",
+	"pending_approval": "Your access is awaiting approval.",
+	"user_disabled":    "Your account is disabled.",
+}
+
+// proxyControl is the subset of ControlClient that BrowserProxy depends on.
+// Tests inject a fake implementation; *ControlClient satisfies it for
+// production use.
+type proxyControl interface {
+	ResolveSession(token string) (userID string, err error)
+	SiteByHost(host string) (siteID, connectorID, upstreamName string, err error)
+	CheckAccess(userID, siteID string) (allow bool, reason string, err error)
+}
+
+// BrowserProxy is the browser-facing identity-aware reverse proxy: it
+// resolves the caller's session, the target site for the request's Host,
+// and the access decision, then streams the request/response through the
+// resolved connector's tunnel (see spec §3).
+type BrowserProxy struct {
+	reg        *Registry
+	ctrl       proxyControl
+	managerURL string
+}
+
+func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	host := forwardedHost(r)
+
+	// 1. Session.
+	token := readCookie(r, sessionCookieName)
+	userID, _ := p.ctrl.ResolveSession(token)
+	if userID == "" {
+		orig := absoluteURL(r, host)
+		http.Redirect(w, r, p.managerURL+"/login?returnTo="+url.QueryEscape(orig), http.StatusFound)
+		return
+	}
+
+	// 2. Site by host.
+	siteID, connectorID, upstream, err := p.ctrl.SiteByHost(host)
+	if err != nil {
+		if errors.Is(err, ErrNoSite) {
+			http.Error(w, "unknown site", http.StatusNotFound)
+		} else {
+			http.Error(w, "site lookup failed", http.StatusBadGateway)
+		}
+		return
+	}
+
+	// 3. Access decision.
+	allow, reason, err := p.ctrl.CheckAccess(userID, siteID)
+	if err != nil {
+		http.Error(w, "access check failed", http.StatusBadGateway)
+		return
+	}
+	if !allow {
+		denyPage(w, reason)
+		return
+	}
+
+	// 4. Stream through the connector.
+	sess := p.reg.Get(connectorID)
+	if sess == nil || sess.mux == nil {
+		http.Error(w, "connector offline", http.StatusBadGateway)
+		return
+	}
+	st, err := sess.mux.Open()
+	if err != nil {
+		http.Error(w, "connector offline", http.StatusBadGateway)
+		return
+	}
+	defer st.Close() // also unblocks a still-running WriteBody goroutine below
+
+	dr := tunnel.DialRequest{
+		UpstreamName: upstream,
+		Method:       r.Method,
+		Path:         r.URL.RequestURI(),
+		Header:       sanitizeReqHeaders(r, host),
+	}
+	reqBytes, err := json.Marshal(dr)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
+		http.Error(w, "tunnel error", http.StatusBadGateway)
+		return
+	}
+
+	// The connector may reply (or error out) before it has read the whole
+	// request body — e.g. a handler that redirects or rejects immediately
+	// on a large upload. Writing the body to completion before reading the
+	// response would deadlock/head-of-line-block on the yamux stream in
+	// that case, so the body is streamed in its own goroutine while this
+	// goroutine reads the response concurrently. The deferred st.Close()
+	// above guarantees this goroutine unblocks (WriteBody returns an error
+	// that's safe to ignore) once the handler returns.
+	go func() {
+		_ = tunnel.WriteBody(st, r.Body)
+	}()
+
+	respBytes, err := tunnel.ReadFrame(st)
+	if err != nil {
+		http.Error(w, "tunnel error", http.StatusBadGateway)
+		return
+	}
+	var resp tunnel.DialResponse
+	if err := json.Unmarshal(respBytes, &resp); err != nil {
+		http.Error(w, "tunnel error", http.StatusBadGateway)
+		return
+	}
+	if resp.Error != "" {
+		http.Error(w, "upstream error", http.StatusBadGateway)
+		return
+	}
+
+	copyRespHeaders(w.Header(), resp.Header)
+	w.WriteHeader(resp.Status)
+	written, _ := io.Copy(w, tunnel.NewBodyReader(st))
+	accessLog(userID, siteID, host, r.Method, r.URL.Path, resp.Status, written)
+}
+
+// forwardedHost returns the browser-facing hostname for this request: the
+// first hop of X-Forwarded-Host if a front proxy set one, otherwise
+// r.Host. The result is always lowercased with any port stripped.
+func forwardedHost(r *http.Request) string {
+	h := r.Header.Get("X-Forwarded-Host")
+	if h == "" {
+		h = r.Host
+	} else if i := strings.IndexByte(h, ','); i >= 0 {
+		h = strings.TrimSpace(h[:i])
+	}
+	if host, _, err := net.SplitHostPort(h); err == nil {
+		h = host
+	}
+	return strings.ToLower(h)
+}
+
+// readCookie returns the named cookie's value, or "" if absent.
+func readCookie(r *http.Request, name string) string {
+	c, err := r.Cookie(name)
+	if err != nil {
+		return ""
+	}
+	return c.Value
+}
+
+// absoluteURL reconstructs the full URL the browser requested, using
+// X-Forwarded-Proto (set by the front TLS proxy) for the scheme, defaulting
+// to https since browser-facing sites are never served plaintext.
+func absoluteURL(r *http.Request, host string) string {
+	scheme := r.Header.Get("X-Forwarded-Proto")
+	if scheme == "" {
+		scheme = "https"
+	}
+	return scheme + "://" + host + r.URL.RequestURI()
+}
+
+// sanitizeReqHeaders builds the header set forwarded to the connector: the
+// inbound request's headers minus hop-by-hop ones, the session cookie
+// stripped out of Cookie (other cookies pass through to the app), and
+// X-Forwarded-For/X-Forwarded-Host added toward the app.
+func sanitizeReqHeaders(r *http.Request, host string) map[string][]string {
+	out := map[string][]string{}
+	for k, vs := range r.Header {
+		if hopByHopHeaders[strings.ToLower(k)] || strings.EqualFold(k, "Cookie") {
+			continue
+		}
+		cp := make([]string, len(vs))
+		copy(cp, vs)
+		out[k] = cp
+	}
+	if ck := filteredCookieHeader(r); ck != "" {
+		out["Cookie"] = []string{ck}
+	}
+	ip := remoteIP(r)
+	if ip != "" {
+		if existing := r.Header.Get("X-Forwarded-For"); existing != "" {
+			ip = existing + ", " + ip
+		}
+		out["X-Forwarded-For"] = []string{ip}
+	}
+	out["X-Forwarded-Host"] = []string{host}
+	return out
+}
+
+// filteredCookieHeader rebuilds a Cookie header value from the request's
+// parsed cookies, dropping the proxy's own session cookie so the app never
+// sees it.
+func filteredCookieHeader(r *http.Request) string {
+	cookies := r.Cookies()
+	parts := make([]string, 0, len(cookies))
+	for _, c := range cookies {
+		if c.Name == sessionCookieName {
+			continue
+		}
+		parts = append(parts, c.Name+"="+c.Value)
+	}
+	return strings.Join(parts, "; ")
+}
+
+// remoteIP returns the host part of r.RemoteAddr (falling back to the raw
+// value if it has no port to split).
+func remoteIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
+}
+
+// copyRespHeaders copies the upstream response headers into dst, stripping
+// hop-by-hop ones.
+func copyRespHeaders(dst http.Header, src map[string][]string) {
+	for k, vs := range src {
+		if hopByHopHeaders[strings.ToLower(k)] {
+			continue
+		}
+		for _, v := range vs {
+			dst.Add(k, v)
+		}
+	}
+}
+
+// denyPage writes a 403 response with a short, human-readable message for
+// the given access-decision reason.
+func denyPage(w http.ResponseWriter, reason string) {
+	msg, ok := denyReasonText[reason]
+	if !ok {
+		msg = "You don't have access to this application."
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusForbidden)
+	_, _ = io.WriteString(w, msg)
+}
+
+// accessLog emits one structured line per proxied request. log's default
+// flags prefix it with a date/time, giving lines of the shape:
+// "2026/01/02 15:04:05 user=<id> site=<id> host=<h> method=<m> path=<p> status=<s> bytes=<n>".
+func accessLog(userID, siteID, host, method, path string, status int, bytes int64) {
+	log.Printf("user=%s site=%s host=%s method=%s path=%s status=%d bytes=%d",
+		userID, siteID, host, method, path, status, bytes)
+}

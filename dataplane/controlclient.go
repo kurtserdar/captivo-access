@@ -3,9 +3,14 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 )
+
+// ErrNoSite is returned by SiteByHost when the control plane has no site
+// registered for the given host (404).
+var ErrNoSite = errors.New("no site for host")
 
 // ControlClient talks to the control-plane's internal connector APIs
 // (Task 4: POST /api/internal/connector/auth and /status), authenticated
@@ -37,6 +42,59 @@ func (c *ControlClient) AuthConnector(token string) (string, error) {
 func (c *ControlClient) ReportStatus(connectorID, status, remoteAddr, version string) {
 	_ = c.post("/api/internal/connector/status",
 		map[string]string{"connectorId": connectorID, "status": status, "remoteAddr": remoteAddr, "version": version}, nil)
+}
+
+// ResolveSession exchanges a browser session token for the userId it
+// belongs to. A non-200 response (no such session, or an expired/invalid
+// token) is not treated as an error: it simply means "no session", and the
+// caller should treat the request as unauthenticated.
+func (c *ControlClient) ResolveSession(token string) (string, error) {
+	var out struct {
+		UserID string `json:"userId"`
+	}
+	if err := c.post("/api/internal/session/resolve", map[string]string{"token": token}, &out); err != nil {
+		if isHTTPStatus(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	return out.UserID, nil
+}
+
+// SiteByHost resolves a browser-facing hostname to the site/connector it's
+// routed to. If the control plane has no site for host, it returns
+// ErrNoSite.
+func (c *ControlClient) SiteByHost(host string) (siteID, connectorID, upstreamName string, err error) {
+	var out struct {
+		SiteID       string `json:"siteId"`
+		ConnectorID  string `json:"connectorId"`
+		UpstreamName string `json:"upstreamName"`
+	}
+	if err := c.post("/api/internal/site/by-host", map[string]string{"host": host}, &out); err != nil {
+		if he, ok := err.(*httpError); ok && he.code == http.StatusNotFound {
+			return "", "", "", ErrNoSite
+		}
+		return "", "", "", err
+	}
+	return out.SiteID, out.ConnectorID, out.UpstreamName, nil
+}
+
+// CheckAccess evaluates whether userId is allowed to reach siteId right
+// now, returning a human-mappable deny reason when allow is false.
+func (c *ControlClient) CheckAccess(userID, siteID string) (allow bool, reason string, err error) {
+	var out struct {
+		Allow  bool   `json:"allow"`
+		Reason string `json:"reason"`
+	}
+	if err := c.post("/api/internal/access/check", map[string]string{"userId": userID, "siteId": siteID}, &out); err != nil {
+		return false, "", err
+	}
+	return out.Allow, out.Reason, nil
+}
+
+func isHTTPStatus(err error) bool {
+	_, ok := err.(*httpError)
+	return ok
 }
 
 func (c *ControlClient) post(path string, body any, out any) error {
