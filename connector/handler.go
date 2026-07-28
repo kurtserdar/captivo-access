@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -96,6 +97,19 @@ func handleStream(st io.ReadWriteCloser, upstreams map[string]string) {
 		for _, v := range vs {
 			req.Header.Add(k, v)
 		}
+	}
+	// http.Client ignores a manually-added Content-Length header on a body
+	// of unknown length (our tunnel.BodyReader isn't *bytes.Reader/*strings.Reader,
+	// so Go can't infer length itself) and instead sends chunked
+	// transfer-encoding. A strict upstream that only understands
+	// Content-Length then sees an empty body. Honor an incoming
+	// Content-Length by setting req.ContentLength directly so Go emits a
+	// fixed-length request instead of chunking it.
+	if cl := req.Header.Get("Content-Length"); cl != "" {
+		if n, e := strconv.ParseInt(cl, 10, 64); e == nil && n >= 0 {
+			req.ContentLength = n
+		}
+		req.Header.Del("Content-Length") // Go emits Content-Length from req.ContentLength
 	}
 	resp, err := client.Do(req)
 	if err != nil {

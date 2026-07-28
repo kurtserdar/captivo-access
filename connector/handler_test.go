@@ -197,6 +197,83 @@ func TestHandleStreamForwardsRequestBody(t *testing.T) {
 	}
 }
 
+// TestHandleStreamHonorsContentLength proves that when the data-plane sends
+// a Content-Length header, the connector forwards a fixed-length request to
+// the upstream instead of switching to chunked transfer-encoding. This is a
+// regression test: the upstream request body is a tunnel.BodyReader (not a
+// *bytes.Reader/*strings.Reader), so Go's http.Client can't infer its length
+// on its own and, without req.ContentLength set explicitly, silently sends
+// the request chunked — which a strict upstream that only reads
+// Content-Length sees as an empty body.
+func TestHandleStreamHonorsContentLength(t *testing.T) {
+	var gotContentLength int64
+	var gotTransferEncoding []string
+	var gotBody []byte
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotContentLength = r.ContentLength
+		gotTransferEncoding = r.TransferEncoding
+		var err error
+		gotBody, err = io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("upstream failed to read request body: %v", err)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer upstream.Close()
+
+	dataplane, connector := pairedSessions(t)
+	upstreams := map[string]string{"echo": upstream.URL}
+	go serveStreams(connector, upstreams)
+
+	st, err := dataplane.Open()
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer st.Close()
+
+	const sent = "hello world" // 11 bytes
+	req := tunnel.DialRequest{
+		UpstreamName: "echo",
+		Method:       "POST",
+		Path:         "/",
+		Header:       map[string][]string{"Content-Length": {"11"}},
+	}
+	reqBytes, _ := json.Marshal(req)
+	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
+		t.Fatalf("WriteFrame: %v", err)
+	}
+	if err := tunnel.WriteBody(st, strings.NewReader(sent)); err != nil {
+		t.Fatalf("WriteBody: %v", err)
+	}
+
+	respBytes, err := tunnel.ReadFrame(st)
+	if err != nil {
+		t.Fatalf("ReadFrame: %v", err)
+	}
+	var resp tunnel.DialResponse
+	if err := json.Unmarshal(respBytes, &resp); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	if resp.Error != "" {
+		t.Fatalf("unexpected error: %s", resp.Error)
+	}
+
+	// Drain the (empty) response body so the stream completes cleanly.
+	if _, err := io.ReadAll(tunnel.NewBodyReader(st)); err != nil {
+		t.Fatalf("ReadAll body: %v", err)
+	}
+
+	if gotContentLength != 11 {
+		t.Fatalf("expected upstream to see Content-Length 11, got %d", gotContentLength)
+	}
+	if len(gotTransferEncoding) != 0 {
+		t.Fatalf("expected upstream to see no chunked transfer-encoding, got %+v", gotTransferEncoding)
+	}
+	if string(gotBody) != sent {
+		t.Fatalf("expected upstream to receive body %q, got %q", sent, string(gotBody))
+	}
+}
+
 func TestHandleStreamUnreachableUpstream(t *testing.T) {
 	dataplane, connector := pairedSessions(t)
 	// Port 0 on loopback is not listening; dial should fail fast.
