@@ -6,6 +6,8 @@ function errorMessage(code: string | undefined): string {
   switch (code) {
     case "connector_name_upstream_required":
       return "Connector, name, and upstream name are required.";
+    case "invalid_hostname":
+      return "A public hostname is required.";
     case "connector_not_found":
       return "Select a valid connector.";
     case "forbidden":
@@ -18,6 +20,7 @@ function errorMessage(code: string | undefined): string {
 export function SiteForm({ connectors }: { connectors: { id: string; name: string }[] }) {
   const [connectorId, setConnectorId] = useState(connectors[0]?.id ?? "");
   const [name, setName] = useState("");
+  const [hostname, setHostname] = useState("");
   const [upstreamName, setUpstreamName] = useState("");
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
@@ -34,6 +37,7 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
         body: JSON.stringify({
           connectorId,
           name,
+          hostname,
           upstreamName,
           description: description.trim() || undefined,
         }),
@@ -71,6 +75,16 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
           onChange={(e) => setName(e.target.value)}
           required
           placeholder="e.g. Internal wiki"
+        />
+      </label>
+      <label>
+        Public hostname
+        <input
+          type="text"
+          value={hostname}
+          onChange={(e) => setHostname(e.target.value)}
+          required
+          placeholder="wiki.access.example.com"
         />
       </label>
       <label>

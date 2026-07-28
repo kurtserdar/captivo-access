@@ -121,6 +121,7 @@ model Site {
   connectorId  String
   connector    Connector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
   name         String
+  hostname     String    @unique
   upstreamName String
   description  String?
   createdAt    DateTime  @default(now())

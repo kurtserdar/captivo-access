@@ -14,6 +14,7 @@ export default async function AdminSitesPage() {
       select: {
         id: true,
         name: true,
+        hostname: true,
         upstreamName: true,
         description: true,
         connector: { select: { name: true, status: true } },
@@ -60,6 +61,7 @@ export default async function AdminSitesPage() {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Hostname</th>
               <th>Connector</th>
               <th>Upstream</th>
               <th>Description</th>
@@ -70,6 +72,7 @@ export default async function AdminSitesPage() {
             {sites.map((s) => (
               <tr key={s.id}>
                 <td>{s.name}</td>
+                <td>{s.hostname}</td>
                 <td>{s.connector.name}</td>
                 <td>{s.upstreamName}</td>
                 <td>{s.description ?? "—"}</td>
