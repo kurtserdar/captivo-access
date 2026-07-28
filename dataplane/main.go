@@ -81,7 +81,11 @@ func main() {
 
 	// Browser-facing identity-aware proxy. A front TLS proxy sits in front
 	// of this listener in production; it terminates TLS and forwards here.
-	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: env("MANAGER_PUBLIC_URL", "")}
+	managerURL := env("MANAGER_PUBLIC_URL", "")
+	if managerURL == "" {
+		log.Printf("WARNING: MANAGER_PUBLIC_URL is empty; unauthenticated proxy requests will redirect to a relative /login on the site host and may loop")
+	}
+	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: managerURL}
 	log.Fatal(http.ListenAndServe(env("PROXY_ADDR", ":3103"), proxy))
 }
 

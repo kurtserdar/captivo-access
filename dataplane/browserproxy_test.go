@@ -139,9 +139,10 @@ func TestBrowserProxyStreamsRequestAndResponse(t *testing.T) {
 
 // (b2) Security-sensitive header handling, both directions:
 //   - request: hop-by-hop headers (Connection/Upgrade) are stripped before
-//     forwarding to the connector, the proxy's own ca_session cookie is
-//     removed from the forwarded Cookie header (other cookies pass through),
-//     and X-Forwarded-For/X-Forwarded-Host are added.
+//     forwarding to the connector, the proxy's own reserved auth cookies
+//     (ca_session, ca_challenge, ca_recover) are removed from the forwarded
+//     Cookie header (other cookies pass through), and
+//     X-Forwarded-For/X-Forwarded-Host are added.
 //   - response: an upstream trying to set/overwrite the proxy's reserved
 //     auth cookies (ca_session, here disguised as a cross-subdomain cookie)
 //     via Set-Cookie must be blocked, while the app's own Set-Cookie values
@@ -197,6 +198,7 @@ func TestBrowserProxySanitizesRequestAndResponseHeaders(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/", nil)
 	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
+	req.AddCookie(&http.Cookie{Name: "ca_challenge", Value: "chal"})
 	req.AddCookie(&http.Cookie{Name: "app", Value: "1"})
 	req.Header.Set("Connection", "close")
 	req.Header.Set("Upgrade", "websocket")
@@ -217,6 +219,9 @@ func TestBrowserProxySanitizesRequestAndResponseHeaders(t *testing.T) {
 	}
 	if strings.Contains(gotCookie, "ca_session") {
 		t.Fatalf("forwarded Cookie must not include ca_session: %q", gotCookie)
+	}
+	if strings.Contains(gotCookie, "ca_challenge") {
+		t.Fatalf("forwarded Cookie must not include ca_challenge: %q", gotCookie)
 	}
 	if !strings.Contains(gotCookie, "app=1") {
 		t.Fatalf("forwarded Cookie must include app=1: %q", gotCookie)

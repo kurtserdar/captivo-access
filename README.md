@@ -2,11 +2,11 @@
 
 **Open-source, self-hosted Zero-Trust / VPNless secure remote access for third-party vendors and contractors.**
 
-> ⚠️ **Status: early development (Slice 1 — Identity & Passkey).** This
-> repository has the project scaffold (Next.js app, Postgres/Prisma, Docker
-> packaging, CI) plus identity: admin/vendor accounts, WebAuthn passkey
-> register/login, TOTP-backed recovery, and invites. There is **no connector
-> tunnel, no access model, no proxy, and no audit trail yet**.
+> ⚠️ **Status: early development (Slices 0–4 shipped).** Identity & Passkey
+> auth, an outbound-only Go connector tunnel, a time-boxed user→site access
+> model, and an identity-aware reverse proxy are all working. Session
+> isolation/recording, credential vaulting, and a persistent signed audit
+> trail are still **future work**.
 > **Not production-ready.** Do not deploy this for real vendor access today —
 > track the roadmap below.
 

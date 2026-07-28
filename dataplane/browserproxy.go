@@ -237,13 +237,16 @@ func sanitizeReqHeaders(r *http.Request, host string) map[string][]string {
 }
 
 // filteredCookieHeader rebuilds a Cookie header value from the request's
-// parsed cookies, dropping the proxy's own session cookie so the app never
-// sees it.
+// parsed cookies, dropping any of the proxy's own reserved auth cookies
+// (ca_session, ca_challenge, ca_recover — case-insensitively) so the app
+// never sees them. This mirrors the response-side filtering in
+// copyRespHeaders: even if ca_challenge/ca_recover become domain-scoped in
+// the future, they must not leak upstream either.
 func filteredCookieHeader(r *http.Request) string {
 	cookies := r.Cookies()
 	parts := make([]string, 0, len(cookies))
 	for _, c := range cookies {
-		if c.Name == sessionCookieName {
+		if reservedAuthCookies[strings.ToLower(c.Name)] {
 			continue
 		}
 		parts = append(parts, c.Name+"="+c.Value)
