@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -41,6 +42,11 @@ func Proxy(s *Session, dr tunnel.DialRequest) (*ProxyResult, error) {
 	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
 		return nil, err
 	}
+	// Admin test-connection never sends a request body; the terminator alone
+	// tells the connector's body reader there's nothing to stream.
+	if err := tunnel.WriteBody(st, bytes.NewReader(nil)); err != nil {
+		return nil, err
+	}
 
 	respBytes, err := tunnel.ReadFrame(st)
 	if err != nil {
@@ -51,10 +57,12 @@ func Proxy(s *Session, dr tunnel.DialRequest) (*ProxyResult, error) {
 		return nil, err
 	}
 	if resp.Error != "" {
+		// The connector's error path never writes a body stream, so don't
+		// attempt to read one here.
 		return nil, errors.New(resp.Error)
 	}
 
-	body, err := io.ReadAll(io.LimitReader(st, maxProxyBody+1))
+	body, err := io.ReadAll(io.LimitReader(tunnel.NewBodyReader(st), maxProxyBody+1))
 	if err != nil {
 		return nil, err
 	}

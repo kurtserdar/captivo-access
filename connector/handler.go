@@ -87,7 +87,7 @@ func handleStream(st io.ReadWriteCloser, upstreams map[string]string) {
 			return http.ErrUseLastResponse
 		},
 	}
-	req, err := http.NewRequest(orGet(dr.Method), target.String(), nil)
+	req, err := http.NewRequest(orGet(dr.Method), target.String(), tunnel.NewBodyReader(st))
 	if err != nil {
 		writeErr(st, "bad request")
 		return
@@ -111,7 +111,7 @@ func handleStream(st io.ReadWriteCloser, upstreams map[string]string) {
 	if tunnel.WriteFrame(st, respMeta) != nil {
 		return
 	}
-	_, _ = io.Copy(st, resp.Body)
+	_ = tunnel.WriteBody(st, resp.Body)
 }
 
 func writeErr(st io.Writer, msg string) {

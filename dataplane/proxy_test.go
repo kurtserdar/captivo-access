@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"net"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/yamux"
@@ -30,9 +32,10 @@ func TestProxyRoundTrip(t *testing.T) {
 			return
 		}
 		_, _ = tunnel.ReadFrame(st)
+		_, _ = io.ReadAll(tunnel.NewBodyReader(st)) // drain the request-body terminator
 		resp, _ := json.Marshal(tunnel.DialResponse{Status: 200})
 		_ = tunnel.WriteFrame(st, resp)
-		_, _ = st.Write([]byte("hello"))
+		_ = tunnel.WriteBody(st, strings.NewReader("hello"))
 		st.Close()
 	}()
 

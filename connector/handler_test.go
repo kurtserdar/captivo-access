@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net"
@@ -54,6 +55,9 @@ func TestHandleStreamRejectsUnknownUpstream(t *testing.T) {
 	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
 		t.Fatalf("WriteFrame: %v", err)
 	}
+	if err := tunnel.WriteBody(st, bytes.NewReader(nil)); err != nil {
+		t.Fatalf("WriteBody: %v", err)
+	}
 
 	respBytes, err := tunnel.ReadFrame(st)
 	if err != nil {
@@ -106,6 +110,9 @@ func TestHandleStreamProxiesKnownUpstream(t *testing.T) {
 	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
 		t.Fatalf("WriteFrame: %v", err)
 	}
+	if err := tunnel.WriteBody(st, bytes.NewReader(nil)); err != nil {
+		t.Fatalf("WriteBody: %v", err)
+	}
 
 	respBytes, err := tunnel.ReadFrame(st)
 	if err != nil {
@@ -125,12 +132,68 @@ func TestHandleStreamProxiesKnownUpstream(t *testing.T) {
 		t.Fatalf("expected X-Upstream header, got %+v", resp.Header)
 	}
 
-	body, err := io.ReadAll(st)
+	body, err := io.ReadAll(tunnel.NewBodyReader(st))
 	if err != nil {
 		t.Fatalf("ReadAll body: %v", err)
 	}
 	if string(body) != "i am a teapot" {
 		t.Fatalf("expected body %q, got %q", "i am a teapot", string(body))
+	}
+}
+
+// TestHandleStreamForwardsRequestBody proves a request body sent by the
+// data-plane after the DialRequest frame is streamed through to the
+// upstream (rather than the old behavior of always dialing with a nil
+// body), by having the upstream echo back whatever it received.
+func TestHandleStreamForwardsRequestBody(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("upstream failed to read request body: %v", err)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(got)
+	}))
+	defer upstream.Close()
+
+	dataplane, connector := pairedSessions(t)
+	upstreams := map[string]string{"echo": upstream.URL}
+	go serveStreams(connector, upstreams)
+
+	st, err := dataplane.Open()
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer st.Close()
+
+	req := tunnel.DialRequest{UpstreamName: "echo", Method: "POST", Path: "/"}
+	reqBytes, _ := json.Marshal(req)
+	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
+		t.Fatalf("WriteFrame: %v", err)
+	}
+	const sent = "request body streamed through the tunnel"
+	if err := tunnel.WriteBody(st, strings.NewReader(sent)); err != nil {
+		t.Fatalf("WriteBody: %v", err)
+	}
+
+	respBytes, err := tunnel.ReadFrame(st)
+	if err != nil {
+		t.Fatalf("ReadFrame: %v", err)
+	}
+	var resp tunnel.DialResponse
+	if err := json.Unmarshal(respBytes, &resp); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	if resp.Error != "" {
+		t.Fatalf("unexpected error: %s", resp.Error)
+	}
+
+	body, err := io.ReadAll(tunnel.NewBodyReader(st))
+	if err != nil {
+		t.Fatalf("ReadAll body: %v", err)
+	}
+	if string(body) != sent {
+		t.Fatalf("expected echoed body %q, got %q", sent, string(body))
 	}
 }
 
@@ -150,6 +213,9 @@ func TestHandleStreamUnreachableUpstream(t *testing.T) {
 	reqBytes, _ := json.Marshal(req)
 	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
 		t.Fatalf("WriteFrame: %v", err)
+	}
+	if err := tunnel.WriteBody(st, bytes.NewReader(nil)); err != nil {
+		t.Fatalf("WriteBody: %v", err)
 	}
 
 	respBytes, err := tunnel.ReadFrame(st)
@@ -227,6 +293,9 @@ func TestHandleStreamRejectsPathHostInjection(t *testing.T) {
 			reqBytes, _ := json.Marshal(req)
 			if err := tunnel.WriteFrame(st, reqBytes); err != nil {
 				t.Fatalf("WriteFrame: %v", err)
+			}
+			if err := tunnel.WriteBody(st, bytes.NewReader(nil)); err != nil {
+				t.Fatalf("WriteBody: %v", err)
 			}
 
 			respBytes, err := tunnel.ReadFrame(st)
