@@ -24,8 +24,10 @@ const US = "\x1f";
 
 export const GENESIS_PREV_HASH = "";
 
-// Fixed 64-bit key for pg_advisory_xact_lock. Derived once from
-// sha256("captivo-access:audit-chain") first 8 bytes as a signed bigint.
+// Fixed, application-chosen 64-bit key for pg_advisory_xact_lock. Its only
+// requirement is to be a stable constant unique to the audit-chain lock so all
+// audit writers (ingest + backfill) serialize on the same lock. The exact value
+// is arbitrary and must never change once in use.
 export const AUDIT_CHAIN_LOCK_KEY = 6011971385529861010n;
 
 export function canonicalize(e: ChainableEvent): string {
