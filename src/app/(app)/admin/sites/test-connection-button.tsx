@@ -39,10 +39,14 @@ export function TestConnectionButton({ siteId }: { siteId: string }) {
 
   return (
     <span>
-      <button type="button" className="link-button" onClick={handleClick} disabled={busy}>
+      <button type="button" className="btn sm ghost" onClick={handleClick} disabled={busy}>
         {busy ? "Testing…" : "Test connection"}
       </button>
-      {result && <p role="status">{result}</p>}
+      {result && (
+        <p className="notice" role="status">
+          {result}
+        </p>
+      )}
     </span>
   );
 }

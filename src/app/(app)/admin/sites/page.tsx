@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { SiteForm } from "./site-form";
@@ -30,59 +29,60 @@ export default async function AdminSitesPage() {
 
   return (
     <main>
-      <nav className="sub-nav">
-        <Link href="/admin/users">Users</Link>
-        <Link href="/admin/sessions">Sessions</Link>
-        <Link href="/admin/invites">Invites</Link>
-        <Link href="/admin/connectors">Connectors</Link>
-        <Link href="/admin/sites" className="active">
-          Sites
-        </Link>
-      </nav>
+      <div className="page-head">
+        <div>
+          <h1>Sites</h1>
+          <p>
+            A site is an internal upstream reachable through a connector. The upstream name must match an
+            entry in that connector&apos;s <code>UPSTREAMS</code> env. Use &quot;Test connection&quot; to
+            verify a live round trip through the connector&apos;s tunnel.
+          </p>
+        </div>
+      </div>
 
-      <h1>Sites</h1>
-      <p>
-        A site is an internal upstream reachable through a connector. The upstream name must match an
-        entry in that connector&apos;s <code>UPSTREAMS</code> env. Use &quot;Test connection&quot; to
-        verify a live round trip through the connector&apos;s tunnel.
-      </p>
-
-      {connectors.length === 0 ? (
-        <p>Add a connector first before creating a site.</p>
-      ) : (
-        <SiteForm connectors={connectors} />
-      )}
+      <div className="card">
+        <div className="card-head">
+          <h2>Add site</h2>
+        </div>
+        {connectors.length === 0 ? (
+          <p>Add a connector first before creating a site.</p>
+        ) : (
+          <SiteForm connectors={connectors} />
+        )}
+      </div>
 
       <h2>Configured sites</h2>
       {sites.length === 0 ? (
-        <p>No sites yet.</p>
+        <div className="empty">No sites yet.</div>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Hostname</th>
-              <th>Connector</th>
-              <th>Upstream</th>
-              <th>Description</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {sites.map((s) => (
-              <tr key={s.id}>
-                <td>{s.name}</td>
-                <td>{s.hostname}</td>
-                <td>{s.connector.name}</td>
-                <td>{s.upstreamName}</td>
-                <td>{s.description ?? "—"}</td>
-                <td>
-                  <TestConnectionButton siteId={s.id} />
-                </td>
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Hostname</th>
+                <th>Connector</th>
+                <th>Upstream</th>
+                <th>Description</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sites.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.name}</td>
+                  <td className="cell-sub">{s.hostname}</td>
+                  <td>{s.connector.name}</td>
+                  <td className="cell-sub">{s.upstreamName}</td>
+                  <td className="cell-sub">{s.description ?? "—"}</td>
+                  <td>
+                    <TestConnectionButton siteId={s.id} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </main>
   );

@@ -59,30 +59,38 @@ export function ConnectorForm() {
   return (
     <div>
       <form onSubmit={handleSubmit}>
-        <label>
-          Connector name
+        <div className="field">
+          <label className="field-label" htmlFor="connector-name">
+            Connector name
+          </label>
           <input
+            id="connector-name"
             type="text"
+            className="input"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             placeholder="e.g. Customer HQ"
           />
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit" disabled={busy}>
+        </div>
+        {error && (
+          <p className="notice error" role="alert">
+            {error}
+          </p>
+        )}
+        <button type="submit" className="btn primary" disabled={busy}>
           {busy ? "Creating…" : "Add connector"}
         </button>
       </form>
 
       {pairing && (
-        <div role="status">
+        <div role="status" className="notice">
           <p>
             This pairing code is shown only once — it&apos;s embedded in the command below. Run it on a
             host inside the customer&apos;s network to enroll the connector.
           </p>
-          <code className="secret">{pairing.installCommand}</code>
-          <button type="button" onClick={handleCopy}>
+          <code className="code secret">{pairing.installCommand}</code>
+          <button type="button" className="btn sm ghost" onClick={handleCopy}>
             {copied ? "Copied" : "Copy command"}
           </button>
           <p>

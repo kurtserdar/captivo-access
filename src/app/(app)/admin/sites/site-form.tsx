@@ -57,52 +57,84 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
 
   return (
     <form onSubmit={handleSubmit}>
-      <label>
-        Connector
-        <select value={connectorId} onChange={(e) => setConnectorId(e.target.value)} required>
+      <div className="field">
+        <label className="field-label" htmlFor="site-connector">
+          Connector
+        </label>
+        <select
+          id="site-connector"
+          className="select"
+          value={connectorId}
+          onChange={(e) => setConnectorId(e.target.value)}
+          required
+        >
           {connectors.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
           ))}
         </select>
-      </label>
-      <label>
-        Site name
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="site-name">
+          Site name
+        </label>
         <input
+          id="site-name"
           type="text"
+          className="input"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
           placeholder="e.g. Internal wiki"
         />
-      </label>
-      <label>
-        Public hostname
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="site-hostname">
+          Public hostname
+        </label>
         <input
+          id="site-hostname"
           type="text"
+          className="input"
           value={hostname}
           onChange={(e) => setHostname(e.target.value)}
           required
           placeholder="wiki.access.example.com"
         />
-      </label>
-      <label>
-        Upstream name
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="site-upstream">
+          Upstream name
+        </label>
         <input
+          id="site-upstream"
           type="text"
+          className="input"
           value={upstreamName}
           onChange={(e) => setUpstreamName(e.target.value)}
           required
           placeholder="must match a name in the connector's UPSTREAMS env"
         />
-      </label>
-      <label>
-        Description (optional)
-        <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} />
-      </label>
-      {error && <p role="alert">{error}</p>}
-      <button type="submit" disabled={busy}>
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="site-description">
+          Description (optional)
+        </label>
+        <input
+          id="site-description"
+          type="text"
+          className="input"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="submit" className="btn primary" disabled={busy}>
         {busy ? "Adding…" : "Add site"}
       </button>
     </form>
