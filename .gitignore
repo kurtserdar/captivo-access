@@ -20,3 +20,6 @@ docs/design/
 # Go build artifacts (compiled binaries from `go build ./...`)
 /dataplane/dataplane
 /connector/connector
+
+# Local dev compose override (e.g. host-port tweaks) — not committed
+docker-compose.override.yml
