@@ -9,6 +9,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.dataset.theme = localStorage.getItem('ca-theme') || 'dark';`,
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
