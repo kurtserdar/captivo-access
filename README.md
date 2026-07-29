@@ -2,11 +2,12 @@
 
 **Open-source, self-hosted Zero-Trust / VPNless secure remote access for third-party vendors and contractors.**
 
-> ⚠️ **Status: early development (Slices 0–4 shipped).** Identity & Passkey
+> ⚠️ **Status: early development (Slices 0–5 shipped).** Identity & Passkey
 > auth, an outbound-only Go connector tunnel, a time-boxed user→site access
-> model, and an identity-aware reverse proxy are all working. Session
-> isolation/recording, credential vaulting, and a persistent signed audit
-> trail are still **future work**.
+> model, an identity-aware reverse proxy, and an append-only audit trail (with
+> retention cleanup) are all working. Session isolation/recording, credential
+> vaulting, and tamper-evidence (hash-chain / trusted timestamping) on the
+> audit log are still **future work**.
 > **Not production-ready.** Do not deploy this for real vendor access today —
 > track the roadmap below.
 
@@ -47,7 +48,7 @@ Vendor browser ──HTTPS+Passkey──▶ MANAGER (customer cloud/DMZ) ◀─�
 | 2 | Connector tunnel — Go connector (outbound-only), Manager↔Connector protocol |
 | 3 | Access model — `AccessGrant` (role + time window + approval-dormant), admin UI |
 | 4 | Identity-aware proxy — route an authorized vendor through the connector to the internal app |
-| 5 | Session audit + KVKK/5651 — signed audit trail (who/when/what app/how long) |
+| **5 (this repo)** | Audit trail + retention — append-only `AuditEvent` log (who/when/what app/status), admin UI + CSV export, `AUDIT_RETENTION_DAYS` cron cleanup for KVKK/5651. Tamper-evidence (hash-chain / trusted timestamping) is not yet included. |
 
 ## Self-host quickstart
 
@@ -286,9 +287,47 @@ very next request — nothing is cached.
 
 This slice does **not** yet include session isolation, session recording,
 or credential vaulting — those are a planned future **Pro tier**, not part
-of this open-source proxy. Signed audit trail / KVKK-5651-style session
-logging is also **not yet implemented**; it lands in a later slice (see
-Roadmap).
+of this open-source proxy. Every allowed and denied (authenticated) request
+through this proxy is recorded to the audit trail — see "Audit & retention"
+below.
+
+## Audit & retention
+
+Every request the data-plane's identity-aware proxy makes an access decision
+on is recorded to an append-only `AuditEvent` table:
+
+- **What's logged**: allowed requests, and denied requests **from an
+  authenticated user** (no grant, expired, not yet started, revoked, pending
+  approval, or a disabled account) — each row captures the timestamp, user,
+  site, host/method/path, response status, bytes out, the decision
+  (`ALLOW`/`DENY`) and its reason, client IP, and user agent.
+- **What's not logged**: anonymous, unauthenticated requests (the ones that
+  simply redirect to `/login`) never produce an audit row — there's no
+  identity yet to attribute them to.
+- **Append-only, with snapshots**: rows are never updated or linked by a
+  live foreign key to `User`/`Site`. The user's email and the site's name are
+  denormalized onto the row at write time, so the audit trail still reads
+  correctly — and survives — after the underlying user or site is later
+  deleted.
+- **Viewing it**: admins can filter, paginate, and export the trail (CSV) at
+  `/admin/audit`, or query it directly via `GET /api/admin/audit`.
+- **Retention**: `AUDIT_RETENTION_DAYS` (default `730`) controls how long
+  rows are kept — **set this per your own legal counsel** for your KVKK/5651
+  retention obligations, not just the default. Cleanup isn't automatic; wire
+  up `POST /api/cron/audit-retention` (Bearer `CRON_SECRET`) on a schedule,
+  e.g. a host crontab entry running once a day:
+
+```cron
+0 3 * * * curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" http://localhost:3100/api/cron/audit-retention
+```
+
+  The endpoint fails closed: with `CRON_SECRET` unset, every call returns
+  `401` and nothing is deleted.
+- **Not included yet — tamper-evidence.** This audit log is append-only at
+  the application layer, but nothing currently hash-chains rows or applies a
+  trusted (RFC 3161-style) timestamp to make retroactive tampering
+  detectable. That's documented future hardening, not a shipped guarantee —
+  don't rely on this log as forensically tamper-evident today.
 
 ## Development
 
