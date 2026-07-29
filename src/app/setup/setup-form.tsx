@@ -24,6 +24,7 @@ function errorMessage(code: string | undefined): string {
 export function SetupForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [passkeyLabel, setPasskeyLabel] = useState("Primary passkey");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +49,7 @@ export function SetupForm() {
       const verifyRes = await fetch("/api/auth/registration/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "setup", response, email, name }),
+        body: JSON.stringify({ mode: "setup", response, email, name, label: passkeyLabel }),
       });
       const result = await verifyRes.json().catch(() => ({}));
       if (!verifyRes.ok || !result?.ok) {
@@ -92,6 +93,19 @@ export function SetupForm() {
           onChange={(e) => setEmail(e.target.value)}
           required
           autoComplete="email"
+        />
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="setup-passkey-label">
+          Passkey name
+        </label>
+        <input
+          id="setup-passkey-label"
+          type="text"
+          className="input"
+          value={passkeyLabel}
+          onChange={(e) => setPasskeyLabel(e.target.value)}
+          autoComplete="off"
         />
       </div>
       {error && (

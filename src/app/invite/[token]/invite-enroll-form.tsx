@@ -19,6 +19,7 @@ function errorMessage(code: string | undefined): string {
 }
 
 export function InviteEnrollForm({ token }: { token: string }) {
+  const [passkeyLabel, setPasskeyLabel] = useState("Primary passkey");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +43,7 @@ export function InviteEnrollForm({ token }: { token: string }) {
       const verifyRes = await fetch("/api/auth/registration/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "invite", inviteToken: token, response }),
+        body: JSON.stringify({ mode: "invite", inviteToken: token, response, label: passkeyLabel }),
       });
       const result = await verifyRes.json().catch(() => ({}));
       if (!verifyRes.ok || !result?.ok) {
@@ -60,6 +61,19 @@ export function InviteEnrollForm({ token }: { token: string }) {
 
   return (
     <div>
+      <div className="field">
+        <label className="field-label" htmlFor="invite-passkey-label">
+          Passkey name
+        </label>
+        <input
+          id="invite-passkey-label"
+          type="text"
+          className="input"
+          value={passkeyLabel}
+          onChange={(e) => setPasskeyLabel(e.target.value)}
+          autoComplete="off"
+        />
+      </div>
       {error && (
         <p className="notice error" role="alert">
           {error}

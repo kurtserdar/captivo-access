@@ -106,10 +106,17 @@ const CSV_HEADER = [
 ];
 
 function csvEscape(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  // Formula-injection guard: fields like userAgent/path can carry
+  // attacker-influenced content. If the value starts with a character a
+  // spreadsheet (Excel/Sheets) interprets as a formula prefix (= + - @) or
+  // a tab/CR, prepend a single quote so it opens as plain text instead of
+  // being evaluated as a formula.
+  const needsFormulaGuard = /^[=+\-@\t\r]/.test(value);
+  const escaped = needsFormulaGuard ? `'${value}` : value;
+  if (/[",\n\r]/.test(escaped)) {
+    return `"${escaped.replace(/"/g, '""')}"`;
   }
-  return value;
+  return escaped;
 }
 
 export function toCsv(rows: AuditRow[]): string {

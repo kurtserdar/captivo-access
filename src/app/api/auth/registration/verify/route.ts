@@ -134,6 +134,7 @@ export async function POST(req: NextRequest) {
   if (mode === "invite") {
     const inviteToken = typeof body.inviteToken === "string" ? body.inviteToken : "";
     const response = body.response as RegistrationResponseJSON | undefined;
+    const label = typeof body.label === "string" && body.label.trim() ? body.label.trim() : "Primary passkey";
     if (!inviteToken || !response) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
     }
@@ -192,7 +193,7 @@ export async function POST(req: NextRequest) {
             publicKey: Buffer.from(credential.publicKey),
             counter: BigInt(credential.counter ?? 0),
             transports: credential.transports ?? [],
-            label: "Passkey",
+            label,
           },
         });
         const consumed = await tx.invite.updateMany({
@@ -232,6 +233,7 @@ export async function POST(req: NextRequest) {
   const email = typeof body.email === "string" ? body.email.trim() : "";
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const response = body.response as RegistrationResponseJSON | undefined;
+  const label = typeof body.label === "string" && body.label.trim() ? body.label.trim() : "Primary passkey";
   if (!email || !name || !response) {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   }
@@ -282,7 +284,7 @@ export async function POST(req: NextRequest) {
           publicKey: Buffer.from(credential.publicKey),
           counter: BigInt(credential.counter ?? 0),
           transports: credential.transports ?? [],
-          label: "Passkey",
+          label,
         },
       });
       return created;
