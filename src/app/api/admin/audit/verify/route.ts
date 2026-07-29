@@ -13,12 +13,22 @@ export async function GET() {
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (admin.role !== "ADMIN") return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
+  // Snapshot the chain head first so a concurrent ingest appending newer
+  // events while we page can't cause a false head-mismatch: bound the page
+  // query to seq <= head.lastSeq.
+  const head = await db.auditChainState.findUnique({
+    where: { id: "singleton" },
+    select: { lastSeq: true, lastHash: true },
+  });
+
   // Page through all events in seq order, bounding memory but building the full
   // ordered array the pure verifier expects.
   const events: StoredEvent[] = [];
   let cursorSeq: bigint | null = null;
   for (;;) {
-    const where: Prisma.AuditEventWhereInput = cursorSeq === null ? {} : { seq: { gt: cursorSeq } };
+    const where: Prisma.AuditEventWhereInput = head
+      ? { seq: { lte: head.lastSeq, ...(cursorSeq === null ? {} : { gt: cursorSeq }) } }
+      : cursorSeq === null ? {} : { seq: { gt: cursorSeq } };
     const batch = await db.auditEvent.findMany({
       where,
       orderBy: { seq: "asc" },
@@ -35,5 +45,5 @@ export async function GET() {
     if (batch.length < PAGE) break;
   }
 
-  return NextResponse.json(verifyChain(events));
+  return NextResponse.json(verifyChain(events, head ? { lastSeq: head.lastSeq, lastHash: head.lastHash } : undefined));
 }

@@ -72,4 +72,39 @@ describe("verifyChain", () => {
     expect(r.firstSeq).toBe(null);
     expect(r.lastSeq).toBe(null);
   });
+
+  it("catches a tampered row even if its own hash is recomputed (downstream adjacency)", () => {
+    const c = chain(3);
+    // Mutate content and recompute the row's OWN hash from its stored prevHash,
+    // so its individual hash check passes — but the next row's prevHash still
+    // points at the OLD (pre-tamper) hash, so the adjacency check on the next
+    // row must catch it.
+    c[1] = { ...c[1], path: "/HACKED" };
+    c[1].hash = computeHash(c[1].prevHash, c[1]);
+    const r = verifyChain(c);
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe("prev_hash_mismatch");
+    expect(r.brokenAtSeq).toBe("3");
+  });
+
+  it("verifies ok when the head matches the last event", () => {
+    const c = chain(4);
+    const r = verifyChain(c, { lastSeq: 4n, lastHash: c[3].hash });
+    expect(r.ok).toBe(true);
+  });
+
+  it("flags tail-truncation as head_mismatch", () => {
+    const c = chain(4);
+    const truncated = c.slice(0, 3);
+    const r = verifyChain(truncated, { lastSeq: 4n, lastHash: c[3].hash });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe("head_mismatch");
+    expect(r.brokenAtSeq).toBe("3");
+  });
+
+  it("still ok on empty events even with a non-zero head (ambiguous full purge)", () => {
+    const r = verifyChain([], { lastSeq: 9n, lastHash: "abc" });
+    expect(r.ok).toBe(true);
+    expect(r.count).toBe(0);
+  });
 });
