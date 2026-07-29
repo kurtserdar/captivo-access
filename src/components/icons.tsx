@@ -48,6 +48,15 @@ function UsersIcon() {
   );
 }
 
+function InviteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.6}>
+      <rect x="3" y="5" width="18" height="14" rx="1.5" />
+      <path d="M3.5 6.5l8.5 6.5 8.5-6.5" />
+    </svg>
+  );
+}
+
 function SessionsIcon() {
   return (
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.6}>
@@ -81,6 +90,7 @@ export {
   ConnectorsIcon,
   SitesIcon,
   UsersIcon,
+  InviteIcon,
   SessionsIcon,
   AuditIcon,
   SettingsIcon,

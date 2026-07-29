@@ -64,32 +64,63 @@ export function InviteForm() {
   return (
     <div>
       <form onSubmit={handleSubmit}>
-        <label>
-          Full name
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" />
-        </label>
-        <label>
-          Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
-        </label>
-        <label>
-          Role
-          <select value={role} onChange={(e) => setRole(e.target.value as "VENDOR" | "ADMIN")}>
+        <div className="field">
+          <label className="field-label" htmlFor="invite-name">
+            Full name
+          </label>
+          <input
+            id="invite-name"
+            type="text"
+            className="input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            autoComplete="name"
+          />
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="invite-email">
+            Email
+          </label>
+          <input
+            id="invite-email"
+            type="email"
+            className="input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+          />
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="invite-role">
+            Role
+          </label>
+          <select
+            id="invite-role"
+            className="select"
+            value={role}
+            onChange={(e) => setRole(e.target.value as "VENDOR" | "ADMIN")}
+          >
             <option value="VENDOR">Vendor</option>
             <option value="ADMIN">Admin</option>
           </select>
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit" disabled={busy}>
+        </div>
+        {error && (
+          <p className="notice error" role="alert">
+            {error}
+          </p>
+        )}
+        <button type="submit" className="btn primary" disabled={busy}>
           {busy ? "Creating…" : "Create invite"}
         </button>
       </form>
 
       {link && (
-        <div role="status">
+        <div role="status" className="notice">
           <p>This link is shown only once. Don&apos;t leave this page without saving it.</p>
-          <input type="text" readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
-          <button type="button" onClick={handleCopy}>
+          <code className="code secret">{link}</code>
+          <button type="button" className="btn sm ghost" onClick={handleCopy}>
             {copied ? "Copied" : "Copy"}
           </button>
         </div>

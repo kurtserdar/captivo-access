@@ -9,6 +9,7 @@ import {
   ConnectorsIcon,
   SitesIcon,
   UsersIcon,
+  InviteIcon,
   SessionsIcon,
   AuditIcon,
   SettingsIcon,
@@ -59,6 +60,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <NavLink href="/admin/users">
               <UsersIcon />
               Users
+            </NavLink>
+            <NavLink href="/admin/invites">
+              <InviteIcon />
+              Invites
             </NavLink>
             <NavLink href="/admin/sessions">
               <SessionsIcon />

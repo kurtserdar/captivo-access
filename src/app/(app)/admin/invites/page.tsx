@@ -1,9 +1,14 @@
-import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { InviteForm } from "./invite-form";
 
 export const dynamic = "force-dynamic";
+
+const STATUS_PILL: Record<string, string> = {
+  Used: "ok",
+  Expired: "danger",
+  Pending: "warn",
+};
 
 function inviteStatus(inv: { usedAt: Date | null; expiresAt: Date }): string {
   if (inv.usedAt) return "Used";
@@ -18,44 +23,53 @@ export default async function AdminInvitesPage() {
 
   return (
     <main>
-      <nav className="sub-nav">
-        <Link href="/admin/users">Users</Link>
-        <Link href="/admin/sessions">Sessions</Link>
-        <Link href="/admin/invites" className="active">
-          Invites
-        </Link>
-      </nav>
+      <div className="page-head">
+        <div>
+          <h1>Invitations</h1>
+          <p>Invite a new vendor or admin. The invite link is shown only once.</p>
+        </div>
+      </div>
 
-      <h1>Invites</h1>
-      <p>Invite a new vendor or admin. The invite link is shown only once.</p>
-      <InviteForm />
+      <div className="card">
+        <div className="card-head">
+          <h2>New invitation</h2>
+        </div>
+        <InviteForm />
+      </div>
 
       <h2>Sent invites</h2>
       {invites.length === 0 ? (
-        <p>No invites have been sent yet.</p>
+        <div className="empty">No invites have been sent yet.</div>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Expires</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invites.map((inv) => (
-              <tr key={inv.id}>
-                <td>{inv.name}</td>
-                <td>{inv.email}</td>
-                <td>{inv.role}</td>
-                <td>{inviteStatus(inv)}</td>
-                <td>{inv.expiresAt.toLocaleString("en-US")}</td>
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Expires</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {invites.map((inv) => {
+                const status = inviteStatus(inv);
+                return (
+                  <tr key={inv.id}>
+                    <td>{inv.name}</td>
+                    <td className="cell-sub">{inv.email}</td>
+                    <td>{inv.role}</td>
+                    <td>
+                      <span className={`pill ${STATUS_PILL[status] ?? "neutral"}`}>{status}</span>
+                    </td>
+                    <td className="cell-sub">{inv.expiresAt.toLocaleString("en-US")}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </main>
   );
