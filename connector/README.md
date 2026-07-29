@@ -51,6 +51,10 @@ intentionally *not* copied into the build context.
 
 ## Running
 
+Prebuilt images are published to GitHub Container Registry on each
+`vX.Y.Z` release tag, so you don't need to build locally — just pull and
+run:
+
 ```bash
 docker run -d \
   --name captivo-access-connector \
@@ -59,8 +63,11 @@ docker run -d \
   -e PAIR_CODE=<one-time code from the Manager UI> \
   -e UPSTREAMS="wiki=http://10.0.0.5:8080" \
   -v conn-data:/data \
-  captivo-access-connector
+  ghcr.io/kurtserdar/captivo-access-connector:latest
 ```
+
+You can still build from source with the `docker build` command above if
+you prefer (or need a version that hasn't been tagged yet).
 
 On first start, the connector redeems `PAIR_CODE` and stores its token in
 the `conn-data` volume. On subsequent restarts, `PAIR_CODE` is no longer

@@ -13,7 +13,7 @@ function buildInstallCommand(code: string, managerUrl: string): string {
     `-e PAIR_CODE=${code} ` +
     "-e UPSTREAMS=<site-upstream-name>=http://<internal-host>:<port> " +
     "-v access_connector_data:/data " +
-    "captivo-access-connector:latest"
+    "ghcr.io/kurtserdar/captivo-access-connector:latest"
   );
 }
 
