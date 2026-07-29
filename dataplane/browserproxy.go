@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/kurtserdar/captivo-access/tunnel"
 )
@@ -74,6 +75,7 @@ type BrowserProxy struct {
 	reg        *Registry
 	ctrl       proxyControl
 	managerURL string
+	audit      *AuditQueue
 }
 
 func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -106,6 +108,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !allow {
+		p.audit.Enqueue(auditEvent("DENY", reason, userID, siteID, host, r, http.StatusForbidden, 0))
 		denyPage(w, reason)
 		return
 	}
@@ -170,6 +173,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(resp.Status)
 	written, _ := io.Copy(w, tunnel.NewBodyReader(st))
 	accessLog(userID, siteID, host, r.Method, r.URL.Path, resp.Status, written)
+	p.audit.Enqueue(auditEvent("ALLOW", "", userID, siteID, host, r, resp.Status, written))
 }
 
 // forwardedHost returns the browser-facing hostname for this request: the
@@ -310,6 +314,35 @@ func denyPage(w http.ResponseWriter, reason string) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusForbidden)
 	_, _ = io.WriteString(w, msg)
+}
+
+// auditEvent builds the AuditEvent for one access decision (allow or
+// authenticated deny). bytes is the response body size on ALLOW (0 on
+// DENY, since the deny page is written after this is constructed).
+func auditEvent(decision, reason, userID, siteID, host string, r *http.Request, status int, bytes int64) AuditEvent {
+	return AuditEvent{
+		Timestamp: time.Now(),
+		UserID:    userID,
+		SiteID:    siteID,
+		Host:      host,
+		Method:    r.Method,
+		Path:      r.URL.Path,
+		Status:    status,
+		BytesOut:  bytes,
+		Decision:  decision,
+		Reason:    reason,
+		ClientIP:  firstHop(r.Header.Get("X-Forwarded-For")),
+		UserAgent: r.UserAgent(),
+	}
+}
+
+// firstHop returns the first (left-most, i.e. original client) address in a
+// comma-separated X-Forwarded-For header value, trimmed of whitespace.
+func firstHop(xff string) string {
+	if i := strings.IndexByte(xff, ','); i >= 0 {
+		xff = xff[:i]
+	}
+	return strings.TrimSpace(xff)
 }
 
 // accessLog emits one structured line per proxied request. log's default

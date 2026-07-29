@@ -92,6 +92,12 @@ func (c *ControlClient) CheckAccess(userID, siteID string) (allow bool, reason s
 	return out.Allow, out.Reason, nil
 }
 
+// SendAudit ships a batch of audit events to the control plane for durable
+// storage. Called by RunAuditFlush; best-effort (see AuditQueue).
+func (c *ControlClient) SendAudit(events []AuditEvent) error {
+	return c.post("/api/internal/audit/log", map[string]any{"events": events}, nil)
+}
+
 func isHTTPStatus(err error) bool {
 	_, ok := err.(*httpError)
 	return ok

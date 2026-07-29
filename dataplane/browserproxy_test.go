@@ -43,7 +43,7 @@ func (f *fakeControl) CheckAccess(string, string) (bool, string, error) {
 // (a) No session cookie -> 302 to the manager's login page with returnTo set
 // to the absolute URL the browser originally requested.
 func TestBrowserProxyNoSessionRedirectsToLogin(t *testing.T) {
-	p := &BrowserProxy{reg: NewRegistry(), ctrl: &fakeControl{}, managerURL: "https://manager.example"}
+	p := &BrowserProxy{reg: NewRegistry(), ctrl: &fakeControl{}, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
 
 	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/dashboard?x=1", nil)
 	w := httptest.NewRecorder()
@@ -63,6 +63,9 @@ func TestBrowserProxyNoSessionRedirectsToLogin(t *testing.T) {
 	}
 	if want := "https://app.example.com/dashboard?x=1"; returnTo != want {
 		t.Fatalf("returnTo = %q, want %q", returnTo, want)
+	}
+	if evs := p.audit.drain(10); len(evs) != 0 {
+		t.Fatalf("audit events = %+v, want none (no-session must not be audited)", evs)
 	}
 }
 
@@ -112,7 +115,7 @@ func TestBrowserProxyStreamsRequestAndResponse(t *testing.T) {
 	reg := NewRegistry()
 	reg.Set("c1", &Session{mux: srv})
 	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "wiki", allow: true, reason: "allow"}
-	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example"}
+	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
 
 	req := httptest.NewRequest(http.MethodPost, "http://app.example.com/api?x=1", strings.NewReader("hello body"))
 	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
@@ -134,6 +137,14 @@ func TestBrowserProxyStreamsRequestAndResponse(t *testing.T) {
 	}
 	if w.Header().Get("X-Echo") != "yes" {
 		t.Fatal("expected X-Echo response header to be forwarded")
+	}
+
+	evs := p.audit.drain(10)
+	if len(evs) != 1 {
+		t.Fatalf("audit events = %d, want 1", len(evs))
+	}
+	if evs[0].Decision != "ALLOW" || evs[0].UserID != "u1" || evs[0].SiteID != "s1" || evs[0].Status != http.StatusCreated {
+		t.Fatalf("audit event = %+v, want ALLOW/u1/s1/%d", evs[0], http.StatusCreated)
 	}
 }
 
@@ -194,7 +205,7 @@ func TestBrowserProxySanitizesRequestAndResponseHeaders(t *testing.T) {
 	reg := NewRegistry()
 	reg.Set("c1", &Session{mux: srv})
 	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "wiki", allow: true, reason: "allow"}
-	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example"}
+	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
 
 	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/", nil)
 	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
@@ -254,7 +265,7 @@ func TestBrowserProxySanitizesRequestAndResponseHeaders(t *testing.T) {
 // (c) allow=false -> 403 with the message mapped from the deny reason.
 func TestBrowserProxyDeniedShowsReason(t *testing.T) {
 	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "wiki", allow: false, reason: "expired"}
-	p := &BrowserProxy{reg: NewRegistry(), ctrl: ctrl, managerURL: "https://manager.example"}
+	p := &BrowserProxy{reg: NewRegistry(), ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
 
 	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/", nil)
 	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
@@ -267,12 +278,20 @@ func TestBrowserProxyDeniedShowsReason(t *testing.T) {
 	if want := "Your access has expired."; !strings.Contains(w.Body.String(), want) {
 		t.Fatalf("body = %q, want to contain %q", w.Body.String(), want)
 	}
+
+	evs := p.audit.drain(10)
+	if len(evs) != 1 {
+		t.Fatalf("audit events = %d, want 1", len(evs))
+	}
+	if evs[0].Decision != "DENY" || evs[0].Reason != "expired" || evs[0].UserID != "u1" || evs[0].SiteID != "s1" {
+		t.Fatalf("audit event = %+v, want DENY/expired/u1/s1", evs[0])
+	}
 }
 
 // (d) SiteByHost returns ErrNoSite -> 404.
 func TestBrowserProxyUnknownSite(t *testing.T) {
 	ctrl := &fakeControl{userID: "u1", siteErr: ErrNoSite}
-	p := &BrowserProxy{reg: NewRegistry(), ctrl: ctrl, managerURL: "https://manager.example"}
+	p := &BrowserProxy{reg: NewRegistry(), ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
 
 	req := httptest.NewRequest(http.MethodGet, "http://unknown.example.com/", nil)
 	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
@@ -282,12 +301,15 @@ func TestBrowserProxyUnknownSite(t *testing.T) {
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusNotFound)
 	}
+	if evs := p.audit.drain(10); len(evs) != 0 {
+		t.Fatalf("audit events = %+v, want none (no-site must not be audited)", evs)
+	}
 }
 
 // (e) The resolved connector has no live session in the registry -> 502.
 func TestBrowserProxyConnectorOffline(t *testing.T) {
 	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c-missing", upstream: "wiki", allow: true, reason: "allow"}
-	p := &BrowserProxy{reg: NewRegistry(), ctrl: ctrl, managerURL: "https://manager.example"} // empty registry
+	p := &BrowserProxy{reg: NewRegistry(), ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)} // empty registry
 
 	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/", nil)
 	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
@@ -340,7 +362,7 @@ func TestBrowserProxyRespondsBeforeBodyDrained(t *testing.T) {
 	reg := NewRegistry()
 	reg.Set("c1", &Session{mux: srv})
 	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "wiki", allow: true, reason: "allow"}
-	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example"}
+	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
 
 	// Bigger than yamux's default 256 KiB stream window, so a sequential
 	// write-then-read implementation would block forever here.

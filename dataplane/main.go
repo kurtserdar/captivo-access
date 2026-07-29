@@ -10,6 +10,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/kurtserdar/captivo-access/tunnel"
 )
@@ -85,13 +87,31 @@ func main() {
 	if managerURL == "" {
 		log.Printf("WARNING: MANAGER_PUBLIC_URL is empty; unauthenticated proxy requests will redirect to a relative /login on the site host and may loop")
 	}
-	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: managerURL}
+	audit := NewAuditQueue(envInt("AUDIT_QUEUE_CAP", 10000))
+	go RunAuditFlush(audit, func(evs []AuditEvent) error {
+		err := ctrl.SendAudit(evs)
+		if err != nil {
+			log.Printf("audit flush failed: %v (dropped total=%d)", err, audit.Dropped())
+		}
+		return err
+	}, 5*time.Second, 200)
+
+	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: managerURL, audit: audit}
 	log.Fatal(http.ListenAndServe(env("PROXY_ADDR", ":3103"), proxy))
 }
 
 func env(k, d string) string {
 	if v := os.Getenv(k); v != "" {
 		return v
+	}
+	return d
+}
+
+func envInt(k string, d int) int {
+	if v := os.Getenv(k); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
 	}
 	return d
 }
