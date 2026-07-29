@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { listAuditEvents } from "@/lib/audit/query";
@@ -39,20 +38,12 @@ export default async function AdminAuditPage() {
 
   return (
     <main>
-      <nav className="sub-nav">
-        <Link href="/admin/users">Users</Link>
-        <Link href="/admin/sessions">Sessions</Link>
-        <Link href="/admin/invites">Invites</Link>
-        <Link href="/admin/connectors">Connectors</Link>
-        <Link href="/admin/sites">Sites</Link>
-        <Link href="/admin/grants">Grants</Link>
-        <Link href="/admin/audit" className="active">
-          Audit log
-        </Link>
-      </nav>
-
-      <h1>Audit log</h1>
-      <p>Every proxied request through a connector, with the access decision that was applied.</p>
+      <div className="page-head">
+        <div>
+          <h1>Audit log</h1>
+          <p>Every proxied request through a connector, with the access decision that was applied.</p>
+        </div>
+      </div>
 
       <AuditTable users={users} sites={sites} initialRows={initialRows} initialTotal={total} />
     </main>

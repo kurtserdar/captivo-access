@@ -46,10 +46,14 @@ export function ToggleStatusButton({ userId, status }: { userId: string; status:
 
   return (
     <span>
-      <button type="button" className="link-button" onClick={handleClick} disabled={busy}>
+      <button type="button" className="btn sm" onClick={handleClick} disabled={busy}>
         {busy ? "Processing…" : label}
       </button>
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
     </span>
   );
 }

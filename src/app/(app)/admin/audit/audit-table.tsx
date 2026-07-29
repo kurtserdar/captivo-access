@@ -101,10 +101,17 @@ export function AuditTable({
 
   return (
     <section>
-      <div className="filters">
-        <label>
-          User
-          <select value={filters.userId} onChange={(e) => updateFilter("userId", e.target.value)}>
+      <div className="card">
+        <div className="field">
+          <label className="field-label" htmlFor="audit-filter-user">
+            User
+          </label>
+          <select
+            id="audit-filter-user"
+            className="select"
+            value={filters.userId}
+            onChange={(e) => updateFilter("userId", e.target.value)}
+          >
             <option value="">All users</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>
@@ -112,10 +119,17 @@ export function AuditTable({
               </option>
             ))}
           </select>
-        </label>
-        <label>
-          Site
-          <select value={filters.siteId} onChange={(e) => updateFilter("siteId", e.target.value)}>
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="audit-filter-site">
+            Site
+          </label>
+          <select
+            id="audit-filter-site"
+            className="select"
+            value={filters.siteId}
+            onChange={(e) => updateFilter("siteId", e.target.value)}
+          >
             <option value="">All sites</option>
             {sites.map((s) => (
               <option key={s.id} value={s.id}>
@@ -123,10 +137,14 @@ export function AuditTable({
               </option>
             ))}
           </select>
-        </label>
-        <label>
-          Decision
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="audit-filter-decision">
+            Decision
+          </label>
           <select
+            id="audit-filter-decision"
+            className="select"
             value={filters.decision}
             onChange={(e) => updateFilter("decision", e.target.value as Filters["decision"])}
           >
@@ -134,68 +152,92 @@ export function AuditTable({
             <option value="ALLOW">Allow</option>
             <option value="DENY">Deny</option>
           </select>
-        </label>
-        <label>
-          From
-          <input type="datetime-local" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} />
-        </label>
-        <label>
-          To
-          <input type="datetime-local" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} />
-        </label>
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="audit-filter-from">
+            From
+          </label>
+          <input
+            id="audit-filter-from"
+            type="datetime-local"
+            className="input"
+            value={filters.from}
+            onChange={(e) => updateFilter("from", e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="audit-filter-to">
+            To
+          </label>
+          <input
+            id="audit-filter-to"
+            type="datetime-local"
+            className="input"
+            value={filters.to}
+            onChange={(e) => updateFilter("to", e.target.value)}
+          />
+        </div>
       </div>
 
-      <div className="audit-toolbar">
-        <span>
+      <div className="card-head">
+        <span className="cell-sub">
           {total} event{total === 1 ? "" : "s"}
         </span>
-        <a href={csvHref}>Download CSV</a>
+        <a href={csvHref} className="btn">
+          Download CSV
+        </a>
       </div>
 
-      {error && <p role="alert">{error}</p>}
-
-      {rows.length === 0 ? (
-        <p>{busy ? "Loading…" : "No audit events match these filters."}</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>User</th>
-              <th>Site / Host</th>
-              <th>Request</th>
-              <th>Status</th>
-              <th>Decision</th>
-              <th>IP</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td>{new Date(r.timestamp).toLocaleString("en-US")}</td>
-                <td>{r.userEmail ?? "—"}</td>
-                <td>{r.siteName ?? r.host}</td>
-                <td>
-                  {r.method} {r.path}
-                </td>
-                <td>{r.status}</td>
-                <td>
-                  <span className={`result-badge ${r.decision === "ALLOW" ? "allow" : "deny"}`}>
-                    {r.decision === "ALLOW" ? "Allow" : `Deny${r.reason ? ` — ${r.reason}` : ""}`}
-                  </span>
-                </td>
-                <td>{r.clientIp ?? "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
       )}
 
-      <div className="pagination">
-        <button type="button" onClick={() => load(filters, Math.max(0, offset - LIMIT))} disabled={!hasPrev || busy}>
+      {rows.length === 0 ? (
+        <div className="empty">{busy ? "Loading…" : "No audit events match these filters."}</div>
+      ) : (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Site / Host</th>
+                <th>Request</th>
+                <th>Status</th>
+                <th>Decision</th>
+                <th>IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="cell-sub">{new Date(r.timestamp).toLocaleString("en-US")}</td>
+                  <td>{r.userEmail ?? "—"}</td>
+                  <td>{r.siteName ?? r.host}</td>
+                  <td className="cell-sub">
+                    {r.method} {r.path}
+                  </td>
+                  <td className="cell-sub">{r.status}</td>
+                  <td>
+                    <span className={`pill ${r.decision === "ALLOW" ? "ok" : "danger"}`}>
+                      {r.decision === "ALLOW" ? "Allow" : `Deny${r.reason ? ` — ${r.reason}` : ""}`}
+                    </span>
+                  </td>
+                  <td className="cell-sub">{r.clientIp ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="card-head">
+        <button type="button" className="btn sm" onClick={() => load(filters, Math.max(0, offset - LIMIT))} disabled={!hasPrev || busy}>
           Previous
         </button>
-        <button type="button" onClick={() => load(filters, offset + LIMIT)} disabled={!hasNext || busy}>
+        <button type="button" className="btn sm" onClick={() => load(filters, offset + LIMIT)} disabled={!hasNext || busy}>
           Next
         </button>
       </div>

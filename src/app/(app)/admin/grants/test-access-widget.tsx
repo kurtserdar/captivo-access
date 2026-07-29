@@ -49,38 +49,48 @@ export function TestAccessWidget({
   }
 
   return (
-    <section>
-      <h2>Test access</h2>
+    <div className="card">
+      <div className="card-head">
+        <h2>Check access</h2>
+      </div>
       <p>Pick a user and a site to see the live access decision.</p>
-      <label>
-        User
-        <select value={userId} onChange={(e) => setUserId(e.target.value)}>
+      <div className="field">
+        <label className="field-label" htmlFor="test-access-user">
+          User
+        </label>
+        <select id="test-access-user" className="select" value={userId} onChange={(e) => setUserId(e.target.value)}>
           {users.map((u) => (
             <option key={u.id} value={u.id}>
               {u.name} ({u.email})
             </option>
           ))}
         </select>
-      </label>
-      <label>
-        Site
-        <select value={siteId} onChange={(e) => setSiteId(e.target.value)}>
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="test-access-site">
+          Site
+        </label>
+        <select id="test-access-site" className="select" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
           {sites.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
           ))}
         </select>
-      </label>
-      <button type="button" onClick={handleCheck} disabled={busy || !userId || !siteId}>
+      </div>
+      <button type="button" className="btn" onClick={handleCheck} disabled={busy || !userId || !siteId}>
         {busy ? "Checking…" : "Check access"}
       </button>
-      {result && "error" in result && <p role="alert">{result.error}</p>}
+      {result && "error" in result && (
+        <p className="notice error" role="alert">
+          {result.error}
+        </p>
+      )}
       {result && "allow" in result && (
-        <p className={`result-badge ${result.allow ? "allow" : "deny"}`} role="status">
+        <p className={`pill ${result.allow ? "ok" : "danger"}`} role="status">
           {result.allow ? "Allowed" : `Denied — ${REASON_LABEL[result.reason as Exclude<DecisionReason, "allow">]}`}
         </p>
       )}
-    </section>
+    </div>
   );
 }

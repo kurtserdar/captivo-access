@@ -70,40 +70,73 @@ export function GrantForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      <label>
-        User
-        <select value={userId} onChange={(e) => setUserId(e.target.value)} required>
+      <div className="field">
+        <label className="field-label" htmlFor="grant-user">
+          User
+        </label>
+        <select id="grant-user" className="select" value={userId} onChange={(e) => setUserId(e.target.value)} required>
           {users.map((u) => (
             <option key={u.id} value={u.id}>
               {u.name} ({u.email}) — {ROLE_LABEL[u.role] ?? u.role}
             </option>
           ))}
         </select>
-      </label>
-      <label>
-        Site
-        <select value={siteId} onChange={(e) => setSiteId(e.target.value)} required>
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="grant-site">
+          Site
+        </label>
+        <select id="grant-site" className="select" value={siteId} onChange={(e) => setSiteId(e.target.value)} required>
           {sites.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
           ))}
         </select>
-      </label>
-      <label>
-        Start (optional)
-        <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
-      </label>
-      <label>
-        End (optional — leave empty for permanent access)
-        <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
-      </label>
-      <label>
-        Note (optional)
-        <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. reason for access" />
-      </label>
-      {error && <p role="alert">{error}</p>}
-      <button type="submit" disabled={busy || !userId || !siteId}>
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="grant-starts-at">
+          Start (optional)
+        </label>
+        <input
+          id="grant-starts-at"
+          type="datetime-local"
+          className="input"
+          value={startsAt}
+          onChange={(e) => setStartsAt(e.target.value)}
+        />
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="grant-ends-at">
+          End (optional — leave empty for permanent access)
+        </label>
+        <input
+          id="grant-ends-at"
+          type="datetime-local"
+          className="input"
+          value={endsAt}
+          onChange={(e) => setEndsAt(e.target.value)}
+        />
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="grant-note">
+          Note (optional)
+        </label>
+        <input
+          id="grant-note"
+          type="text"
+          className="input"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="e.g. reason for access"
+        />
+      </div>
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="submit" className="btn primary" disabled={busy || !userId || !siteId}>
         {busy ? "Granting…" : "Grant access"}
       </button>
     </form>

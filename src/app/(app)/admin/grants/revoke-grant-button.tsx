@@ -30,10 +30,14 @@ export function RevokeGrantButton({ id }: { id: string }) {
 
   return (
     <span>
-      <button type="button" className="link-button" onClick={handleClick} disabled={busy}>
+      <button type="button" className="btn sm danger" onClick={handleClick} disabled={busy}>
         {busy ? "Revoking…" : "Revoke"}
       </button>
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
     </span>
   );
 }

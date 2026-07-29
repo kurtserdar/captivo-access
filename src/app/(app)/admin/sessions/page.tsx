@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { RevokeSessionButton } from "./revoke-session-button";
@@ -23,46 +22,44 @@ export default async function AdminSessionsPage() {
 
   return (
     <main>
-      <nav className="sub-nav">
-        <Link href="/admin/users">Users</Link>
-        <Link href="/admin/sessions" className="active">
-          Sessions
-        </Link>
-        <Link href="/admin/invites">Invites</Link>
-      </nav>
-
-      <h1>Sessions</h1>
-      <p>All currently active (non-expired) sessions.</p>
+      <div className="page-head">
+        <div>
+          <h1>Sessions</h1>
+          <p>All currently active (non-expired) sessions.</p>
+        </div>
+      </div>
 
       {sessions.length === 0 ? (
-        <p>No active sessions.</p>
+        <div className="empty">No active sessions.</div>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>IP</th>
-              <th>Browser</th>
-              <th>Last seen</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {sessions.map((s) => (
-              <tr key={s.id}>
-                <td>
-                  {s.user.name} ({s.user.email})
-                </td>
-                <td>{s.ip ?? "—"}</td>
-                <td>{s.userAgent ?? "—"}</td>
-                <td>{s.lastSeenAt.toLocaleString("en-US")}</td>
-                <td>
-                  <RevokeSessionButton id={s.id} />
-                </td>
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>IP</th>
+                <th>Browser</th>
+                <th>Last seen</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sessions.map((s) => (
+                <tr key={s.id}>
+                  <td>
+                    {s.user.name} ({s.user.email})
+                  </td>
+                  <td className="cell-sub">{s.ip ?? "—"}</td>
+                  <td className="cell-sub">{s.userAgent ?? "—"}</td>
+                  <td className="cell-sub">{s.lastSeenAt.toLocaleString("en-US")}</td>
+                  <td>
+                    <RevokeSessionButton id={s.id} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </main>
   );
