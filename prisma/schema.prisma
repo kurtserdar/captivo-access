@@ -155,3 +155,31 @@ model AccessGrant {
 
   @@index([userId, siteId])
 }
+
+enum AuditDecision {
+  ALLOW
+  DENY
+}
+
+model AuditEvent {
+  id         String        @id @default(cuid())
+  timestamp  DateTime      @default(now())
+  userId     String?
+  userEmail  String?
+  siteId     String?
+  siteName   String?
+  host       String
+  method     String
+  path       String
+  status     Int
+  bytesOut   BigInt        @default(0)
+  decision   AuditDecision
+  reason     String?
+  clientIp   String?
+  userAgent  String?
+  createdAt  DateTime      @default(now())
+
+  @@index([timestamp])
+  @@index([userId, timestamp])
+  @@index([siteId, timestamp])
+}
