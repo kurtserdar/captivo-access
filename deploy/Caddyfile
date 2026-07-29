@@ -1,0 +1,50 @@
+# Captivo Access — production front proxy (Caddy, automatic HTTPS).
+#
+# Routes:
+#   manager.{$ACCESS_DOMAIN}  -> access-manager:3100   (console, auth, invites, APIs)
+#   *.{$ACCESS_DOMAIN}        -> access-dataplane:3103  (per-site identity-aware proxy)
+#
+# Caddy sets X-Forwarded-For / X-Forwarded-Host / X-Forwarded-Proto on
+# reverse_proxy by default — both backends rely on these (see
+# dataplane/browserproxy.go and the repo README's "Reverse proxy access"
+# section), so do not strip or override them.
+#
+# ACCESS_DOMAIN and DNS_API_TOKEN come from docker-compose.prod.yml's
+# environment (sourced from .env — see .env.prod.example).
+
+# --- Manager console: works out of the box via HTTP-01 (no DNS plugin needed) ---
+manager.{$ACCESS_DOMAIN} {
+	reverse_proxy access-manager:3100
+}
+
+# --- Per-site wildcard proxy: *.{$ACCESS_DOMAIN} -> access-dataplane:3103 ---
+#
+# Automatic HTTPS for a WILDCARD hostname (*.access.example.com) requires the
+# ACME DNS-01 challenge — HTTP-01 and TLS-ALPN-01 cannot prove control of a
+# wildcard name. DNS-01 requires a DNS-provider plugin built into Caddy
+# (see https://caddyserver.com/docs/automatic-https#dns-challenge), and the
+# plain `caddy:2-alpine` image used by docker-compose.prod.yml ships with NO
+# DNS plugins — the `tls { dns ... }` block below will fail to parse
+# ("unrecognized directive: dns") until you either:
+#
+#   (a) build a custom Caddy image with xcaddy that bundles your DNS
+#       provider's module, e.g.:
+#         xcaddy build --with github.com/caddy-dns/cloudflare
+#       then point the `caddy:` service image in docker-compose.prod.yml at
+#       your custom image instead of caddy:2-alpine, and set DNS_API_TOKEN
+#       in .env to that provider's API token; or
+#   (b) skip the wildcard and add one explicit host block per vendor site
+#       instead (each gets its own cert via plain HTTP-01, no DNS plugin
+#       required), e.g.:
+#         acme-corp.{$ACCESS_DOMAIN} {
+#             reverse_proxy access-dataplane:3103
+#         }
+#
+# Once you have a DNS-plugin-enabled Caddy image, uncomment this block:
+#
+# *.{$ACCESS_DOMAIN} {
+# 	tls {
+# 		dns <your_dns_provider> {$DNS_API_TOKEN}
+# 	}
+# 	reverse_proxy access-dataplane:3103
+# }

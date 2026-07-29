@@ -1,0 +1,132 @@
+# Captivo Access — PRODUCTION stack.
+#
+# This is separate from the repo-root docker-compose.yml (dev/build stack,
+# which builds images locally with `build:`). This file pulls the published
+# ghcr.io images and fronts everything with Caddy for automatic HTTPS.
+#
+# Usage:
+#   cp .env.prod.example .env
+#   # edit .env with real values
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# See deploy/README.md for the full walkthrough (DNS, first-run db push, TLS).
+name: captivo-access-prod
+
+services:
+  access-postgres:
+    image: postgres:16-alpine
+    container_name: access-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: access
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: captivo_access
+    volumes:
+      - access_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U access -d captivo_access"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # No published port: only reachable from other containers on this
+    # compose network. Connect from the host (e.g. for `prisma db push`)
+    # via `docker compose -f docker-compose.prod.yml exec access-postgres ...`
+    # or a one-off `docker run --network container:access-postgres ...`.
+
+  access-manager:
+    image: ghcr.io/kurtserdar/captivo-access-manager:latest
+    container_name: access-manager
+    restart: unless-stopped
+    depends_on:
+      access-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://access:${POSTGRES_PASSWORD:?required}@access-postgres:5432/captivo_access
+      SESSION_SECRET: ${SESSION_SECRET:?required}
+      # WebAuthn Relying Party ID — must be a domain the browser's origin is
+      # under. Set to the bare ACCESS_DOMAIN (e.g. access.example.com) so
+      # passkeys registered on manager.access.example.com are also valid
+      # scoped to the wider domain used by *.access.example.com sites.
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:?required}
+      # TOTP recovery-secret encryption (AES-256-GCM) — required by the identity layer.
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?required}
+      INVITE_TTL_HOURS: ${INVITE_TTL_HOURS:-48}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-12}
+      NODE_ENV: production
+      # Data-plane wiring — the Manager talks to the data-plane's internal
+      # API (not the public WSS port) to proxy requests to connectors.
+      DATAPLANE_URL: http://access-dataplane:3102
+      DATAPLANE_SECRET: ${DATAPLANE_SECRET:?required}
+      # Cross-subdomain SSO cookie domain — must be a leading-dot domain
+      # covering both the Manager and every vendor site subdomain, e.g.
+      # .access.example.com, so the session cookie is readable across both.
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:?required}
+      # The Manager's own public URL — used to build absolute login redirects
+      # (e.g. from the data-plane's proxy back to /login?returnTo=...).
+      MANAGER_PUBLIC_URL: ${MANAGER_PUBLIC_URL:?required}
+      # Audit trail retention (days) before POST /api/cron/audit-retention
+      # deletes rows. CRON_SECRET authorizes that endpoint (Bearer token).
+      AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-730}
+      CRON_SECRET: ${CRON_SECRET:?required}
+    # Not published to the host — only Caddy (on the compose network) reaches
+    # it, at http://access-manager:3100.
+    expose:
+      - "3100"
+
+  access-dataplane:
+    image: ghcr.io/kurtserdar/captivo-access-dataplane:latest
+    container_name: access-dataplane
+    restart: unless-stopped
+    depends_on:
+      access-manager:
+        condition: service_started
+    environment:
+      DATAPLANE_SECRET: ${DATAPLANE_SECRET:?required}
+      CONTROL_PLANE_URL: http://access-manager:3100
+      WSS_ADDR: ":3101"
+      INTERNAL_ADDR: ":3102"
+      # Browser-facing identity-aware proxy listener — this is the port
+      # Caddy forwards vendor HTTP(S) traffic to, keyed by hostname.
+      PROXY_ADDR: ":3103"
+      # Used to build the absolute /login?returnTo= redirect for
+      # unauthenticated requests hitting the browser proxy directly.
+      MANAGER_PUBLIC_URL: ${MANAGER_PUBLIC_URL:?required}
+      # Bounded in-memory audit-event queue depth before the data-plane
+      # starts dropping events rather than blocking the proxy.
+      AUDIT_QUEUE_CAP: ${AUDIT_QUEUE_CAP:-10000}
+    ports:
+      # Connector WSS — connectors dial IN from customer DCs over the
+      # internet, so this must be published on the host.
+      - "3101:3101"
+    # 3102 (internal API) and 3103 (browser proxy) are deliberately NOT
+    # published: 3102 must never be reachable from outside this compose
+    # network, and 3103 is only reached by Caddy (same network, by service
+    # name) rather than the host's published ports.
+    expose:
+      - "3103"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: access-caddy
+    restart: unless-stopped
+    depends_on:
+      - access-manager
+      - access-dataplane
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ACCESS_DOMAIN: ${ACCESS_DOMAIN:?required}
+      # Optional: only needed if you uncomment the wildcard DNS-01 TLS block
+      # in Caddyfile (requires a custom Caddy build with a DNS plugin — see
+      # deploy/README.md and the comments in Caddyfile).
+      DNS_API_TOKEN: ${DNS_API_TOKEN:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  access_pgdata: {}
+  caddy_data: {}
+  caddy_config: {}

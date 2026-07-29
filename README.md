@@ -65,7 +65,9 @@ docker compose up -d
 Then open **http://localhost:3100**.
 
 The Manager is meant to run on an internet-reachable host (cloud VPS / DMZ)
-in real deployments.
+in real deployments. For a production deploy — published images, a Caddy
+front proxy with automatic HTTPS, and the manager/wildcard subdomain routing
+below wired up for you — see [`deploy/`](deploy/README.md).
 
 ## Identity & Passkey
 
