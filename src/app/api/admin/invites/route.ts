@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { createInvite } from "@/lib/auth/invite";
+import { managerBaseUrl } from "@/lib/url";
 import type { Role } from "@/generated/prisma/enums";
 
 const VALID_ROLES: Role[] = ["ADMIN", "VENDOR"];
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { token } = await createInvite({ email, name, role, createdById: admin.id });
-  const link = `${req.nextUrl.origin}/invite/${token}`;
+  const link = `${managerBaseUrl(req)}/invite/${token}`;
 
   return NextResponse.json({ link });
 }

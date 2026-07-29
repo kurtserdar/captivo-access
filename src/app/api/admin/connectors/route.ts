@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { createPairing } from "@/lib/connector/enrollment";
 import { kickConnector } from "@/lib/connector/dataplane";
+import { managerBaseUrl } from "@/lib/url";
 
 function buildInstallCommand(code: string, managerUrl: string): string {
   return (
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { code } = await createPairing(name);
-  const installCommand = buildInstallCommand(code, req.nextUrl.origin);
+  const installCommand = buildInstallCommand(code, managerBaseUrl(req));
 
   return NextResponse.json({ code, installCommand });
 }
