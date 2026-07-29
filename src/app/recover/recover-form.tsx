@@ -68,20 +68,28 @@ export function RecoverForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <label>
-        Email
+      <div className="field">
+        <label className="field-label" htmlFor="recover-email">
+          Email
+        </label>
         <input
+          id="recover-email"
           type="email"
+          className="input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           autoComplete="email"
         />
-      </label>
-      <label>
-        Verification code
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="recover-totp">
+          Verification code
+        </label>
         <input
+          id="recover-totp"
           type="text"
+          className="input"
           inputMode="numeric"
           pattern="[0-9]{6}"
           maxLength={6}
@@ -90,9 +98,13 @@ export function RecoverForm() {
           required
           autoComplete="one-time-code"
         />
-      </label>
-      {error && <p role="alert">{error}</p>}
-      <button type="submit" disabled={busy}>
+      </div>
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="submit" className="btn primary" disabled={busy}>
         {busy ? "Verifying…" : "Create new passkey"}
       </button>
     </form>

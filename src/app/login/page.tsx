@@ -21,10 +21,13 @@ export default async function LoginPage({
   const returnTo = safeReturnTo(typeof sp.returnTo === "string" ? sp.returnTo : null);
 
   return (
-    <main>
-      <h1>Sign in</h1>
-      <p>Sign in with your device&apos;s passkey.</p>
-      <LoginForm returnTo={returnTo} />
-    </main>
+    <div className="auth">
+      <div className="auth-card">
+        <span className="brand-glyph" />
+        <h1>Sign in</h1>
+        <p>Sign in with your device&apos;s passkey.</p>
+        <LoginForm returnTo={returnTo} />
+      </div>
+    </div>
   );
 }

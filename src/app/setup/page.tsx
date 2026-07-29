@@ -11,14 +11,17 @@ export default async function SetupPage() {
   if (await hasAnyUser()) redirect("/login");
 
   return (
-    <main>
-      <h1>Create your account</h1>
-      <p>
-        Captivo Access hasn&apos;t been set up yet. Enter your name and email
-        address and register with your device&apos;s passkey to create the
-        first admin account.
-      </p>
-      <SetupForm />
-    </main>
+    <div className="auth">
+      <div className="auth-card">
+        <span className="brand-glyph" />
+        <h1>Create your account</h1>
+        <p>
+          Captivo Access hasn&apos;t been set up yet. Enter your name and email
+          address and register with your device&apos;s passkey to create the
+          first admin account.
+        </p>
+        <SetupForm />
+      </div>
+    </div>
   );
 }

@@ -14,21 +14,27 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   if (!invite) {
     return (
-      <main>
-        <h1>Invalid or expired invitation</h1>
-        <p>This invite link is no longer valid. Ask your admin for a new invitation.</p>
-      </main>
+      <div className="auth">
+        <div className="auth-card">
+          <span className="brand-glyph" />
+          <h1>Invalid or expired invitation</h1>
+          <p>This invite link is no longer valid. Ask your admin for a new invitation.</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main>
-      <h1>Complete your invitation</h1>
-      <p>
-        {invite.name} ({invite.email}) — you&apos;ve been invited as {ROLE_LABEL[invite.role] ?? invite.role}.
-      </p>
-      <p>Register with your device&apos;s passkey to create your account.</p>
-      <InviteEnrollForm token={token} />
-    </main>
+    <div className="auth">
+      <div className="auth-card">
+        <span className="brand-glyph" />
+        <h1>Complete your invitation</h1>
+        <p>
+          {invite.name} ({invite.email}) — you&apos;ve been invited as {ROLE_LABEL[invite.role] ?? invite.role}.
+        </p>
+        <p>Register with your device&apos;s passkey to create your account.</p>
+        <InviteEnrollForm token={token} />
+      </div>
+    </div>
   );
 }

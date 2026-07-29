@@ -60,8 +60,12 @@ export function InviteEnrollForm({ token }: { token: string }) {
 
   return (
     <div>
-      {error && <p role="alert">{error}</p>}
-      <button type="button" onClick={handleClick} disabled={busy}>
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="button" className="btn primary" onClick={handleClick} disabled={busy}>
         {busy ? "Registering…" : "Register with passkey"}
       </button>
     </div>

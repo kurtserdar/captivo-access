@@ -44,11 +44,11 @@ export function LoginForm({ returnTo = "/" }: { returnTo?: string }) {
   return (
     <div>
       {error && (
-        <p role="alert">
+        <p className="notice error" role="alert">
           {error} <a href="/recover">Recover your account</a>
         </p>
       )}
-      <button type="button" onClick={handleClick} disabled={busy}>
+      <button type="button" className="btn primary" onClick={handleClick} disabled={busy}>
         {busy ? "Verifying…" : "Sign in with passkey"}
       </button>
     </div>

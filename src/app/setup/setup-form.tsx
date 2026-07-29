@@ -66,28 +66,40 @@ export function SetupForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <label>
-        Full name
+      <div className="field">
+        <label className="field-label" htmlFor="setup-name">
+          Full name
+        </label>
         <input
+          id="setup-name"
           type="text"
+          className="input"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
           autoComplete="name"
         />
-      </label>
-      <label>
-        Email
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="setup-email">
+          Email
+        </label>
         <input
+          id="setup-email"
           type="email"
+          className="input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           autoComplete="email"
         />
-      </label>
-      {error && <p role="alert">{error}</p>}
-      <button type="submit" disabled={busy}>
+      </div>
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="submit" className="btn primary" disabled={busy}>
         {busy ? "Creating…" : "Create account with passkey"}
       </button>
     </form>

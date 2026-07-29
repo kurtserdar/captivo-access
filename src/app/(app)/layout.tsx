@@ -1,6 +1,18 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
 import { LogoutButton } from "./logout-button";
+import { NavLink } from "./nav-link";
+import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  GrantsIcon,
+  AccessIcon,
+  ConnectorsIcon,
+  SitesIcon,
+  UsersIcon,
+  SessionsIcon,
+  AuditIcon,
+  SettingsIcon,
+} from "@/components/icons";
 
 // requireUser() must be read fresh from the DB on every request (session/role changes reflect immediately).
 export const dynamic = "force-dynamic";
@@ -12,29 +24,66 @@ const ROLE_LABEL: Record<string, string> = {
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  const admin = user.role === "ADMIN";
 
   return (
     <div className="app-shell">
-      <nav className="app-nav">
-        <Link href="/" className="app-nav-brand">
+      <aside className="sidebar">
+        <Link href="/" className="brand">
+          <span className="brand-glyph" />
           Captivo Access
         </Link>
-        <div className="app-nav-links">
-          <Link href="/">Dashboard</Link>
-          <Link href="/access">My access</Link>
-          <Link href="/settings/passkeys">Settings</Link>
-          {user.role === "ADMIN" && <Link href="/admin/users">Admin</Link>}
-          {user.role === "ADMIN" && <Link href="/admin/connectors">Connectors</Link>}
-          {user.role === "ADMIN" && <Link href="/admin/sites">Sites</Link>}
-          {user.role === "ADMIN" && <Link href="/admin/grants">Access grants</Link>}
-          {user.role === "ADMIN" && <Link href="/admin/audit">Audit log</Link>}
-          <span className="app-nav-user">
+        <span className="nav-group">Access</span>
+        {admin && (
+          <NavLink href="/admin/grants">
+            <GrantsIcon />
+            Grants
+          </NavLink>
+        )}
+        <NavLink href="/access">
+          <AccessIcon />
+          My access
+        </NavLink>
+        {admin && (
+          <>
+            <span className="nav-group">Infrastructure</span>
+            <NavLink href="/admin/connectors">
+              <ConnectorsIcon />
+              Connectors
+            </NavLink>
+            <NavLink href="/admin/sites">
+              <SitesIcon />
+              Sites
+            </NavLink>
+            <span className="nav-group">People &amp; audit</span>
+            <NavLink href="/admin/users">
+              <UsersIcon />
+              Users
+            </NavLink>
+            <NavLink href="/admin/sessions">
+              <SessionsIcon />
+              Sessions
+            </NavLink>
+            <NavLink href="/admin/audit">
+              <AuditIcon />
+              Audit log
+            </NavLink>
+          </>
+        )}
+        <span className="nav-group">Account</span>
+        <NavLink href="/settings/passkeys">
+          <SettingsIcon />
+          Settings
+        </NavLink>
+        <div className="nav-foot">
+          <span className="nav-user">
             {user.name} · {ROLE_LABEL[user.role] ?? user.role}
           </span>
+          <ThemeToggle />
           <LogoutButton />
         </div>
-      </nav>
-      {children}
+      </aside>
+      <main className="content">{children}</main>
     </div>
   );
 }
