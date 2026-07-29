@@ -23,43 +23,50 @@ export default async function PasskeysPage() {
 
   return (
     <main>
-      <nav className="sub-nav">
-        <Link href="/settings/passkeys" className="active">
-          My passkeys
-        </Link>
-        <Link href="/settings/recovery">Recovery</Link>
-      </nav>
+      <div className="page-head">
+        <div>
+          <h1>My passkeys</h1>
+          <p>
+            Manage the passkeys linked to this account. At least one passkey must
+            remain so your account doesn&apos;t get locked out.
+          </p>
+          <p className="cell-sub">
+            My passkeys · <Link href="/settings/recovery" className="link-button">Recovery</Link>
+          </p>
+        </div>
+        <AddPasskeyButton />
+      </div>
 
-      <h1>My passkeys</h1>
-      <p>
-        Manage the passkeys linked to this account. At least one passkey must
-        remain so your account doesn&apos;t get locked out.
-      </p>
-
-      <AddPasskeyButton />
-
-      <table>
-        <thead>
-          <tr>
-            <th>Label</th>
-            <th>Created</th>
-            <th>Last used</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {passkeys.map((pk) => (
-            <tr key={pk.id}>
-              <td>{pk.label}</td>
-              <td>{pk.createdAt.toLocaleString("en-US")}</td>
-              <td>{pk.lastUsedAt ? pk.lastUsedAt.toLocaleString("en-US") : "—"}</td>
-              <td>
-                <DeletePasskeyButton id={pk.id} disabled={!canDelete} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {passkeys.length === 0 ? (
+        <div className="empty">No passkeys yet.</div>
+      ) : (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Label</th>
+                <th>Created</th>
+                <th>Last used</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {passkeys.map((pk) => (
+                <tr key={pk.id}>
+                  <td>{pk.label}</td>
+                  <td className="cell-sub">{pk.createdAt.toLocaleString("en-US")}</td>
+                  <td className="cell-sub">
+                    {pk.lastUsedAt ? pk.lastUsedAt.toLocaleString("en-US") : "—"}
+                  </td>
+                  <td>
+                    <DeletePasskeyButton id={pk.id} disabled={!canDelete} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </main>
   );
 }

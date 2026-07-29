@@ -12,13 +12,22 @@ export default async function DashboardPage() {
 
   return (
     <main>
-      <h1>Welcome, {user.name}</h1>
-      <span className="badge">{ROLE_LABEL[user.role] ?? user.role}</span>
-      <p>
-        Access features (vendor sessions, approval flows) will be added in a
-        future release. For now you can manage your account under{" "}
-        <a href="/settings/passkeys">Settings</a>.
-      </p>
+      <div className="page-head">
+        <div>
+          <h1>Welcome, {user.name}</h1>
+          <p>
+            <span className="pill neutral">{ROLE_LABEL[user.role] ?? user.role}</span>
+          </p>
+        </div>
+      </div>
+
+      <div className="card">
+        <p>
+          Access features (vendor sessions, approval flows) will be added in a
+          future release. For now you can manage your account under{" "}
+          <a href="/settings/passkeys">Settings</a>.
+        </p>
+      </div>
     </main>
   );
 }

@@ -43,14 +43,18 @@ export function DeletePasskeyButton({ id, disabled }: { id: string; disabled: bo
     <span>
       <button
         type="button"
-        className="link-button"
+        className="btn sm danger"
         onClick={handleClick}
         disabled={busy || disabled}
         title={disabled ? "You can't delete your last passkey" : undefined}
       >
         {busy ? "Deleting…" : "Delete"}
       </button>
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
     </span>
   );
 }

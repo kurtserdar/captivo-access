@@ -17,28 +17,35 @@ export default async function RecoveryPage() {
 
   return (
     <main>
-      <nav className="sub-nav">
-        <Link href="/settings/passkeys">My passkeys</Link>
-        <Link href="/settings/recovery" className="active">
-          Recovery
-        </Link>
-      </nav>
-
-      <h1>Recovery setup</h1>
-      <p>
-        Add a recovery code using an authenticator app (Google Authenticator,
-        1Password, etc.) so you can regain access to your account if you lose
-        all your passkeys.
-      </p>
-
-      {active ? (
+      <div className="page-head">
         <div>
-          <p className="badge">Recovery enabled</p>
-          <RemoveRecoveryButton />
+          <h1>Recovery setup</h1>
+          <p>
+            Add a recovery code using an authenticator app (Google Authenticator,
+            1Password, etc.) so you can regain access to your account if you lose
+            all your passkeys.
+          </p>
+          <p className="cell-sub">
+            <Link href="/settings/passkeys" className="link-button">
+              My passkeys
+            </Link>{" "}
+            · Recovery
+          </p>
         </div>
-      ) : (
-        <RecoverySetup accountName={user.email} />
-      )}
+      </div>
+
+      <div className="card">
+        {active ? (
+          <>
+            <p>
+              <span className="pill ok">Recovery enabled</span>
+            </p>
+            <RemoveRecoveryButton />
+          </>
+        ) : (
+          <RecoverySetup accountName={user.email} />
+        )}
+      </div>
     </main>
   );
 }

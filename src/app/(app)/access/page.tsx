@@ -14,24 +14,26 @@ type Grant = Awaited<ReturnType<typeof listUserGrants>>[number];
 
 function GrantTable({ grants, badge }: { grants: Grant[]; badge: React.ReactNode }) {
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Site</th>
-          <th>Window</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {grants.map((g) => (
-          <tr key={g.id}>
-            <td>{g.site.name}</td>
-            <td>{formatWindow(g.startsAt, g.endsAt)}</td>
-            <td>{badge}</td>
+    <div className="table-wrap">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Site</th>
+            <th>Window</th>
+            <th>Status</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {grants.map((g) => (
+            <tr key={g.id}>
+              <td>{g.site.name}</td>
+              <td className="cell-sub">{formatWindow(g.startsAt, g.endsAt)}</td>
+              <td>{badge}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -51,25 +53,29 @@ export default async function AccessPage() {
 
   return (
     <main>
-      <h1>My access</h1>
-      <p>Sites you have been granted access to, and when that access applies.</p>
+      <div className="page-head">
+        <div>
+          <h1>My access</h1>
+          <p>Sites you have been granted access to, and when that access applies.</p>
+        </div>
+      </div>
 
       {active.length === 0 && upcoming.length === 0 ? (
-        <p>You do not have any active access right now.</p>
+        <div className="empty">You don&apos;t have any active access right now.</div>
       ) : (
         <>
           <h2>Active</h2>
           {active.length === 0 ? (
-            <p>No active grants.</p>
+            <p className="cell-sub">No active grants.</p>
           ) : (
-            <GrantTable grants={active} badge={<span className="result-badge allow">Active</span>} />
+            <GrantTable grants={active} badge={<span className="pill ok">Active</span>} />
           )}
 
           <h2>Upcoming</h2>
           {upcoming.length === 0 ? (
-            <p>No upcoming grants.</p>
+            <p className="cell-sub">No upcoming grants.</p>
           ) : (
-            <GrantTable grants={upcoming} badge={<span className="badge">Upcoming</span>} />
+            <GrantTable grants={upcoming} badge={<span className="pill warn">Upcoming</span>} />
           )}
         </>
       )}

@@ -28,8 +28,12 @@ export function RemoveRecoveryButton() {
 
   return (
     <div>
-      {error && <p role="alert">{error}</p>}
-      <button type="button" className="link-button" onClick={handleClick} disabled={busy}>
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="button" className="btn danger" onClick={handleClick} disabled={busy}>
         {busy ? "Removing…" : "Remove recovery"}
       </button>
     </div>

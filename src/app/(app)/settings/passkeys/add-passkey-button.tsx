@@ -63,8 +63,12 @@ export function AddPasskeyButton() {
 
   return (
     <div>
-      {error && <p role="alert">{error}</p>}
-      <button type="button" onClick={handleClick} disabled={busy}>
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="button" className="btn primary" onClick={handleClick} disabled={busy}>
         {busy ? "Adding…" : "Add a new passkey"}
       </button>
     </div>

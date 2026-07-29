@@ -68,8 +68,12 @@ export function RecoverySetup({ accountName }: { accountName: string }) {
   if (!secret) {
     return (
       <div>
-        {error && <p role="alert">{error}</p>}
-        <button type="button" onClick={handleStart} disabled={busy}>
+        {error && (
+          <p className="notice error" role="alert">
+            {error}
+          </p>
+        )}
+        <button type="button" className="btn primary" onClick={handleStart} disabled={busy}>
           {busy ? "Preparing…" : "Set up recovery"}
         </button>
       </div>
@@ -82,11 +86,15 @@ export function RecoverySetup({ accountName }: { accountName: string }) {
         Add the key below to your authenticator app manually (for the account{" "}
         {accountName}), then enter the generated 6-digit code.
       </p>
-      <code className="secret">{secret}</code>
-      {otpauth && <code className="secret">{otpauth}</code>}
-      <label>
-        Verification code
+      <code className="code secret">{secret}</code>
+      {otpauth && <code className="code secret">{otpauth}</code>}
+      <div className="field">
+        <label className="field-label" htmlFor="recovery-code">
+          Verification code
+        </label>
         <input
+          id="recovery-code"
+          className="input"
           type="text"
           inputMode="numeric"
           pattern="[0-9]{6}"
@@ -96,9 +104,13 @@ export function RecoverySetup({ accountName }: { accountName: string }) {
           required
           autoComplete="one-time-code"
         />
-      </label>
-      {error && <p role="alert">{error}</p>}
-      <button type="submit" disabled={busy}>
+      </div>
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="submit" className="btn primary" disabled={busy}>
         {busy ? "Verifying…" : "Verify and enable"}
       </button>
     </form>
