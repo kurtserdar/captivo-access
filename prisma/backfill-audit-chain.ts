@@ -29,6 +29,14 @@ async function main() {
       },
     });
 
+    // NOTE on --force reruns: this loop reassigns `seq` row-by-row in the
+    // stable order above. If that recomputed order differs from the seq
+    // values already stored on the rows (e.g. a previous backfill run, or
+    // any other seq assignment), an intermediate `update` here can
+    // transiently collide with the `@unique` index on `seq` mid-transaction
+    // even though the final assignment is consistent. The safe operator
+    // procedure for a real rebuild is to clear the existing `seq` values (or
+    // wipe the chain) first, rather than relying on --force alone.
     let seq = 0n;
     let prevHash = GENESIS_PREV_HASH;
     for (const r of rows) {
