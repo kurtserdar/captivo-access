@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { listAuditEvents } from "@/lib/audit/query";
 import { AuditTable, type AuditRowJSON } from "./audit-table";
+import { IntegrityPanel } from "./integrity-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,8 @@ export default async function AdminAuditPage() {
           <p>Every proxied request through a connector, with the access decision that was applied.</p>
         </div>
       </div>
+
+      <IntegrityPanel />
 
       <AuditTable users={users} sites={sites} initialRows={initialRows} initialTotal={total} />
     </main>
