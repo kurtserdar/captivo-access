@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import type { Schedule } from "@/lib/access/schedule";
 
 export async function createGrant(input: {
   userId: string;
@@ -7,6 +8,7 @@ export async function createGrant(input: {
   endsAt: Date | null;
   note: string | null;
   createdById: string;
+  schedule: Schedule | null;
 }): Promise<{ id: string }> {
   const g = await db.accessGrant.create({
     data: {
@@ -18,6 +20,7 @@ export async function createGrant(input: {
       requiresApproval: false,
       status: "ACTIVE",
       createdById: input.createdById,
+      ...(input.schedule ? { schedule: input.schedule as object } : {}),
     },
   });
   return { id: g.id };
@@ -71,6 +74,7 @@ export async function createAccessRequest(input: {
   startsAt: Date | null;
   endsAt: Date | null;
   note: string;
+  schedule: Schedule | null;
 }): Promise<{ ok: true; id: string } | { ok: false; reason: "request_pending" }> {
   return db.$transaction(async (tx) => {
     // One pending request per (user, site) at a time.
@@ -97,6 +101,7 @@ export async function createAccessRequest(input: {
         status: "ACTIVE",
         approvedAt: null,
         createdById: input.userId,
+        ...(input.schedule ? { schedule: input.schedule as object } : {}),
       },
     });
     return { ok: true as const, id: g.id };
@@ -119,6 +124,7 @@ export async function listPendingGrants() {
       endsAt: true,
       note: true,
       createdAt: true,
+      schedule: true,
       user: { select: { name: true, email: true } },
       site: { select: { name: true } },
     },

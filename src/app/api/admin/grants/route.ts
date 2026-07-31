@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { createGrant, listGrants, revokeGrant } from "@/lib/access/grants";
+import { validateSchedule, type Schedule } from "@/lib/access/schedule";
 
 function parseDate(value: unknown): { ok: true; value: Date | null } | { ok: false } {
   if (value === undefined || value === null || value === "") return { ok: true, value: null };
@@ -35,6 +36,13 @@ export async function POST(req: NextRequest) {
 
   const note = typeof body.note === "string" && body.note.trim() ? body.note.trim() : null;
 
+  let schedule: Schedule | null = null;
+  if (body.schedule !== undefined && body.schedule !== null) {
+    const v = validateSchedule(body.schedule);
+    if (!v.ok) return NextResponse.json({ error: "invalid_schedule" }, { status: 400 });
+    schedule = v.schedule;
+  }
+
   const [user, site] = await Promise.all([
     db.user.findUnique({ where: { id: userId }, select: { id: true } }),
     db.site.findUnique({ where: { id: siteId }, select: { id: true } }),
@@ -53,6 +61,7 @@ export async function POST(req: NextRequest) {
     endsAt: endsAt.value,
     note,
     createdById: admin.id,
+    schedule,
   });
 
   return NextResponse.json({ id }, { status: 201 });
