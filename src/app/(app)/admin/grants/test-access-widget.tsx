@@ -8,6 +8,7 @@ const REASON_LABEL: Record<Exclude<DecisionReason, "allow">, string> = {
   not_yet: "Grant not active yet",
   expired: "Grant expired",
   revoked: "Grant revoked",
+  denied: "Grant denied",
   pending_approval: "Awaiting approval",
   user_disabled: "User is disabled",
 };

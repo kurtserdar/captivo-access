@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
+import { countPendingGrants } from "@/lib/access/grants";
 import { LogoutButton } from "./logout-button";
 import { NavLink } from "./nav-link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -26,6 +27,7 @@ const ROLE_LABEL: Record<string, string> = {
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const admin = user.role === "ADMIN";
+  const pendingCount = admin ? await countPendingGrants() : 0;
 
   return (
     <div className="app-shell">
@@ -39,6 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <NavLink href="/admin/grants">
             <GrantsIcon />
             Grants
+            {pendingCount > 0 && <span className="nav-badge">{pendingCount}</span>}
           </NavLink>
         )}
         <NavLink href="/access">
