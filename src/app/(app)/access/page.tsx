@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/current-user";
 import { listUserGrants } from "@/lib/access/grants";
 import { classifyGrant } from "@/lib/access/evaluate";
+import { RequestAccessForm } from "./request-access-form";
 
 export const dynamic = "force-dynamic";
 
@@ -44,11 +45,14 @@ export default async function AccessPage() {
 
   const active: Grant[] = [];
   const upcoming: Grant[] = [];
+  const requests: { grant: Grant; reason: "pending_approval" | "denied" }[] = [];
   for (const g of grants) {
     const reason = classifyGrant(g, now);
     if (reason === "allow") active.push(g);
     else if (reason === "not_yet") upcoming.push(g);
-    // Expired, revoked, and pending_approval grants are not shown here.
+    else if (reason === "pending_approval") requests.push({ grant: g, reason });
+    else if (reason === "denied") requests.push({ grant: g, reason });
+    // expired and revoked grants are not shown here.
   }
 
   return (
@@ -59,6 +63,8 @@ export default async function AccessPage() {
           <p>Sites you have been granted access to, and when that access applies.</p>
         </div>
       </div>
+
+      <RequestAccessForm />
 
       {active.length === 0 && upcoming.length === 0 ? (
         <div className="empty">You don&apos;t have any active access right now.</div>
@@ -77,6 +83,30 @@ export default async function AccessPage() {
           ) : (
             <GrantTable grants={upcoming} badge={<span className="pill warn">Upcoming</span>} />
           )}
+        </>
+      )}
+
+      {requests.length > 0 && (
+        <>
+          <h2>Requests</h2>
+          <div className="table-wrap">
+            <table className="table">
+              <thead><tr><th>App</th><th>Window</th><th>Status</th></tr></thead>
+              <tbody>
+                {requests.map(({ grant, reason }) => (
+                  <tr key={grant.id}>
+                    <td>{grant.site.name}</td>
+                    <td className="cell-sub">{formatWindow(grant.startsAt, grant.endsAt)}</td>
+                    <td>
+                      {reason === "pending_approval"
+                        ? <span className="pill warn">Pending approval</span>
+                        : <span className="pill danger">Denied</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </main>
