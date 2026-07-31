@@ -9,7 +9,7 @@ import { evaluateAccess, classifyGrant } from "./evaluate";
 import type { User, AccessGrant } from "@/generated/prisma/client";
 
 type TestGrant = {
-  status: "ACTIVE" | "REVOKED";
+  status: "ACTIVE" | "REVOKED" | "DENIED";
   startsAt: Date | null;
   endsAt: Date | null;
   requiresApproval: boolean;
@@ -75,6 +75,15 @@ describe("evaluateAccess", () => {
     mockGrants([grant({ status: "REVOKED" }), grant({ startsAt: new Date("2026-07-28T00:00:00Z") })]);
     expect(await evaluateAccess("u", "s", NOW)).toEqual({ allow: false, reason: "not_yet" });
   });
+  it("denies a DENIED grant with reason denied", async () => {
+    mockUser("ACTIVE"); mockGrants([grant({ status: "DENIED" })]);
+    expect(await evaluateAccess("u", "s", NOW)).toEqual({ allow: false, reason: "denied" });
+  });
+  it("prefers pending_approval over denied across grants", async () => {
+    mockUser("ACTIVE");
+    mockGrants([grant({ status: "DENIED" }), grant({ requiresApproval: true, approvedAt: null })]);
+    expect(await evaluateAccess("u", "s", NOW)).toEqual({ allow: false, reason: "pending_approval" });
+  });
 });
 
 describe("classifyGrant", () => {
@@ -83,5 +92,8 @@ describe("classifyGrant", () => {
   });
   it("reports revoked regardless of window", () => {
     expect(classifyGrant(grant({ status: "REVOKED" }), NOW)).toBe("revoked");
+  });
+  it("reports denied regardless of window", () => {
+    expect(classifyGrant(grant({ status: "DENIED" }), NOW)).toBe("denied");
   });
 });
