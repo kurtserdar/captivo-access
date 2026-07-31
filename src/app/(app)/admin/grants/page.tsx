@@ -10,7 +10,7 @@ import { DecisionButtons } from "./decision-buttons";
 
 export const dynamic = "force-dynamic";
 
-// classifyGrant only ever returns these five reasons for a single grant window;
+// classifyGrant only ever returns these six reasons for a single grant window;
 // user_disabled/no_grant are evaluateAccess-level (multi-grant + user status),
 // never produced here, but included so the Record stays exhaustive over the type.
 const REASON_LABEL: Record<DecisionReason, string> = {

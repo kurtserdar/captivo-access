@@ -72,9 +72,9 @@ export default async function AccessPage() {
 
       <RequestAccessForm />
 
-      {active.length === 0 && upcoming.length === 0 ? (
+      {active.length === 0 && upcoming.length === 0 && offHours.length === 0 ? (
         <div className="empty">You don&apos;t have any active access right now.</div>
-      ) : (
+      ) : active.length === 0 && upcoming.length === 0 ? null : (
         <>
           <h2>Active</h2>
           {active.length === 0 ? (
