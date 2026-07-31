@@ -129,8 +129,10 @@ export default async function AdminGrantsPage() {
                       <span className={`pill ${REASON_PILL[reason]}`}>{status}</span>
                     </td>
                     <td>
-                      {status === "Revoked" ? (
-                        <span className="cell-sub">Revoked</span>
+                      {/* A revoked or denied grant is terminal — no Revoke action (revoking a
+                          denied grant would collapse the denied-vs-revoked audit distinction). */}
+                      {reason === "revoked" || reason === "denied" ? (
+                        <span className="cell-sub">{status}</span>
                       ) : (
                         <RevokeGrantButton id={g.id} />
                       )}
