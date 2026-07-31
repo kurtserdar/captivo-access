@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { listGrants, listPendingGrants } from "@/lib/access/grants";
 import { classifyGrant, type DecisionReason } from "@/lib/access/evaluate";
+import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
 import { GrantForm } from "./grant-form";
 import { RevokeGrantButton } from "./revoke-grant-button";
 import { TestAccessWidget } from "./test-access-widget";
@@ -9,12 +10,13 @@ import { DecisionButtons } from "./decision-buttons";
 
 export const dynamic = "force-dynamic";
 
-// classifyGrant only ever returns these five reasons for a single grant window;
+// classifyGrant only ever returns these six reasons for a single grant window;
 // user_disabled/no_grant are evaluateAccess-level (multi-grant + user status),
 // never produced here, but included so the Record stays exhaustive over the type.
 const REASON_LABEL: Record<DecisionReason, string> = {
   allow: "Active",
   not_yet: "Upcoming",
+  off_schedule: "Outside hours",
   expired: "Expired",
   revoked: "Revoked",
   denied: "Denied",
@@ -26,6 +28,7 @@ const REASON_LABEL: Record<DecisionReason, string> = {
 const REASON_PILL: Record<DecisionReason, string> = {
   allow: "ok",
   not_yet: "warn",
+  off_schedule: "warn",
   expired: "neutral",
   revoked: "danger",
   denied: "danger",
@@ -71,6 +74,7 @@ export default async function AdminGrantsPage() {
                     <td>{p.site.name}</td>
                     <td className="cell-sub">
                       {(p.startsAt ? p.startsAt.toLocaleString("en-US") : "Immediately")} → {(p.endsAt ? p.endsAt.toLocaleString("en-US") : "Permanent")}
+                      {(() => { const s = parseSchedule(p.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
                     </td>
                     <td className="cell-sub">{p.note ?? "—"}</td>
                     <td><DecisionButtons grantId={p.id} /></td>
@@ -123,6 +127,7 @@ export default async function AdminGrantsPage() {
                     <td>{g.site.name}</td>
                     <td className="cell-sub">
                       {start} → {end}
+                      {(() => { const s = parseSchedule(g.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
                     </td>
                     <td className="cell-sub">{g.note ?? "—"}</td>
                     <td>

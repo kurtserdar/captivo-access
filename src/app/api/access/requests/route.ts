@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { createAccessRequest } from "@/lib/access/grants";
+import { validateSchedule, type Schedule } from "@/lib/access/schedule";
 
 function parseDate(value: unknown): { ok: true; value: Date | null } | { ok: false } {
   if (value === undefined || value === null || value === "") return { ok: true, value: null };
@@ -29,6 +30,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_date" }, { status: 400 });
   }
 
+  let schedule: Schedule | null = null;
+  if (body.schedule !== undefined && body.schedule !== null) {
+    const v = validateSchedule(body.schedule);
+    if (!v.ok) return NextResponse.json({ error: "invalid_schedule" }, { status: 400 });
+    schedule = v.schedule;
+  }
+
   const site = await db.site.findUnique({ where: { id: siteId }, select: { id: true } });
   if (!site) return NextResponse.json({ error: "invalid_site" }, { status: 400 });
 
@@ -38,6 +46,7 @@ export async function POST(req: NextRequest) {
     startsAt: startsAt.value,
     endsAt: endsAt.value,
     note,
+    schedule,
   });
   if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 409 });
 

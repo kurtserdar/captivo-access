@@ -150,6 +150,8 @@ model AccessGrant {
   approvedById     String?
   approvedBy       User?     @relation("GrantApprover", fields: [approvedById], references: [id])
 
+  schedule  Json?
+
   createdById  String
   createdBy    User        @relation("GrantCreator", fields: [createdById], references: [id])
   createdAt    DateTime    @default(now())

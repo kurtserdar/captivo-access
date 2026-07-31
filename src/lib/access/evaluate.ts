@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
+import { parseSchedule, isWithinSchedule } from "./schedule";
 
 export type DecisionReason =
   | "allow" | "user_disabled" | "no_grant"
-  | "revoked" | "denied" | "not_yet" | "expired" | "pending_approval";
+  | "revoked" | "denied" | "not_yet" | "off_schedule" | "expired" | "pending_approval";
 
 export interface Decision { allow: boolean; reason: DecisionReason }
 
@@ -12,13 +13,14 @@ interface GrantWindow {
   endsAt: Date | null;
   requiresApproval: boolean;
   approvedAt: Date | null;
+  schedule: unknown;
 }
 
 // Deny-reason priority when multiple grants all deny: show the most "promising"
-// reason (soonest/most-actionable) → pending_approval > not_yet > expired > revoked/denied.
+// reason (soonest/most-actionable) → pending_approval > not_yet > off_schedule > expired > revoked/denied.
 // (no_grant and user_disabled are handled before this table, never compared here.)
-const DENY_PRIORITY: Record<"pending_approval" | "not_yet" | "expired" | "revoked" | "denied", number> = {
-  pending_approval: 4, not_yet: 3, expired: 2, revoked: 1, denied: 1,
+const DENY_PRIORITY: Record<"pending_approval" | "not_yet" | "off_schedule" | "expired" | "revoked" | "denied", number> = {
+  pending_approval: 5, not_yet: 4, off_schedule: 3, expired: 2, revoked: 1, denied: 1,
 };
 
 export function classifyGrant(g: GrantWindow, now: Date): DecisionReason {
@@ -27,6 +29,11 @@ export function classifyGrant(g: GrantWindow, now: Date): DecisionReason {
   if (g.startsAt && now < g.startsAt) return "not_yet";
   if (g.endsAt && now > g.endsAt) return "expired";
   if (g.requiresApproval && !g.approvedAt) return "pending_approval";
+  if (g.schedule != null) {
+    const s = parseSchedule(g.schedule);
+    // Fail closed: a present-but-unparseable schedule denies, never silently allows.
+    if (s === null || !isWithinSchedule(s, now)) return "off_schedule";
+  }
   return "allow";
 }
 
@@ -37,11 +44,11 @@ export async function evaluateAccess(userId: string, siteId: string, now: Date):
   const grants = await db.accessGrant.findMany({ where: { userId, siteId } });
   if (grants.length === 0) return { allow: false, reason: "no_grant" };
 
-  let best: "pending_approval" | "not_yet" | "expired" | "revoked" | "denied" | null = null;
+  let best: "pending_approval" | "not_yet" | "off_schedule" | "expired" | "revoked" | "denied" | null = null;
   for (const g of grants) {
     const d = classifyGrant(g, now);
     if (d === "allow") return { allow: true, reason: "allow" };
-    const dd = d as "pending_approval" | "not_yet" | "expired" | "revoked" | "denied";
+    const dd = d as "pending_approval" | "not_yet" | "off_schedule" | "expired" | "revoked" | "denied";
     if (best === null || DENY_PRIORITY[dd] > DENY_PRIORITY[best]) best = dd;
   }
   return { allow: false, reason: best! };

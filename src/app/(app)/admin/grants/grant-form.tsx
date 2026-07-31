@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { ScheduleBuilder } from "@/app/(app)/access/schedule-builder";
+import type { Schedule } from "@/lib/access/schedule";
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: "Admin",
@@ -36,6 +38,7 @@ export function GrantForm({
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [note, setNote] = useState("");
+  const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +56,7 @@ export function GrantForm({
           startsAt: startsAt ? new Date(startsAt).toISOString() : null,
           endsAt: endsAt ? new Date(endsAt).toISOString() : null,
           note: note.trim() || undefined,
+          schedule: schedule ?? undefined,
         }),
       });
       const result = await res.json().catch(() => ({}));
@@ -131,6 +135,7 @@ export function GrantForm({
           placeholder="e.g. reason for access"
         />
       </div>
+      <ScheduleBuilder onChange={setSchedule} />
       {error && (
         <p className="notice error" role="alert">
           {error}

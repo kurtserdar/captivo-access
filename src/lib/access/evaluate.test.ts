@@ -14,6 +14,7 @@ type TestGrant = {
   endsAt: Date | null;
   requiresApproval: boolean;
   approvedAt: Date | null;
+  schedule: unknown;
 };
 
 const mockUser = (status: string | null) =>
@@ -24,7 +25,7 @@ const mockGrants = (g: TestGrant[]) =>
   vi.mocked(db.accessGrant.findMany).mockResolvedValue(g as unknown as AccessGrant[]);
 const NOW = new Date("2026-07-27T12:00:00Z");
 const grant = (o: Partial<TestGrant> = {}): TestGrant => ({
-  status: "ACTIVE", startsAt: null, endsAt: null, requiresApproval: false, approvedAt: null, ...o,
+  status: "ACTIVE", startsAt: null, endsAt: null, requiresApproval: false, approvedAt: null, schedule: null, ...o,
 });
 
 beforeEach(() => vi.clearAllMocks());
@@ -84,6 +85,14 @@ describe("evaluateAccess", () => {
     mockGrants([grant({ status: "DENIED" }), grant({ requiresApproval: true, approvedAt: null })]);
     expect(await evaluateAccess("u", "s", NOW)).toEqual({ allow: false, reason: "pending_approval" });
   });
+  it("prefers pending_approval over off_schedule across grants", async () => {
+    mockUser("ACTIVE");
+    mockGrants([
+      grant({ schedule: { timezone: "UTC", days: [0], start: "00:00", end: "01:00" } }), // off_schedule on a Monday
+      grant({ requiresApproval: true, approvedAt: null }),
+    ]);
+    expect(await evaluateAccess("u", "s", new Date("2026-08-03T12:00:00Z"))).toEqual({ allow: false, reason: "pending_approval" });
+  });
 });
 
 describe("classifyGrant", () => {
@@ -95,5 +104,19 @@ describe("classifyGrant", () => {
   });
   it("reports denied regardless of window", () => {
     expect(classifyGrant(grant({ status: "DENIED" }), NOW)).toBe("denied");
+  });
+  it("denies off_schedule when now is outside the recurring window", () => {
+    // Sunday 2026-08-02 12:00Z, schedule is weekdays only → off_schedule
+    const g = grant({ schedule: { timezone: "UTC", days: [1, 2, 3, 4, 5], start: "09:00", end: "18:00" } });
+    expect(classifyGrant(g, new Date("2026-08-02T12:00:00Z"))).toBe("off_schedule");
+  });
+  it("allows when now is inside the recurring window", () => {
+    // Monday 2026-08-03 12:00Z inside 09:00–18:00 UTC
+    const g = grant({ schedule: { timezone: "UTC", days: [1], start: "09:00", end: "18:00" } });
+    expect(classifyGrant(g, new Date("2026-08-03T12:00:00Z"))).toBe("allow");
+  });
+  it("fails closed on a malformed schedule (off_schedule, never allow)", () => {
+    const g = grant({ schedule: { timezone: "UTC" } }); // missing days/start/end
+    expect(classifyGrant(g, new Date("2026-08-03T12:00:00Z"))).toBe("off_schedule");
   });
 });

@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/current-user";
 import { listUserGrants } from "@/lib/access/grants";
 import { classifyGrant } from "@/lib/access/evaluate";
+import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
 import { RequestAccessForm } from "./request-access-form";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +29,10 @@ function GrantTable({ grants, badge }: { grants: Grant[]; badge: React.ReactNode
           {grants.map((g) => (
             <tr key={g.id}>
               <td>{g.site.name}</td>
-              <td className="cell-sub">{formatWindow(g.startsAt, g.endsAt)}</td>
+              <td className="cell-sub">
+                {formatWindow(g.startsAt, g.endsAt)}
+                {(() => { const s = parseSchedule(g.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
+              </td>
               <td>{badge}</td>
             </tr>
           ))}
@@ -45,11 +49,13 @@ export default async function AccessPage() {
 
   const active: Grant[] = [];
   const upcoming: Grant[] = [];
+  const offHours: Grant[] = [];
   const requests: { grant: Grant; reason: "pending_approval" | "denied" }[] = [];
   for (const g of grants) {
     const reason = classifyGrant(g, now);
     if (reason === "allow") active.push(g);
     else if (reason === "not_yet") upcoming.push(g);
+    else if (reason === "off_schedule") offHours.push(g);
     else if (reason === "pending_approval") requests.push({ grant: g, reason });
     else if (reason === "denied") requests.push({ grant: g, reason });
     // expired and revoked grants are not shown here.
@@ -66,9 +72,9 @@ export default async function AccessPage() {
 
       <RequestAccessForm />
 
-      {active.length === 0 && upcoming.length === 0 ? (
+      {active.length === 0 && upcoming.length === 0 && offHours.length === 0 ? (
         <div className="empty">You don&apos;t have any active access right now.</div>
-      ) : (
+      ) : active.length === 0 && upcoming.length === 0 ? null : (
         <>
           <h2>Active</h2>
           {active.length === 0 ? (
@@ -83,6 +89,13 @@ export default async function AccessPage() {
           ) : (
             <GrantTable grants={upcoming} badge={<span className="pill warn">Upcoming</span>} />
           )}
+        </>
+      )}
+
+      {offHours.length > 0 && (
+        <>
+          <h2>Outside current hours</h2>
+          <GrantTable grants={offHours} badge={<span className="pill warn">Outside hours</span>} />
         </>
       )}
 

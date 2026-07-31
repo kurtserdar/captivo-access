@@ -6,6 +6,7 @@ import type { DecisionReason } from "@/lib/access/evaluate";
 const REASON_LABEL: Record<Exclude<DecisionReason, "allow">, string> = {
   no_grant: "No grant for this site",
   not_yet: "Grant not active yet",
+  off_schedule: "Outside scheduled hours",
   expired: "Grant expired",
   revoked: "Grant revoked",
   denied: "Grant denied",
