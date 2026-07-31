@@ -1,10 +1,11 @@
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
-import { listGrants } from "@/lib/access/grants";
+import { listGrants, listPendingGrants } from "@/lib/access/grants";
 import { classifyGrant, type DecisionReason } from "@/lib/access/evaluate";
 import { GrantForm } from "./grant-form";
 import { RevokeGrantButton } from "./revoke-grant-button";
 import { TestAccessWidget } from "./test-access-widget";
+import { DecisionButtons } from "./decision-buttons";
 
 export const dynamic = "force-dynamic";
 
@@ -36,13 +37,14 @@ const REASON_PILL: Record<DecisionReason, string> = {
 export default async function AdminGrantsPage() {
   await requireAdmin();
 
-  const [users, sites, grants] = await Promise.all([
+  const [users, sites, grants, pending] = await Promise.all([
     db.user.findMany({
       select: { id: true, name: true, email: true, role: true },
       orderBy: [{ role: "desc" }, { name: "asc" }], // VENDOR before ADMIN
     }),
     db.site.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     listGrants(),
+    listPendingGrants(),
   ]);
 
   const now = new Date();
@@ -55,6 +57,30 @@ export default async function AdminGrantsPage() {
           <p>Grant a user time-boxed access to a site. Leave the end date empty for permanent access.</p>
         </div>
       </div>
+
+      {pending.length > 0 && (
+        <div className="card">
+          <div className="card-head"><h2>Pending requests</h2></div>
+          <div className="table-wrap">
+            <table className="table">
+              <thead><tr><th>User</th><th>App</th><th>Requested window</th><th>Justification</th><th></th></tr></thead>
+              <tbody>
+                {pending.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.user.name}<div className="cell-sub">{p.user.email}</div></td>
+                    <td>{p.site.name}</td>
+                    <td className="cell-sub">
+                      {(p.startsAt ? p.startsAt.toLocaleString("en-US") : "Immediately")} → {(p.endsAt ? p.endsAt.toLocaleString("en-US") : "Permanent")}
+                    </td>
+                    <td className="cell-sub">{p.note ?? "—"}</td>
+                    <td><DecisionButtons grantId={p.id} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="card-head">
