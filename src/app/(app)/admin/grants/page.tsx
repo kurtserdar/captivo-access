@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 const REASON_LABEL: Record<DecisionReason, string> = {
   allow: "Active",
   not_yet: "Upcoming",
+  off_schedule: "Outside hours",
   expired: "Expired",
   revoked: "Revoked",
   denied: "Denied",
@@ -26,6 +27,7 @@ const REASON_LABEL: Record<DecisionReason, string> = {
 const REASON_PILL: Record<DecisionReason, string> = {
   allow: "ok",
   not_yet: "warn",
+  off_schedule: "warn",
   expired: "neutral",
   revoked: "danger",
   denied: "danger",

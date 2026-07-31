@@ -33,6 +33,7 @@ export async function listGrants() {
       status: true,
       requiresApproval: true,
       approvedAt: true,
+      schedule: true,
       note: true,
       createdAt: true,
       user: { select: { name: true, email: true } },
@@ -56,6 +57,7 @@ export async function listUserGrants(userId: string) {
       status: true,
       requiresApproval: true,
       approvedAt: true,
+      schedule: true,
       site: { select: { name: true } },
     },
   });
