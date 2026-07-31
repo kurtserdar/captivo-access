@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { listGrants, listPendingGrants } from "@/lib/access/grants";
 import { classifyGrant, type DecisionReason } from "@/lib/access/evaluate";
+import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
 import { GrantForm } from "./grant-form";
 import { RevokeGrantButton } from "./revoke-grant-button";
 import { TestAccessWidget } from "./test-access-widget";
@@ -73,6 +74,7 @@ export default async function AdminGrantsPage() {
                     <td>{p.site.name}</td>
                     <td className="cell-sub">
                       {(p.startsAt ? p.startsAt.toLocaleString("en-US") : "Immediately")} → {(p.endsAt ? p.endsAt.toLocaleString("en-US") : "Permanent")}
+                      {(() => { const s = parseSchedule(p.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
                     </td>
                     <td className="cell-sub">{p.note ?? "—"}</td>
                     <td><DecisionButtons grantId={p.id} /></td>
@@ -125,6 +127,7 @@ export default async function AdminGrantsPage() {
                     <td>{g.site.name}</td>
                     <td className="cell-sub">
                       {start} → {end}
+                      {(() => { const s = parseSchedule(g.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
                     </td>
                     <td className="cell-sub">{g.note ?? "—"}</td>
                     <td>
