@@ -80,6 +80,8 @@ a{color:inherit;}
 .input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
 .hint{font-size:.78rem;color:var(--faint);}
 .error{font-size:.82rem;color:var(--danger);}
+.schedule-builder{display:flex;flex-direction:column;gap:12px;margin-top:8px;}
+.day-toggles{display:flex;flex-wrap:wrap;gap:6px;}
 
 /* ---- table ---- */
 .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-lg);}
