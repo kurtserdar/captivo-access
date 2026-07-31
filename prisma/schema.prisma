@@ -131,6 +131,7 @@ model Site {
 enum GrantStatus {
   ACTIVE
   REVOKED
+  DENIED
 }
 
 model AccessGrant {
