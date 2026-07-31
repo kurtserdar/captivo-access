@@ -177,9 +177,21 @@ model AuditEvent {
   reason     String?
   clientIp   String?
   userAgent  String?
+  seq        BigInt        @unique
+  prevHash   String        @default("")
+  hash       String        @default("")
   createdAt  DateTime      @default(now())
 
   @@index([timestamp])
   @@index([userId, timestamp])
   @@index([siteId, timestamp])
+  @@index([seq])
+}
+
+// Singleton (id = "singleton") holding the tamper-evidence chain head.
+model AuditChainState {
+  id        String   @id
+  lastSeq   BigInt   @default(0)
+  lastHash  String   @default("")
+  updatedAt DateTime @updatedAt
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { computeHash, AUDIT_CHAIN_LOCK_KEY } from "@/lib/audit/chain";
 
 function dataplaneAuthorized(req: NextRequest): boolean {
   const s = process.env.DATAPLANE_SECRET;
@@ -29,7 +30,8 @@ export async function POST(req: NextRequest) {
   const emailById = new Map(users.map((u) => [u.id, u.email]));
   const nameById = new Map(sites.map((s) => [s.id, s.name]));
 
-  const rows = events.map((e) => ({
+  // Normalize into the shape the chain hashes over (seq/prevHash/hash filled below).
+  const normalized = events.map((e) => ({
     timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
     userId: e.userId ?? null,
     userEmail: e.userId ? emailById.get(e.userId) ?? null : null,
@@ -45,6 +47,36 @@ export async function POST(req: NextRequest) {
     clientIp: e.clientIp ?? null,
     userAgent: e.userAgent ?? null,
   }));
-  const result = await db.auditEvent.createMany({ data: rows });
-  return NextResponse.json({ inserted: result.count });
+
+  const inserted = await db.$transaction(async (tx) => {
+    // Serialize all audit writes so concurrent batches never race the chain head.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${AUDIT_CHAIN_LOCK_KEY})`;
+
+    const head = await tx.auditChainState.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton" },
+      update: {},
+      select: { lastSeq: true, lastHash: true },
+    });
+
+    let lastSeq = head.lastSeq;
+    let lastHash = head.lastHash;
+    const rows = normalized.map((n) => {
+      const seq = lastSeq + BigInt(1);
+      const prevHash = lastHash;
+      const hash = computeHash(prevHash, { ...n, seq });
+      lastSeq = seq;
+      lastHash = hash;
+      return { ...n, seq, prevHash, hash };
+    });
+
+    await tx.auditEvent.createMany({ data: rows });
+    await tx.auditChainState.update({
+      where: { id: "singleton" },
+      data: { lastSeq, lastHash },
+    });
+    return rows.length;
+  });
+
+  return NextResponse.json({ inserted });
 }
