@@ -38,7 +38,7 @@ production — use this directory instead.
    - `connect.access.example.com` → this host (connector tunnel — gets its
      own cert automatically via HTTP-01, no plugin needed)
    - `*.access.example.com` → this host (per-site vendor access — wildcard;
-     see the [TLS note](#wildcard-tls-note) below for what it takes to
+     see [Wildcard TLS: the manageable path](#wildcard-tls-the-manageable-path) below for what it takes to
      actually get a cert for this)
 3. Docker + Docker Compose v2 on the host, ports 80 and 443 reachable from
    the internet.
@@ -93,40 +93,78 @@ Go to `https://manager.<ACCESS_DOMAIN>/setup` and register the first
 account as a passkey (becomes `ADMIN`). See the repo root
 [README](../README.md#identity--passkey) for the invite/login flow.
 
-## Wildcard TLS note
+## Wildcard TLS: the manageable path
 
-Automatic HTTPS for a **wildcard** hostname (`*.access.example.com`)
-requires the ACME **DNS-01** challenge — plain HTTP-01/TLS-ALPN-01 can't
-prove control of a wildcard name. DNS-01 needs a DNS-provider plugin built
-into Caddy, and the plain `caddy:2-alpine` image used here ships with
-**no DNS plugins**. `deploy/Caddyfile` ships with the wildcard block
-commented out for exactly this reason (see the comments in that file).
+Each internal app you publish is a `Site` with its own public hostname
+(`jira.access.example.com`, `cyberark.access.example.com`, …). You want
+adding an app to be a **one-line change in the Manager UI** — not a new DNS
+record and a new cert every time. That means a **single wildcard**
+`*.access.example.com` covering every current and future site.
 
-Pick one:
+A wildcard cert requires the ACME **DNS-01** challenge (plain
+HTTP-01/TLS-ALPN-01 can't prove control of a wildcard name), and DNS-01
+requires programmatic access to your DNS zone via an API. This is the whole
+game — get DNS-01 working once and every future app costs zero TLS/DNS work.
 
-- **Build a custom Caddy image** with [xcaddy](https://github.com/caddyserver/xcaddy)
-  bundling your DNS provider's module, e.g.:
+### The real blocker is your DNS provider's API, not Caddy
+
+DNS-01 needs your DNS host's API — and **many registrars gate or disable it.
+GoDaddy, for example, cut off DNS API access in 2024 for accounts with fewer
+than 10 domains** ([Let's Encrypt community
+thread](https://community.letsencrypt.org/t/godaddy-no-longer-allows-api-access-to-clients-e-g-for-dns-based-cert-renewal-if-you-have-less-than-50-domains/219377)),
+so the GoDaddy path simply won't work for most users. Switching ACME tools
+(certbot, acme.sh, Caddy) doesn't help — they all need that same API.
+
+### Recommended: host the DNS zone somewhere with a real API
+
+**Your registrar and your DNS host don't have to be the same company.** Keep
+your domain registered wherever it is (GoDaddy, Namecheap, …) and delegate
+just the access subdomain's DNS to a provider with a free, first-class API:
+
+- **[Cloudflare](https://www.cloudflare.com/)** (free tier) is the canonical
+  choice — best-supported Caddy module, reliable token-scoped API.
+  [deSEC](https://desec.io/) is a solid free alternative.
+- At your registrar, add `NS` records delegating `access.example.com` to your
+  chosen provider (e.g. Cloudflare's nameservers), then create the
+  `manager`, `connect`, and `*` records for `access.example.com` there.
+- Build a Caddy image with that provider's DNS module and point the `caddy:`
+  service at it:
   ```bash
   xcaddy build --with github.com/caddy-dns/cloudflare
   ```
-  point the `caddy:` service's `image:` in `docker-compose.prod.yml` at
-  your built image, set `DNS_API_TOKEN` in `.env` to that provider's API
-  token, and uncomment the `*.{$ACCESS_DOMAIN} { tls { dns ... } ... }`
-  block in `Caddyfile`.
-- **Skip the wildcard.** Add one explicit host block per vendor site
-  instead — each gets its own cert via plain HTTP-01, no DNS plugin
-  required:
-  ```caddyfile
-  acme-corp.{$ACCESS_DOMAIN} {
-      reverse_proxy access-dataplane:3103
-  }
-  ```
-  This is more manual (one DNS record + one Caddy block per site) but
-  needs nothing beyond the stock `caddy:2-alpine` image.
+  Set `DNS_API_TOKEN` in `.env`, then uncomment the
+  `*.{$ACCESS_DOMAIN} { tls { dns cloudflare {$DNS_API_TOKEN} } ... }` block
+  in `Caddyfile`.
 
-Until one of these is done, requests to `*.<ACCESS_DOMAIN>` other than
-`manager.<ACCESS_DOMAIN>` have no TLS termination — vendor site access
-won't work over HTTPS.
+This is **one** well-trodden path that works for everyone regardless of
+registrar. After it's set up, publishing a new app is just a `Site` in the
+Manager UI.
+
+### Already on a provider with a good API?
+
+If your DNS is already hosted somewhere with an open API (Route 53,
+DigitalOcean, Hetzner, deSEC, Cloudflare, …), skip the delegation — just pick
+your module from the [`caddy-dns`](https://github.com/caddy-dns) org and
+`xcaddy build --with` it, same as above.
+
+### Fallback: per-site HTTP-01 (does not scale)
+
+If you truly can't do DNS-01, add one explicit host block per vendor site —
+each gets its own cert via plain HTTP-01, no DNS plugin, stock
+`caddy:2-alpine`:
+
+```caddyfile
+acme-corp.{$ACCESS_DOMAIN} {
+    reverse_proxy access-dataplane:3103
+}
+```
+
+But this costs **one DNS record + one Caddy block + one reload per app** —
+fine for a handful, unmanageable past that. Prefer the wildcard.
+
+Until one of these is in place, requests to `*.<ACCESS_DOMAIN>` other than
+`manager.` and `connect.` have no TLS termination — vendor site access won't
+work over HTTPS.
 
 ## How a vendor reaches an app
 
