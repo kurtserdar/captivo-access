@@ -180,8 +180,9 @@ push the schema against the production database.
 1. **Add a connector.** An admin goes to `/admin/connectors`, names a
    connector, and gets back a one-time pairing code and a ready-to-copy
    `docker run` command. That command is run on a host **inside the
-   customer's own network**, with `DATAPLANE_URL` (the data plane's public
-   WSS address) and `UPSTREAMS` — a comma-separated `name=http://host:port`
+   customer's own network**, with `DATAPLANE_URL` (the data plane's
+   TLS-terminated WSS tunnel endpoint, e.g. `wss://connect.<your-domain>`)
+   and `UPSTREAMS` — a comma-separated `name=http://host:port`
    allowlist of the internal services this connector may reach (see
    [`connector/README.md`](./connector/README.md) for the full env
    reference). On first start the connector redeems the pairing code,

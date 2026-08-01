@@ -17,6 +17,18 @@ manager.{$ACCESS_DOMAIN} {
 	reverse_proxy access-manager:3100
 }
 
+# --- Connector tunnel (WSS): TLS termination for the data-plane's :3101 ---
+#
+# The data-plane serves the connector WebSocket on :3101 as PLAIN HTTP (it does
+# not terminate TLS itself), and docker-compose.prod.yml does not publish that
+# port on the host. This single-hostname block gives the tunnel real TLS via
+# HTTP-01 (no DNS plugin / wildcard needed) so connectors dial in over wss://.
+# Caddy transparently proxies the WebSocket upgrade + the long-lived yamux
+# stream that rides on it. Point connectors at wss://connect.{$ACCESS_DOMAIN}.
+connect.{$ACCESS_DOMAIN} {
+	reverse_proxy access-dataplane:3101
+}
+
 # --- Per-site wildcard proxy: *.{$ACCESS_DOMAIN} -> access-dataplane:3103 ---
 #
 # Automatic HTTPS for a WILDCARD hostname (*.access.example.com) requires the
