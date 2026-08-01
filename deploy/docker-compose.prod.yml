@@ -94,15 +94,19 @@ services:
       # Bounded in-memory audit-event queue depth before the data-plane
       # starts dropping events rather than blocking the proxy.
       AUDIT_QUEUE_CAP: ${AUDIT_QUEUE_CAP:-10000}
-    ports:
-      # Connector WSS — connectors dial IN from customer DCs over the
-      # internet, so this must be published on the host.
-      - "3101:3101"
-    # 3102 (internal API) and 3103 (browser proxy) are deliberately NOT
-    # published: 3102 must never be reachable from outside this compose
-    # network, and 3103 is only reached by Caddy (same network, by service
-    # name) rather than the host's published ports.
+    # None of the data-plane ports are published to the host. Caddy terminates
+    # TLS and reverse-proxies to them by service name on the compose network:
+    #   connect.<ACCESS_DOMAIN> -> :3101  (connector WSS tunnel)
+    #   *.<ACCESS_DOMAIN>        -> :3103  (browser-facing proxy)
+    # 3102 (internal Manager <-> data-plane API) must never leave this network.
+    #
+    # Do NOT publish 3101 raw on the host: the data-plane serves plain HTTP on
+    # that port (it does not terminate TLS), so a raw-published 3101 would carry
+    # the connector tunnel unencrypted over the internet. Front it with Caddy
+    # (the connect.<ACCESS_DOMAIN> block in Caddyfile) and point connectors at
+    # wss://connect.<ACCESS_DOMAIN> instead.
     expose:
+      - "3101"
       - "3103"
 
   caddy:

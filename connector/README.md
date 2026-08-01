@@ -19,7 +19,7 @@ It shares wire-format and dial types with the data-plane via the
 | Variable        | Required | Meaning                                                                 |
 | ---------------- | -------- | ------------------------------------------------------------------------ |
 | `MANAGER_URL`     | yes      | Base URL of the Manager (used for enrollment/pairing).                  |
-| `DATAPLANE_URL`   | yes      | WSS URL of the data-plane to dial, e.g. `ws://access.example.com:3101`. |
+| `DATAPLANE_URL`   | yes      | TLS-terminated WSS URL of the data-plane tunnel to dial, e.g. `wss://connect.access.example.com`. Use `wss://` — a plain `ws://` tunnel is unencrypted. |
 | `PAIR_CODE`       | first run only | One-time pairing code from the Manager UI. Only needed until a token is stored at `TOKEN_FILE`; ignored afterwards. |
 | `UPSTREAMS`       | yes      | Comma-separated `name=url` allowlist, e.g. `wiki=http://10.0.0.5:8080,db-admin=http://10.0.0.6:9000`. |
 | `TOKEN_FILE`      | no       | Path to the stored connector token. Default: `/data/token`.            |
@@ -59,7 +59,7 @@ run:
 docker run -d \
   --name captivo-access-connector \
   -e MANAGER_URL=https://access.example.com \
-  -e DATAPLANE_URL=ws://access.example.com:3101 \
+  -e DATAPLANE_URL=wss://connect.access.example.com \
   -e PAIR_CODE=<one-time code from the Manager UI> \
   -e UPSTREAMS="wiki=http://10.0.0.5:8080" \
   -v conn-data:/data \

@@ -94,8 +94,10 @@ export function ConnectorForm() {
             {copied ? "Copied" : "Copy command"}
           </button>
           <p>
-            Replace <code>DATAPLANE_URL</code> and <code>UPSTREAMS</code> with your data-plane&apos;s
-            public address and the internal host(s) this connector should reach.
+            Replace <code>DATAPLANE_URL</code> with your TLS-terminated connector tunnel
+            endpoint (e.g. <code>wss://connect.your-access-domain</code>) and <code>UPSTREAMS</code>{" "}
+            with the internal host(s) this connector should reach. Use <code>wss://</code> — a
+            plain <code>ws://</code> tunnel is unencrypted.
           </p>
         </div>
       )}

@@ -13,13 +13,15 @@ production — use this directory instead.
 
 - **`access-manager`** (Next.js, `:3100`) — the console: setup, auth,
   invites, admin, APIs. Not published to the host; only Caddy reaches it.
-- **`access-dataplane`** (Go) — three listeners:
-  - `:3101` — connector WSS. **Published**: connectors running inside
-    customer data centers dial *in* to this over the internet.
-  - `:3102` — internal API (Manager ↔ data-plane). Never published.
+- **`access-dataplane`** (Go) — three listeners, **none published to the
+  host**; Caddy terminates TLS and reverse-proxies to each by service name:
+  - `:3101` — connector WSS. The data-plane serves this as **plain HTTP**
+    (no TLS of its own), so Caddy fronts it at `connect.<ACCESS_DOMAIN>` and
+    connectors dial *in* over `wss://connect.<ACCESS_DOMAIN>`. Publishing 3101
+    raw would carry the tunnel unencrypted over the internet — don't.
+  - `:3102` — internal API (Manager ↔ data-plane). Never exposed off-network.
   - `:3103` — the browser-facing identity-aware proxy that serves vendor
-    traffic for `<site>.<ACCESS_DOMAIN>`. Not published to the host; only
-    Caddy reaches it.
+    traffic for `<site>.<ACCESS_DOMAIN>`, fronted by Caddy.
 - **`caddy`** — terminates TLS on `:80`/`:443` and reverse-proxies by
   hostname to the two services above, setting `X-Forwarded-Host` /
   `X-Forwarded-Proto` / `X-Forwarded-For` (Caddy does this by default —
@@ -32,10 +34,12 @@ production — use this directory instead.
 
 1. A domain you control (e.g. `access.example.com`).
 2. DNS records pointing at this host's public IP:
-   - `manager.access.example.com` → this host
-   - `*.access.example.com` → this host (wildcard — see the
-     [TLS note](#wildcard-tls-note) below for what it takes to actually
-     get a cert for this)
+   - `manager.access.example.com` → this host (Manager console)
+   - `connect.access.example.com` → this host (connector tunnel — gets its
+     own cert automatically via HTTP-01, no plugin needed)
+   - `*.access.example.com` → this host (per-site vendor access — wildcard;
+     see the [TLS note](#wildcard-tls-note) below for what it takes to
+     actually get a cert for this)
 3. Docker + Docker Compose v2 on the host, ports 80 and 443 reachable from
    the internet.
 4. Nothing to build — this stack pulls the published images

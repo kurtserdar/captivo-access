@@ -9,7 +9,7 @@ function buildInstallCommand(code: string, managerUrl: string): string {
   return (
     "docker run -d --name access-connector --restart unless-stopped " +
     `-e MANAGER_URL=${managerUrl} ` +
-    "-e DATAPLANE_URL=wss://<your-dataplane-host>:3101 " +
+    "-e DATAPLANE_URL=wss://connect.<your-access-domain> " +
     `-e PAIR_CODE=${code} ` +
     "-e UPSTREAMS=<site-upstream-name>=http://<internal-host>:<port> " +
     "-v access_connector_data:/data " +
