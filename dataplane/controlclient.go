@@ -64,11 +64,11 @@ func (c *ControlClient) ResolveSession(token string) (string, error) {
 // SiteByHost resolves a browser-facing hostname to the site/connector it's
 // routed to. If the control plane has no site for host, it returns
 // ErrNoSite.
-func (c *ControlClient) SiteByHost(host string) (siteID, connectorID, upstreamName string, err error) {
+func (c *ControlClient) SiteByHost(host string) (siteID, connectorID, upstreamUrl string, err error) {
 	var out struct {
-		SiteID       string `json:"siteId"`
-		ConnectorID  string `json:"connectorId"`
-		UpstreamName string `json:"upstreamName"`
+		SiteID      string `json:"siteId"`
+		ConnectorID string `json:"connectorId"`
+		UpstreamUrl string `json:"upstreamUrl"`
 	}
 	if err := c.post("/api/internal/site/by-host", map[string]string{"host": host}, &out); err != nil {
 		if he, ok := err.(*httpError); ok && he.code == http.StatusNotFound {
@@ -76,7 +76,7 @@ func (c *ControlClient) SiteByHost(host string) (siteID, connectorID, upstreamNa
 		}
 		return "", "", "", err
 	}
-	return out.SiteID, out.ConnectorID, out.UpstreamName, nil
+	return out.SiteID, out.ConnectorID, out.UpstreamUrl, nil
 }
 
 // CheckAccess evaluates whether userId is allowed to reach siteId right

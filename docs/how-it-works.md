@@ -35,7 +35,10 @@ Setting it up:
    connector and get a ready-to-run `docker run` command. Run it on a machine
    inside your network; it dials out and shows up as online.
 5. **Define two things: the app, and who.** A **Site** = which internal app
-   (e.g. `jira.access.yourdomain.com` → the connector's real internal address).
+   (e.g. `jira.access.yourdomain.com` → the app's real internal address, set
+   directly on the Site — the connector itself needs no per-app config; it
+   just dials whatever address the Site sends it, optionally bounded by
+   `ALLOWED_TARGETS` on the connector's container).
    An **access grant** = invite the user (they register a passkey) and grant them
    that Site — optionally time-boxed, approval-gated, or on a recurring schedule
    ("weekdays 09:00–18:00").
@@ -60,8 +63,8 @@ flowchart TD
     M -->|no match| E404["404"]
     M -->|matched| G2{"Gate 2 — allowed?<br/>grant · approval · schedule"}
     G2 -->|no| E403["403<br/>no grant / pending / off-hours / denied / expired"]
-    G2 -->|yes| T["Outbound tunnel to connector"]
-    T --> G3{"Gate 3<br/>in connector allowlist?"}
+    G2 -->|yes| T["Outbound tunnel to connector<br/>carries the Site's internal address"]
+    T --> G3{"Gate 3<br/>within ALLOWED_TARGETS?<br/>(optional boundary)"}
     G3 -->|no| E502["502"]
     G3 -->|yes| APP["Internal app<br/>http://10.0.5.20:8080"]
     APP --> R["Response flows back<br/>connector → tunnel → proxy → browser"]
@@ -89,13 +92,15 @@ Step by step:
    a **grant** for this Site — is it **approved**, and within its **time window**
    and **recurring schedule**? **If not → 403**, with a specific reason: no grant,
    pending approval, outside hours, denied, or expired.
-7. **Outbound tunnel.** The proxy sends the request through the connector's
-   **outbound-only** tunnel. The cloud never dials into your network — the
-   connector always opened the connection.
-8. **Gate 3 — In the allowlist?** The connector looks the Site's name up in its
-   own **allowlist** and maps it to the real internal address
-   (`http://10.0.5.20:8080`). **Not listed → 502.** The connector only ever
-   reaches addresses you explicitly allowed.
+7. **Outbound tunnel.** The proxy sends the request, along with the Site's
+   internal address, through the connector's **outbound-only** tunnel. The
+   cloud never dials into your network — the connector always opened the
+   connection.
+8. **Gate 3 — Within the boundary?** The connector dials the internal address
+   defined on the Site (`http://10.0.5.20:8080`). If the connector's container
+   has an optional `ALLOWED_TARGETS` boundary set, the address must fall
+   inside it. **Outside it → 502.** Left unset, the connector dials whatever
+   address the Manager routes to it.
 9. **The internal app responds.** Jira (or whatever it is) sees the request and
    produces its response, as if the user were on the internal network.
 10. **The response flows back** — connector → tunnel → proxy → Caddy → browser.

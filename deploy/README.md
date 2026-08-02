@@ -225,14 +225,18 @@ work over HTTPS.
 
 ## How a vendor reaches an app
 
-Once an admin has created a `Site`, an `AccessGrant`, and the vendor has
-registered a passkey, they open `https://<site>.access.example.com` in
-their browser. Caddy terminates TLS and forwards to
+Once an admin has created a `Site` — which carries the internal app's
+address directly (e.g. `http://10.0.5.20:8080`) — an `AccessGrant`, and the
+vendor has registered a passkey, they open `https://<site>.access.example.com`
+in their browser. Caddy terminates TLS and forwards to
 `access-dataplane:3103`, which checks the session cookie (scoped to
 `COOKIE_DOMAIN`, so it's already set from logging in at
 `manager.access.example.com`), evaluates the grant, and — if allowed —
-streams the request over the outbound tunnel to the connector running
-inside the customer's network, which reaches the real internal app.
+streams the request, along with the Site's internal address, over the
+outbound tunnel to the connector running inside the customer's network,
+which dials that address. The connector itself takes no `UPSTREAMS`
+configuration; the only thing you can set on it is an optional
+`ALLOWED_TARGETS` boundary (see [`connector/README.md`](../connector/README.md)).
 
 ## Updating
 
@@ -243,3 +247,20 @@ docker compose -f docker-compose.prod.yml up -d
 
 Re-run the `prisma db push` step above if the new version changed the
 schema (check the release notes / CHANGELOG).
+
+### Breaking change: v0.2.0 (dynamic upstreams)
+
+v0.2.0 moves the internal address off the connector and onto the Site, which
+changes both the schema and the connector↔data-plane protocol:
+
+- **Upgrade the data-plane and every connector together.** An old connector
+  can't talk to a new data-plane (the tunnel now carries the target URL, not an
+  alias). Pull the new images for all three services and restart; connectors
+  re-run on the new image (no re-enrollment needed — the token in `/data`
+  persists).
+- **Re-set each Site's address.** `db push` drops the old `upstreamName` column
+  and adds `upstreamUrl`; existing Sites come out blank. Open each Site and set
+  its **Internal address** (`http://host:port`) before it will route.
+- **Connectors no longer take `UPSTREAMS`.** Drop it from the `docker run`
+  command. Optionally add `ALLOWED_TARGETS` (e.g. `10.0.5.0/24`) to cap what a
+  connector may reach.

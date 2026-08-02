@@ -14,7 +14,7 @@ export default async function AdminSitesPage() {
         id: true,
         name: true,
         hostname: true,
-        upstreamName: true,
+        upstreamUrl: true,
         description: true,
         connector: { select: { name: true, status: true } },
       },
@@ -33,9 +33,9 @@ export default async function AdminSitesPage() {
         <div>
           <h1>Sites</h1>
           <p>
-            A site is an internal upstream reachable through a connector. The upstream name must match an
-            entry in that connector&apos;s <code>UPSTREAMS</code> env. Use &quot;Test connection&quot; to
-            verify a live round trip through the connector&apos;s tunnel.
+            A site is an internal upstream reachable through a connector, addressed by its real internal
+            URL. Use &quot;Test connection&quot; to verify a live round trip through the connector&apos;s
+            tunnel.
           </p>
         </div>
       </div>
@@ -62,7 +62,7 @@ export default async function AdminSitesPage() {
                 <th>Name</th>
                 <th>Hostname</th>
                 <th>Connector</th>
-                <th>Upstream</th>
+                <th>Internal address</th>
                 <th>Description</th>
                 <th></th>
               </tr>
@@ -73,7 +73,7 @@ export default async function AdminSitesPage() {
                   <td>{s.name}</td>
                   <td className="cell-sub">{s.hostname}</td>
                   <td>{s.connector.name}</td>
-                  <td className="cell-sub">{s.upstreamName}</td>
+                  <td className="cell-sub">{s.upstreamUrl}</td>
                   <td className="cell-sub">{s.description ?? "—"}</td>
                   <td>
                     <TestConnectionButton siteId={s.id} />

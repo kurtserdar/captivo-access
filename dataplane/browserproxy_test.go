@@ -114,7 +114,7 @@ func TestBrowserProxyStreamsRequestAndResponse(t *testing.T) {
 
 	reg := NewRegistry()
 	reg.Set("c1", &Session{mux: srv})
-	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "wiki", allow: true, reason: "allow"}
+	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "http://wiki.internal", allow: true, reason: "allow"}
 	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
 
 	req := httptest.NewRequest(http.MethodPost, "http://app.example.com/api?x=1", strings.NewReader("hello body"))
@@ -132,7 +132,7 @@ func TestBrowserProxyStreamsRequestAndResponse(t *testing.T) {
 	if string(gotBody) != "hello body" {
 		t.Fatalf("connector received body = %q, want %q", gotBody, "hello body")
 	}
-	if gotDR.UpstreamName != "wiki" || gotDR.Method != http.MethodPost || gotDR.Path != "/api?x=1" {
+	if gotDR.UpstreamUrl != "http://wiki.internal" || gotDR.Method != http.MethodPost || gotDR.Path != "/api?x=1" {
 		t.Fatalf("dial request = %+v", gotDR)
 	}
 	if w.Header().Get("X-Echo") != "yes" {
@@ -204,7 +204,7 @@ func TestBrowserProxySanitizesRequestAndResponseHeaders(t *testing.T) {
 
 	reg := NewRegistry()
 	reg.Set("c1", &Session{mux: srv})
-	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "wiki", allow: true, reason: "allow"}
+	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "http://wiki.internal", allow: true, reason: "allow"}
 	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
 
 	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/", nil)
@@ -264,7 +264,7 @@ func TestBrowserProxySanitizesRequestAndResponseHeaders(t *testing.T) {
 
 // (c) allow=false -> 403 with the message mapped from the deny reason.
 func TestBrowserProxyDeniedShowsReason(t *testing.T) {
-	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "wiki", allow: false, reason: "expired"}
+	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "http://wiki.internal", allow: false, reason: "expired"}
 	p := &BrowserProxy{reg: NewRegistry(), ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
 
 	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/", nil)
@@ -308,7 +308,7 @@ func TestBrowserProxyUnknownSite(t *testing.T) {
 
 // (e) The resolved connector has no live session in the registry -> 502.
 func TestBrowserProxyConnectorOffline(t *testing.T) {
-	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c-missing", upstream: "wiki", allow: true, reason: "allow"}
+	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c-missing", upstream: "http://wiki.internal", allow: true, reason: "allow"}
 	p := &BrowserProxy{reg: NewRegistry(), ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)} // empty registry
 
 	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/", nil)
@@ -361,7 +361,7 @@ func TestBrowserProxyRespondsBeforeBodyDrained(t *testing.T) {
 
 	reg := NewRegistry()
 	reg.Set("c1", &Session{mux: srv})
-	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "wiki", allow: true, reason: "allow"}
+	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "http://wiki.internal", allow: true, reason: "allow"}
 	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
 
 	// Bigger than yamux's default 256 KiB stream window, so a sequential

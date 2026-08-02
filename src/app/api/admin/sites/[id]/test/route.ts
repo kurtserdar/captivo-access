@@ -17,7 +17,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     where: { id },
     select: {
       connectorId: true,
-      upstreamName: true,
+      upstreamUrl: true,
       connector: { select: { status: true } },
     },
   });
@@ -30,10 +30,15 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     // alive, never proxy to a connector we've already revoked.
     return NextResponse.json({ error: "connector_revoked" });
   }
+  if (!site.upstreamUrl) {
+    // A Site upgraded from an older version (or not yet configured) has no
+    // internal address — nothing to test until one is set.
+    return NextResponse.json({ error: "no_upstream_url" });
+  }
 
   const result = await proxyThroughConnector({
     connectorId: site.connectorId,
-    upstreamName: site.upstreamName,
+    upstreamUrl: site.upstreamUrl,
   });
 
   return NextResponse.json(result);

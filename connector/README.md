@@ -7,9 +7,9 @@ private VPC, home lab — anywhere that isn't internet-reachable). It:
   long-lived connector token on disk,
 - dials **out** to the data-plane over WSS (never accepts inbound
   connections, never needs an open firewall port),
-- proxies HTTP requests from the data-plane to a fixed, explicit allowlist
-  of local upstream services — it will refuse to dial anything not in its
-  `UPSTREAMS` list.
+- proxies HTTP requests from the data-plane to the internal address the
+  Manager sends for each request — that address is defined once, per app,
+  as a **Site** in the Manager console, not on the connector itself.
 
 It shares wire-format and dial types with the data-plane via the
 [`tunnel`](../tunnel) module.
@@ -21,8 +21,13 @@ It shares wire-format and dial types with the data-plane via the
 | `MANAGER_URL`     | yes      | Base URL of the Manager (used for enrollment/pairing).                  |
 | `DATAPLANE_URL`   | yes      | TLS-terminated WSS URL of the data-plane tunnel to dial, e.g. `wss://connect.access.example.com`. Use `wss://` — a plain `ws://` tunnel is unencrypted. |
 | `PAIR_CODE`       | first run only | One-time pairing code from the Manager UI. Only needed until a token is stored at `TOKEN_FILE`; ignored afterwards. |
-| `UPSTREAMS`       | yes      | Comma-separated `name=url` allowlist, e.g. `wiki=http://10.0.0.5:8080,db-admin=http://10.0.0.6:9000`. |
+| `ALLOWED_TARGETS` | no       | Optional egress boundary: comma-separated CIDRs/hosts/`host:port`s, e.g. `10.0.5.0/24,jira.internal,192.168.1.50:8080`. If set, the connector refuses to dial any target outside this list, even if a Site's internal address points there. Unset means it dials whatever the Manager routes to it. |
 | `TOKEN_FILE`      | no       | Path to the stored connector token. Default: `/data/token`.            |
+
+Upstream targets themselves aren't configured on the connector at all —
+each internal app is defined as a **Site** (with its internal address) in
+the Manager console, and the connector dials whatever address the Manager
+sends it for a given request, subject to `ALLOWED_TARGETS` if set.
 
 ## Ports
 
@@ -61,10 +66,14 @@ docker run -d \
   -e MANAGER_URL=https://access.example.com \
   -e DATAPLANE_URL=wss://connect.access.example.com \
   -e PAIR_CODE=<one-time code from the Manager UI> \
-  -e UPSTREAMS="wiki=http://10.0.0.5:8080" \
   -v conn-data:/data \
   ghcr.io/kurtserdar/captivo-access-connector:latest
 ```
+
+To cap what this connector may reach, add `-e ALLOWED_TARGETS=10.0.5.0/24`
+(or a comma-separated list of CIDRs/hosts) to the command above — optional,
+and unrelated to which apps route through this connector, which is decided
+entirely by Sites in the Manager.
 
 You can still build from source with the `docker build` command above if
 you prefer (or need a version that hasn't been tagged yet).

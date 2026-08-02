@@ -1,8 +1,8 @@
 // Command connector is the captivo-access connector agent: it runs inside
 // the customer's data center, enrolls with the Manager using a pairing code,
-// dials out to the data-plane over WSS, and proxies allowlisted internal
-// HTTP requests to local upstreams. The connector never accepts inbound
-// connections and never dials a host it wasn't explicitly configured with.
+// dials out to the data-plane over WSS, and proxies HTTP requests to
+// internal targets the Manager routes to it, optionally constrained by
+// ALLOWED_TARGETS. The connector never accepts inbound connections.
 package main
 
 import (
@@ -16,7 +16,7 @@ func main() {
 	dataplaneURL := os.Getenv("DATAPLANE_URL")
 	tokenFile := envOr("TOKEN_FILE", "/data/token")
 
-	upstreams, err := ParseUpstreams(os.Getenv("UPSTREAMS"))
+	allow, err := ParseAllowedTargets(os.Getenv("ALLOWED_TARGETS"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,8 +34,8 @@ func main() {
 		log.Print("connector: enrolled and stored token")
 	}
 
-	log.Printf("connector starting, %d upstream(s) allowlisted", len(upstreams))
-	runClient(dataplaneURL, token, upstreams)
+	log.Print("connector starting")
+	runClient(dataplaneURL, token, allow)
 }
 
 func envOr(k, d string) string {

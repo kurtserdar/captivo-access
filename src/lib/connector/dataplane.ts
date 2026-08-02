@@ -4,7 +4,7 @@
 // customer's network directly.
 export async function proxyThroughConnector(input: {
   connectorId: string;
-  upstreamName: string;
+  upstreamUrl: string;
   method?: string;
   path?: string;
 }): Promise<{ status: number; bodyPreview: string; truncated: boolean } | { error: string }> {
@@ -15,7 +15,7 @@ export async function proxyThroughConnector(input: {
     headers: { "content-type": "application/json", "x-dataplane-secret": secret },
     body: JSON.stringify({
       connectorId: input.connectorId,
-      upstreamName: input.upstreamName,
+      upstreamUrl: input.upstreamUrl,
       method: input.method ?? "GET",
       path: input.path ?? "/",
     }),

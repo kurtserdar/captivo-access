@@ -39,7 +39,7 @@ func TestProxyRoundTrip(t *testing.T) {
 		st.Close()
 	}()
 
-	out, err := Proxy(&Session{mux: srv}, tunnel.DialRequest{UpstreamName: "wiki", Method: "GET", Path: "/"})
+	out, err := Proxy(&Session{mux: srv}, tunnel.DialRequest{UpstreamUrl: "http://wiki.internal", Method: "GET", Path: "/"})
 	if err != nil {
 		t.Fatal(err)
 	}

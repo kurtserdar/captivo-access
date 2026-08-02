@@ -7,7 +7,7 @@ import (
 
 func TestFrameRoundTrip(t *testing.T) {
 	var buf bytes.Buffer
-	msg := []byte(`{"upstreamName":"wiki"}`)
+	msg := []byte(`{"upstreamUrl":"http://wiki.internal"}`)
 	if err := WriteFrame(&buf, msg); err != nil {
 		t.Fatal(err)
 	}

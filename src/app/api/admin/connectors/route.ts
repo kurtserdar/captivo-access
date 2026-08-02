@@ -11,9 +11,6 @@ function buildInstallCommand(code: string, managerUrl: string, tunnelUrl: string
     `-e MANAGER_URL=${managerUrl} ` +
     `-e DATAPLANE_URL=${tunnelUrl} ` +
     `-e PAIR_CODE=${code} ` +
-    // Only the internal address is truly ours to fill: <site-name> must match a
-    // Site's "upstream name"; the right side is the real internal app address.
-    "-e UPSTREAMS=<site-name>=http://<your-internal-app-host>:<port> " +
     "-v access_connector_data:/data " +
     "ghcr.io/kurtserdar/captivo-access-connector:latest"
   );

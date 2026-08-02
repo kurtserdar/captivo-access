@@ -28,11 +28,11 @@ const minSessionLife = 5 * time.Second
 // iteration sleeps at least 1s before redialing, even on the "healthy
 // reconnect" path, so a session that keeps dying right after the backoff
 // window can never spin with zero delay.
-func runClient(dataplaneURL, token string, upstreams map[string]string) {
+func runClient(dataplaneURL, token string, allow *TargetMatcher) {
 	attempt := 0
 	for {
 		start := time.Now()
-		err := connectOnce(dataplaneURL, token, upstreams)
+		err := connectOnce(dataplaneURL, token, allow)
 		lasted := time.Since(start)
 
 		if err != nil || lasted < minSessionLife {
@@ -60,7 +60,7 @@ func runClient(dataplaneURL, token string, upstreams map[string]string) {
 // connectOnce dials the data-plane's /tunnel WSS endpoint, establishes a
 // yamux client session over it, and serves incoming streams until the
 // session dies. It returns once the session ends (error or clean close).
-func connectOnce(dataplaneURL, token string, upstreams map[string]string) error {
+func connectOnce(dataplaneURL, token string, allow *TargetMatcher) error {
 	ctx := context.Background()
 	c, _, err := websocket.Dial(ctx, dataplaneURL+"/tunnel", &websocket.DialOptions{
 		HTTPHeader: http.Header{
@@ -80,6 +80,6 @@ func connectOnce(dataplaneURL, token string, upstreams map[string]string) error 
 	}
 
 	log.Printf("connector: tunnel established to %s", dataplaneURL)
-	serveStreams(mux, upstreams) // blocks until the session dies
+	serveStreams(mux, allow) // blocks until the session dies
 	return mux.Close()
 }

@@ -15,14 +15,24 @@ export async function POST(req: NextRequest) {
   const connectorId = typeof body.connectorId === "string" ? body.connectorId.trim() : "";
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const hostname = typeof body.hostname === "string" ? body.hostname.trim().toLowerCase() : "";
-  const upstreamName = typeof body.upstreamName === "string" ? body.upstreamName.trim() : "";
+  const upstreamUrl = typeof body.upstreamUrl === "string" ? body.upstreamUrl.trim() : "";
   const description = typeof body.description === "string" && body.description.trim() ? body.description.trim() : null;
 
-  if (!connectorId || !name || !upstreamName) {
+  if (!connectorId || !name || !upstreamUrl) {
     return NextResponse.json({ error: "connector_name_upstream_required" }, { status: 400 });
   }
   if (!hostname) {
     return NextResponse.json({ error: "invalid_hostname" }, { status: 400 });
+  }
+
+  let u: URL;
+  try {
+    u = new URL(upstreamUrl);
+  } catch {
+    return NextResponse.json({ error: "invalid_upstream_url" }, { status: 400 });
+  }
+  if (u.protocol !== "http:" && u.protocol !== "https:") {
+    return NextResponse.json({ error: "invalid_upstream_url" }, { status: 400 });
   }
 
   const connector = await db.connector.findUnique({ where: { id: connectorId }, select: { id: true } });
@@ -31,7 +41,7 @@ export async function POST(req: NextRequest) {
   }
 
   const site = await db.site.create({
-    data: { connectorId, name, hostname, upstreamName, description },
+    data: { connectorId, name, hostname, upstreamUrl, description },
     select: { id: true },
   });
 
@@ -52,7 +62,7 @@ export async function GET() {
       id: true,
       name: true,
       hostname: true,
-      upstreamName: true,
+      upstreamUrl: true,
       description: true,
       connectorId: true,
       connector: { select: { name: true, status: true } },
