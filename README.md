@@ -98,8 +98,9 @@ Shipped and working today:
 - **Time-boxed access grants** — an admin ties one vendor to one site with
   an optional start/end window; a vendor's `/access` page shows what's
   active vs. upcoming.
-- **Outbound-only connector** with a local upstream allowlist — the real
-  internal `host:port` never leaves the customer's network.
+- **Outbound-only connector** — dials the internal address defined on each
+  Site, and never accepts an inbound connection. An optional `ALLOWED_TARGETS`
+  boundary caps which internal addresses a connector may reach.
 - **Identity-aware reverse proxy** — host-based routing
   (`<site>.access.<domain>`), session + grant checked on every request,
   fail-closed.
