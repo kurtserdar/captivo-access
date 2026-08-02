@@ -17,7 +17,7 @@ export function ConnectorForm() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pairing, setPairing] = useState<{ code: string; installCommand: string } | null>(null);
+  const [pairing, setPairing] = useState<{ code: string; installCommand: string; managerUrlIsLocal: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -37,7 +37,11 @@ export function ConnectorForm() {
         setError(errorMessage(result?.error));
         return;
       }
-      setPairing({ code: result.code, installCommand: result.installCommand });
+      setPairing({
+        code: result.code,
+        installCommand: result.installCommand,
+        managerUrlIsLocal: Boolean(result.managerUrlIsLocal),
+      });
       setName("");
     } catch {
       setError("Couldn't create the connector, please try again.");
@@ -93,11 +97,29 @@ export function ConnectorForm() {
           <button type="button" className="btn sm ghost" onClick={handleCopy}>
             {copied ? "Copied" : "Copy command"}
           </button>
+          {pairing.managerUrlIsLocal && (
+            <p className="notice error">
+              <code>MANAGER_URL</code> points at <code>localhost</code> (you&apos;re viewing this over
+              a tunnel). The connector runs on another machine and can&apos;t reach it there — replace
+              it with the manager&apos;s real address (set <code>MANAGER_PUBLIC_URL</code> in the
+              server&apos;s <code>.env</code>).
+            </p>
+          )}
+          <p>The only value you must fill in yourself:</p>
+          <ul>
+            <li>
+              <code>UPSTREAMS</code> — <code>&lt;site-name&gt;=http://host:port</code>. The left side
+              must match a Site&apos;s <b>upstream name</b>; the right side is the real internal app
+              address, reachable from where this connector runs. Multiple: comma-separated.
+            </li>
+          </ul>
           <p>
-            Replace <code>DATAPLANE_URL</code> with your TLS-terminated connector tunnel
-            endpoint (e.g. <code>wss://connect.your-access-domain</code>) and <code>UPSTREAMS</code>{" "}
-            with the internal host(s) this connector should reach. Use <code>wss://</code> — a
-            plain <code>ws://</code> tunnel is unencrypted.
+            <code>MANAGER_URL</code> and <code>DATAPLANE_URL</code> are filled from your server config
+            (<code>MANAGER_PUBLIC_URL</code> / <code>CONNECTOR_TUNNEL_URL</code>). If{" "}
+            <code>DATAPLANE_URL</code> still shows a <code>&lt;your-access-domain&gt;</code>{" "}
+            placeholder, set <code>CONNECTOR_TUNNEL_URL</code> (e.g.{" "}
+            <code>wss://connect.your-domain</code>) in the server&apos;s <code>.env</code>. Always use{" "}
+            <code>wss://</code> — a plain <code>ws://</code> tunnel is unencrypted.
           </p>
         </div>
       )}
