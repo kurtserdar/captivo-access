@@ -36,18 +36,18 @@ func main() {
 			return
 		}
 		var body struct {
-			ConnectorID  string              `json:"connectorId"`
-			UpstreamName string              `json:"upstreamName"`
-			Method       string              `json:"method"`
-			Path         string              `json:"path"`
-			Header       map[string][]string `json:"header"`
+			ConnectorID string              `json:"connectorId"`
+			UpstreamUrl string              `json:"upstreamUrl"`
+			Method      string              `json:"method"`
+			Path        string              `json:"path"`
+			Header      map[string][]string `json:"header"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_body"})
 			return
 		}
 		res, err := Proxy(reg.Get(body.ConnectorID), tunnel.DialRequest{
-			UpstreamName: body.UpstreamName, Method: body.Method, Path: body.Path, Header: body.Header,
+			UpstreamUrl: body.UpstreamUrl, Method: body.Method, Path: body.Path, Header: body.Header,
 		})
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})

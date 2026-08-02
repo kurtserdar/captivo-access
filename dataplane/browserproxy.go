@@ -63,7 +63,7 @@ var denyReasonText = map[string]string{
 // production use.
 type proxyControl interface {
 	ResolveSession(token string) (userID string, err error)
-	SiteByHost(host string) (siteID, connectorID, upstreamName string, err error)
+	SiteByHost(host string) (siteID, connectorID, upstreamUrl string, err error)
 	CheckAccess(userID, siteID string) (allow bool, reason string, err error)
 }
 
@@ -127,10 +127,10 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer st.Close() // also unblocks a still-running WriteBody goroutine below
 
 	dr := tunnel.DialRequest{
-		UpstreamName: upstream,
-		Method:       r.Method,
-		Path:         r.URL.RequestURI(),
-		Header:       sanitizeReqHeaders(r, host),
+		UpstreamUrl: upstream,
+		Method:      r.Method,
+		Path:        r.URL.RequestURI(),
+		Header:      sanitizeReqHeaders(r, host),
 	}
 	reqBytes, err := json.Marshal(dr)
 	if err != nil {

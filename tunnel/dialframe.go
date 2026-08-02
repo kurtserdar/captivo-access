@@ -1,13 +1,13 @@
 package tunnel
 
 // DialRequest is the first control frame sent on a proxied stream. It
-// describes which upstream to reach and the HTTP request line/headers to
+// describes which upstream URL to reach and the HTTP request line/headers to
 // replay against it; the raw HTTP body follows as subsequent stream bytes.
 type DialRequest struct {
-	UpstreamName string              `json:"upstreamName"`
-	Method       string              `json:"method"`
-	Path         string              `json:"path"`
-	Header       map[string][]string `json:"header,omitempty"`
+	UpstreamUrl string              `json:"upstreamUrl"`
+	Method      string              `json:"method"`
+	Path        string              `json:"path"`
+	Header      map[string][]string `json:"header,omitempty"`
 }
 
 // DialResponse is the control frame returned in reply to a DialRequest,
