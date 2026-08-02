@@ -177,6 +177,10 @@ push the schema against the production database.
 
 ## How access works
 
+> New here? [`docs/how-it-works.md`](./docs/how-it-works.md) walks the whole
+> thing in plain terms — the two pieces, the setup, and a diagram of every gate
+> a request passes through from browser to internal app.
+
 1. **Add a connector.** An admin goes to `/admin/connectors`, names a
    connector, and gets back a one-time pairing code and a ready-to-copy
    `docker run` command. That command is run on a host **inside the
