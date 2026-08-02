@@ -118,33 +118,22 @@ so the GoDaddy path simply won't work for most users. Switching ACME tools
 ### Recommended: host the DNS zone somewhere with a real API
 
 **Your registrar and your DNS host don't have to be the same company.** Keep
-your domain registered wherever it is (GoDaddy, Namecheap, …) and move the DNS
-that DNS-01 needs to a host with a free, first-class API. Two clean paths,
-depending on whether you're willing to move the whole domain's DNS — **both
-avoid the registrar's (possibly locked-down) API entirely:**
+your domain registered wherever it is (GoDaddy, Namecheap, …) and move only the
+DNS that DNS-01 needs to a host with a free, first-class API — **without
+touching the registrar's (possibly locked-down) API.** Two paths, but they are
+not equal in risk:
 
-**Path A — Cloudflare, whole zone.** Best if the domain is dedicated to this
-deployment, or you're happy hosting all of its DNS on Cloudflare. Note the
-Cloudflare **free plan only supports a full zone** (moving the entire domain),
-not delegating a lone subdomain — subdomain-only zones are an Enterprise
-feature.
+> ⚠️ **If your access domain is a subdomain of a domain you already use for a
+> website or email (e.g. `access.acme.com`, where `acme.com` serves your site
+> and mail), do NOT move that domain's nameservers.** Moving nameservers hands
+> the *entire* zone to the new host, and every record you don't recreate there
+> (your site's `A`, `MX`/mail, `SPF`/`DKIM`/`DMARC`) goes dark. Use the
+> subdomain path below — it leaves your existing DNS completely untouched.
 
-1. [Cloudflare](https://www.cloudflare.com/) → **Add a site** → `example.com`
-   (Free). Recreate your existing records first (MX/mail, current web records)
-   so nothing breaks when nameservers move.
-2. At your registrar, change the domain's nameservers to the two Cloudflare
-   gave you.
-3. In Cloudflare DNS, add `manager`, `connect`, and `*` as `A` records to the
-   cloud host's IP — **with the orange proxy cloud OFF ("DNS only") on all of
-   them.** A proxied (orange) record makes Cloudflare terminate TLS at its
-   edge, which collides with Caddy's own TLS and the connector's WSS tunnel.
-   You want DNS + API from Cloudflare, not its proxy. (DNS-01 works either way
-   — it only writes a TXT record.)
-4. Create a scoped API token: **My Profile → API Tokens → Create Token → "Edit
-   zone DNS" → Zone = example.com.** Put it in `.env` as `DNS_API_TOKEN`.
-
-**Path B — deSEC (or similar), subdomain only.** Best if you must keep the
-domain's DNS at your registrar and delegate just `access.example.com`.
+**Recommended — delegate just the subdomain (deSEC).** Keep the domain's DNS
+where it is and hand off only `access.example.com`. Nothing else in the zone
+changes; your site and mail are never at risk. This is the right choice for the
+common case: adding vendor access to a domain you already run.
 
 1. [deSEC](https://desec.io/) (free) → **Create domain** → `access.example.com`.
    It gives you its nameservers (e.g. `ns1.desec.io`, `ns2.desec.org`).
@@ -158,7 +147,29 @@ domain's DNS at your registrar and delegate just `access.example.com`.
 3. In deSEC, add `manager`, `connect`, and `*` `A` records for
    `access.example.com` → the cloud host's IP.
 4. Create a token in deSEC's **Token management** and put it in `.env` as
-   `DNS_API_TOKEN`.
+   `DNS_API_TOKEN`. (Its Caddy module is `caddy-dns/desec` — set
+   `CADDY_DNS_MODULE=github.com/caddy-dns/desec` in `.env`.)
+
+**Only if the domain is dedicated to this deployment — move the whole zone
+(Cloudflare).** Choose this **only** when the domain serves nothing else (no
+site, no mail) or you're deliberately migrating all its DNS to Cloudflare. The
+Cloudflare **free plan supports only a full-zone move**, not delegating a lone
+subdomain (subdomain-only zones are Enterprise).
+
+1. [Cloudflare](https://www.cloudflare.com/) → **Add a site** → `example.com`
+   (Free). **Recreate every existing record first** (MX/mail, web `A`/`CNAME`,
+   TXT) so nothing breaks when nameservers move.
+2. At your registrar, change the domain's nameservers to the two Cloudflare
+   gave you.
+3. In Cloudflare DNS, add `manager`, `connect`, and `*` as `A` records to the
+   cloud host's IP — **with the orange proxy cloud OFF ("DNS only") on all of
+   them.** A proxied (orange) record makes Cloudflare terminate TLS at its
+   edge, which collides with Caddy's own TLS and the connector's WSS tunnel.
+   You want DNS + API from Cloudflare, not its proxy. (DNS-01 works either way
+   — it only writes a TXT record.)
+4. Create a scoped API token: **My Profile → API Tokens → Create Token → "Edit
+   zone DNS" → Zone = example.com.** Put it in `.env` as `DNS_API_TOKEN`
+   (Cloudflare is the default `CADDY_DNS_MODULE`, so nothing else to set).
 
 **Then, for either path**, Caddy needs a build that includes your provider's
 DNS module (the stock `caddy:2-alpine` has none). The repo ships this as an
