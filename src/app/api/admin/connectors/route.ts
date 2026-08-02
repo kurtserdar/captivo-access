@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   const installCommand = buildInstallCommand(code, managerUrl, connectorTunnelUrl());
   // A connector runs on a different machine, so a localhost manager URL (seen
   // when the admin browses via an SSH tunnel) won't be reachable from it.
-  const managerUrlIsLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(managerUrl);
+  const managerUrlIsLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(managerUrl);
 
   return NextResponse.json({ code, installCommand, managerUrlIsLocal });
 }
