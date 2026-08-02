@@ -119,8 +119,9 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
           placeholder="http://10.0.5.20:8080"
         />
         <p className="hint">
-          The real internal address this connector should reach — never leaves your network except through
-          the connector.
+          The real internal address this connector should reach (e.g. <code>http://10.0.5.20:8080</code>).
+          It&apos;s stored on your Manager and sent to the connector over the tunnel; the connector dials it
+          inside your network. To cap what a connector may reach, set <code>ALLOWED_TARGETS</code> on it.
         </p>
       </div>
       <div className="field">

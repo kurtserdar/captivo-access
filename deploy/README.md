@@ -247,3 +247,20 @@ docker compose -f docker-compose.prod.yml up -d
 
 Re-run the `prisma db push` step above if the new version changed the
 schema (check the release notes / CHANGELOG).
+
+### Breaking change: v0.2.0 (dynamic upstreams)
+
+v0.2.0 moves the internal address off the connector and onto the Site, which
+changes both the schema and the connector↔data-plane protocol:
+
+- **Upgrade the data-plane and every connector together.** An old connector
+  can't talk to a new data-plane (the tunnel now carries the target URL, not an
+  alias). Pull the new images for all three services and restart; connectors
+  re-run on the new image (no re-enrollment needed — the token in `/data`
+  persists).
+- **Re-set each Site's address.** `db push` drops the old `upstreamName` column
+  and adds `upstreamUrl`; existing Sites come out blank. Open each Site and set
+  its **Internal address** (`http://host:port`) before it will route.
+- **Connectors no longer take `UPSTREAMS`.** Drop it from the `docker run`
+  command. Optionally add `ALLOWED_TARGETS` (e.g. `10.0.5.0/24`) to cap what a
+  connector may reach.
