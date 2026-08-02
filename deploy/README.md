@@ -225,14 +225,18 @@ work over HTTPS.
 
 ## How a vendor reaches an app
 
-Once an admin has created a `Site`, an `AccessGrant`, and the vendor has
-registered a passkey, they open `https://<site>.access.example.com` in
-their browser. Caddy terminates TLS and forwards to
+Once an admin has created a `Site` — which carries the internal app's
+address directly (e.g. `http://10.0.5.20:8080`) — an `AccessGrant`, and the
+vendor has registered a passkey, they open `https://<site>.access.example.com`
+in their browser. Caddy terminates TLS and forwards to
 `access-dataplane:3103`, which checks the session cookie (scoped to
 `COOKIE_DOMAIN`, so it's already set from logging in at
 `manager.access.example.com`), evaluates the grant, and — if allowed —
-streams the request over the outbound tunnel to the connector running
-inside the customer's network, which reaches the real internal app.
+streams the request, along with the Site's internal address, over the
+outbound tunnel to the connector running inside the customer's network,
+which dials that address. The connector itself takes no `UPSTREAMS`
+configuration; the only thing you can set on it is an optional
+`ALLOWED_TARGETS` boundary (see [`connector/README.md`](../connector/README.md)).
 
 ## Updating
 

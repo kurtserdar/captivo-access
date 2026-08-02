@@ -194,18 +194,18 @@ push the schema against the production database.
 1. **Add a connector.** An admin goes to `/admin/connectors`, names a
    connector, and gets back a one-time pairing code and a ready-to-copy
    `docker run` command. That command is run on a host **inside the
-   customer's own network**, with `DATAPLANE_URL` (the data plane's
-   TLS-terminated WSS tunnel endpoint, e.g. `wss://connect.<your-domain>`)
-   and `UPSTREAMS` — a comma-separated `name=http://host:port`
-   allowlist of the internal services this connector may reach (see
+   customer's own network**, with just `MANAGER_URL`, `DATAPLANE_URL` (the
+   data plane's TLS-terminated WSS tunnel endpoint, e.g.
+   `wss://connect.<your-domain>`), and `PAIR_CODE` — no per-app config (see
    [`connector/README.md`](./connector/README.md) for the full env
-   reference). On first start the connector redeems the pairing code,
-   stores a long-lived token in its `/data` volume, and dials the data
-   plane — it then shows up as online.
-2. **Add a site.** Under `/admin/sites`, the admin creates a `Site` that
-   references a connector and one of its upstream **names** (never a raw
-   host:port — the control plane and data plane never see or store the
-   real internal address).
+   reference, including the optional `ALLOWED_TARGETS` egress boundary). On
+   first start the connector redeems the pairing code, stores a long-lived
+   token in its `/data` volume, and dials the data plane — it then shows up
+   as online.
+2. **Add a site.** Under `/admin/sites`, the admin creates a `Site` bound to
+   a connector, giving it the internal app's real address
+   (`http://10.0.5.20:8080`) directly — that's the only place the address is
+   configured.
 3. **Grant a vendor access.** At `/admin/grants`, the admin picks a vendor
    user, a site, and an optional start/end window, then saves. Revoking a
    grant is immediate and irreversible.
@@ -253,12 +253,12 @@ instead, replicate that routing and forward those headers.
 - **Outbound-only connector, no inbound port.** The connector inside your
   network only ever dials out to the data plane over WSS/443; it never
   listens on a socket and never needs a firewall rule opened toward it.
-- **Local upstream allowlist.** The control plane and data plane reference
-  an upstream by **name** only (e.g. `wiki`) — the connector resolves that
-  name against its own `UPSTREAMS` env var, which lives solely in the
-  customer's own container. A name the connector doesn't recognize is
-  rejected and the stream is closed. The real internal `host:port` is
-  never transmitted to, stored on, or visible from the control/data plane.
+- **Optional egress boundary.** A `Site`'s internal address is set once in
+  the Manager and travels with the request through the tunnel to the
+  connector, which dials it directly — no per-app config on the connector
+  itself. To constrain what a connector may reach regardless of what a Site
+  requests, set `ALLOWED_TARGETS` (CIDRs/hosts) on its container; a target
+  outside that boundary is rejected and the stream is closed.
 - **Passkey-only identity.** No password exists anywhere in the system —
   WebAuthn passkeys for normal login, TOTP only as a break-glass recovery
   path (itself encrypted at rest, AES-256-GCM).

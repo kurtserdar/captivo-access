@@ -97,16 +97,17 @@ In the console:
      -e MANAGER_URL=http://access-manager:3100 \
      -e DATAPLANE_URL=ws://access-dataplane:3101 \
      -e PAIR_CODE=<paste from the console> \
-     -e UPSTREAMS=app=http://testapp:80 \
      -v access_connector_data:/data \
      ghcr.io/kurtserdar/captivo-access-connector:latest
    ```
 
-   It should show as **online** in the console shortly.
+   It should show as **online** in the console shortly. No per-app config is
+   needed here — the connector takes no `UPSTREAMS` (only an optional
+   `ALLOWED_TARGETS` boundary, unneeded for this quickstart).
 
 2. **Sites → add one.** Name it, set **hostname** = `app.SERVER_IP.sslip.io`,
-   **upstream name** = `app` (this must match the `UPSTREAMS` key above), and bind
-   it to your connector.
+   **internal address** = `http://testapp:80` (the dummy app's address on the
+   compose network), and bind it to your connector.
 
 3. **Grants → grant yourself access** to that site (or invite a second user and
    grant them).

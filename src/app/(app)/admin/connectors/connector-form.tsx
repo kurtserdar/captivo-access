@@ -105,14 +105,16 @@ export function ConnectorForm() {
               server&apos;s <code>.env</code>).
             </p>
           )}
-          <p>The only value you must fill in yourself:</p>
-          <ul>
-            <li>
-              <code>UPSTREAMS</code> — <code>&lt;site-name&gt;=http://host:port</code>. The left side
-              must match a Site&apos;s <b>upstream name</b>; the right side is the real internal app
-              address, reachable from where this connector runs. Multiple: comma-separated.
-            </li>
-          </ul>
+          <p>
+            This connector needs no per-app configuration. Define each internal app as a{" "}
+            <b>Site</b> (with its internal address) in the console — the connector reads that address
+            from the Manager and dials it directly.
+          </p>
+          <p>
+            To cap what this connector may reach, optionally set <code>ALLOWED_TARGETS</code> (e.g.{" "}
+            <code>10.0.5.0/24</code>) on the container. Unset means it dials whatever the Manager
+            routes to it.
+          </p>
           <p>
             <code>MANAGER_URL</code> and <code>DATAPLANE_URL</code> are filled from your server config
             (<code>MANAGER_PUBLIC_URL</code> / <code>CONNECTOR_TUNNEL_URL</code>). If{" "}
