@@ -107,6 +107,18 @@ export default async function DashboardPage() {
           <span className="cell-sub">{s.connectorsOnline} of {s.connectors} connectors online.</span>
         )}
       </p>
+
+      {s.sites > 0 && (
+        <p style={{ marginTop: "8px" }}>
+          <Link
+            className={`pill ${s.sitesUnreachable > 0 ? "warn" : "ok"}`}
+            href="/admin/sites"
+          >
+            {s.sitesReachable}/{s.sites} sites reachable
+            {s.sitesUnreachable > 0 ? ` · ${s.sitesUnreachable} down` : ""}
+          </Link>
+        </p>
+      )}
     </main>
   );
 }
