@@ -108,6 +108,18 @@ a{color:inherit;}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.9rem;}
 .card-head h2{font-size:1.05rem;}
 
+/* ---- getting-started checklist ---- */
+.checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.checklist li { display: flex; align-items: flex-start; gap: 12px; }
+.checklist li .check { font-weight: 700; color: var(--muted); line-height: 1.5; }
+.checklist li.done .check { color: var(--ok); }
+.checklist li.done .ct { color: var(--muted); }
+.checklist .ct { font-weight: 620; }
+.checklist .ch { color: var(--muted); font-size: 0.88rem; margin-top: 2px; }
+.checklist li > a.btn { margin-left: auto; }
+.stat-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.connector-health { margin-top: 16px; }
+
 /* ---- code / secret ---- */
 .code{font-family:var(--mono);font-size:.82rem;background:var(--surface-2);border:1px solid var(--line);
   border-radius:var(--radius);padding:.7rem .8rem;word-break:break-all;color:var(--fg);display:block;}
