@@ -5,6 +5,16 @@ import { TestConnectionButton } from "./test-connection-button";
 
 export const dynamic = "force-dynamic";
 
+function timeAgo(d: Date): string {
+  const secs = Math.max(0, Math.round((Date.now() - d.getTime()) / 1000));
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.round(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.round(hrs / 24)}d ago`;
+}
+
 export default async function AdminSitesPage() {
   await requireAdmin();
 
@@ -16,6 +26,9 @@ export default async function AdminSitesPage() {
         hostname: true,
         upstreamUrl: true,
         description: true,
+        probedAt: true,
+        probeOk: true,
+        probeDetail: true,
         connector: { select: { name: true, status: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -64,6 +77,7 @@ export default async function AdminSitesPage() {
                 <th>Connector</th>
                 <th>Internal address</th>
                 <th>Description</th>
+                <th>Health</th>
                 <th></th>
               </tr>
             </thead>
@@ -75,6 +89,23 @@ export default async function AdminSitesPage() {
                   <td>{s.connector.name}</td>
                   <td className="cell-sub">{s.upstreamUrl}</td>
                   <td className="cell-sub">{s.description ?? "—"}</td>
+                  <td>
+                    {s.upstreamUrl == null ? (
+                      <span className="pill neutral">No address</span>
+                    ) : s.probeOk == null ? (
+                      <span className="pill neutral">Not checked</span>
+                    ) : s.probeOk ? (
+                      <span className="pill ok">Reachable</span>
+                    ) : (
+                      <span className="pill danger">Unreachable</span>
+                    )}
+                    {s.probeDetail && s.probeOk === false && (
+                      <div className="cell-sub">{s.probeDetail}</div>
+                    )}
+                    {s.probedAt && (
+                      <div className="cell-sub">{timeAgo(s.probedAt)}</div>
+                    )}
+                  </td>
                   <td>
                     <TestConnectionButton siteId={s.id} />
                   </td>
