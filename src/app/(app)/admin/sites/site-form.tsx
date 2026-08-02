@@ -5,9 +5,11 @@ import { useState } from "react";
 function errorMessage(code: string | undefined): string {
   switch (code) {
     case "connector_name_upstream_required":
-      return "Connector, name, and upstream name are required.";
+      return "Connector, name, and internal address are required.";
     case "invalid_hostname":
       return "A public hostname is required.";
+    case "invalid_upstream_url":
+      return "The internal address must be a valid http:// or https:// URL.";
     case "connector_not_found":
       return "Select a valid connector.";
     case "forbidden":
@@ -21,7 +23,7 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
   const [connectorId, setConnectorId] = useState(connectors[0]?.id ?? "");
   const [name, setName] = useState("");
   const [hostname, setHostname] = useState("");
-  const [upstreamName, setUpstreamName] = useState("");
+  const [upstreamUrl, setUpstreamUrl] = useState("");
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
           connectorId,
           name,
           hostname,
-          upstreamName,
+          upstreamUrl,
           description: description.trim() || undefined,
         }),
       });
@@ -105,17 +107,21 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
       </div>
       <div className="field">
         <label className="field-label" htmlFor="site-upstream">
-          Upstream name
+          Internal address
         </label>
         <input
           id="site-upstream"
           type="text"
           className="input"
-          value={upstreamName}
-          onChange={(e) => setUpstreamName(e.target.value)}
+          value={upstreamUrl}
+          onChange={(e) => setUpstreamUrl(e.target.value)}
           required
-          placeholder="must match a name in the connector's UPSTREAMS env"
+          placeholder="http://10.0.5.20:8080"
         />
+        <p className="hint">
+          The real internal address this connector should reach — never leaves your network except through
+          the connector.
+        </p>
       </div>
       <div className="field">
         <label className="field-label" htmlFor="site-description">
