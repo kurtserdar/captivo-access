@@ -46,7 +46,7 @@ func handleStream(st io.ReadWriteCloser, allow *TargetMatcher) {
 	}
 
 	baseURL, err := url.Parse(dr.UpstreamUrl)
-	if err != nil || (baseURL.Scheme != "http" && baseURL.Scheme != "https") || baseURL.Host == "" {
+	if err != nil || (baseURL.Scheme != "http" && baseURL.Scheme != "https") || baseURL.Hostname() == "" {
 		writeErr(st, "bad upstream url")
 		return
 	}

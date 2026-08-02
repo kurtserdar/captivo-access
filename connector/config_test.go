@@ -29,4 +29,9 @@ func TestAllowedTargets(t *testing.T) {
 			t.Errorf("Allowed(%q) = %v, want %v", c.hostport, got, c.want)
 		}
 	}
+
+	if _, err := ParseAllowedTargets("10.0.5.0/33"); err == nil {
+		t.Fatal("expected error for a malformed CIDR entry")
+	}
+
 }

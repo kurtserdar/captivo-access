@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net"
 	"strings"
 )
@@ -32,6 +33,12 @@ func ParseAllowedTargets(s string) (*TargetMatcher, error) {
 		if _, ipnet, err := net.ParseCIDR(e); err == nil {
 			m.cidrs = append(m.cidrs, ipnet)
 			continue
+		}
+		// A "/" means the operator meant a CIDR; if it didn't parse it's a typo.
+		// Fail loudly rather than silently storing it as an inert host that
+		// matches nothing (which would reject all traffic with no explanation).
+		if strings.Contains(e, "/") {
+			return nil, errors.New("bad CIDR in ALLOWED_TARGETS: " + e)
 		}
 		if _, _, err := net.SplitHostPort(e); err == nil {
 			m.hostPorts[e] = true

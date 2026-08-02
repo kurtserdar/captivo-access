@@ -89,6 +89,44 @@ func TestHandleStreamRejectsOutOfBoundaryTarget(t *testing.T) {
 	// happens.
 }
 
+func TestHandleStreamRejectsBadUpstreamUrl(t *testing.T) {
+	// A malformed URL, a non-http(s) scheme, and an empty host must all be
+	// rejected fail-closed with "bad upstream url" before any dial.
+	for _, bad := range []string{"ftp://internal/", "http://", "not a url", "file:///etc/passwd"} {
+		t.Run(bad, func(t *testing.T) {
+			dataplane, connector := pairedSessions(t)
+			go serveStreams(connector, openMatcher(t))
+
+			st, err := dataplane.Open()
+			if err != nil {
+				t.Fatalf("Open: %v", err)
+			}
+			defer st.Close()
+
+			req := tunnel.DialRequest{UpstreamUrl: bad, Method: "GET", Path: "/"}
+			reqBytes, _ := json.Marshal(req)
+			if err := tunnel.WriteFrame(st, reqBytes); err != nil {
+				t.Fatalf("WriteFrame: %v", err)
+			}
+			if err := tunnel.WriteBody(st, bytes.NewReader(nil)); err != nil {
+				t.Fatalf("WriteBody: %v", err)
+			}
+
+			respBytes, err := tunnel.ReadFrame(st)
+			if err != nil {
+				t.Fatalf("ReadFrame: %v", err)
+			}
+			var resp tunnel.DialResponse
+			if err := json.Unmarshal(respBytes, &resp); err != nil {
+				t.Fatalf("Unmarshal: %v", err)
+			}
+			if resp.Error != "bad upstream url" {
+				t.Fatalf("expected 'bad upstream url' for %q, got %+v", bad, resp)
+			}
+		})
+	}
+}
+
 func TestHandleStreamProxiesAllowedUpstream(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/status" {
