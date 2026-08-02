@@ -11,12 +11,18 @@ standing credential. You self-host it: there is no SaaS, no vendor lock-in,
 and no traffic that passes through anyone's infrastructure but your own.
 
 > **Status: early development.** Passkey identity, the outbound-only
-> connector tunnel, time-boxed access grants, the identity-aware reverse
-> proxy, and the audit trail are all implemented and working end-to-end (see
-> [Features](#features)). Session isolation/recording, credential vaulting,
-> and tamper-evident audit are **not built yet** — see
+> connector tunnel, time-boxed access grants (with an approval flow and
+> recurring schedules), the identity-aware reverse proxy, and a
+> tamper-evident (hash-chained) audit trail are all implemented and working
+> end-to-end (see [Features](#features)). Session isolation/recording and
+> credential vaulting — the future "Pro" layer — are **not built yet**; see
 > [Roadmap](#roadmap-not-yet). Not production-hardened; review the
 > [Security model](#security-model) yourself before relying on it.
+
+> **New here?** [Quickstart](./docs/quickstart.md) gets you a working
+> end-to-end demo in ~5 minutes with **zero DNS setup**.
+> [How it works](./docs/how-it-works.md) explains the pieces and traces a
+> request through every gate.
 
 ## Why
 
@@ -102,11 +108,15 @@ Shipped and working today:
   export from the admin console.
 - **Dark/light admin console UI.**
 
-Fields for an approval workflow (`requiresApproval` / `approvedAt`) exist in
-the data model and the decision logic already accounts for a
-`pending_approval` state — but nothing in the admin UI sets it yet, so every
-grant created today is active immediately. See
-[Roadmap](#roadmap-not-yet) for what's explicitly not built.
+- **Approval flow** — a vendor can request access to a site; the request is
+  pending (and denied) until an admin approves it, or the admin denies it.
+  Admin-created grants are active immediately.
+- **Recurring schedules** — a grant can be restricted to weekly windows (e.g.
+  weekdays 09:00–18:00 in a chosen timezone), evaluated in that timezone.
+- **Tamper-evident audit** — audit rows are hash-chained; the admin console
+  can verify the chain is intact and detect alteration, deletion, splicing,
+  or tail-truncation. External trusted-timestamp anchoring (RFC 3161 / KamuSM)
+  is a documented fast-follow — see [Roadmap](#roadmap-not-yet).
 
 ## Quick start (local/dev)
 
@@ -277,10 +287,12 @@ instead, replicate that routing and forward those headers.
   wire `POST /api/cron/audit-retention` (Bearer `CRON_SECRET`) into a
   scheduler, e.g. a daily cron entry. The endpoint fails closed — with
   `CRON_SECRET` unset, every call returns `401` and nothing is deleted.
-- **What this log is *not*, yet:** it's append-only at the application
-  layer, but nothing hash-chains rows or applies a trusted timestamp to
-  make retroactive tampering detectable. Don't treat it as forensically
-  tamper-evident today — see [Roadmap](#roadmap-not-yet).
+- **Tamper-evident:** rows are hash-chained (each row carries the previous
+  row's hash), and the admin console verifies the chain — detecting
+  alteration, deletion, splicing, and tail-truncation. What's *not* here yet
+  is an **external** anchor (a trusted RFC 3161 / KamuSM timestamp on the
+  chain head), which is what would defend against an actor who can rewrite
+  the whole database. See [Roadmap](#roadmap-not-yet).
 
 ## Roadmap / not yet
 
@@ -289,16 +301,18 @@ Explicitly **not** built — don't assume these exist:
 - **Session isolation / remote-browser rendering, session recording, and
   credential vaulting** — planned as a future "Pro" tier on top of this
   open-source proxy, not part of it today.
-- **Tamper-evident audit** — hash-chaining audit rows and/or a trusted
-  (RFC 3161-style) timestamp on the log.
-- **Turkish UI (i18n)** — the console is English-only right now, despite
-  the KVKK/5651-oriented retention framing.
+- **External audit anchoring** — the audit log is hash-chained and
+  tamper-evident, but the chain head is not yet anchored to an external
+  trusted timestamp (RFC 3161 / KamuSM). That external anchor is what would
+  defend against an actor able to rewrite the entire database.
 - **RDP/SSH bridging** — this is an HTTP(S) reverse proxy today, not a
   general-purpose bastion.
-- **Recurring/scheduled access windows** — grants are a single start/end
-  window today, no repeating schedule.
-- **A working approval flow** — the data model supports a pending-approval
-  state, but no admin UI path sets `requiresApproval` yet.
+- **Email notifications** — approval requests surface in the admin console
+  (a pending list + a nav badge), but there's no email notification yet.
+
+The console is intentionally **English-only** (Turkish localization is not
+planned for the console itself; the KVKK/5651 framing is about data behavior,
+not UI language).
 
 ## Development
 
