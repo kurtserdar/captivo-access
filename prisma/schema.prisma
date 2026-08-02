@@ -124,6 +124,9 @@ model Site {
   hostname     String    @unique
   upstreamUrl  String?
   description  String?
+  probedAt     DateTime?
+  probeOk      Boolean?
+  probeDetail  String?
   createdAt    DateTime  @default(now())
   grants       AccessGrant[]
 }
