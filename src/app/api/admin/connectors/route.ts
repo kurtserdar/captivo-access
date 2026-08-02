@@ -3,15 +3,17 @@ import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { createPairing } from "@/lib/connector/enrollment";
 import { kickConnector } from "@/lib/connector/dataplane";
-import { managerBaseUrl } from "@/lib/url";
+import { managerBaseUrl, connectorTunnelUrl } from "@/lib/url";
 
-function buildInstallCommand(code: string, managerUrl: string): string {
+function buildInstallCommand(code: string, managerUrl: string, tunnelUrl: string): string {
   return (
     "docker run -d --name access-connector --restart unless-stopped " +
     `-e MANAGER_URL=${managerUrl} ` +
-    "-e DATAPLANE_URL=wss://connect.<your-access-domain> " +
+    `-e DATAPLANE_URL=${tunnelUrl} ` +
     `-e PAIR_CODE=${code} ` +
-    "-e UPSTREAMS=<site-upstream-name>=http://<internal-host>:<port> " +
+    // Only the internal address is truly ours to fill: <site-name> must match a
+    // Site's "upstream name"; the right side is the real internal app address.
+    "-e UPSTREAMS=<site-name>=http://<your-internal-app-host>:<port> " +
     "-v access_connector_data:/data " +
     "ghcr.io/kurtserdar/captivo-access-connector:latest"
   );
@@ -33,9 +35,13 @@ export async function POST(req: NextRequest) {
   }
 
   const { code } = await createPairing(name);
-  const installCommand = buildInstallCommand(code, managerBaseUrl(req));
+  const managerUrl = managerBaseUrl(req);
+  const installCommand = buildInstallCommand(code, managerUrl, connectorTunnelUrl());
+  // A connector runs on a different machine, so a localhost manager URL (seen
+  // when the admin browses via an SSH tunnel) won't be reachable from it.
+  const managerUrlIsLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(managerUrl);
 
-  return NextResponse.json({ code, installCommand });
+  return NextResponse.json({ code, installCommand, managerUrlIsLocal });
 }
 
 export async function GET() {

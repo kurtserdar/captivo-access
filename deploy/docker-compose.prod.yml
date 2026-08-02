@@ -64,6 +64,10 @@ services:
       # The Manager's own public URL — used to build absolute login redirects
       # (e.g. from the data-plane's proxy back to /login?returnTo=...).
       MANAGER_PUBLIC_URL: ${MANAGER_PUBLIC_URL:?required}
+      # The connector tunnel (WSS) endpoint the generated connector install
+      # command points at. Defaults to wss://connect.<ACCESS_DOMAIN> so the
+      # command is copy-paste-ready; override only if your connect host differs.
+      CONNECTOR_TUNNEL_URL: ${CONNECTOR_TUNNEL_URL:-wss://connect.${ACCESS_DOMAIN:?required}}
       # Audit trail retention (days) before POST /api/cron/audit-retention
       # deletes rows. CRON_SECRET authorizes that endpoint (Bearer token).
       AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-730}
