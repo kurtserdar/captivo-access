@@ -39,12 +39,12 @@ connect.{$ACCESS_DOMAIN} {
 # DNS plugins — the `tls { dns ... }` block below will fail to parse
 # ("unrecognized directive: dns") until you either:
 #
-#   (a) build a custom Caddy image with xcaddy that bundles your DNS
-#       provider's module, e.g.:
-#         xcaddy build --with github.com/caddy-dns/cloudflare
-#       then point the `caddy:` service image in docker-compose.prod.yml at
-#       your custom image instead of caddy:2-alpine, and set DNS_API_TOKEN
-#       in .env to that provider's API token; or
+#   (a) use the opt-in DNS override, which builds a custom Caddy image with
+#       your provider's DNS module automatically (no manual image edits):
+#         docker compose -f docker-compose.prod.yml \
+#           -f docker-compose.dns.override.yml up -d
+#       set DNS_API_TOKEN in .env (and CADDY_DNS_MODULE if not Cloudflare),
+#       and uncomment the block below; or
 #   (b) skip the wildcard and add one explicit host block per vendor site
 #       instead (each gets its own cert via plain HTTP-01, no DNS plugin
 #       required), e.g.:
@@ -52,11 +52,13 @@ connect.{$ACCESS_DOMAIN} {
 #             reverse_proxy access-dataplane:3103
 #         }
 #
-# Once you have a DNS-plugin-enabled Caddy image, uncomment this block:
+# With the DNS override running, uncomment this block. The example uses the
+# Cloudflare directive; for deSEC use `dns desec {$DNS_API_TOKEN}` (and build
+# with CADDY_DNS_MODULE=github.com/caddy-dns/desec).
 #
 # *.{$ACCESS_DOMAIN} {
 # 	tls {
-# 		dns <your_dns_provider> {$DNS_API_TOKEN}
+# 		dns cloudflare {$DNS_API_TOKEN}
 # 	}
 # 	reverse_proxy access-dataplane:3103
 # }

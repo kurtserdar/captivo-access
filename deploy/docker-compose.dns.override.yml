@@ -1,0 +1,27 @@
+# Opt-in override: swap the stock caddy:2-alpine for a custom Caddy image with
+# an ACME DNS-01 provider plugin, so Caddy can issue a WILDCARD cert for
+# *.<ACCESS_DOMAIN>. Without this, the prod stack uses stock Caddy (HTTP-01
+# only) and you'd need one host block per site.
+#
+# Use it ALONGSIDE the prod compose (both -f flags), so the base stack is
+# unchanged and this only overrides the caddy service:
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.dns.override.yml up -d
+#
+# Before running:
+#   1. Point your access-subdomain DNS at a host with an API (Cloudflare
+#      full-zone, or deSEC subdomain) — see deploy/README.md "Wildcard TLS".
+#   2. Set DNS_API_TOKEN in .env (and CADDY_DNS_MODULE below if not Cloudflare).
+#   3. Uncomment the *.{$ACCESS_DOMAIN} block in Caddyfile.
+
+name: captivo-access-prod
+
+services:
+  caddy:
+    image: captivo-access-caddy-dns:local
+    build:
+      context: .
+      dockerfile: Caddy.dns.Dockerfile
+      args:
+        # Default Cloudflare. For deSEC: github.com/caddy-dns/desec
+        CADDY_DNS_MODULE: ${CADDY_DNS_MODULE:-github.com/caddy-dns/cloudflare}

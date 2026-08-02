@@ -160,19 +160,31 @@ domain's DNS at your registrar and delegate just `access.example.com`.
 4. Create a token in deSEC's **Token management** and put it in `.env` as
    `DNS_API_TOKEN`.
 
-**Then, for either path**, build a Caddy image with that provider's DNS module
-and point the `caddy:` service's `image:` at it:
+**Then, for either path**, Caddy needs a build that includes your provider's
+DNS module (the stock `caddy:2-alpine` has none). The repo ships this as an
+opt-in — `deploy/Caddy.dns.Dockerfile` (a small xcaddy build, provider set by
+the `CADDY_DNS_MODULE` build arg, default Cloudflare) plus
+`deploy/docker-compose.dns.override.yml` that wires it in without touching the
+base stack. So:
 
-```bash
-xcaddy build --with github.com/caddy-dns/cloudflare   # Path A
-# xcaddy build --with github.com/caddy-dns/desec       # Path B
-```
+1. Set `DNS_API_TOKEN` in `.env` (and, for a non-Cloudflare provider,
+   `CADDY_DNS_MODULE=github.com/caddy-dns/<provider>`).
+2. Uncomment the `*.{$ACCESS_DOMAIN}` block in `Caddyfile` (it defaults to the
+   Cloudflare directive; for deSEC use `dns desec {$DNS_API_TOKEN}`).
+3. Bring the stack up with both compose files — the override builds the custom
+   Caddy image automatically:
+   ```bash
+   docker compose -f docker-compose.prod.yml \
+     -f docker-compose.dns.override.yml up -d
+   docker compose -f docker-compose.prod.yml \
+     -f docker-compose.dns.override.yml logs -f caddy   # watch the DNS-01 cert
+   ```
 
-Uncomment the wildcard block in `Caddyfile`, using your provider's directive
-(`dns cloudflare {$DNS_API_TOKEN}` or `dns desec {$DNS_API_TOKEN}`), then
-`docker compose … up -d`. Caddy issues the `*.access.example.com` cert via
-DNS-01. From here, **publishing a new app is just a `Site` in the Manager
-UI** — the wildcard already covers it.
+Caddy issues the `*.access.example.com` cert via DNS-01. From here,
+**publishing a new app is just a `Site` in the Manager UI** — the wildcard
+already covers it. (Prefer raw `xcaddy build --with …` and your own image?
+That still works — just point the `caddy:` service's `image:` at it instead of
+using the override.)
 
 ### Already on a provider with a good API?
 
