@@ -118,27 +118,61 @@ so the GoDaddy path simply won't work for most users. Switching ACME tools
 ### Recommended: host the DNS zone somewhere with a real API
 
 **Your registrar and your DNS host don't have to be the same company.** Keep
-your domain registered wherever it is (GoDaddy, Namecheap, …) and delegate
-just the access subdomain's DNS to a provider with a free, first-class API:
+your domain registered wherever it is (GoDaddy, Namecheap, …) and move the DNS
+that DNS-01 needs to a host with a free, first-class API. Two clean paths,
+depending on whether you're willing to move the whole domain's DNS — **both
+avoid the registrar's (possibly locked-down) API entirely:**
 
-- **[Cloudflare](https://www.cloudflare.com/)** (free tier) is the canonical
-  choice — best-supported Caddy module, reliable token-scoped API.
-  [deSEC](https://desec.io/) is a solid free alternative.
-- At your registrar, add `NS` records delegating `access.example.com` to your
-  chosen provider (e.g. Cloudflare's nameservers), then create the
-  `manager`, `connect`, and `*` records for `access.example.com` there.
-- Build a Caddy image with that provider's DNS module and point the `caddy:`
-  service at it:
-  ```bash
-  xcaddy build --with github.com/caddy-dns/cloudflare
-  ```
-  Set `DNS_API_TOKEN` in `.env`, then uncomment the
-  `*.{$ACCESS_DOMAIN} { tls { dns cloudflare {$DNS_API_TOKEN} } ... }` block
-  in `Caddyfile`.
+**Path A — Cloudflare, whole zone.** Best if the domain is dedicated to this
+deployment, or you're happy hosting all of its DNS on Cloudflare. Note the
+Cloudflare **free plan only supports a full zone** (moving the entire domain),
+not delegating a lone subdomain — subdomain-only zones are an Enterprise
+feature.
 
-This is **one** well-trodden path that works for everyone regardless of
-registrar. After it's set up, publishing a new app is just a `Site` in the
-Manager UI.
+1. [Cloudflare](https://www.cloudflare.com/) → **Add a site** → `example.com`
+   (Free). Recreate your existing records first (MX/mail, current web records)
+   so nothing breaks when nameservers move.
+2. At your registrar, change the domain's nameservers to the two Cloudflare
+   gave you.
+3. In Cloudflare DNS, add `manager`, `connect`, and `*` as `A` records to the
+   cloud host's IP — **with the orange proxy cloud OFF ("DNS only") on all of
+   them.** A proxied (orange) record makes Cloudflare terminate TLS at its
+   edge, which collides with Caddy's own TLS and the connector's WSS tunnel.
+   You want DNS + API from Cloudflare, not its proxy. (DNS-01 works either way
+   — it only writes a TXT record.)
+4. Create a scoped API token: **My Profile → API Tokens → Create Token → "Edit
+   zone DNS" → Zone = example.com.** Put it in `.env` as `DNS_API_TOKEN`.
+
+**Path B — deSEC (or similar), subdomain only.** Best if you must keep the
+domain's DNS at your registrar and delegate just `access.example.com`.
+
+1. [deSEC](https://desec.io/) (free) → **Create domain** → `access.example.com`.
+   It gives you its nameservers (e.g. `ns1.desec.io`, `ns2.desec.org`).
+2. At your registrar, in the `example.com` zone, add **only** the delegation
+   `NS` records (nothing else changes, and you never touch the registrar's
+   DNS API):
+   ```
+   access   NS   ns1.desec.io
+   access   NS   ns2.desec.org
+   ```
+3. In deSEC, add `manager`, `connect`, and `*` `A` records for
+   `access.example.com` → the cloud host's IP.
+4. Create a token in deSEC's **Token management** and put it in `.env` as
+   `DNS_API_TOKEN`.
+
+**Then, for either path**, build a Caddy image with that provider's DNS module
+and point the `caddy:` service's `image:` at it:
+
+```bash
+xcaddy build --with github.com/caddy-dns/cloudflare   # Path A
+# xcaddy build --with github.com/caddy-dns/desec       # Path B
+```
+
+Uncomment the wildcard block in `Caddyfile`, using your provider's directive
+(`dns cloudflare {$DNS_API_TOKEN}` or `dns desec {$DNS_API_TOKEN}`), then
+`docker compose … up -d`. Caddy issues the `*.access.example.com` cert via
+DNS-01. From here, **publishing a new app is just a `Site` in the Manager
+UI** — the wildcard already covers it.
 
 ### Already on a provider with a good API?
 
