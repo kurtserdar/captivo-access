@@ -39,10 +39,24 @@ func pairedSessions(t *testing.T) (dataplane *yamux.Session, connector *yamux.Se
 	return dataplane, connector
 }
 
-func TestHandleStreamRejectsUnknownUpstream(t *testing.T) {
+// openMatcher returns a TargetMatcher with no boundary configured, for tests
+// that aren't exercising the ALLOWED_TARGETS boundary itself.
+func openMatcher(t *testing.T) *TargetMatcher {
+	t.Helper()
+	m, err := ParseAllowedTargets("")
+	if err != nil {
+		t.Fatalf("ParseAllowedTargets: %v", err)
+	}
+	return m
+}
+
+func TestHandleStreamRejectsOutOfBoundaryTarget(t *testing.T) {
 	dataplane, connector := pairedSessions(t)
-	upstreams := map[string]string{"wiki": "http://127.0.0.1:1"} // never dialed
-	go serveStreams(connector, upstreams)
+	allow, err := ParseAllowedTargets("wiki.internal:8080") // boundary excludes the requested target
+	if err != nil {
+		t.Fatalf("ParseAllowedTargets: %v", err)
+	}
+	go serveStreams(connector, allow)
 
 	st, err := dataplane.Open()
 	if err != nil {
@@ -50,7 +64,7 @@ func TestHandleStreamRejectsUnknownUpstream(t *testing.T) {
 	}
 	defer st.Close()
 
-	req := tunnel.DialRequest{UpstreamName: "evil", Method: "GET", Path: "/"}
+	req := tunnel.DialRequest{UpstreamUrl: "http://127.0.0.1:1", Method: "GET", Path: "/"} // never dialed
 	reqBytes, _ := json.Marshal(req)
 	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
 		t.Fatalf("WriteFrame: %v", err)
@@ -67,16 +81,15 @@ func TestHandleStreamRejectsUnknownUpstream(t *testing.T) {
 	if err := json.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Unmarshal: %v", err)
 	}
-	if resp.Error != "unknown upstream" {
-		t.Fatalf("expected unknown upstream error, got %+v", resp)
+	if resp.Error != "target not allowed" {
+		t.Fatalf("expected target not allowed error, got %+v", resp)
 	}
-	// The connector must never have dialed anything for an unrecognized
-	// name — there is no host to assert against because none was ever
-	// named, which is exactly the point: the map lookup fails closed
-	// before any http.Client.Do happens.
+	// The connector must never have dialed anything for an out-of-boundary
+	// target — the boundary check fails closed before any http.Client.Do
+	// happens.
 }
 
-func TestHandleStreamProxiesKnownUpstream(t *testing.T) {
+func TestHandleStreamProxiesAllowedUpstream(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/status" {
 			t.Errorf("unexpected path forwarded: %s", r.URL.Path)
@@ -91,8 +104,7 @@ func TestHandleStreamProxiesKnownUpstream(t *testing.T) {
 	defer upstream.Close()
 
 	dataplane, connector := pairedSessions(t)
-	upstreams := map[string]string{"wiki": upstream.URL}
-	go serveStreams(connector, upstreams)
+	go serveStreams(connector, openMatcher(t))
 
 	st, err := dataplane.Open()
 	if err != nil {
@@ -101,10 +113,10 @@ func TestHandleStreamProxiesKnownUpstream(t *testing.T) {
 	defer st.Close()
 
 	req := tunnel.DialRequest{
-		UpstreamName: "wiki",
-		Method:       "GET",
-		Path:         "/status",
-		Header:       map[string][]string{"X-Test": {"hello"}},
+		UpstreamUrl: upstream.URL,
+		Method:      "GET",
+		Path:        "/status",
+		Header:      map[string][]string{"X-Test": {"hello"}},
 	}
 	reqBytes, _ := json.Marshal(req)
 	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
@@ -157,8 +169,7 @@ func TestHandleStreamForwardsRequestBody(t *testing.T) {
 	defer upstream.Close()
 
 	dataplane, connector := pairedSessions(t)
-	upstreams := map[string]string{"echo": upstream.URL}
-	go serveStreams(connector, upstreams)
+	go serveStreams(connector, openMatcher(t))
 
 	st, err := dataplane.Open()
 	if err != nil {
@@ -166,7 +177,7 @@ func TestHandleStreamForwardsRequestBody(t *testing.T) {
 	}
 	defer st.Close()
 
-	req := tunnel.DialRequest{UpstreamName: "echo", Method: "POST", Path: "/"}
+	req := tunnel.DialRequest{UpstreamUrl: upstream.URL, Method: "POST", Path: "/"}
 	reqBytes, _ := json.Marshal(req)
 	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
 		t.Fatalf("WriteFrame: %v", err)
@@ -222,8 +233,7 @@ func TestHandleStreamHonorsContentLength(t *testing.T) {
 	defer upstream.Close()
 
 	dataplane, connector := pairedSessions(t)
-	upstreams := map[string]string{"echo": upstream.URL}
-	go serveStreams(connector, upstreams)
+	go serveStreams(connector, openMatcher(t))
 
 	st, err := dataplane.Open()
 	if err != nil {
@@ -233,10 +243,10 @@ func TestHandleStreamHonorsContentLength(t *testing.T) {
 
 	const sent = "hello world" // 11 bytes
 	req := tunnel.DialRequest{
-		UpstreamName: "echo",
-		Method:       "POST",
-		Path:         "/",
-		Header:       map[string][]string{"Content-Length": {"11"}},
+		UpstreamUrl: upstream.URL,
+		Method:      "POST",
+		Path:        "/",
+		Header:      map[string][]string{"Content-Length": {"11"}},
 	}
 	reqBytes, _ := json.Marshal(req)
 	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
@@ -276,9 +286,7 @@ func TestHandleStreamHonorsContentLength(t *testing.T) {
 
 func TestHandleStreamUnreachableUpstream(t *testing.T) {
 	dataplane, connector := pairedSessions(t)
-	// Port 0 on loopback is not listening; dial should fail fast.
-	upstreams := map[string]string{"dead": "http://127.0.0.1:1"}
-	go serveStreams(connector, upstreams)
+	go serveStreams(connector, openMatcher(t))
 
 	st, err := dataplane.Open()
 	if err != nil {
@@ -286,7 +294,8 @@ func TestHandleStreamUnreachableUpstream(t *testing.T) {
 	}
 	defer st.Close()
 
-	req := tunnel.DialRequest{UpstreamName: "dead", Method: "GET", Path: "/"}
+	// Port 0 on loopback is not listening; dial should fail fast.
+	req := tunnel.DialRequest{UpstreamUrl: "http://127.0.0.1:1", Method: "GET", Path: "/"}
 	reqBytes, _ := json.Marshal(req)
 	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
 		t.Fatalf("WriteFrame: %v", err)
@@ -309,15 +318,15 @@ func TestHandleStreamUnreachableUpstream(t *testing.T) {
 }
 
 // TestHandleStreamRejectsPathHostInjection proves the connector never dials
-// a host that isn't the one named in its own allowlist, even when Path is
-// crafted to look like it names a different host once combined with the
+// a host other than the one in the request's own UpstreamUrl, even when Path
+// is crafted to look like it names a different host once combined with the
 // base URL. This is a regression test for a HIGH-severity bypass: the old
 // code built the upstream request with `base+dr.Path` (plain string
 // concatenation) and let http.NewRequest re-parse the result as a URL.
 //
 //   - "@evilHost/" turns "http://127.0.0.1:PORT" + "@evilHost/" into
 //     "http://127.0.0.1:PORT@evilHost/", which Go's URL parser reads as
-//     userinfo "127.0.0.1:PORT" on host "evilHost" — the allowlisted host is
+//     userinfo "127.0.0.1:PORT" on host "evilHost" — the intended host is
 //     silently discarded and the connector dials the attacker's host
 //     instead. Against the old code this subtest fails outright: the "evil"
 //     httptest server's hit counter goes non-zero and the response carries
@@ -325,11 +334,10 @@ func TestHandleStreamUnreachableUpstream(t *testing.T) {
 //   - "//evilHost/" is included as a defense-in-depth case: concatenated
 //     onto this codebase's absolute `base` it does not itself swap the
 //     dialed host (Go's parser keeps "//evilHost/" as a literal path on the
-//     allowlisted host), but the old code has no path validation at all, so
+//     intended host), but the old code has no path validation at all, so
 //     it silently forwards the malformed path with a 200 instead of
 //     rejecting it — this subtest fails against the old code for that
-//     reason and guards against any future refactor (e.g. building the
-//     target from `dr.Path` before the base is known) that would make the
+//     reason and guards against any future refactor that would make the
 //     scheme-relative form host-swapping too.
 //
 // Against the fix, every malicious Path is rejected as "invalid path"
@@ -357,8 +365,7 @@ func TestHandleStreamRejectsPathHostInjection(t *testing.T) {
 	for _, path := range maliciousPaths {
 		t.Run(path, func(t *testing.T) {
 			dataplane, connector := pairedSessions(t)
-			upstreams := map[string]string{"wiki": wiki.URL}
-			go serveStreams(connector, upstreams)
+			go serveStreams(connector, openMatcher(t))
 
 			st, err := dataplane.Open()
 			if err != nil {
@@ -366,7 +373,7 @@ func TestHandleStreamRejectsPathHostInjection(t *testing.T) {
 			}
 			defer st.Close()
 
-			req := tunnel.DialRequest{UpstreamName: "wiki", Method: "GET", Path: path}
+			req := tunnel.DialRequest{UpstreamUrl: wiki.URL, Method: "GET", Path: path}
 			reqBytes, _ := json.Marshal(req)
 			if err := tunnel.WriteFrame(st, reqBytes); err != nil {
 				t.Fatalf("WriteFrame: %v", err)
@@ -384,12 +391,12 @@ func TestHandleStreamRejectsPathHostInjection(t *testing.T) {
 				t.Fatalf("Unmarshal: %v", err)
 			}
 			if resp.Error == "" {
-				t.Fatalf("expected invalid-path error for Path %q, got status %d with no error (host allowlist bypassed)", path, resp.Status)
+				t.Fatalf("expected invalid-path error for Path %q, got status %d with no error (host boundary bypassed)", path, resp.Status)
 			}
 		})
 	}
 
 	if got := evilHits.Load(); got != 0 {
-		t.Fatalf("evil server was hit %d time(s) — connector dialed a non-allowlisted host, host allowlist bypassed", got)
+		t.Fatalf("evil server was hit %d time(s) — connector dialed a host outside the request's own upstream URL, host guard bypassed", got)
 	}
 }

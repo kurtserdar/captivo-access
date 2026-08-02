@@ -2,43 +2,31 @@ package main
 
 import "testing"
 
-func TestParseUpstreams(t *testing.T) {
-	m, err := ParseUpstreams("wiki=http://10.0.0.5:8080,jira=https://jira.internal:8443")
+func TestAllowedTargets(t *testing.T) {
+	open, _ := ParseAllowedTargets("")
+	if !open.Allowed("10.0.0.9:8080") {
+		t.Fatal("empty boundary must allow everything")
+	}
+
+	m, err := ParseAllowedTargets("10.0.5.0/24, jira.internal, 192.168.1.50:8080")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if m["wiki"] != "http://10.0.0.5:8080" || m["jira"] != "https://jira.internal:8443" {
-		t.Fatalf("got %+v", m)
-	}
-}
-
-func TestParseUpstreamsEmpty(t *testing.T) {
-	m, err := ParseUpstreams("")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(m) != 0 {
-		t.Fatalf("expected empty map, got %+v", m)
-	}
-}
-
-func TestParseUpstreamsRejectsMalformed(t *testing.T) {
-	cases := []string{
-		"wiki",              // no '='
-		"wiki=",             // empty value
-		"=http://x",         // empty name
-		"wiki=http://x,bad", // second entry malformed
+	cases := []struct {
+		hostport string
+		want     bool
+	}{
+		{"10.0.5.20:8080", true},     // in CIDR (port ignored for CIDR)
+		{"10.0.6.20:8080", false},    // outside CIDR
+		{"jira.internal", true},      // bare host match
+		{"jira.internal:80", true},   // bare-host entry matches any port
+		{"wiki.internal", false},     // host not listed
+		{"192.168.1.50:8080", true},  // exact host:port
+		{"192.168.1.50:9090", false}, // right host, wrong port
 	}
 	for _, c := range cases {
-		if _, err := ParseUpstreams(c); err == nil {
-			t.Fatalf("expected error for %q", c)
+		if got := m.Allowed(c.hostport); got != c.want {
+			t.Errorf("Allowed(%q) = %v, want %v", c.hostport, got, c.want)
 		}
-	}
-}
-
-func TestResolveRejectsUnknownUpstream(t *testing.T) {
-	m := map[string]string{"wiki": "http://10.0.0.5:8080"}
-	if _, ok := m["evil"]; ok {
-		t.Fatal("unexpected") // handler uses this map; unknown => reject
 	}
 }

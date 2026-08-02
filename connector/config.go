@@ -1,25 +1,69 @@
 package main
 
 import (
-	"errors"
+	"net"
 	"strings"
 )
 
-// ParseUpstreams parses the UPSTREAMS env value ("name=url,name=url") into a
-// local allowlist map. This map is the connector's only source of truth for
-// which internal hosts it will dial — the data-plane/Manager never send a
-// host, only a name, and an unrecognized name must be rejected by the caller.
-func ParseUpstreams(s string) (map[string]string, error) {
-	m := map[string]string{}
+// TargetMatcher is the connector's optional egress boundary. When ALLOWED_TARGETS
+// is empty the connector is "open" and dials whatever target the Manager sends;
+// when set, only targets inside the declared CIDRs / hosts / host:ports are dialed,
+// capping the blast radius of a compromised control plane.
+type TargetMatcher struct {
+	open      bool
+	cidrs     []*net.IPNet
+	hosts     map[string]bool // bare host, matches any port
+	hostPorts map[string]bool // exact host:port
+}
+
+// ParseAllowedTargets parses the ALLOWED_TARGETS env ("cidr,host,host:port,...").
+// An empty value yields an open matcher (no boundary).
+func ParseAllowedTargets(s string) (*TargetMatcher, error) {
+	m := &TargetMatcher{hosts: map[string]bool{}, hostPorts: map[string]bool{}}
 	if strings.TrimSpace(s) == "" {
+		m.open = true
 		return m, nil
 	}
-	for _, pair := range strings.Split(s, ",") {
-		kv := strings.SplitN(strings.TrimSpace(pair), "=", 2)
-		if len(kv) != 2 || kv[0] == "" || kv[1] == "" {
-			return nil, errors.New("bad upstream entry: " + pair)
+	for _, e := range strings.Split(s, ",") {
+		e = strings.TrimSpace(e)
+		if e == "" {
+			continue
 		}
-		m[kv[0]] = kv[1]
+		if _, ipnet, err := net.ParseCIDR(e); err == nil {
+			m.cidrs = append(m.cidrs, ipnet)
+			continue
+		}
+		if _, _, err := net.SplitHostPort(e); err == nil {
+			m.hostPorts[e] = true
+		} else {
+			m.hosts[e] = true
+		}
 	}
 	return m, nil
+}
+
+// Allowed reports whether a target authority ("host" or "host:port") is within
+// the boundary. An open matcher allows everything.
+func (m *TargetMatcher) Allowed(authority string) bool {
+	if m.open {
+		return true
+	}
+	host, port, err := net.SplitHostPort(authority)
+	if err != nil {
+		host, port = authority, ""
+	}
+	if m.hosts[host] {
+		return true
+	}
+	if port != "" && m.hostPorts[host+":"+port] {
+		return true
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		for _, c := range m.cidrs {
+			if c.Contains(ip) {
+				return true
+			}
+		}
+	}
+	return false
 }

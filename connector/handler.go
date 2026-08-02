@@ -15,23 +15,25 @@ import (
 
 // serveStreams accepts streams opened by the data-plane over mux and handles
 // each one independently until the session dies.
-func serveStreams(mux *yamux.Session, upstreams map[string]string) {
+func serveStreams(mux *yamux.Session, allow *TargetMatcher) {
 	for {
 		st, err := mux.Accept()
 		if err != nil {
 			return
 		}
-		go handleStream(st, upstreams)
+		go handleStream(st, allow)
 	}
 }
 
 // handleStream services a single proxied HTTP request. The first frame on
-// the stream is a tunnel.DialRequest naming an upstream by its local alias;
-// handleStream resolves that alias against the connector's own allowlist
-// (upstreams) and NEVER dials a host supplied by the caller directly. If the
-// name isn't in the allowlist, the stream is rejected with a DialResponse
-// error and closed — this is the connector's core security boundary.
-func handleStream(st io.ReadWriteCloser, upstreams map[string]string) {
+// the stream is a tunnel.DialRequest carrying the full upstream URL to dial;
+// handleStream validates that URL (scheme must be http/https, host must be
+// non-empty) and checks it against the connector's optional egress boundary
+// (allow) before ever dialing it. If ALLOWED_TARGETS is unset the boundary
+// is open and any well-formed http(s) URL is dialed; if it's set, targets
+// outside it are rejected with a DialResponse error and the stream is
+// closed — this is the connector's core security boundary.
+func handleStream(st io.ReadWriteCloser, allow *TargetMatcher) {
 	defer st.Close()
 
 	reqBytes, err := tunnel.ReadFrame(st)
@@ -43,15 +45,13 @@ func handleStream(st io.ReadWriteCloser, upstreams map[string]string) {
 		return
 	}
 
-	base, ok := upstreams[dr.UpstreamName]
-	if !ok {
-		writeErr(st, "unknown upstream") // LOCAL ALLOWLIST enforcement — fail closed
+	baseURL, err := url.Parse(dr.UpstreamUrl)
+	if err != nil || (baseURL.Scheme != "http" && baseURL.Scheme != "https") || baseURL.Host == "" {
+		writeErr(st, "bad upstream url")
 		return
 	}
-
-	baseURL, err := url.Parse(base)
-	if err != nil {
-		writeErr(st, "bad upstream config")
+	if !allow.Allowed(baseURL.Host) {
+		writeErr(st, "target not allowed") // egress boundary — fail closed
 		return
 	}
 	// dr.Path comes from the far end of the tunnel and MUST be treated as an
