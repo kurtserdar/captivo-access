@@ -29,6 +29,7 @@ export default async function AdminSitesPage() {
         probedAt: true,
         probeOk: true,
         probeDetail: true,
+        probeLatencyMs: true,
         connector: { select: { name: true, status: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -101,6 +102,9 @@ export default async function AdminSitesPage() {
                     )}
                     {s.probeDetail && s.probeOk === false && (
                       <div className="cell-sub">{s.probeDetail}</div>
+                    )}
+                    {s.probeOk === true && s.probeLatencyMs != null && (
+                      <div className="cell-sub">{s.probeLatencyMs} ms</div>
                     )}
                     {s.probedAt && (
                       <div className="cell-sub">{timeAgo(s.probedAt)}</div>

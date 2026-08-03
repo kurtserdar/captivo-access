@@ -1,17 +1,13 @@
-import { proxyThroughConnector } from "@/lib/connector/dataplane";
+import { probeConnector } from "@/lib/connector/dataplane";
 
-export type ProbeResult = { probeOk: boolean; probeDetail: string };
+export type ProbeResult = { probeOk: boolean; probeDetail: string; probeLatencyMs: number | null };
 
-// Probe a Site's reachability by sending GET / through its connector. Any HTTP
-// response means the connector reached the app (even 401/403); a proxy error
-// means it did not, and the error string is the reason.
+// Probe a Site's reachability with a raw TCP connect through its connector,
+// timing the round trip. A successful connect (regardless of what protocol
+// the upstream speaks) means the connector reached it; a probe error means
+// it did not, and the error string is the reason.
 export async function probeSite(site: { connectorId: string; upstreamUrl: string }): Promise<ProbeResult> {
-  const res = await proxyThroughConnector({
-    connectorId: site.connectorId,
-    upstreamUrl: site.upstreamUrl,
-    method: "GET",
-    path: "/",
-  });
-  if ("error" in res) return { probeOk: false, probeDetail: res.error };
-  return { probeOk: true, probeDetail: `HTTP ${res.status}` };
+  const res = await probeConnector({ connectorId: site.connectorId, upstreamUrl: site.upstreamUrl });
+  if ("error" in res) return { probeOk: false, probeDetail: res.error, probeLatencyMs: null };
+  return { probeOk: true, probeDetail: "reachable", probeLatencyMs: res.latencyMs };
 }
