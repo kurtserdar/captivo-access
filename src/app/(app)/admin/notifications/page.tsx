@@ -19,6 +19,7 @@ export default async function AdminNotificationsPage() {
 
   const notifications = await db.notification.findMany({
     orderBy: { createdAt: "desc" },
+    take: 200,
   });
 
   return (
@@ -28,7 +29,7 @@ export default async function AdminNotificationsPage() {
           <h1>Notifications</h1>
           <p>Site down/recovered events from the health probe.</p>
         </div>
-        <MarkReadButton />
+        {notifications.length > 0 && <MarkReadButton />}
       </div>
 
       {notifications.length === 0 ? (
