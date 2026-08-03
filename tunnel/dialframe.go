@@ -4,6 +4,7 @@ package tunnel
 // describes which upstream URL to reach and the HTTP request line/headers to
 // replay against it; the raw HTTP body follows as subsequent stream bytes.
 type DialRequest struct {
+	Kind        string              `json:"kind,omitempty"` // "" or "dial" = proxied HTTP request
 	UpstreamUrl string              `json:"upstreamUrl"`
 	Method      string              `json:"method"`
 	Path        string              `json:"path"`
