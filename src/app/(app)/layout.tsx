@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
 import { countPendingGrants } from "@/lib/access/grants";
+import { countUnreadNotifications } from "@/lib/notifications";
 import { LogoutButton } from "./logout-button";
 import { NavLink } from "./nav-link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -28,6 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   const admin = user.role === "ADMIN";
   const pendingCount = admin ? await countPendingGrants() : 0;
+  const unreadNotifications = admin ? await countUnreadNotifications() : 0;
 
   return (
     <div className="app-shell">
@@ -58,6 +60,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <NavLink href="/admin/sites">
               <SitesIcon />
               Sites
+            </NavLink>
+            <NavLink href="/admin/notifications">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              Notifications
+              {unreadNotifications > 0 && <span className="nav-badge">{unreadNotifications}</span>}
             </NavLink>
             <span className="nav-group">People &amp; audit</span>
             <NavLink href="/admin/users">
