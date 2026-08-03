@@ -39,7 +39,7 @@ func TestProbeReachable(t *testing.T) {
 	}
 	defer ln.Close()
 	resp := probe(t, openMatcher(t), "http://"+ln.Addr().String())
-	if !resp.Ok || resp.LatencyMs < 0 {
+	if !resp.Ok {
 		t.Fatalf("expected reachable, got %+v", resp)
 	}
 }

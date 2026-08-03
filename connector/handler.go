@@ -179,14 +179,16 @@ func handleProbe(st io.Writer, allow *TargetMatcher, reqBytes []byte) {
 		writeProbe(st, tunnel.ProbeResponse{Ok: false, Error: "target not allowed"}) // egress boundary — fail closed
 		return
 	}
-	hostPort := baseURL.Host
-	if baseURL.Port() == "" {
+	port := baseURL.Port()
+	if port == "" {
 		if baseURL.Scheme == "https" {
-			hostPort = baseURL.Hostname() + ":443"
+			port = "443"
 		} else {
-			hostPort = baseURL.Hostname() + ":80"
+			port = "80"
 		}
 	}
+	// net.JoinHostPort brackets IPv6 hosts correctly (baseURL.Hostname strips them).
+	hostPort := net.JoinHostPort(baseURL.Hostname(), port)
 	start := time.Now()
 	conn, err := net.DialTimeout("tcp", hostPort, 5*time.Second)
 	if err != nil {
