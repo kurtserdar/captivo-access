@@ -21,9 +21,13 @@ export async function notifyTransition(input: {
   siteName: string;
   detail: string | null;
 }): Promise<void> {
-  await db.notification.create({
-    data: { type: input.type, siteId: input.siteId, siteName: input.siteName, detail: input.detail },
-  });
+  try {
+    await db.notification.create({
+      data: { type: input.type, siteId: input.siteId, siteName: input.siteName, detail: input.detail },
+    });
+  } catch {
+    // Best-effort: a failed notification row insert must never break the cron.
+  }
   await fireWebhook(input);
 }
 
