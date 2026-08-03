@@ -72,6 +72,9 @@ services:
       # deletes rows. CRON_SECRET authorizes that endpoint (Bearer token).
       AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-730}
       CRON_SECRET: ${CRON_SECRET:?required}
+      # Optional outbound alert when a Site goes down or recovers (best-effort
+      # POST). Unset = disabled. See deploy/.env.prod.example.
+      NOTIFICATION_WEBHOOK_URL: ${NOTIFICATION_WEBHOOK_URL:-}
     # Not published to the host — only Caddy (on the compose network) reaches
     # it, at http://access-manager:3100.
     expose:
