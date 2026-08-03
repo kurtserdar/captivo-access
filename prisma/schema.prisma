@@ -22,16 +22,16 @@ enum UserStatus {
 }
 
 model User {
-  id             String      @id @default(cuid())
-  email          String      @unique
+  id             String        @id @default(cuid())
+  email          String        @unique
   name           String
   role           Role
-  status         UserStatus  @default(ACTIVE)
-  createdAt      DateTime    @default(now())
+  status         UserStatus    @default(ACTIVE)
+  createdAt      DateTime      @default(now())
   passkeys       Passkey[]
   totp           TotpSecret?
   sessions       Session[]
-  invitesCreated Invite[]    @relation("InviteCreator")
+  invitesCreated Invite[]      @relation("InviteCreator")
   grantsSubject  AccessGrant[] @relation("GrantSubject")
   grantsApproved AccessGrant[] @relation("GrantApprover")
   grantsCreated  AccessGrant[] @relation("GrantCreator")
@@ -117,18 +117,19 @@ model ConnectorPairing {
 }
 
 model Site {
-  id           String    @id @default(cuid())
-  connectorId  String
-  connector    Connector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
-  name         String
-  hostname     String    @unique
-  upstreamUrl  String?
-  description  String?
-  probedAt     DateTime?
-  probeOk      Boolean?
-  probeDetail  String?
-  createdAt    DateTime  @default(now())
-  grants       AccessGrant[]
+  id             String        @id @default(cuid())
+  connectorId    String
+  connector      Connector     @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  name           String
+  hostname       String        @unique
+  upstreamUrl    String?
+  description    String?
+  probedAt       DateTime?
+  probeOk        Boolean?
+  probeDetail    String?
+  probeLatencyMs Int?
+  createdAt      DateTime      @default(now())
+  grants         AccessGrant[]
 }
 
 enum GrantStatus {
@@ -138,26 +139,26 @@ enum GrantStatus {
 }
 
 model AccessGrant {
-  id           String      @id @default(cuid())
-  userId       String
-  user         User        @relation("GrantSubject", fields: [userId], references: [id], onDelete: Cascade)
-  siteId       String
-  site         Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  startsAt     DateTime?
-  endsAt       DateTime?
-  status       GrantStatus @default(ACTIVE)
-  note         String?
+  id       String      @id @default(cuid())
+  userId   String
+  user     User        @relation("GrantSubject", fields: [userId], references: [id], onDelete: Cascade)
+  siteId   String
+  site     Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  startsAt DateTime?
+  endsAt   DateTime?
+  status   GrantStatus @default(ACTIVE)
+  note     String?
 
   requiresApproval Boolean   @default(false)
   approvedAt       DateTime?
   approvedById     String?
   approvedBy       User?     @relation("GrantApprover", fields: [approvedById], references: [id])
 
-  schedule  Json?
+  schedule Json?
 
-  createdById  String
-  createdBy    User        @relation("GrantCreator", fields: [createdById], references: [id])
-  createdAt    DateTime    @default(now())
+  createdById String
+  createdBy   User     @relation("GrantCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
 
   @@index([userId, siteId])
 }
@@ -168,25 +169,25 @@ enum AuditDecision {
 }
 
 model AuditEvent {
-  id         String        @id @default(cuid())
-  timestamp  DateTime      @default(now())
-  userId     String?
-  userEmail  String?
-  siteId     String?
-  siteName   String?
-  host       String
-  method     String
-  path       String
-  status     Int
-  bytesOut   BigInt        @default(0)
-  decision   AuditDecision
-  reason     String?
-  clientIp   String?
-  userAgent  String?
-  seq        BigInt        @unique
-  prevHash   String        @default("")
-  hash       String        @default("")
-  createdAt  DateTime      @default(now())
+  id        String        @id @default(cuid())
+  timestamp DateTime      @default(now())
+  userId    String?
+  userEmail String?
+  siteId    String?
+  siteName  String?
+  host      String
+  method    String
+  path      String
+  status    Int
+  bytesOut  BigInt        @default(0)
+  decision  AuditDecision
+  reason    String?
+  clientIp  String?
+  userAgent String?
+  seq       BigInt        @unique
+  prevHash  String        @default("")
+  hash      String        @default("")
+  createdAt DateTime      @default(now())
 
   @@index([timestamp])
   @@index([userId, timestamp])

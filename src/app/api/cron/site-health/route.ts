@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
     const batch = toProbe.slice(i, i + POOL);
     await Promise.all(
       batch.map(async (site) => {
-        const { probeOk, probeDetail } = await probeSite(site);
+        const { probeOk, probeDetail, probeLatencyMs } = await probeSite(site);
         if (probeOk) reachable++;
         else unreachable++;
-        await db.site.update({ where: { id: site.id }, data: { probedAt: now, probeOk, probeDetail } });
+        await db.site.update({ where: { id: site.id }, data: { probedAt: now, probeOk, probeDetail, probeLatencyMs } });
       }),
     );
   }

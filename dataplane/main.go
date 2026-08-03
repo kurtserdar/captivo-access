@@ -60,6 +60,26 @@ func main() {
 			"truncated":   res.Truncated,
 		})
 	})
+	in.HandleFunc("/probe", func(w http.ResponseWriter, r *http.Request) {
+		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		var body struct {
+			ConnectorID string `json:"connectorId"`
+			UpstreamUrl string `json:"upstreamUrl"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_body"})
+			return
+		}
+		res, err := Probe(reg.Get(body.ConnectorID), tunnel.ProbeRequest{UpstreamUrl: body.UpstreamUrl})
+		if err != nil {
+			writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"ok": res.Ok, "latencyMs": res.LatencyMs, "error": res.Error})
+	})
 	in.HandleFunc("/kick", func(w http.ResponseWriter, r *http.Request) {
 		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
 			http.Error(w, "forbidden", http.StatusForbidden)
