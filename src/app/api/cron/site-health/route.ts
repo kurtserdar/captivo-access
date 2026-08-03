@@ -34,7 +34,10 @@ export async function POST(req: NextRequest) {
         else unreachable++;
         const transition = classifyTransition(site.probeOk, probeOk);
         if (transition) {
-          await notifyTransition({ type: transition, siteId: site.id, siteName: site.name, detail: probeDetail });
+          // Only a down event carries a failure reason; a recovered event has
+          // no meaningful detail (probeDetail is just "reachable" on success).
+          const detail = transition === "site_down" ? probeDetail : null;
+          await notifyTransition({ type: transition, siteId: site.id, siteName: site.name, detail });
         }
         await db.site.update({ where: { id: site.id }, data: { probedAt: now, probeOk, probeDetail, probeLatencyMs } });
       }),
