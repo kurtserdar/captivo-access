@@ -118,6 +118,11 @@ Shipped and working today:
   can verify the chain is intact and detect alteration, deletion, splicing,
   or tail-truncation. External trusted-timestamp anchoring (RFC 3161 / KamuSM)
   is a documented fast-follow — see [Roadmap](#roadmap-not-yet).
+- **Per-site health monitoring** — a scheduled probe TCP-connects to each Site
+  through its connector and shows reachability + latency in the console. When a
+  Site goes down or recovers, an in-console notification is raised (nav bell +
+  list) and, optionally, a best-effort webhook is fired
+  (`NOTIFICATION_WEBHOOK_URL`, Slack/Teams-friendly) — no mail server required.
 
 ## Quick start (local/dev)
 
