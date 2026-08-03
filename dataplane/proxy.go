@@ -73,3 +73,33 @@ func Proxy(s *Session, dr tunnel.DialRequest) (*ProxyResult, error) {
 
 	return &ProxyResult{Status: resp.Status, Header: resp.Header, Body: body, Truncated: truncated}, nil
 }
+
+// Probe opens a stream, sends a ProbeRequest, and reads back the single
+// ProbeResponse frame. No body is written (a probe carries none).
+func Probe(s *Session, pr tunnel.ProbeRequest) (*tunnel.ProbeResponse, error) {
+	if s == nil || s.mux == nil {
+		return nil, errors.New("connector offline")
+	}
+	st, err := s.mux.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer st.Close()
+	pr.Kind = "probe"
+	reqBytes, err := json.Marshal(pr)
+	if err != nil {
+		return nil, err
+	}
+	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
+		return nil, err
+	}
+	respBytes, err := tunnel.ReadFrame(st)
+	if err != nil {
+		return nil, err
+	}
+	var resp tunnel.ProbeResponse
+	if err := json.Unmarshal(respBytes, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
