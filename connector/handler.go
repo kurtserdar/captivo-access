@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -25,21 +26,34 @@ func serveStreams(mux *yamux.Session, allow *TargetMatcher) {
 	}
 }
 
-// handleStream services a single proxied HTTP request. The first frame on
-// the stream is a tunnel.DialRequest carrying the full upstream URL to dial;
-// handleStream validates that URL (scheme must be http/https, host must be
+// handleStream reads the first control frame, peeks its kind, and dispatches
+// to the dial (proxied HTTP) or probe (TCP reachability) handler.
+func handleStream(st io.ReadWriteCloser, allow *TargetMatcher) {
+	defer st.Close()
+	reqBytes, err := tunnel.ReadFrame(st)
+	if err != nil {
+		return
+	}
+	var peek struct {
+		Kind string `json:"kind"`
+	}
+	_ = json.Unmarshal(reqBytes, &peek)
+	if peek.Kind == "probe" {
+		handleProbe(st, allow, reqBytes)
+		return
+	}
+	handleDial(st, allow, reqBytes)
+}
+
+// handleDial services a single proxied HTTP request. The first frame on the
+// stream is a tunnel.DialRequest carrying the full upstream URL to dial;
+// handleDial validates that URL (scheme must be http/https, host must be
 // non-empty) and checks it against the connector's optional egress boundary
 // (allow) before ever dialing it. If ALLOWED_TARGETS is unset the boundary
 // is open and any well-formed http(s) URL is dialed; if it's set, targets
 // outside it are rejected with a DialResponse error and the stream is
 // closed — this is the connector's core security boundary.
-func handleStream(st io.ReadWriteCloser, allow *TargetMatcher) {
-	defer st.Close()
-
-	reqBytes, err := tunnel.ReadFrame(st)
-	if err != nil {
-		return
-	}
+func handleDial(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 	var dr tunnel.DialRequest
 	if json.Unmarshal(reqBytes, &dr) != nil {
 		return
@@ -141,4 +155,58 @@ func orGet(m string) string {
 		return "GET"
 	}
 	return m
+}
+
+// handleProbe services a TCP reachability check. The first frame is a
+// tunnel.ProbeRequest carrying the upstream URL; handleProbe validates it
+// (scheme must be http/https, host must be non-empty) and checks it against
+// the connector's optional egress boundary (allow) before ever dialing it —
+// the same boundary a proxied dial uses, since a probe reaches the same
+// network as a dial and must not be a way to bypass ALLOWED_TARGETS. It then
+// TCP-connects to the derived host:port (default 80/443 by scheme) and
+// reports success/failure and latency, never making an HTTP request.
+func handleProbe(st io.Writer, allow *TargetMatcher, reqBytes []byte) {
+	var pr tunnel.ProbeRequest
+	if json.Unmarshal(reqBytes, &pr) != nil {
+		return
+	}
+	baseURL, err := url.Parse(pr.UpstreamUrl)
+	if err != nil || (baseURL.Scheme != "http" && baseURL.Scheme != "https") || baseURL.Hostname() == "" {
+		writeProbe(st, tunnel.ProbeResponse{Ok: false, Error: "bad upstream url"})
+		return
+	}
+	if !allow.Allowed(baseURL.Host) {
+		writeProbe(st, tunnel.ProbeResponse{Ok: false, Error: "target not allowed"}) // egress boundary — fail closed
+		return
+	}
+	hostPort := baseURL.Host
+	if baseURL.Port() == "" {
+		if baseURL.Scheme == "https" {
+			hostPort = baseURL.Hostname() + ":443"
+		} else {
+			hostPort = baseURL.Hostname() + ":80"
+		}
+	}
+	start := time.Now()
+	conn, err := net.DialTimeout("tcp", hostPort, 5*time.Second)
+	if err != nil {
+		detail := "unreachable"
+		if ne, ok := err.(net.Error); ok && ne.Timeout() {
+			detail = "timeout"
+		} else if strings.Contains(err.Error(), "refused") {
+			detail = "connection refused"
+		}
+		writeProbe(st, tunnel.ProbeResponse{Ok: false, Error: detail})
+		return
+	}
+	conn.Close()
+	writeProbe(st, tunnel.ProbeResponse{Ok: true, LatencyMs: int(time.Since(start).Milliseconds())})
+}
+
+func writeProbe(st io.Writer, pr tunnel.ProbeResponse) {
+	b, err := json.Marshal(pr)
+	if err != nil {
+		return
+	}
+	_ = tunnel.WriteFrame(st, b)
 }
