@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { ConnectorForm } from "./connector-form";
+import { DeleteConnectorButton } from "./delete-connector-button";
 import { RevokeConnectorButton } from "./revoke-connector-button";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ export default async function AdminConnectorsPage() {
   await requireAdmin();
 
   const connectors = await db.connector.findMany({
-    select: { id: true, name: true, status: true, lastSeenAt: true, version: true },
+    select: { id: true, name: true, status: true, lastSeenAt: true, version: true, _count: { select: { sites: true } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -73,10 +74,12 @@ export default async function AdminConnectorsPage() {
                   <td className="cell-sub">{c.lastSeenAt ? c.lastSeenAt.toLocaleString("en-US") : "Never"}</td>
                   <td className="cell-sub">{c.version ?? "—"}</td>
                   <td>
-                    {c.status === "REVOKED" ? (
-                      <span className="cell-sub">Revoked</span>
-                    ) : (
+                    {c.status !== "REVOKED" ? (
                       <RevokeConnectorButton id={c.id} />
+                    ) : c._count.sites === 0 ? (
+                      <DeleteConnectorButton id={c.id} name={c.name} />
+                    ) : (
+                      <span className="cell-sub">Revoked · {c._count.sites} site{c._count.sites === 1 ? "" : "s"}</span>
                     )}
                   </td>
                 </tr>
