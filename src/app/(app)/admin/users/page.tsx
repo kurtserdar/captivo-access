@@ -27,6 +27,8 @@ export default async function AdminUsersPage() {
       id: true,
       email: true,
       name: true,
+      company: true,
+      phone: true,
       role: true,
       status: true,
       createdAt: true,
@@ -50,6 +52,7 @@ export default async function AdminUsersPage() {
             <tr>
               <th>Name</th>
               <th>Email</th>
+              <th>Company</th>
               <th>Role</th>
               <th>Status</th>
               <th>Passkeys</th>
@@ -61,6 +64,10 @@ export default async function AdminUsersPage() {
               <tr key={u.id}>
                 <td>{u.name}</td>
                 <td className="cell-sub">{u.email}</td>
+                <td>
+                  <div>{u.company ?? "—"}</div>
+                  {u.phone && <div className="cell-sub">{u.phone}</div>}
+                </td>
                 <td>{ROLE_LABEL[u.role] ?? u.role}</td>
                 <td>
                   <span className={`pill ${STATUS_PILL[u.status] ?? "neutral"}`}>

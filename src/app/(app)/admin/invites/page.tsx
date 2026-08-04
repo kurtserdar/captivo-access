@@ -47,6 +47,7 @@ export default async function AdminInvitesPage() {
               <tr>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Company</th>
                 <th>Role</th>
                 <th>Status</th>
                 <th>Expires</th>
@@ -59,6 +60,10 @@ export default async function AdminInvitesPage() {
                   <tr key={inv.id}>
                     <td>{inv.name}</td>
                     <td className="cell-sub">{inv.email}</td>
+                    <td>
+                      <div>{inv.company ?? "—"}</div>
+                      {inv.phone && <div className="cell-sub">{inv.phone}</div>}
+                    </td>
                     <td>{inv.role}</td>
                     <td>
                       <span className={`pill ${STATUS_PILL[status] ?? "neutral"}`}>{status}</span>

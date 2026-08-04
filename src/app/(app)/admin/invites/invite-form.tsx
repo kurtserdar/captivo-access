@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PhoneInput } from "@/components/phone-input";
 
 function errorMessage(code: string | undefined): string {
   switch (code) {
@@ -18,6 +19,9 @@ export function InviteForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"VENDOR" | "ADMIN">("VENDOR");
+  const [company, setCompany] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phoneKey, setPhoneKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
@@ -33,7 +37,7 @@ export function InviteForm() {
       const res = await fetch("/api/admin/invites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, role }),
+        body: JSON.stringify({ name, email, role, phone, company }),
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok || !result?.link) {
@@ -44,6 +48,9 @@ export function InviteForm() {
       setName("");
       setEmail("");
       setRole("VENDOR");
+      setCompany("");
+      setPhone("");
+      setPhoneKey((k) => k + 1);
     } catch {
       setError("Couldn't create the invite, please try again.");
     } finally {
@@ -91,6 +98,25 @@ export function InviteForm() {
             required
             autoComplete="email"
           />
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="invite-company">
+            Company <span className="hint">(optional)</span>
+          </label>
+          <input
+            id="invite-company"
+            type="text"
+            className="input"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            autoComplete="organization"
+          />
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="invite-phone">
+            Phone <span className="hint">(optional)</span>
+          </label>
+          <PhoneInput key={phoneKey} id="invite-phone" onChange={setPhone} />
         </div>
         <div className="field">
           <label className="field-label" htmlFor="invite-role">
