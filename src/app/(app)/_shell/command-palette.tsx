@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { SearchRecord } from "@/lib/search";
 import { filterCommandItems, type CommandItem } from "@/lib/command";
@@ -125,7 +126,9 @@ function PaletteOverlay({ items, onClose }: { items: CommandItem[]; onClose: () 
     g.rows.push({ item, index });
   });
 
-  return (
+  // Portal to <body> so the fixed overlay escapes the topbar's containing block
+  // (the topbar's backdrop-filter would otherwise clip inset:0 to the topbar box).
+  return createPortal(
     <div className="cmd-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Command palette">
       <div className="cmd-panel" onClick={(e) => e.stopPropagation()}>
         <input
@@ -160,6 +163,7 @@ function PaletteOverlay({ items, onClose }: { items: CommandItem[]; onClose: () 
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
