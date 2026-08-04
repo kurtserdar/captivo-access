@@ -25,6 +25,8 @@ model User {
   id             String        @id @default(cuid())
   email          String        @unique
   name           String
+  phone          String?
+  company        String?
   role           Role
   status         UserStatus    @default(ACTIVE)
   createdAt      DateTime      @default(now())
@@ -63,6 +65,8 @@ model Invite {
   id          String    @id @default(cuid())
   email       String
   name        String
+  phone       String?
+  company     String?
   role        Role
   tokenHash   String    @unique // argon2(random 32B); plaintext only in the link
   expiresAt   DateTime
