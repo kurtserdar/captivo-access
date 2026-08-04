@@ -84,6 +84,9 @@ a{color:inherit;}
 .error{font-size:.82rem;color:var(--danger);}
 .schedule-builder{display:flex;flex-direction:column;gap:12px;margin-top:8px;}
 .day-toggles{display:flex;flex-wrap:wrap;gap:6px;}
+.phone-input{display:flex;gap:.5rem;}
+.phone-input .select{width:auto;flex:none;}
+.phone-input .input{flex:1;}
 
 /* ---- table ---- */
 .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-lg);}
