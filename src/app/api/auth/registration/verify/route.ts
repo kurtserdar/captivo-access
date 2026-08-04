@@ -183,6 +183,8 @@ export async function POST(req: NextRequest) {
             email: invite.email,
             name: invite.name,
             role: invite.role,
+            phone: invite.phone,
+            company: invite.company,
             status: "ACTIVE",
           },
         });

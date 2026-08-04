@@ -7,13 +7,22 @@ function ttlMs() {
   return (Number.isFinite(h) && h > 0 ? h : 48) * 3600_000;
 }
 
-export async function createInvite(input: { email: string; name: string; role: Role; createdById: string }) {
+export async function createInvite(input: {
+  email: string;
+  name: string;
+  role: Role;
+  createdById: string;
+  phone?: string | null;
+  company?: string | null;
+}) {
   const token = generateToken();
   const inv = await db.invite.create({
     data: {
       email: input.email,
       name: input.name,
       role: input.role,
+      phone: input.phone ?? null,
+      company: input.company ?? null,
       tokenHash: await hashToken(token),
       expiresAt: new Date(Date.now() + ttlMs()),
       createdById: input.createdById,
