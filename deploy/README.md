@@ -247,15 +247,25 @@ these to the host's crontab:
 ```cron
 # Probe each Site's reachability through its connector every 5 minutes:
 */5 * * * * curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/site-health >/dev/null
+
+# Trim the audit log past its retention window, once a day:
+17 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/audit-retention >/dev/null
 ```
 
-`POST /api/cron/site-health` sends `GET /` through each configured Site's
-connector and records the result (`probedAt`/`probeOk`/`probeDetail`) —
-any HTTP response (including 401/403) counts as reachable; a proxy/tunnel
-error counts as unreachable. Sites with no internal address set yet are
-skipped, not reported unreachable. Like the other cron endpoints, it fails
-closed — with `CRON_SECRET` unset or a missing/wrong Bearer header, it
-returns `401` and probes nothing.
+`POST /api/cron/site-health` opens a **TCP connection** to each configured
+Site's internal address through its connector and records the result
+(`probedAt`/`probeOk`/`probeDetail`/`probeLatencyMs`) — a successful connect
+counts as reachable, a refused/timed-out/tunnel error as unreachable. A
+transition (up→down or down→up) also raises an in-console notification and, if
+`NOTIFICATION_WEBHOOK_URL` is set, a best-effort webhook. Sites with no
+internal address set yet are skipped, not reported unreachable.
+
+`POST /api/cron/audit-retention` deletes audit-log rows older than
+`AUDIT_RETENTION_DAYS` (default 730) by sequence prefix, preserving the
+tamper-evident hash chain. Leave it unscheduled to keep audit history forever.
+
+Like the other cron endpoints, both fail closed — with `CRON_SECRET` unset or a
+missing/wrong Bearer header they return `401` and do nothing.
 
 ## Updating
 

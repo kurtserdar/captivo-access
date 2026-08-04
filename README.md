@@ -185,9 +185,10 @@ docker compose -f docker-compose.prod.yml up -d
 
 Images are published to `ghcr.io/kurtserdar/captivo-access-{manager,dataplane,connector}`
 on each `vX.Y.Z` release tag (plus `latest`) — see
-[`.github/workflows/publish.yml`](.github/workflows/publish.yml). No image
-has been tagged yet; until a release ships, build locally per the quick
-start above. `deploy/README.md` also covers the wildcard-TLS trade-off (one
+[`.github/workflows/publish.yml`](.github/workflows/publish.yml) and the
+[releases](https://github.com/kurtserdar/captivo-access/releases). Pull the
+`latest` tag (or pin a specific `vX.Y.Z`); the `deploy/` scaffold references
+them already. `deploy/README.md` also covers the wildcard-TLS trade-off (one
 Caddy DNS-01 plugin vs. one explicit host block per vendor site) and how to
 push the schema against the production database.
 
