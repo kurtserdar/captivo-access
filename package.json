@@ -24,6 +24,7 @@
     "@simplewebauthn/server": "^13",
     "jose": "^6",
     "next": "^16.2.0",
+    "nodemailer": "^9.0.4",
     "otplib": "^13",
     "pg": "8.16.0",
     "react": "^19.2.8",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "^22",
+    "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.20.0",
     "@types/react": "^19.2",
     "@types/react-dom": "^19.2",

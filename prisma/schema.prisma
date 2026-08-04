@@ -207,6 +207,20 @@ model AuditChainState {
   updatedAt DateTime @updatedAt
 }
 
+// Singleton (id = "singleton") holding the outbound SMTP relay configuration.
+model SmtpConfig {
+  id        String   @id
+  host      String
+  port      Int
+  secure    Boolean  @default(false)
+  username  String
+  password  String
+  fromName  String
+  fromEmail String
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
 model Notification {
   id        String    @id @default(cuid())
   type      String    // "site_down" | "site_recovered"
