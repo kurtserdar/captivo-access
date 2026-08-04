@@ -314,8 +314,13 @@ Explicitly **not** built — don't assume these exist:
   defend against an actor able to rewrite the entire database.
 - **RDP/SSH bridging** — this is an HTTP(S) reverse proxy today, not a
   general-purpose bastion.
-- **Email notifications** — approval requests surface in the admin console
-  (a pending list + a nav badge), but there's no email notification yet.
+- **Outbound email (SMTP)** — not built yet, which shows up in two places
+  today: **vendor invites are delivered manually** — you create an invite, copy
+  its one-time link, and send it to the vendor yourself — and there are no email
+  notifications. (In-console notifications *do* exist for site up/down, with an
+  optional webhook via `NOTIFICATION_WEBHOOK_URL`; approval requests surface as a
+  pending list + a nav badge.) Emailing invite links directly, and email
+  notifications, are both planned.
 
 The console is intentionally **English-only** (Turkish localization is not
 planned for the console itself; the KVKK/5651 framing is about data behavior,
