@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { createAccessRequest } from "@/lib/access/grants";
 import { validateSchedule, type Schedule } from "@/lib/access/schedule";
+import { sendMail, getAdminEmails } from "@/lib/email/mailer";
+import { approvalRequestEmail } from "@/lib/email/templates";
 
 function parseDate(value: unknown): { ok: true; value: Date | null } | { ok: false } {
   if (value === undefined || value === null || value === "") return { ok: true, value: null };
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
     schedule = v.schedule;
   }
 
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { id: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { id: true, name: true } });
   if (!site) return NextResponse.json({ error: "invalid_site" }, { status: 400 });
 
   const result = await createAccessRequest({
@@ -49,6 +51,21 @@ export async function POST(req: NextRequest) {
     schedule,
   });
   if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 409 });
+
+  try {
+    const admins = await getAdminEmails();
+    if (admins.length > 0) {
+      const m = approvalRequestEmail({
+        vendorName: user.name,
+        vendorEmail: user.email,
+        siteName: site.name,
+        consoleUrl: (process.env.MANAGER_PUBLIC_URL ?? "").replace(/\/$/, ""),
+      });
+      await sendMail({ to: admins, subject: m.subject, html: m.html, text: m.text });
+    }
+  } catch {
+    // Best-effort: notifying admins must never fail the request.
+  }
 
   return NextResponse.json({ id: result.id }, { status: 201 });
 }
