@@ -15,7 +15,7 @@ function errorMessage(code: string | undefined): string {
   }
 }
 
-export function InviteForm() {
+export function InviteForm({ smtpEnabled }: { smtpEnabled: boolean }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"VENDOR" | "ADMIN">("VENDOR");
@@ -26,18 +26,21 @@ export function InviteForm() {
   const [error, setError] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sendEmail, setSendEmail] = useState(true);
+  const [emailed, setEmailed] = useState<boolean | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLink(null);
     setCopied(false);
+    setEmailed(null);
     setBusy(true);
     try {
       const res = await fetch("/api/admin/invites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, role, phone, company }),
+        body: JSON.stringify({ name, email, role, phone, company, sendEmail: smtpEnabled && sendEmail }),
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok || !result?.link) {
@@ -45,6 +48,7 @@ export function InviteForm() {
         return;
       }
       setLink(result.link);
+      setEmailed(typeof result.emailed === "boolean" ? result.emailed : null);
       setName("");
       setEmail("");
       setRole("VENDOR");
@@ -137,6 +141,13 @@ export function InviteForm() {
             {error}
           </p>
         )}
+        {smtpEnabled && (
+          <div className="field">
+            <label className="field-label">
+              <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} /> Email the invite link to {email || "the address above"}
+            </label>
+          </div>
+        )}
         <button type="submit" className="btn primary" disabled={busy}>
           {busy ? "Creating…" : "Create invite"}
         </button>
@@ -145,6 +156,8 @@ export function InviteForm() {
       {link && (
         <div role="status" className="notice">
           <p>This link is shown only once. Don&apos;t leave this page without saving it.</p>
+          {emailed === true && <p className="notice success">Invite emailed to the address above.</p>}
+          {emailed === false && <p className="notice error">Couldn&apos;t email it — copy the link below and send it manually.</p>}
           <code className="code secret">{link}</code>
           <button type="button" className="btn sm ghost" onClick={handleCopy}>
             {copied ? "Copied" : "Copy"}

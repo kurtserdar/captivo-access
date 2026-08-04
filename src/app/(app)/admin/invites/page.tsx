@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
+import { getSmtpConfig } from "@/lib/email/mailer";
 import { InviteForm } from "./invite-form";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,9 @@ function inviteStatus(inv: { usedAt: Date | null; expiresAt: Date }): string {
 export default async function AdminInvitesPage() {
   await requireAdmin();
 
+  const smtp = await getSmtpConfig();
+  const smtpEnabled = !!smtp?.enabled;
+
   const invites = await db.invite.findMany({ orderBy: { createdAt: "desc" } });
 
   return (
@@ -34,7 +38,7 @@ export default async function AdminInvitesPage() {
         <div className="card-head">
           <h2>New invitation</h2>
         </div>
-        <InviteForm />
+        <InviteForm smtpEnabled={smtpEnabled} />
       </div>
 
       <h2>Sent invites</h2>
