@@ -1,0 +1,165 @@
+"use client";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import type { SearchRecord } from "@/lib/search";
+import { filterCommandItems, type CommandItem } from "@/lib/command";
+
+const PAGES: { label: string; href: string; admin: boolean }[] = [
+  { label: "Overview", href: "/", admin: false },
+  { label: "My access", href: "/access", admin: false },
+  { label: "Grants", href: "/admin/grants", admin: true },
+  { label: "Connectors", href: "/admin/connectors", admin: true },
+  { label: "Sites", href: "/admin/sites", admin: true },
+  { label: "Notifications", href: "/admin/notifications", admin: true },
+  { label: "Users", href: "/admin/users", admin: true },
+  { label: "Invites", href: "/admin/invites", admin: true },
+  { label: "Sessions", href: "/admin/sessions", admin: true },
+  { label: "Audit log", href: "/admin/audit", admin: true },
+  { label: "Settings", href: "/settings/passkeys", admin: false },
+];
+const GROUP_FOR: Record<SearchRecord["type"], CommandItem["group"]> = {
+  site: "Sites",
+  connector: "Connectors",
+  user: "Users",
+};
+
+// No-op subscribe: the Mac/non-Mac platform never changes during a session,
+// so this store never needs to notify listeners of an update.
+function subscribeNever() {
+  return () => {};
+}
+function getIsMacSnapshot() {
+  return navigator.userAgent.includes("Mac");
+}
+function getIsMacServerSnapshot() {
+  return false;
+}
+
+export function CommandPalette({ records, admin }: { records: SearchRecord[]; admin: boolean }) {
+  const [open, setOpen] = useState(false);
+  // useSyncExternalStore (rather than a mount-effect + setState) avoids both
+  // a hydration mismatch and an effect-triggered re-render.
+  const isMac = useSyncExternalStore(subscribeNever, getIsMacSnapshot, getIsMacServerSnapshot);
+
+  const items: CommandItem[] = useMemo(() => {
+    const pages: CommandItem[] = PAGES.filter((p) => admin || !p.admin).map((p) => ({
+      id: `page:${p.href}`, label: p.label, sub: null, href: p.href, group: "Pages",
+    }));
+    const recs: CommandItem[] = records.map((r) => ({
+      id: `${r.type}:${r.id}`, label: r.label, sub: r.sub, href: r.href, group: GROUP_FOR[r.type],
+    }));
+    return [...pages, ...recs];
+  }, [records, admin]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setOpen((o) => !o);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  return (
+    <>
+      <button className="cmd-trigger" onClick={() => setOpen(true)} aria-label="Search">
+        <span>Search…</span>
+        <kbd>{isMac ? "⌘" : "Ctrl"} K</kbd>
+      </button>
+      {open && <PaletteOverlay items={items} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+// Mounted only while the palette is open, so `query`/`active` start fresh
+// every time — no reset-on-open effect needed.
+function PaletteOverlay({ items, onClose }: { items: CommandItem[]; onClose: () => void }) {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [active, setActive] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => inputRef.current?.focus(), 0);
+    return () => clearTimeout(t);
+  }, []);
+
+  const results = useMemo(() => filterCommandItems(query, items), [query, items]);
+
+  function select(item: CommandItem | undefined) {
+    if (!item) return;
+    onClose();
+    router.push(item.href);
+  }
+
+  function onQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setQuery(e.target.value);
+    setActive(0);
+  }
+
+  function onInputKey(e: React.KeyboardEvent) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((a) => Math.min(a + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((a) => Math.max(a - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      select(results[active]);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+    }
+  }
+
+  const groups: { name: string; rows: { item: CommandItem; index: number }[] }[] = [];
+  results.forEach((item, index) => {
+    let g = groups.find((x) => x.name === item.group);
+    if (!g) {
+      g = { name: item.group, rows: [] };
+      groups.push(g);
+    }
+    g.rows.push({ item, index });
+  });
+
+  return (
+    <div className="cmd-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Command palette">
+      <div className="cmd-panel" onClick={(e) => e.stopPropagation()}>
+        <input
+          ref={inputRef}
+          className="cmd-input"
+          placeholder="Jump to a page, site, connector, or user…"
+          value={query}
+          onChange={onQueryChange}
+          onKeyDown={onInputKey}
+        />
+        <div className="cmd-results">
+          {results.length === 0 ? (
+            <div className="cmd-empty">No matches.</div>
+          ) : (
+            groups.map((g) => (
+              <div key={g.name} className="cmd-section">
+                <div className="cmd-group">{g.name}</div>
+                {g.rows.map(({ item, index }) => (
+                  <button
+                    key={item.id}
+                    className={`cmd-item${index === active ? " active" : ""}`}
+                    onMouseMove={() => setActive(index)}
+                    onClick={() => select(item)}
+                  >
+                    <span className="cmd-label">{item.label}</span>
+                    {item.sub && <span className="cmd-sub">{item.sub}</span>}
+                    {item.group !== "Pages" && <span className="cmd-type">{item.group.slice(0, -1)}</span>}
+                  </button>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

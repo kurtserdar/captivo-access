@@ -2,8 +2,10 @@ import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
 import { countPendingGrants } from "@/lib/access/grants";
 import { countUnreadNotifications } from "@/lib/notifications";
+import { getSearchRecords } from "@/lib/search";
 import { LogoutButton } from "./logout-button";
 import { NavLink } from "./nav-link";
+import { Topbar } from "./_shell/topbar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BrandMark } from "@/components/brand";
 import {
@@ -31,6 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const admin = user.role === "ADMIN";
   const pendingCount = admin ? await countPendingGrants() : 0;
   const unreadNotifications = admin ? await countUnreadNotifications() : 0;
+  const searchRecords = admin ? await getSearchRecords() : [];
 
   return (
     <div className="app-shell">
@@ -99,7 +102,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <LogoutButton />
         </div>
       </aside>
-      <main className="content">{children}</main>
+      <div className="main-col">
+        <Topbar records={searchRecords} admin={admin} />
+        <main className="content">{children}</main>
+      </div>
     </div>
   );
 }
