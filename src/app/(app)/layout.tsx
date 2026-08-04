@@ -5,6 +5,7 @@ import { countUnreadNotifications } from "@/lib/notifications";
 import { LogoutButton } from "./logout-button";
 import { NavLink } from "./nav-link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { BrandMark } from "@/components/brand";
 import {
   GrantsIcon,
   AccessIcon,
@@ -35,8 +36,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="app-shell">
       <aside className="sidebar">
         <Link href="/" className="brand">
-          <span className="brand-glyph" />
-          Captivo Access
+          <BrandMark size={22} />
+          <span className="wordmark"><b>Captivo</b> <span className="wm-sub">Access</span></span>
         </Link>
         <span className="nav-group">Access</span>
         {admin && (

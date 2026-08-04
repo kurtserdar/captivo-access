@@ -1,5 +1,6 @@
 import { verifyInvite } from "@/lib/auth/invite";
 import { InviteEnrollForm } from "./invite-enroll-form";
+import { BrandMark } from "@/components/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     return (
       <div className="auth">
         <div className="auth-card">
-          <span className="brand-glyph" />
+          <BrandMark size={34} className="auth-mark" />
           <h1>Invalid or expired invitation</h1>
           <p>This invite link is no longer valid. Ask your admin for a new invitation.</p>
         </div>
@@ -27,7 +28,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   return (
     <div className="auth">
       <div className="auth-card">
-        <span className="brand-glyph" />
+        <BrandMark size={34} className="auth-mark" />
         <h1>Complete your invitation</h1>
         <p>
           {invite.name} ({invite.email}) — you&apos;ve been invited as {ROLE_LABEL[invite.role] ?? invite.role}.

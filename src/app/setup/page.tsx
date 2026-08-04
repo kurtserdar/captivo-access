@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { hasAnyUser } from "@/lib/auth/bootstrap";
 import { SetupForm } from "./setup-form";
+import { BrandMark } from "@/components/brand";
 
 // hasAnyUser() must be read fresh from the DB on every request — build-time
 // prerendering (static export) would produce a wrong/stale result and would
@@ -13,7 +14,7 @@ export default async function SetupPage() {
   return (
     <div className="auth">
       <div className="auth-card">
-        <span className="brand-glyph" />
+        <BrandMark size={34} className="auth-mark" />
         <h1>Create your account</h1>
         <p>
           Captivo Access hasn&apos;t been set up yet. Enter your name and email

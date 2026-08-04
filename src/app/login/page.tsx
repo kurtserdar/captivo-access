@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { hasAnyUser } from "@/lib/auth/bootstrap";
 import { safeReturnTo } from "@/lib/auth/return-to";
 import { LoginForm } from "./login-form";
+import { BrandMark } from "@/components/brand";
 
 // getCurrentUser() must be read fresh from the DB on every request.
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ export default async function LoginPage({
   return (
     <div className="auth">
       <div className="auth-card">
-        <span className="brand-glyph" />
+        <BrandMark size={34} className="auth-mark" />
         <h1>Sign in</h1>
         <p>Sign in with your device&apos;s passkey.</p>
         <LoginForm returnTo={returnTo} />
