@@ -1,18 +1,9 @@
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
+import { timeAgo } from "@/lib/format";
 import { MarkReadButton } from "./mark-read-button";
 
 export const dynamic = "force-dynamic";
-
-function timeAgo(d: Date): string {
-  const secs = Math.max(0, Math.round((Date.now() - d.getTime()) / 1000));
-  if (secs < 60) return `${secs}s ago`;
-  const mins = Math.round(secs / 60);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.round(hrs / 24)}d ago`;
-}
 
 export default async function AdminNotificationsPage() {
   await requireAdmin();
