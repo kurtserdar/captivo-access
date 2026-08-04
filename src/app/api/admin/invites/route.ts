@@ -41,13 +41,17 @@ export async function POST(req: NextRequest) {
 
   let emailed = false;
   if (sendEmail) {
-    const smtp = await getSmtpConfig();
-    if (smtp?.enabled) {
-      const m = inviteEmail({ name, link });
-      const r = await sendMail({ to: email, subject: m.subject, html: m.html, text: m.text });
-      emailed = r.sent;
+    try {
+      const smtp = await getSmtpConfig();
+      if (smtp?.enabled) {
+        const m = inviteEmail({ name, link });
+        const r = await sendMail({ to: email, subject: m.subject, html: m.html, text: m.text });
+        emailed = r.sent;
+      }
+    } catch {
+      // best-effort: email must never fail invite creation
     }
   }
 
-  return NextResponse.json({ link, emailed });
+  return NextResponse.json({ link, emailed: sendEmail ? emailed : null });
 }
