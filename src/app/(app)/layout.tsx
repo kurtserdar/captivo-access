@@ -70,6 +70,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Notifications
               {unreadNotifications > 0 && <span className="nav-badge">{unreadNotifications}</span>}
             </NavLink>
+            <NavLink href="/admin/email">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+              Email
+            </NavLink>
             <span className="nav-group">People &amp; audit</span>
             <NavLink href="/admin/users">
               <UsersIcon />
