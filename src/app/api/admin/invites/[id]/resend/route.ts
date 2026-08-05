@@ -19,10 +19,16 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (!old) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (old.usedAt) return NextResponse.json({ error: "already_used" }, { status: 409 });
 
+  // Atomically consume the old pending invite BEFORE minting the replacement:
+  // if it was enrolled between the read above and here, deleteMany matches 0
+  // rows and we bail — never deleting the now-consumed record or minting a
+  // dangling invite for an already-registered email.
+  const consumed = await db.invite.deleteMany({ where: { id, usedAt: null } });
+  if (consumed.count === 0) return NextResponse.json({ error: "already_used" }, { status: 409 });
+
   const { token } = await createInvite({
     email: old.email, name: old.name, role: old.role, createdById: admin.id, phone: old.phone, company: old.company,
   });
-  await db.invite.delete({ where: { id } }); // replace the old pending invite
 
   const link = `${managerBaseUrl(req)}/invite/${token}`;
 

@@ -96,6 +96,7 @@ export async function listAuditEvents(filter: AuditFilter): Promise<{ rows: Audi
 
 const CSV_HEADER = [
   "timestamp",
+  "userName",
   "userEmail",
   "siteName",
   "host",
@@ -127,6 +128,7 @@ export function toCsv(rows: AuditRow[]): string {
   for (const row of rows) {
     const fields = [
       row.timestamp.toISOString(),
+      row.userName ?? "",
       row.userEmail ?? "",
       row.siteName ?? "",
       row.host,
