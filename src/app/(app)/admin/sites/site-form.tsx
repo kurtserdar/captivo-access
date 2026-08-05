@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 function errorMessage(code: string | undefined): string {
   switch (code) {
@@ -12,6 +13,8 @@ function errorMessage(code: string | undefined): string {
       return "The internal address must be a valid http:// or https:// URL.";
     case "connector_not_found":
       return "Select a valid connector.";
+    case "hostname_taken":
+      return "That public hostname is already used by another site.";
     case "forbidden":
       return "Admin privileges are required for this action.";
     default:
@@ -19,13 +22,16 @@ function errorMessage(code: string | undefined): string {
   }
 }
 
-export function SiteForm({ connectors }: { connectors: { id: string; name: string }[] }) {
-  const [connectorId, setConnectorId] = useState(connectors[0]?.id ?? "");
-  const [name, setName] = useState("");
-  const [hostname, setHostname] = useState("");
-  const [upstreamUrl, setUpstreamUrl] = useState("");
-  const [description, setDescription] = useState("");
-  const [insecureSkipVerify, setInsecureSkipVerify] = useState(false);
+type SiteInitial = { id: string; connectorId: string; name: string; hostname: string; upstreamUrl: string; description: string; insecureSkipVerify: boolean };
+
+export function SiteForm({ connectors, site }: { connectors: { id: string; name: string }[]; site?: SiteInitial }) {
+  const router = useRouter();
+  const [connectorId, setConnectorId] = useState(site?.connectorId ?? connectors[0]?.id ?? "");
+  const [name, setName] = useState(site?.name ?? "");
+  const [hostname, setHostname] = useState(site?.hostname ?? "");
+  const [upstreamUrl, setUpstreamUrl] = useState(site?.upstreamUrl ?? "");
+  const [description, setDescription] = useState(site?.description ?? "");
+  const [insecureSkipVerify, setInsecureSkipVerify] = useState(site?.insecureSkipVerify ?? false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,8 +40,8 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
     setError(null);
     setBusy(true);
     try {
-      const res = await fetch("/api/admin/sites", {
-        method: "POST",
+      const res = await fetch(site ? `/api/admin/sites/${site.id}` : "/api/admin/sites", {
+        method: site ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           connectorId,
@@ -47,11 +53,16 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
         }),
       });
       const result = await res.json().catch(() => ({}));
-      if (!res.ok || !result?.id) {
+      if (!res.ok || (site ? !result?.ok : !result?.id)) {
         setError(errorMessage(result?.error));
         return;
       }
-      window.location.reload();
+      if (site) {
+        router.push("/admin/sites");
+        router.refresh();
+      } else {
+        window.location.reload();
+      }
     } catch {
       setError("Couldn't create the site, please try again.");
     } finally {
@@ -157,7 +168,7 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
         </p>
       )}
       <button type="submit" className="btn primary" disabled={busy}>
-        {busy ? "Adding…" : "Add site"}
+        {busy ? "Saving…" : site ? "Save changes" : "Create site"}
       </button>
     </form>
   );

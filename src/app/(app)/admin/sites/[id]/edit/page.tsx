@@ -1,0 +1,47 @@
+import Link from "next/link";
+import { requireAdmin } from "@/lib/current-user";
+import { db } from "@/lib/db";
+import { SiteForm } from "../../site-form";
+
+export const dynamic = "force-dynamic";
+
+export default async function EditSitePage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdmin();
+  const { id } = await params;
+  const [site, connectors] = await Promise.all([
+    db.site.findUnique({
+      where: { id },
+      select: { id: true, connectorId: true, name: true, hostname: true, upstreamUrl: true, description: true, insecureSkipVerify: true },
+    }),
+    db.connector.findMany({ where: { status: { not: "REVOKED" } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+  ]);
+
+  return (
+    <main>
+      <div className="page-head">
+        <div>
+          <h1>Edit site</h1>
+          <p><Link href="/admin/sites">← Back to sites</Link></p>
+        </div>
+      </div>
+      {!site ? (
+        <div className="empty">Site not found.</div>
+      ) : (
+        <div className="card">
+          <SiteForm
+            connectors={connectors}
+            site={{
+              id: site.id,
+              connectorId: site.connectorId,
+              name: site.name,
+              hostname: site.hostname,
+              upstreamUrl: site.upstreamUrl ?? "",
+              description: site.description ?? "",
+              insecureSkipVerify: site.insecureSkipVerify,
+            }}
+          />
+        </div>
+      )}
+    </main>
+  );
+}

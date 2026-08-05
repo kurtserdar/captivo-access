@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { timeAgo } from "@/lib/format";
 import { SiteForm } from "./site-form";
 import { TestConnectionButton } from "./test-connection-button";
+import { DeleteSiteButton } from "./delete-site-button";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,7 @@ export default async function AdminSitesPage() {
         probeDetail: true,
         probeLatencyMs: true,
         connector: { select: { name: true, status: true } },
+        _count: { select: { grants: true } },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -102,7 +105,11 @@ export default async function AdminSitesPage() {
                     )}
                   </td>
                   <td>
-                    <TestConnectionButton siteId={s.id} />
+                    <div className="row-actions">
+                      <TestConnectionButton siteId={s.id} />
+                      <Link href={`/admin/sites/${s.id}/edit`} className="btn sm">Edit</Link>
+                      <DeleteSiteButton id={s.id} name={s.name} grantCount={s._count.grants} />
+                    </div>
                   </td>
                 </tr>
               ))}
