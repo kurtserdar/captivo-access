@@ -4,11 +4,12 @@ package tunnel
 // describes which upstream URL to reach and the HTTP request line/headers to
 // replay against it; the raw HTTP body follows as subsequent stream bytes.
 type DialRequest struct {
-	Kind        string              `json:"kind,omitempty"` // "" or "dial" = proxied HTTP request
-	UpstreamUrl string              `json:"upstreamUrl"`
-	Method      string              `json:"method"`
-	Path        string              `json:"path"`
-	Header      map[string][]string `json:"header,omitempty"`
+	Kind               string              `json:"kind,omitempty"` // "" or "dial" = proxied HTTP request
+	UpstreamUrl        string              `json:"upstreamUrl"`
+	Method             string              `json:"method"`
+	Path               string              `json:"path"`
+	Header             map[string][]string `json:"header,omitempty"`
+	InsecureSkipVerify bool                `json:"insecureSkipVerify,omitempty"`
 }
 
 // DialResponse is the control frame returned in reply to a DialRequest,

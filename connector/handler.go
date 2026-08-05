@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"io"
 	"net"
@@ -101,6 +102,11 @@ func handleDial(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 		CheckRedirect: func(*http.Request, []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
+	}
+	if dr.InsecureSkipVerify {
+		// Per-Site opt-in: the operator has marked this upstream a trusted
+		// internal device with a self-signed/unverifiable certificate.
+		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	}
 	req, err := http.NewRequest(orGet(dr.Method), target.String(), tunnel.NewBodyReader(st))
 	if err != nil {

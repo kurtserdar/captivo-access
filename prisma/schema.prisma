@@ -121,19 +121,20 @@ model ConnectorPairing {
 }
 
 model Site {
-  id             String        @id @default(cuid())
-  connectorId    String
-  connector      Connector     @relation(fields: [connectorId], references: [id], onDelete: Cascade)
-  name           String
-  hostname       String        @unique
-  upstreamUrl    String?
-  description    String?
-  probedAt       DateTime?
-  probeOk        Boolean?
-  probeDetail    String?
-  probeLatencyMs Int?
-  createdAt      DateTime      @default(now())
-  grants         AccessGrant[]
+  id                 String        @id @default(cuid())
+  connectorId        String
+  connector          Connector     @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  name               String
+  hostname           String        @unique
+  upstreamUrl        String?
+  insecureSkipVerify Boolean       @default(false)
+  description        String?
+  probedAt           DateTime?
+  probeOk            Boolean?
+  probeDetail        String?
+  probeLatencyMs     Int?
+  createdAt          DateTime      @default(now())
+  grants             AccessGrant[]
 }
 
 enum GrantStatus {
@@ -223,7 +224,7 @@ model SmtpConfig {
 
 model Notification {
   id        String    @id @default(cuid())
-  type      String    // "site_down" | "site_recovered"
+  type      String // "site_down" | "site_recovered"
   siteId    String?
   siteName  String
   detail    String?
