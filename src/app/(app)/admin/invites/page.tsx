@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { getSmtpConfig } from "@/lib/email/mailer";
 import { InviteForm } from "./invite-form";
+import { ResendInviteButton } from "./resend-invite-button";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,7 @@ export default async function AdminInvitesPage() {
                 <th>Role</th>
                 <th>Status</th>
                 <th>Expires</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -73,6 +75,9 @@ export default async function AdminInvitesPage() {
                       <span className={`pill ${STATUS_PILL[status] ?? "neutral"}`}>{status}</span>
                     </td>
                     <td className="cell-sub">{inv.expiresAt.toLocaleString("en-US")}</td>
+                    <td>
+                      {status !== "Used" && <ResendInviteButton id={inv.id} email={inv.email} />}
+                    </td>
                   </tr>
                 );
               })}
