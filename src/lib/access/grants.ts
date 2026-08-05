@@ -40,7 +40,7 @@ export async function listGrants() {
       note: true,
       createdAt: true,
       user: { select: { name: true, email: true } },
-      site: { select: { name: true } },
+      site: { select: { name: true, hostname: true } },
     },
   });
 }
@@ -61,7 +61,7 @@ export async function listUserGrants(userId: string) {
       requiresApproval: true,
       approvedAt: true,
       schedule: true,
-      site: { select: { name: true } },
+      site: { select: { name: true, hostname: true } },
     },
   });
 }
@@ -126,7 +126,7 @@ export async function listPendingGrants() {
       createdAt: true,
       schedule: true,
       user: { select: { name: true, email: true } },
-      site: { select: { name: true } },
+      site: { select: { name: true, hostname: true } },
     },
   });
 }

@@ -14,7 +14,7 @@ function formatWindow(startsAt: Date | null, endsAt: Date | null): string {
 
 type Grant = Awaited<ReturnType<typeof listUserGrants>>[number];
 
-function GrantTable({ grants, badge }: { grants: Grant[]; badge: React.ReactNode }) {
+function GrantTable({ grants, badge, openable }: { grants: Grant[]; badge: React.ReactNode; openable?: boolean }) {
   return (
     <div className="table-wrap">
       <table className="table">
@@ -23,6 +23,7 @@ function GrantTable({ grants, badge }: { grants: Grant[]; badge: React.ReactNode
             <th>Site</th>
             <th>Window</th>
             <th>Status</th>
+            {openable && <th></th>}
           </tr>
         </thead>
         <tbody>
@@ -34,6 +35,13 @@ function GrantTable({ grants, badge }: { grants: Grant[]; badge: React.ReactNode
                 {(() => { const s = parseSchedule(g.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
               </td>
               <td>{badge}</td>
+              {openable && (
+                <td>
+                  <a className="btn sm" href={`https://${g.site.hostname}`} target="_blank" rel="noopener noreferrer">
+                    Open ↗
+                  </a>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -80,7 +88,7 @@ export default async function AccessPage() {
           {active.length === 0 ? (
             <p className="cell-sub">No active grants.</p>
           ) : (
-            <GrantTable grants={active} badge={<span className="pill ok">Active</span>} />
+            <GrantTable grants={active} badge={<span className="pill ok">Active</span>} openable />
           )}
 
           <h2>Upcoming</h2>
