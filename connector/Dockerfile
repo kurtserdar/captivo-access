@@ -1,5 +1,7 @@
 # ---- build ----
-FROM golang:1.23-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.23-alpine AS build
+ARG TARGETOS TARGETARCH
+ARG VERSION=dev
 WORKDIR /src
 
 # See dataplane/Dockerfile for the full explanation. Short version: the repo-root
@@ -12,7 +14,8 @@ WORKDIR /src
 # mode and resolves that replace against the tunnel/ directory copied below.
 COPY tunnel ./tunnel
 COPY connector ./connector
-RUN cd connector && CGO_ENABLED=0 go build -o /out/connector .
+RUN cd connector && CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -ldflags "-X main.Version=${VERSION}" -o /out/connector .
 
 # ---- run ----
 FROM alpine:3.20

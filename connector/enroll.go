@@ -11,7 +11,7 @@ import (
 
 // Version is the connector build version, sent to the Manager during enroll
 // and to the data-plane as X-Connector-Version on every reconnect.
-var Version = "0.1.0"
+var Version = "dev" // overridden at build via -ldflags -X main.Version=<tag>
 
 // enroll redeems a one-time pairing code with the Manager for a long-lived
 // connector token, then persists that token to tokenFile (mode 0600) so
