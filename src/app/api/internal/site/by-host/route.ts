@@ -13,9 +13,14 @@ export async function POST(req: NextRequest) {
   const site = host
     ? await db.site.findUnique({
         where: { hostname: host.toLowerCase().trim() },
-        select: { id: true, connectorId: true, upstreamUrl: true },
+        select: { id: true, connectorId: true, upstreamUrl: true, insecureSkipVerify: true },
       })
     : null;
   if (!site) return NextResponse.json({ error: "no_site" }, { status: 404 });
-  return NextResponse.json({ siteId: site.id, connectorId: site.connectorId, upstreamUrl: site.upstreamUrl });
+  return NextResponse.json({
+    siteId: site.id,
+    connectorId: site.connectorId,
+    upstreamUrl: site.upstreamUrl,
+    insecureSkipVerify: site.insecureSkipVerify,
+  });
 }

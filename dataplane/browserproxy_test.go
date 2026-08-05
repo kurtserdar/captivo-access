@@ -23,6 +23,7 @@ type fakeControl struct {
 	resolveErr error
 
 	siteID, connID, upstream string
+	insecureSkipVerify       bool
 	siteErr                  error
 
 	allow     bool
@@ -32,8 +33,8 @@ type fakeControl struct {
 
 func (f *fakeControl) ResolveSession(string) (string, error) { return f.userID, f.resolveErr }
 
-func (f *fakeControl) SiteByHost(string) (string, string, string, error) {
-	return f.siteID, f.connID, f.upstream, f.siteErr
+func (f *fakeControl) SiteByHost(string) (string, string, string, bool, error) {
+	return f.siteID, f.connID, f.upstream, f.insecureSkipVerify, f.siteErr
 }
 
 func (f *fakeControl) CheckAccess(string, string) (bool, string, error) {

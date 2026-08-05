@@ -63,7 +63,7 @@ var denyReasonText = map[string]string{
 // production use.
 type proxyControl interface {
 	ResolveSession(token string) (userID string, err error)
-	SiteByHost(host string) (siteID, connectorID, upstreamUrl string, err error)
+	SiteByHost(host string) (siteID, connectorID, upstreamUrl string, insecureSkipVerify bool, err error)
 	CheckAccess(userID, siteID string) (allow bool, reason string, err error)
 }
 
@@ -91,7 +91,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Site by host.
-	siteID, connectorID, upstream, err := p.ctrl.SiteByHost(host)
+	siteID, connectorID, upstream, insecureSkipVerify, err := p.ctrl.SiteByHost(host)
 	if err != nil {
 		if errors.Is(err, ErrNoSite) {
 			http.Error(w, "unknown site", http.StatusNotFound)
@@ -127,10 +127,11 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer st.Close() // also unblocks a still-running WriteBody goroutine below
 
 	dr := tunnel.DialRequest{
-		UpstreamUrl: upstream,
-		Method:      r.Method,
-		Path:        r.URL.RequestURI(),
-		Header:      sanitizeReqHeaders(r, host),
+		UpstreamUrl:        upstream,
+		Method:             r.Method,
+		Path:               r.URL.RequestURI(),
+		Header:             sanitizeReqHeaders(r, host),
+		InsecureSkipVerify: insecureSkipVerify,
 	}
 	reqBytes, err := json.Marshal(dr)
 	if err != nil {

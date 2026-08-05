@@ -36,11 +36,12 @@ func main() {
 			return
 		}
 		var body struct {
-			ConnectorID string              `json:"connectorId"`
-			UpstreamUrl string              `json:"upstreamUrl"`
-			Method      string              `json:"method"`
-			Path        string              `json:"path"`
-			Header      map[string][]string `json:"header"`
+			ConnectorID        string              `json:"connectorId"`
+			UpstreamUrl        string              `json:"upstreamUrl"`
+			Method             string              `json:"method"`
+			Path               string              `json:"path"`
+			Header             map[string][]string `json:"header"`
+			InsecureSkipVerify bool                `json:"insecureSkipVerify"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_body"})
@@ -48,6 +49,7 @@ func main() {
 		}
 		res, err := Proxy(reg.Get(body.ConnectorID), tunnel.DialRequest{
 			UpstreamUrl: body.UpstreamUrl, Method: body.Method, Path: body.Path, Header: body.Header,
+			InsecureSkipVerify: body.InsecureSkipVerify,
 		})
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
