@@ -25,6 +25,7 @@ export default async function AdminAuditPage() {
     timestamp: r.timestamp.toISOString(),
     userId: r.userId,
     userEmail: r.userEmail,
+    userName: r.userName,
     siteId: r.siteId,
     siteName: r.siteName,
     host: r.host,

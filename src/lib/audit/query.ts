@@ -16,6 +16,7 @@ export type AuditRow = {
   timestamp: Date;
   userId: string | null;
   userEmail: string | null;
+  userName: string | null;
   siteId: string | null;
   siteName: string | null;
   host: string;
@@ -54,6 +55,7 @@ export async function listAuditEvents(filter: AuditFilter): Promise<{ rows: Audi
         timestamp: true,
         userId: true,
         userEmail: true,
+        userName: true,
         siteId: true,
         siteName: true,
         host: true,
@@ -75,6 +77,7 @@ export async function listAuditEvents(filter: AuditFilter): Promise<{ rows: Audi
     timestamp: e.timestamp,
     userId: e.userId,
     userEmail: e.userEmail,
+    userName: e.userName,
     siteId: e.siteId,
     siteName: e.siteName,
     host: e.host,

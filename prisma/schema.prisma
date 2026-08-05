@@ -178,6 +178,7 @@ model AuditEvent {
   timestamp DateTime      @default(now())
   userId    String?
   userEmail String?
+  userName  String?
   siteId    String?
   siteName  String?
   host      String

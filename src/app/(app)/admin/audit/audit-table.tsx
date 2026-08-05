@@ -7,6 +7,7 @@ export type AuditRowJSON = {
   timestamp: string;
   userId: string | null;
   userEmail: string | null;
+  userName: string | null;
   siteId: string | null;
   siteName: string | null;
   host: string;
@@ -214,7 +215,10 @@ export function AuditTable({
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td className="cell-sub">{new Date(r.timestamp).toLocaleString("en-US")}</td>
-                  <td>{r.userEmail ?? "—"}</td>
+                  <td>
+                    <div>{r.userName ?? "—"}</div>
+                    {r.userEmail && <div className="cell-sub">{r.userEmail}</div>}
+                  </td>
                   <td>{r.siteName ?? r.host}</td>
                   <td className="cell-sub">
                     {r.method} {r.path}
