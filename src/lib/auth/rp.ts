@@ -22,11 +22,18 @@ export function requestOrigin(req: NextRequest): string {
   return host ? `${proto}://${host}` : req.nextUrl.origin;
 }
 
-/** Whether the origin's host matches the RP-ID (WebAuthn origin verification). */
+/**
+ * Whether the origin's host matches the RP-ID (WebAuthn origin verification).
+ * The RP-ID may be the origin's host exactly, or a registrable suffix of it —
+ * e.g. an RP-ID of `access.example.com` is valid for a page served from
+ * `manager.access.example.com` (the leading-dot check keeps `evil-access…`
+ * from matching `access…`). This mirrors the WebAuthn spec's rule that the
+ * RP-ID must be equal to or a registrable-domain suffix of the origin's host.
+ */
 export function originMatchesRp(origin: string, rpId: string): boolean {
   try {
     const host = new URL(origin).hostname;
-    return host === rpId;
+    return host === rpId || host.endsWith(`.${rpId}`);
   } catch {
     return false;
   }
