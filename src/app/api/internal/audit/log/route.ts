@@ -22,13 +22,14 @@ export async function POST(req: NextRequest) {
   const userIds = [...new Set(events.map((e) => e.userId).filter((x): x is string => !!x))];
   const siteIds = [...new Set(events.map((e) => e.siteId).filter((x): x is string => !!x))];
   const users = userIds.length
-    ? await db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, email: true, name: true } })
+    ? await db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, email: true, name: true, company: true } })
     : [];
   const sites = siteIds.length
     ? await db.site.findMany({ where: { id: { in: siteIds } }, select: { id: true, name: true } })
     : [];
   const emailById = new Map(users.map((u) => [u.id, u.email]));
   const userNameById = new Map(users.map((u) => [u.id, u.name]));
+  const companyById = new Map(users.map((u) => [u.id, u.company]));
   const nameById = new Map(sites.map((s) => [s.id, s.name]));
 
   // Normalize into the shape the chain hashes over (seq/prevHash/hash filled below).
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
     userId: e.userId ?? null,
     userEmail: e.userId ? emailById.get(e.userId) ?? null : null,
     userName: e.userId ? userNameById.get(e.userId) ?? null : null,
+    company: e.userId ? companyById.get(e.userId) ?? null : null,
     siteId: e.siteId ?? null,
     siteName: e.siteId ? nameById.get(e.siteId) ?? null : null,
     host: e.host ?? "",

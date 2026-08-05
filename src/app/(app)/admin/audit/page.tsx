@@ -26,6 +26,7 @@ export default async function AdminAuditPage() {
     userId: r.userId,
     userEmail: r.userEmail,
     userName: r.userName,
+    company: r.company,
     siteId: r.siteId,
     siteName: r.siteName,
     host: r.host,

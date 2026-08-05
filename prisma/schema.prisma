@@ -179,6 +179,7 @@ model AuditEvent {
   userId    String?
   userEmail String?
   userName  String?
+  company   String?
   siteId    String?
   siteName  String?
   host      String

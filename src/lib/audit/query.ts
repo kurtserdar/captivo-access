@@ -17,6 +17,7 @@ export type AuditRow = {
   userId: string | null;
   userEmail: string | null;
   userName: string | null;
+  company: string | null;
   siteId: string | null;
   siteName: string | null;
   host: string;
@@ -56,6 +57,7 @@ export async function listAuditEvents(filter: AuditFilter): Promise<{ rows: Audi
         userId: true,
         userEmail: true,
         userName: true,
+        company: true,
         siteId: true,
         siteName: true,
         host: true,
@@ -78,6 +80,7 @@ export async function listAuditEvents(filter: AuditFilter): Promise<{ rows: Audi
     userId: e.userId,
     userEmail: e.userEmail,
     userName: e.userName,
+    company: e.company,
     siteId: e.siteId,
     siteName: e.siteName,
     host: e.host,
@@ -98,6 +101,7 @@ const CSV_HEADER = [
   "timestamp",
   "userName",
   "userEmail",
+  "company",
   "siteName",
   "host",
   "method",
@@ -130,6 +134,7 @@ export function toCsv(rows: AuditRow[]): string {
       row.timestamp.toISOString(),
       row.userName ?? "",
       row.userEmail ?? "",
+      row.company ?? "",
       row.siteName ?? "",
       row.host,
       row.method,

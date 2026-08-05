@@ -8,6 +8,7 @@ export type AuditRowJSON = {
   userId: string | null;
   userEmail: string | null;
   userName: string | null;
+  company: string | null;
   siteId: string | null;
   siteName: string | null;
   host: string;
@@ -204,6 +205,7 @@ export function AuditTable({
               <tr>
                 <th>Time</th>
                 <th>User</th>
+                <th>Company</th>
                 <th>Site / Host</th>
                 <th>Request</th>
                 <th>Status</th>
@@ -219,6 +221,7 @@ export function AuditTable({
                     <div>{r.userName ?? "—"}</div>
                     {r.userEmail && <div className="cell-sub">{r.userEmail}</div>}
                   </td>
+                  <td className="cell-sub">{r.company ?? "—"}</td>
                   <td>{r.siteName ?? r.host}</td>
                   <td className="cell-sub">
                     {r.method} {r.path}
