@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
   const hostname = typeof body.hostname === "string" ? body.hostname.trim().toLowerCase() : "";
   const upstreamUrl = typeof body.upstreamUrl === "string" ? body.upstreamUrl.trim() : "";
   const description = typeof body.description === "string" && body.description.trim() ? body.description.trim() : null;
+  const insecureSkipVerify = body.insecureSkipVerify === true;
 
   if (!connectorId || !name || !upstreamUrl) {
     return NextResponse.json({ error: "connector_name_upstream_required" }, { status: 400 });
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
   }
 
   const site = await db.site.create({
-    data: { connectorId, name, hostname, upstreamUrl, description },
+    data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify },
     select: { id: true },
   });
 

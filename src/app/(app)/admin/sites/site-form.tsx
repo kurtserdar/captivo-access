@@ -25,6 +25,7 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
   const [hostname, setHostname] = useState("");
   const [upstreamUrl, setUpstreamUrl] = useState("");
   const [description, setDescription] = useState("");
+  const [insecureSkipVerify, setInsecureSkipVerify] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +43,7 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
           hostname,
           upstreamUrl,
           description: description.trim() || undefined,
+          insecureSkipVerify,
         }),
       });
       const result = await res.json().catch(() => ({}));
@@ -123,6 +125,19 @@ export function SiteForm({ connectors }: { connectors: { id: string; name: strin
           It&apos;s stored on your Manager and sent to the connector over the tunnel; the connector dials it
           inside your network. To cap what a connector may reach, set <code>ALLOWED_TARGETS</code> on it.
         </p>
+      </div>
+      <div className="field">
+        <label className="field-label">
+          <input
+            type="checkbox"
+            checked={insecureSkipVerify}
+            onChange={(e) => setInsecureSkipVerify(e.target.checked)}
+          />{" "}
+          Allow self-signed certificate (skip TLS verification)
+        </label>
+        <span className="hint">
+          Only for internal devices you trust — the certificate on the connector→app leg won&apos;t be verified.
+        </span>
       </div>
       <div className="field">
         <label className="field-label" htmlFor="site-description">

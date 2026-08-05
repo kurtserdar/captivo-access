@@ -7,6 +7,7 @@ export async function proxyThroughConnector(input: {
   upstreamUrl: string;
   method?: string;
   path?: string;
+  insecureSkipVerify?: boolean;
 }): Promise<{ status: number; bodyPreview: string; truncated: boolean } | { error: string }> {
   const base = process.env.DATAPLANE_URL || "http://access-dataplane:3102";
   const secret = process.env.DATAPLANE_SECRET || "";
@@ -18,6 +19,7 @@ export async function proxyThroughConnector(input: {
       upstreamUrl: input.upstreamUrl,
       method: input.method ?? "GET",
       path: input.path ?? "/",
+      insecureSkipVerify: input.insecureSkipVerify ?? false,
     }),
   }).catch(() => null);
   if (!res) return { error: "dataplane_unreachable" };

@@ -18,6 +18,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     select: {
       connectorId: true,
       upstreamUrl: true,
+      insecureSkipVerify: true,
       connector: { select: { status: true } },
     },
   });
@@ -39,6 +40,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const result = await proxyThroughConnector({
     connectorId: site.connectorId,
     upstreamUrl: site.upstreamUrl,
+    insecureSkipVerify: site.insecureSkipVerify,
   });
 
   return NextResponse.json(result);
