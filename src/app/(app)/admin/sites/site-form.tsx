@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-function errorMessage(code: string | undefined): string {
+function errorMessage(code: string | undefined, isEdit: boolean): string {
   switch (code) {
     case "connector_name_upstream_required":
       return "Connector, name, and internal address are required.";
@@ -18,7 +18,7 @@ function errorMessage(code: string | undefined): string {
     case "forbidden":
       return "Admin privileges are required for this action.";
     default:
-      return "Couldn't create the site, please try again.";
+      return isEdit ? "Couldn't save the site, please try again." : "Couldn't create the site, please try again.";
   }
 }
 
@@ -54,7 +54,7 @@ export function SiteForm({ connectors, site }: { connectors: { id: string; name:
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok || (site ? !result?.ok : !result?.id)) {
-        setError(errorMessage(result?.error));
+        setError(errorMessage(result?.error, !!site));
         return;
       }
       if (site) {
@@ -64,7 +64,7 @@ export function SiteForm({ connectors, site }: { connectors: { id: string; name:
         window.location.reload();
       }
     } catch {
-      setError("Couldn't create the site, please try again.");
+      setError(site ? "Couldn't save the site, please try again." : "Couldn't create the site, please try again.");
     } finally {
       setBusy(false);
     }
