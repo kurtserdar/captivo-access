@@ -17,6 +17,7 @@ export function EmailForm({ initial, adminEmail }: { initial: Initial; adminEmai
   const [enabled, setEnabled] = useState(initial.enabled);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; msg: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [testTo, setTestTo] = useState(adminEmail);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -40,10 +41,18 @@ export function EmailForm({ initial, adminEmail }: { initial: Initial; adminEmai
       const res = await fetch("/api/admin/smtp/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: adminEmail }),
+        body: JSON.stringify({ to: testTo }),
       });
       const r = (await res.json().catch(() => ({}))) as { sent?: boolean; reason?: string };
-      setNotice(r.sent ? { kind: "ok", msg: `Test email sent to ${adminEmail}.` } : { kind: "error", msg: `Test failed: ${r.reason ?? "unknown"}. Save your settings first.` });
+      const messages: Record<string, string> = {
+        disabled: "Saved, but email is turned off — tick “Enabled” and save first.",
+        not_configured: "Configure and save your SMTP settings first.",
+      };
+      setNotice(
+        r.sent
+          ? { kind: "ok", msg: `Test email sent to ${testTo}.` }
+          : { kind: "error", msg: (r.reason && messages[r.reason]) || `Test failed: ${r.reason ?? "unknown"}.` },
+      );
     } finally { setBusy(false); }
   }
 
@@ -67,6 +76,10 @@ export function EmailForm({ initial, adminEmail }: { initial: Initial; adminEmai
         <input id="smtp-fromemail" type="email" className="input" value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} required /></div>
       <div className="field"><label className="field-label">
         <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /> Enabled — send email using these settings.</label></div>
+      <div className="field">
+        <label className="field-label" htmlFor="smtp-testto">Send test to</label>
+        <input id="smtp-testto" type="email" className="input" value={testTo} onChange={(e) => setTestTo(e.target.value)} />
+      </div>
       {notice && <p className={`notice ${notice.kind === "ok" ? "success" : "error"}`} role="alert">{notice.msg}</p>}
       <div className="row-actions">
         <button type="submit" className="btn primary" disabled={busy}>{busy ? "…" : "Save"}</button>

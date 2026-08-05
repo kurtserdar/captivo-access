@@ -21,7 +21,8 @@ export type MailMessage = { to: string | string[]; subject: string; html: string
 export async function sendMail(msg: MailMessage): Promise<{ sent: boolean; reason?: string }> {
   try {
     const cfg = await getSmtpConfig();
-    if (!cfg || !cfg.enabled) return { sent: false, reason: "not_configured" };
+    if (!cfg) return { sent: false, reason: "not_configured" };
+    if (!cfg.enabled) return { sent: false, reason: "disabled" };
     const transport = nodemailer.createTransport(
       buildTransportOptions({
         host: cfg.host,
