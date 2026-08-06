@@ -38,6 +38,29 @@ export function SsoForm({ initial }: { initial: Initial }) {
     }
   }
 
+  async function test() {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/admin/sso/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const j = await res.json().catch(() => ({}));
+      if (j.ok) {
+        setNotice({ kind: "ok", msg: "IdP reachable — discovery succeeded." });
+      } else {
+        const map: Record<string, string> = {
+          no_issuer: "Save your Issuer URL first.",
+          unreachable: "Couldn't reach the IdP — check the Issuer URL.",
+        };
+        setNotice({ kind: "error", msg: map[j.error] ?? "Couldn't test the IdP connection." });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <form onSubmit={save}>
       <div className="field">
@@ -79,7 +102,10 @@ export function SsoForm({ initial }: { initial: Initial }) {
         </label>
       </div>
       {notice && <p className={`notice ${notice.kind === "ok" ? "success" : "error"}`} role="alert">{notice.msg}</p>}
-      <button type="submit" className="btn primary" disabled={busy}>{busy ? "…" : "Save"}</button>
+      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+        <button type="submit" className="btn primary" disabled={busy}>{busy ? "…" : "Save"}</button>
+        <button type="button" className="btn" onClick={test} disabled={busy}>{busy ? "…" : "Test IdP connection"}</button>
+      </div>
     </form>
   );
 }
