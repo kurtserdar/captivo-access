@@ -8,6 +8,7 @@ import { SiteHealthPanel } from "./_dashboard/site-health-panel";
 import { RecentActivityPanel } from "./_dashboard/recent-activity-panel";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Overview" };
 
 export default async function DashboardPage() {
   const user = await requireUser();

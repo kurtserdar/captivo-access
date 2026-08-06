@@ -5,6 +5,7 @@ import { RecoverySetup } from "./recovery-setup";
 import { RemoveRecoveryButton } from "./remove-recovery-button";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Recovery" };
 
 export default async function RecoveryPage() {
   const user = await requireUser();
