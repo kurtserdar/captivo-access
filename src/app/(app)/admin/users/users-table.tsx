@@ -29,6 +29,17 @@ const STATUS_PILL: Record<string, string> = {
 
 export function UsersTable({ users, initialQuery }: { users: UserRow[]; initialQuery: string }) {
   const [f, setF] = useState<UserFilter>({ q: initialQuery, status: "all", role: "all" });
+
+  // Sync the search box when a new ⌘K deep-link changes ?q= while this component
+  // stays mounted, without resetting the status/role selections. React's
+  // store-previous-prop pattern (adjusting state during render) instead of an
+  // effect — avoids the extra re-render and the set-state-in-effect lint rule.
+  const [prevQuery, setPrevQuery] = useState(initialQuery);
+  if (initialQuery !== prevQuery) {
+    setPrevQuery(initialQuery);
+    setF((prev) => ({ ...prev, q: initialQuery }));
+  }
+
   const shown = filterUsers(users, f);
 
   return (
