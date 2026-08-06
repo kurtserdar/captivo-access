@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getSmtpConfig } from "@/lib/email/mailer";
 import { InviteForm } from "./invite-form";
 import { ResendInviteButton } from "./resend-invite-button";
+import { CancelInviteButton } from "./cancel-invite-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Invites" };
@@ -77,7 +78,12 @@ export default async function AdminInvitesPage() {
                     </td>
                     <td className="cell-sub">{inv.expiresAt.toLocaleString("en-US")}</td>
                     <td>
-                      {status !== "Used" && <ResendInviteButton id={inv.id} email={inv.email} />}
+                      {status !== "Used" && (
+                        <div className="flex gap-2">
+                          <ResendInviteButton id={inv.id} email={inv.email} />
+                          <CancelInviteButton id={inv.id} email={inv.email} />
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
