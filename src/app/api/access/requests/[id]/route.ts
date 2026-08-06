@@ -17,6 +17,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const isPending = grant.requiresApproval && !grant.approvedAt && grant.status === "ACTIVE";
   if (!isPending) return NextResponse.json({ error: "not_pending" }, { status: 409 });
 
-  await db.accessGrant.delete({ where: { id } });
+  // Atomically delete only if still pending: if it was approved between the
+  // read above and here, deleteMany matches 0 rows and we bail — never
+  // deleting a grant that has since become active/approved.
+  const deleted = await db.accessGrant.deleteMany({
+    where: { id, userId: user.id, requiresApproval: true, approvedAt: null, status: "ACTIVE" },
+  });
+  if (deleted.count === 0) return NextResponse.json({ error: "not_pending" }, { status: 409 });
+
   return NextResponse.json({ ok: true });
 }

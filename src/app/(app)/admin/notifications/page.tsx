@@ -18,7 +18,6 @@ export default async function AdminNotificationsPage() {
       id: true,
       type: true,
       siteName: true,
-      siteId: true,
       detail: true,
       createdAt: true,
       readAt: true,
