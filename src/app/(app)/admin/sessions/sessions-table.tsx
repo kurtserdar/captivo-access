@@ -104,7 +104,9 @@ export function SessionsTable({ sessions, currentSessionId }: { sessions: Sessio
                   <td className="cell-sub">{s.ip ?? "—"}</td>
                   <td className="cell-sub">{s.userAgent ?? "—"}</td>
                   <td className="cell-sub">{new Date(s.lastSeenAt).toLocaleString("en-US")}</td>
-                  <td><RevokeSessionButton id={s.id} /></td>
+                  {/* No single-revoke on your own current session — use Log out. Matches
+                      the bulk-revoke self-exclusion so this page can't lock you out. */}
+                  <td>{isCurrent ? <span className="cell-sub">—</span> : <RevokeSessionButton id={s.id} />}</td>
                 </tr>
               );
             })}
