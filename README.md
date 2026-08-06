@@ -175,7 +175,13 @@ The repo-root `docker-compose.yml` above builds images locally and is meant
 for development. For a real deployment — the published `ghcr.io` images,
 fronted by [Caddy](https://caddyserver.com/) with automatic HTTPS for both
 the admin console and the per-site vendor proxy — use the
-[`deploy/`](deploy/README.md) scaffold instead:
+[`deploy/`](deploy/README.md) scaffold instead.
+
+> **New to this?** [`docs/install.md`](docs/install.md) is a complete,
+> worked-example walkthrough — bare server → DNS → deploy → first admin →
+> connector → first vendor connected, with a troubleshooting table. Start
+> there; the summary below and [`deploy/README.md`](deploy/README.md) are the
+> quick reference.
 
 ```bash
 cd deploy

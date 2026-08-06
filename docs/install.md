@@ -1,0 +1,318 @@
+# Install Captivo Access — a complete, worked walkthrough
+
+This guide takes you from a **bare server** to a **working deployment with your
+first vendor connected to an internal app**, step by step, with a single running
+example you can follow line by line.
+
+It's the long-form companion to [`deploy/README.md`](../deploy/README.md) (the
+production reference) — this file is the linear "do these things in order"
+version. If you just want a 5-minute local taste with no DNS, see
+[`docs/quickstart.md`](quickstart.md) instead.
+
+> **The example used throughout.** Substitute your own values everywhere you see
+> these:
+>
+> | Thing | Example value |
+> |---|---|
+> | Registered domain | `acme.com` |
+> | Access subdomain (where everything lives) | `access.acme.com` |
+> | Server public IP | `203.0.113.10` |
+> | An internal app to publish | a wiki at `http://10.0.5.20:8080` |
+> | Its public hostname | `wiki.access.acme.com` |
+> | The vendor you'll invite | Dana (`dana@contractor.example`) |
+>
+> Your internal network (where the connector runs) is `10.0.5.0/24` in the example.
+
+At the end, Dana opens `https://wiki.access.acme.com` in a browser, signs in with
+a passkey, and reaches your internal wiki — **without a VPN and without any
+inbound port open on your network.**
+
+---
+
+## What you'll set up (the whole picture in one breath)
+
+Four containers on one public server (the **Manager** console, a Go **data-plane**,
+**Postgres**, and **Caddy** for automatic HTTPS), plus a small **connector** you
+run *inside* your own network. The connector dials **out** to the data-plane, so
+your network needs no inbound firewall hole. Vendors hit
+`https://<app>.access.acme.com`, authenticate with a passkey at the Manager, and
+the data-plane streams allowed requests through the tunnel to the connector,
+which reaches the internal app.
+
+---
+
+## Step 1 — Get a server and open the right ports
+
+You need a Linux host (Ubuntu 22.04+ in this guide) with a **public IP** and
+**ports 80 and 443 reachable from the internet** (Let's Encrypt validates certs
+over these).
+
+```bash
+# On the server, as root or with sudo:
+apt update && apt -y upgrade
+
+# Allow SSH + HTTP + HTTPS through the firewall (if you use ufw):
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw --force enable
+ufw status
+```
+
+Nothing else needs to be open inbound. (The connector, later, runs elsewhere and
+needs only outbound access.)
+
+## Step 2 — Install Docker + Docker Compose v2
+
+```bash
+curl -fsSL https://get.docker.com | sh
+docker version          # confirm the engine is running
+docker compose version  # must be v2 (the "compose" subcommand, not docker-compose)
+```
+
+## Step 3 — Point DNS at the server
+
+Add **three records** in your DNS provider, all pointing at the server's public
+IP. The third is a **wildcard** — one record that covers every current and future
+vendor app, so you never touch DNS again per app.
+
+| Type | Name | Value |
+|---|---|---|
+| A | `manager.access` | `203.0.113.10` |
+| A | `connect.access` | `203.0.113.10` |
+| A | `*.access` | `203.0.113.10` |
+
+(Most providers let you enter the name relative to the zone. If yours wants the
+full name, use `manager.access.acme.com`, `connect.access.acme.com`,
+`*.access.acme.com`.)
+
+**No certificate/API token is needed for DNS.** A wildcard *DNS record* is not the
+same as a wildcard *certificate* — the record just says "where," and Caddy issues
+each app's certificate automatically later (see Step 8). Any DNS provider works,
+including registrars whose certificate API is locked down.
+
+> Wait a few minutes and confirm the records resolve before continuing:
+> ```bash
+> dig +short manager.access.acme.com     # → 203.0.113.10
+> dig +short anything.access.acme.com     # → 203.0.113.10  (proves the wildcard)
+> ```
+
+## Step 4 — Get the deploy files and fill in `.env`
+
+On the server:
+
+```bash
+git clone https://github.com/kurtserdar/captivo-access.git
+cd captivo-access/deploy
+cp .env.prod.example .env
+```
+
+Generate five secrets — run this once per secret and paste each into `.env`:
+
+```bash
+openssl rand -hex 32
+```
+
+Now edit `.env`. Every variable, with an example value:
+
+| Variable | Example | What it is |
+|---|---|---|
+| `ACCESS_DOMAIN` | `access.acme.com` | The base domain everything is served under. |
+| `COOKIE_DOMAIN` | `.access.acme.com` | **Leading dot** — lets the login cookie from the Manager also work on every `<app>.access.acme.com`. Get this wrong and vendors log in but bounce back to login on the app. |
+| `MANAGER_PUBLIC_URL` | `https://manager.access.acme.com` | The Manager's public URL (used for login redirects and the console's "Custom domain" page). |
+| `WEBAUTHN_RP_ID` | `access.acme.com` | Passkey Relying-Party ID. Use the **bare** `ACCESS_DOMAIN` (not `manager.`), so passkeys are valid across the whole domain. Must match the host the browser uses, or passkey setup/login fails. |
+| `POSTGRES_PASSWORD` | `<openssl rand -hex 32>` | Database password. |
+| `SESSION_SECRET` | `<openssl rand -hex 32>` | Signs session tokens. |
+| `ENCRYPTION_KEY` | `<openssl rand -hex 32>` | Encrypts TOTP recovery secrets (AES-256-GCM). |
+| `DATAPLANE_SECRET` | `<openssl rand -hex 32>` | Shared secret between Manager and data-plane. |
+| `CRON_SECRET` | `<openssl rand -hex 32>` | Authorizes the cron endpoints (Step 11). |
+| `AUDIT_RETENTION_DAYS` | `730` | How long audit logs are kept before the retention cron trims them. Set per your legal obligations. |
+
+Leave the optional/commented ones (`DNS_API_TOKEN`, `CADDY_DNS_MODULE`,
+`NOTIFICATION_WEBHOOK_URL`, the TTL overrides) alone unless you know you need
+them. `DNS_API_TOKEN` is **only** for the large-scale wildcard-certificate escape
+hatch — you do not need it for a normal install.
+
+**Never commit `.env`.** It holds every secret.
+
+## Step 5 — Bring the stack up
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml ps      # all services "running"/"healthy"
+docker compose -f docker-compose.prod.yml logs -f caddy   # watch the first cert issue
+```
+
+Caddy fetches the `manager.access.acme.com` and `connect.access.acme.com`
+certificates automatically over HTTP-01 (that's why ports 80/443 must be open).
+Give it a minute; `Ctrl-C` out of the logs once you see certificates obtained.
+
+## Step 6 — Push the database schema (once)
+
+The images don't run migrations on their own. With Postgres healthy, push the
+schema once from a throwaway container on the same network (substitute your real
+`POSTGRES_PASSWORD`):
+
+```bash
+docker run --rm --network captivo-access-prod_default \
+  -e DATABASE_URL="postgresql://access:<POSTGRES_PASSWORD>@access-postgres:5432/captivo_access" \
+  -v "$PWD/../prisma:/app/prisma" -w /app \
+  node:20-alpine sh -c "corepack enable && npx --yes prisma db push --schema=prisma/schema.prisma"
+```
+
+You repeat this only for a fresh database, or after upgrading to a version whose
+release notes say the schema changed.
+
+## Step 7 — Create the first admin
+
+Open **`https://manager.access.acme.com/setup`** and register the first account
+with a **passkey** (Touch ID / Windows Hello / a security key). This account
+becomes the `ADMIN`. There is no default/seed account.
+
+> Passkey fails with "Something went wrong"? See
+> [Troubleshooting](#troubleshooting) — it's almost always `WEBAUTHN_RP_ID` not
+> matching the host in your browser's address bar.
+
+## Step 8 — Verify DNS + TLS from the console
+
+In the console, open **Custom domain** (under Infrastructure). It shows the exact
+wildcard record for your domain and your server's IP, and a **Verify DNS** button.
+Click it — a green result means the wildcard record is live and new apps will get
+HTTPS automatically. (If it's red, fix the `*.access.acme.com` record from Step 3
+and retry; DNS can take a few minutes.)
+
+There's nothing to configure for per-app TLS: the shipped Caddy uses **On-Demand
+TLS** — the first time a browser hits `wiki.access.acme.com`, Caddy asks the
+Manager "is this a real Site?" and, if yes, issues that app's certificate over
+HTTP-01 and caches it. No token, no per-app setup.
+
+## Step 9 — Enroll a connector (inside your network)
+
+The connector is the piece that runs **inside** your network and reaches the
+internal app. It only dials outward — no inbound port.
+
+1. In the console: **Connectors → Add connector**. The Manager shows a ready-to-run
+   `docker run` command with your `MANAGER_URL`, `DATAPLANE_URL`, and a one-time
+   `PAIR_CODE` already filled in. **Copy it.**
+2. On a machine inside `10.0.5.0/24` that can reach the wiki, run that command. It
+   looks like this (yours comes pre-filled — prefer the console's copy):
+
+   ```bash
+   docker run -d \
+     --name captivo-access-connector \
+     -e MANAGER_URL=https://manager.access.acme.com \
+     -e DATAPLANE_URL=wss://connect.access.acme.com \
+     -e PAIR_CODE=<one-time code from the console> \
+     -v conn-data:/data \
+     ghcr.io/kurtserdar/captivo-access-connector:latest
+   ```
+
+   The `-v conn-data:/data` volume stores the connector's token so it reconnects
+   after restarts without the pairing code. Optionally add
+   `-e ALLOWED_TARGETS=10.0.5.0/24` to hard-limit what this connector may ever
+   reach.
+3. Back in the console, the connector flips to **Online** within a few seconds.
+
+## Step 10 — Publish your first app as a Site
+
+In the console: **Sites → Add site**.
+
+- **Name:** `Internal Wiki`
+- **Hostname:** `wiki.access.acme.com` (a subdomain under your wildcard — no new
+  DNS needed)
+- **Internal address:** `http://10.0.5.20:8080` (the address the *connector*
+  reaches, not the browser)
+- **Connector:** the one you enrolled in Step 9
+
+Save. That's the entire per-app setup — no DNS record, no certificate, no Caddy
+edit. The first visit to `wiki.access.acme.com` self-provisions its TLS cert.
+
+## Step 11 — Give a vendor access
+
+1. **Invite the vendor.** Users → Invites → invite `dana@contractor.example` with
+   role **Vendor** (external supplier) or **Staff** (your own employee — same
+   access, different label; see [Roles](#roles)). If SMTP is configured
+   (**Email** page), Dana gets the invite by mail; otherwise copy the one-time
+   invite link and send it yourself.
+2. **Grant access.** Grants → New grant → user Dana, site `Internal Wiki`.
+   Optionally time-box it (start/end), require approval, or attach a weekly
+   schedule. Leave the window empty for permanent access.
+3. **Dana enrolls + connects.** Dana opens the invite link, registers a passkey,
+   then opens `https://wiki.access.acme.com` — signs in once at the Manager and
+   lands on your internal wiki. Every request is checked against the grant and
+   recorded in the audit log.
+
+Done — your first vendor is reaching an internal app with no VPN and no inbound
+port on your network.
+
+## Roles
+
+Assign the least privilege that fits. Roles govern the **admin console** only —
+reaching an app is always controlled by grants, independent of role (any role,
+including Admin, connects only where it's been granted).
+
+| Role | Can do | Typical use |
+|---|---|---|
+| **Admin** | Everything: connectors, sites, users, invites, email, sessions, grants, audit | The operator(s) running the deployment |
+| **Operator** | Approve/deny/revoke/create grants + view the console | Day-to-day access approvers, help desk |
+| **Auditor** | Read-only console: audit log (+ CSV), sites, grants — no changes | Compliance / security reviewers |
+| **Staff** | Connect-only (like Vendor), internal identity | Your own employees needing app access |
+| **Vendor** | Connect-only | External suppliers |
+
+Staff vs Vendor is the same access with a distinct identity — the difference shows
+up in the audit log (alongside the Company column) so you can tell internal from
+external access at a glance.
+
+## Step 12 — Schedule the maintenance jobs (cron)
+
+The Manager has no built-in scheduler; two endpoints are triggered by the host's
+cron with the `CRON_SECRET` bearer token. On the server's crontab:
+
+```cron
+# Probe each Site's reachability through its connector every 5 minutes:
+*/5 * * * * curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.access.acme.com/api/cron/site-health >/dev/null
+
+# Trim the audit log past its retention window, once a day:
+17 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.access.acme.com/api/cron/audit-retention >/dev/null
+```
+
+Site-health records reachability and raises an in-console notification (and an
+optional `NOTIFICATION_WEBHOOK_URL` alert) when a Site goes up or down.
+Audit-retention deletes rows older than `AUDIT_RETENTION_DAYS` while preserving
+the tamper-evident hash chain. Both fail closed without a valid `CRON_SECRET`.
+
+## Updating
+
+```bash
+cd captivo-access/deploy
+git pull
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Re-run the Step 6 schema push **only** if the release notes say the schema
+changed. Connectors reconnect on their new image automatically (the token in
+`/data` persists) — no re-enrollment.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Passkey setup/login fails ("Something went wrong") at `/setup` | `WEBAUTHN_RP_ID` doesn't match the host in the browser | Set `WEBAUTHN_RP_ID=access.acme.com` (the bare access domain), restart the manager, retry. It must be equal to, or a parent of, the host you actually open. |
+| An app hostname shows a TLS/certificate error | Wildcard `*.access` A record missing, or the hostname isn't a configured Site | Run **Custom domain → Verify DNS** in the console. Confirm the Site exists (Caddy only issues certs for real Sites). Fresh DNS can take a few minutes. |
+| New connector stays **Offline** | Wrong `DATAPLANE_URL` (must be `wss://connect.…`, not `ws://`), or the machine can't reach the internet outbound | Re-copy the exact command from the console; verify the connector host can reach `connect.access.acme.com:443` outbound; check `docker logs captivo-access-connector`. |
+| Opening an app returns **502** | Connector can't reach the Site's internal address, or `ALLOWED_TARGETS` blocks it | Check the internal address is what the *connector* can reach (`http://10.0.5.20:8080`); if `ALLOWED_TARGETS` is set, ensure the target is inside it; confirm the app is up from the connector's host. |
+| Vendor logs in but the app bounces back to login | `COOKIE_DOMAIN` wrong | It must be the **leading-dot** form `.access.acme.com`, restart the manager. |
+| Invite emails don't arrive | SMTP not configured/enabled | Configure it on the **Email** page (and tick *Enabled*). Until then, copy the one-time invite link from the Invites screen and send it manually. |
+| `db push` can't reach the database | Wrong network name or password | The compose network is `captivo-access-prod_default`; use the real `POSTGRES_PASSWORD` from `.env`; ensure `access-postgres` is healthy first. |
+
+## Where to go deeper
+
+- [`deploy/README.md`](../deploy/README.md) — production reference: architecture,
+  the DNS-01 single-wildcard-certificate **escape hatch** for very large
+  deployments, and provider-delegation recipes (deSEC / Cloudflare).
+- [`connector/README.md`](../connector/README.md) — connector environment
+  variables, `ALLOWED_TARGETS`, and building from source.
+- [`docs/how-it-works.md`](how-it-works.md) — the journey of a single request, in
+  plain terms.
+- [`docs/quickstart.md`](quickstart.md) — a zero-DNS local demo in ~5 minutes.
