@@ -12,6 +12,16 @@
 # ACCESS_DOMAIN and DNS_API_TOKEN come from docker-compose.prod.yml's
 # environment (sourced from .env — see .env.prod.example).
 
+# On-Demand TLS: issue a certificate for a vendor-app hostname the first time it
+# is requested (HTTP-01, no DNS plugin / token / provider lock-in). Caddy asks
+# the manager first, so it only ever issues for hostnames that are configured
+# Sites — never arbitrary names. See src/app/api/internal/tls-check.
+{
+	on_demand_tls {
+		ask http://access-manager:3100/api/internal/tls-check
+	}
+}
+
 # --- Manager console: works out of the box via HTTP-01 (no DNS plugin needed) ---
 manager.{$ACCESS_DOMAIN} {
 	reverse_proxy access-manager:3100
@@ -29,36 +39,20 @@ connect.{$ACCESS_DOMAIN} {
 	reverse_proxy access-dataplane:3101
 }
 
-# --- Per-site wildcard proxy: *.{$ACCESS_DOMAIN} -> access-dataplane:3103 ---
+# --- Per-site vendor access: any <app>.{$ACCESS_DOMAIN} -> identity-aware proxy ---
 #
-# Automatic HTTPS for a WILDCARD hostname (*.access.example.com) requires the
-# ACME DNS-01 challenge — HTTP-01 and TLS-ALPN-01 cannot prove control of a
-# wildcard name. DNS-01 requires a DNS-provider plugin built into Caddy
-# (see https://caddyserver.com/docs/automatic-https#dns-challenge), and the
-# plain `caddy:2-alpine` image used by docker-compose.prod.yml ships with NO
-# DNS plugins — the `tls { dns ... }` block below will fail to parse
-# ("unrecognized directive: dns") until you either:
+# Automatic HTTPS via On-Demand TLS: the cert for each app hostname is issued on
+# first request over HTTP-01 (no DNS plugin, no API token, works with any DNS
+# provider). Requires only a single wildcard DNS A record
+# (*.{$ACCESS_DOMAIN} -> this server) so the app hostnames resolve here. The
+# global on_demand_tls block above gates issuance via the manager's ask endpoint.
 #
-#   (a) use the opt-in DNS override, which builds a custom Caddy image with
-#       your provider's DNS module automatically (no manual image edits):
-#         docker compose -f docker-compose.prod.yml \
-#           -f docker-compose.dns.override.yml up -d
-#       set DNS_API_TOKEN in .env (and CADDY_DNS_MODULE if not Cloudflare),
-#       and uncomment the block below; or
-#   (b) skip the wildcard and add one explicit host block per vendor site
-#       instead (each gets its own cert via plain HTTP-01, no DNS plugin
-#       required), e.g.:
-#         acme-corp.{$ACCESS_DOMAIN} {
-#             reverse_proxy access-dataplane:3103
-#         }
-#
-# With the DNS override running, uncomment this block. The example uses the
-# Cloudflare directive; for deSEC use `dns desec {$DNS_API_TOKEN}` (and build
-# with CADDY_DNS_MODULE=github.com/caddy-dns/desec).
-#
-# *.{$ACCESS_DOMAIN} {
-# 	tls {
-# 		dns cloudflare {$DNS_API_TOKEN}
-# 	}
-# 	reverse_proxy access-dataplane:3103
-# }
+# For very large deployments that would exceed Let's Encrypt's per-domain new-cert
+# rate limit, use the DNS-01 wildcard-cert escape hatch instead — one cert for
+# *.{$ACCESS_DOMAIN} via docker-compose.dns.override.yml (see README "Wildcard TLS").
+*.{$ACCESS_DOMAIN} {
+	tls {
+		on_demand
+	}
+	reverse_proxy access-dataplane:3103
+}

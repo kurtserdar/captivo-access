@@ -38,8 +38,7 @@ production — use this directory instead.
    - `connect.access.example.com` → this host (connector tunnel — gets its
      own cert automatically via HTTP-01, no plugin needed)
    - `*.access.example.com` → this host (per-site vendor access — wildcard;
-     see [Wildcard TLS: the manageable path](#wildcard-tls-the-manageable-path) below for what it takes to
-     actually get a cert for this)
+     cert is issued automatically on first use, see [Wildcard TLS](#wildcard-tls) below)
 3. Docker + Docker Compose v2 on the host, ports 80 and 443 reachable from
    the internet.
 4. Nothing to build — this stack pulls the published images
@@ -93,20 +92,42 @@ Go to `https://manager.<ACCESS_DOMAIN>/setup` and register the first
 account as a passkey (becomes `ADMIN`). See the repo root
 [README](../README.md#identity--passkey) for the invite/login flow.
 
-## Wildcard TLS: the manageable path
+## Wildcard TLS
 
 Each internal app you publish is a `Site` with its own public hostname
-(`jira.access.example.com`, `cyberark.access.example.com`, …). You want
-adding an app to be a **one-line change in the Manager UI** — not a new DNS
-record and a new cert every time. That means a **single wildcard**
-`*.access.example.com` covering every current and future site.
+(`jira.access.example.com`, `cyberark.access.example.com`, …), and adding one
+is a **one-line change in the Manager UI** — no new DNS record and no new
+cert to request by hand.
 
-A wildcard cert requires the ACME **DNS-01** challenge (plain
-HTTP-01/TLS-ALPN-01 can't prove control of a wildcard name), and DNS-01
-requires programmatic access to your DNS zone via an API. This is the whole
-game — get DNS-01 working once and every future app costs zero TLS/DNS work.
+### Default: On-Demand TLS (stock Caddy, no DNS API, no token)
 
-### The real blocker is your DNS provider's API, not Caddy
+The shipped `Caddyfile` already wildcards `*.{$ACCESS_DOMAIN}` using Caddy's
+**On-Demand TLS**: the first time a browser hits a new app hostname, Caddy
+asks the Manager (`GET .../api/internal/tls-check?domain=...`) whether that
+hostname belongs to a configured `Site` — it only ever issues for hostnames
+you've actually published, never arbitrary ones — then completes a normal
+ACME **HTTP-01** challenge and caches the cert for future requests. No DNS
+plugin, no `DNS_API_TOKEN`, no custom Caddy image, and it works with any DNS
+provider.
+
+The only thing this needs is the wildcard `*.access.example.com` `A` record
+from [Prerequisites](#prerequisites) above, pointing at this host. Publish a
+new app as a `Site` in the Manager UI and the first hit to its hostname
+self-provisions the cert — there's nothing else to configure per app, and
+nothing further to set up to get here.
+
+### Escape hatch: DNS-01 single wildcard cert (very large deployments)
+
+On-Demand TLS issues one certificate per app hostname, so it's bounded by
+Let's Encrypt's per-registered-domain new-certificate rate limit. If you're
+publishing enough vendor sites to approach that limit, switch to a **single
+DNS-01 wildcard certificate** that covers every current and future hostname
+under `*.access.example.com` in one issuance — no per-app certs, no
+rate-limit exposure. This requires programmatic access to your DNS zone via
+an API (DNS-01 is the only ACME challenge that can prove control of a
+wildcard name).
+
+#### The real blocker is your DNS provider's API, not Caddy
 
 DNS-01 needs your DNS host's API — and **many registrars gate or disable it.
 GoDaddy, for example, cut off DNS API access in 2024 for accounts with fewer
@@ -115,7 +136,7 @@ thread](https://community.letsencrypt.org/t/godaddy-no-longer-allows-api-access-
 so the GoDaddy path simply won't work for most users. Switching ACME tools
 (certbot, acme.sh, Caddy) doesn't help — they all need that same API.
 
-### Recommended: host the DNS zone somewhere with a real API
+#### Recommended: host the DNS zone somewhere with a real API
 
 **Your registrar and your DNS host don't have to be the same company.** Keep
 your domain registered wherever it is (GoDaddy, Namecheap, …) and move only the
@@ -180,8 +201,20 @@ base stack. So:
 
 1. Set `DNS_API_TOKEN` in `.env` (and, for a non-Cloudflare provider,
    `CADDY_DNS_MODULE=github.com/caddy-dns/<provider>`).
-2. Uncomment the `*.{$ACCESS_DOMAIN}` block in `Caddyfile` (it defaults to the
-   Cloudflare directive; for deSEC use `dns desec {$DNS_API_TOKEN}`).
+2. In `Caddyfile`, replace the shipped On-Demand `*.{$ACCESS_DOMAIN}` block's
+   `tls { on_demand }` with a `tls { dns ... }` directive for your provider,
+   e.g. for Cloudflare:
+   ```caddyfile
+   *.{$ACCESS_DOMAIN} {
+       tls {
+           dns cloudflare {$DNS_API_TOKEN}
+       }
+       reverse_proxy access-dataplane:3103
+   }
+   ```
+   (for deSEC use `dns desec {$DNS_API_TOKEN}`). You can also drop the global
+   `on_demand_tls` block at the top of the file — it's unused once no site
+   block references `on_demand`.
 3. Bring the stack up with both compose files — the override builds the custom
    Caddy image automatically:
    ```bash
@@ -197,31 +230,12 @@ already covers it. (Prefer raw `xcaddy build --with …` and your own image?
 That still works — just point the `caddy:` service's `image:` at it instead of
 using the override.)
 
-### Already on a provider with a good API?
+#### Already on a provider with a good API?
 
 If your DNS is already hosted somewhere with an open API (Route 53,
 DigitalOcean, Hetzner, deSEC, Cloudflare, …), skip the delegation — just pick
 your module from the [`caddy-dns`](https://github.com/caddy-dns) org and
 `xcaddy build --with` it, same as above.
-
-### Fallback: per-site HTTP-01 (does not scale)
-
-If you truly can't do DNS-01, add one explicit host block per vendor site —
-each gets its own cert via plain HTTP-01, no DNS plugin, stock
-`caddy:2-alpine`:
-
-```caddyfile
-acme-corp.{$ACCESS_DOMAIN} {
-    reverse_proxy access-dataplane:3103
-}
-```
-
-But this costs **one DNS record + one Caddy block + one reload per app** —
-fine for a handful, unmanageable past that. Prefer the wildcard.
-
-Until one of these is in place, requests to `*.<ACCESS_DOMAIN>` other than
-`manager.` and `connect.` have no TLS termination — vendor site access won't
-work over HTTPS.
 
 ## How a vendor reaches an app
 
