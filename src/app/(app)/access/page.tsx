@@ -3,6 +3,7 @@ import { listUserGrants } from "@/lib/access/grants";
 import { classifyGrant } from "@/lib/access/evaluate";
 import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
 import { RequestAccessForm } from "./request-access-form";
+import { WithdrawRequestButton } from "./withdraw-request-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "My access" };
@@ -113,7 +114,7 @@ export default async function AccessPage() {
           <h2>Requests</h2>
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>App</th><th>Window</th><th>Status</th></tr></thead>
+              <thead><tr><th>App</th><th>Window</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {requests.map(({ grant, reason }) => (
                   <tr key={grant.id}>
@@ -123,6 +124,9 @@ export default async function AccessPage() {
                       {reason === "pending_approval"
                         ? <span className="pill warn">Pending approval</span>
                         : <span className="pill danger">Denied</span>}
+                    </td>
+                    <td>
+                      {reason === "pending_approval" && <WithdrawRequestButton id={grant.id} />}
                     </td>
                   </tr>
                 ))}
