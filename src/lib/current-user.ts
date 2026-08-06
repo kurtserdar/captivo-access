@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSessionUser, SESSION_COOKIE } from "./auth/session";
+import { can, type Capability } from "./auth/roles";
 
 export async function getCurrentUser() {
   const c = await cookies();
@@ -13,8 +14,11 @@ export async function requireUser() {
   if (!u) redirect("/login");
   return u;
 }
-export async function requireAdmin() {
+export async function requireCapability(cap: Capability) {
   const u = await requireUser();
-  if (u.role !== "ADMIN") redirect("/");
+  if (!can(u.role, cap)) redirect("/");
   return u;
+}
+export async function requireAdmin() {
+  return requireCapability("configure");
 }
