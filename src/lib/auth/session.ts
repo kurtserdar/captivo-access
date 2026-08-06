@@ -66,3 +66,13 @@ export async function startSession(userId: string, req: NextRequest): Promise<vo
     domain: cookieDomain(),
   });
 }
+
+/** The current request's session id from the ca_session cookie, or null.
+ *  Read-only — used by the admin sessions page to mark "this device" and to
+ *  exclude the caller's own session from bulk-revoke. Does not touch auth state. */
+export async function currentSessionId(): Promise<string | null> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+  const s = await db.session.findUnique({ where: { tokenHash: sha256(token) }, select: { id: true } });
+  return s?.id ?? null;
+}
