@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { COMMON_TIMEZONES, type Schedule } from "@/lib/access/schedule";
 
 const DAYS = [
@@ -11,7 +11,18 @@ const DAYS = [
 type State = { enabled: boolean; days: number[]; start: string; end: string; tz: string };
 
 export function ScheduleBuilder({ onChange }: { onChange: (s: Schedule | null) => void }) {
-  const [s, setS] = useState<State>({ enabled: false, days: [1, 2, 3, 4, 5], start: "09:00", end: "18:00", tz: "Europe/Istanbul" });
+  const [s, setS] = useState<State>({ enabled: false, days: [1, 2, 3, 4, 5], start: "09:00", end: "18:00", tz: "UTC" });
+
+  // Default the timezone to the operator's browser zone (set after mount to
+  // avoid an SSR/client hydration mismatch). They can still pick any zone.
+  useEffect(() => {
+    try {
+      const b = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (b) setS((prev) => ({ ...prev, tz: b }));
+    } catch {
+      /* keep UTC */
+    }
+  }, []);
 
   function update(patch: Partial<State>) {
     const next = { ...s, ...patch };
@@ -49,7 +60,9 @@ export function ScheduleBuilder({ onChange }: { onChange: (s: Schedule | null) =
           </div>
           <label className="field-label">Time zone
             <select className="select" value={s.tz} onChange={(e) => update({ tz: e.target.value })}>
-              {COMMON_TIMEZONES.map((z) => <option key={z} value={z}>{z}</option>)}
+              {(COMMON_TIMEZONES.includes(s.tz) ? COMMON_TIMEZONES : [s.tz, ...COMMON_TIMEZONES]).map((z) => (
+                <option key={z} value={z}>{z}</option>
+              ))}
             </select>
           </label>
         </div>
