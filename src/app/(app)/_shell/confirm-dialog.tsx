@@ -31,12 +31,13 @@ function ConfirmDialog({ pending, onClose }: { pending: Pending; onClose: (ok: b
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const prev = document.activeElement as HTMLElement | null;
     confirmRef.current?.focus();
+    return () => prev?.focus?.();
   }, []);
 
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Escape") { e.preventDefault(); onClose(false); }
-    else if (e.key === "Enter") { e.preventDefault(); onClose(true); }
     else if (e.key === "Tab") {
       // Focus trap: keep Tab within the dialog's two buttons.
       const focusable = panelRef.current?.querySelectorAll<HTMLElement>("button");
@@ -48,8 +49,8 @@ function ConfirmDialog({ pending, onClose }: { pending: Pending; onClose: (ok: b
   }
 
   return createPortal(
-    <div className="cmd-overlay" onClick={() => onClose(false)} role="dialog" aria-modal="true" aria-label="Confirm">
-      <div className="cmd-panel confirm-panel" ref={panelRef} onClick={(e) => e.stopPropagation()} onKeyDown={onKeyDown}>
+    <div className="cmd-overlay" onClick={() => onClose(false)}>
+      <div className="cmd-panel confirm-panel" ref={panelRef} onClick={(e) => e.stopPropagation()} onKeyDown={onKeyDown} role="dialog" aria-modal="true" aria-label="Confirm">
         <p className="confirm-msg">{pending.message}</p>
         <div className="confirm-actions">
           <button className="btn ghost" onClick={() => onClose(false)}>Cancel</button>
