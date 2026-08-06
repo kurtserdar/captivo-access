@@ -3,6 +3,7 @@ import { getSmtpConfig } from "@/lib/email/mailer";
 import { EmailForm } from "./email-form";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Email" };
 
 export default async function AdminEmailPage() {
   const admin = await requireAdmin();

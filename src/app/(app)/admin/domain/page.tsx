@@ -4,6 +4,7 @@ import { accessDomain, wildcardRecord } from "@/lib/domain/custom-domain";
 import { DomainVerifier } from "./domain-verifier";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Custom domain" };
 
 export default async function AdminDomainPage() {
   await requireCapability("configure");

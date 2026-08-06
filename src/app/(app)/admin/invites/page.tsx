@@ -5,6 +5,7 @@ import { InviteForm } from "./invite-form";
 import { ResendInviteButton } from "./resend-invite-button";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Invites" };
 
 const STATUS_PILL: Record<string, string> = {
   Used: "ok",

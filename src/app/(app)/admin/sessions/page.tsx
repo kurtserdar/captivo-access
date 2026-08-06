@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { RevokeSessionButton } from "./revoke-session-button";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Sessions" };
 
 export default async function AdminSessionsPage() {
   await requireAdmin();

@@ -4,6 +4,7 @@ import { getOidcConfig } from "@/lib/auth/oidc-config";
 import { SsoForm } from "./sso-form";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Single sign-on" };
 
 export default async function AdminSsoPage() {
   await requireCapability("configure");

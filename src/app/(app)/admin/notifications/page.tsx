@@ -4,6 +4,7 @@ import { timeAgo } from "@/lib/format";
 import { MarkReadButton } from "./mark-read-button";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Notifications" };
 
 export default async function AdminNotificationsPage() {
   await requireCapability("read_console");

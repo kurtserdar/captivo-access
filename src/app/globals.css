@@ -29,6 +29,8 @@ html,body{margin:0;padding:0;}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:.9375rem;line-height:1.55;
   -webkit-font-smoothing:antialiased;min-height:100vh;}
 h1,h2,h3{font-family:var(--display);letter-spacing:-.01em;text-wrap:balance;margin:0;}
+h2{font-size:1.05rem;}
+h3{font-size:.95rem;}
 a{color:inherit;}
 :focus-visible{outline:none;box-shadow:0 0 0 3px var(--accent-soft);border-radius:4px;}
 
@@ -150,10 +152,9 @@ a{color:inherit;}
 
 /* ---- topbar + command palette ---- */
 .main-col{display:flex;flex-direction:column;min-height:100vh;min-width:0;}
-.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:1rem;
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:flex-end;gap:1rem;
   height:52px;padding:0 2rem;border-bottom:1px solid var(--line);
   background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);}
-.topbar-title{font-family:var(--display);font-size:1.05rem;font-weight:600;letter-spacing:-.01em;}
 .cmd-trigger{display:inline-flex;align-items:center;justify-content:space-between;gap:.6rem;min-width:210px;
   font:inherit;font-size:.82rem;cursor:pointer;color:var(--muted);background:var(--surface);
   border:1px solid var(--line);border-radius:var(--radius);padding:.35rem .6rem;}

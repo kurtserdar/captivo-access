@@ -5,6 +5,7 @@ import { AuditTable, type AuditRowJSON } from "./audit-table";
 import { IntegrityPanel } from "./integrity-panel";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Audit log" };
 
 const INITIAL_LIMIT = 50;
 

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { UsersTable } from "./users-table";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Users" };
 
 export default async function AdminUsersPage({
   searchParams,

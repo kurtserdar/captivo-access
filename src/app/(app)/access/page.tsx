@@ -5,6 +5,7 @@ import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
 import { RequestAccessForm } from "./request-access-form";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "My access" };
 
 function formatWindow(startsAt: Date | null, endsAt: Date | null): string {
   const start = startsAt ? startsAt.toLocaleString("en-US") : "Immediately";

@@ -7,6 +7,7 @@ import { TestConnectionButton } from "./test-connection-button";
 import { DeleteSiteButton } from "./delete-site-button";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Sites" };
 
 export default async function AdminSitesPage() {
   await requireAdmin();

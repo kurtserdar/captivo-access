@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { SiteForm } from "../../site-form";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Edit site" };
 
 export default async function EditSitePage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();

@@ -6,6 +6,7 @@ import { DeletePasskeyButton } from "./delete-passkey-button";
 
 // The passkey list must be read fresh on every request (full page reload after add/delete).
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Settings" };
 
 export default async function PasskeysPage() {
   const user = await requireUser();

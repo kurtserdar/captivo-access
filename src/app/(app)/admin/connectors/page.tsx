@@ -5,6 +5,7 @@ import { DeleteConnectorButton } from "./delete-connector-button";
 import { RevokeConnectorButton } from "./revoke-connector-button";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Connectors" };
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "Pending",
