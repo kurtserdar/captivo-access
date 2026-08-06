@@ -32,6 +32,9 @@ describe("checkClaims", () => {
   it("rejects when aud does not include the client id", () => {
     expect(checkClaims({ ...good, aud: "other-client" }, base).ok).toBe(false);
   });
+  it("rejects an aud array that omits the client id", () => {
+    expect(checkClaims({ ...good, aud: ["other-a", "other-b"] }, base).ok).toBe(false);
+  });
   it("rejects when azp mismatches on a multi-aud token", () => {
     expect(checkClaims({ ...good, aud: ["client-123", "x"], azp: "x" }, base).ok).toBe(false);
   });
@@ -43,6 +46,9 @@ describe("checkClaims", () => {
   });
   it("rejects an unverified email", () => {
     expect(checkClaims({ ...good, email_verified: false }, base).ok).toBe(false);
+  });
+  it("rejects a non-boolean truthy email_verified (string \"true\")", () => {
+    expect(checkClaims({ ...good, email_verified: "true" as unknown as boolean }, base).ok).toBe(false);
   });
   it("rejects a missing email", () => {
     expect(checkClaims({ ...good, email: undefined }, base).ok).toBe(false);
