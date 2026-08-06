@@ -35,7 +35,7 @@ export function DomainVerifier({ canVerify }: { canVerify: boolean }) {
         {busy ? "Checking…" : "Verify DNS"}
       </button>
       {m && (
-        <p className={`notice ${m.ok ? "ok" : "error"}`} role="status">
+        <p className={`notice ${m.ok ? "success" : "error"}`} role="status">
           {m.msg}
           {result?.status === "mismatch" && result.expectedIp && result.resolvedIp && (
             <> (expected {result.expectedIp}, got {result.resolvedIp})</>
