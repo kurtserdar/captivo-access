@@ -1,5 +1,8 @@
+import type { NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { generateToken, sha256 } from "./tokens";
+import { cookieSecure, cookieDomain } from "./cookies";
 
 export const SESSION_COOKIE = "ca_session";
 function ttlMs(): number {
@@ -36,4 +39,30 @@ export async function destroySession(token: string): Promise<void> {
 }
 export async function revokeSession(sessionId: string): Promise<void> {
   await db.session.delete({ where: { id: sessionId } }).catch(() => {});
+}
+
+// Session cookie max-age (hours) — mirrors the value used by the passkey auth
+// route. Kept here so non-passkey logins (OIDC) set an identical cookie without
+// modifying the passkey flow.
+function sessionMaxAgeSeconds(): number {
+  const h = Number(process.env.SESSION_TTL_HOURS);
+  return (Number.isFinite(h) && h > 0 ? h : 12) * 3600;
+}
+
+/** Create a DB-backed session for `userId` and set the `ca_session` cookie,
+ *  identically to the passkey auth route. Used by non-passkey logins (OIDC). */
+export async function startSession(userId: string, req: NextRequest): Promise<void> {
+  const meta = {
+    userAgent: req.headers.get("user-agent") ?? undefined,
+    ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+  };
+  const token = await createSession(userId, meta);
+  (await cookies()).set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    secure: await cookieSecure(),
+    sameSite: "lax",
+    path: "/",
+    maxAge: sessionMaxAgeSeconds(),
+    domain: cookieDomain(),
+  });
 }
