@@ -5,7 +5,17 @@ import { startAuthentication } from "@simplewebauthn/browser";
 
 const GENERIC_ERROR = "No passkey found or verification failed.";
 
-export function LoginForm({ returnTo = "/" }: { returnTo?: string }) {
+export function LoginForm({
+  returnTo = "/",
+  ssoEnabled = false,
+  ssoLabel = "Sign in with SSO",
+  ssoError = null,
+}: {
+  returnTo?: string;
+  ssoEnabled?: boolean;
+  ssoLabel?: string;
+  ssoError?: string | null;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,10 +53,20 @@ export function LoginForm({ returnTo = "/" }: { returnTo?: string }) {
 
   return (
     <div>
+      {ssoError && (
+        <p className="notice error" role="alert">
+          {ssoError}
+        </p>
+      )}
       {error && (
         <p className="notice error" role="alert">
           {error} <a href="/recover">Recover your account</a>
         </p>
+      )}
+      {ssoEnabled && (
+        <a className="btn primary" href={`/api/auth/oidc/start?returnTo=${encodeURIComponent(returnTo)}`}>
+          {ssoLabel}
+        </a>
       )}
       <button type="button" className="btn primary" onClick={handleClick} disabled={busy}>
         {busy ? "Verifying…" : "Sign in with passkey"}
