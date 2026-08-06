@@ -1,13 +1,9 @@
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { ToggleStatusButton } from "./toggle-status-button";
+import { ROLE_LABELS } from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
-
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: "Admin",
-  VENDOR: "Vendor",
-};
 
 const STATUS_LABEL: Record<string, string> = {
   ACTIVE: "Active",
@@ -68,7 +64,7 @@ export default async function AdminUsersPage() {
                   <div>{u.company ?? "—"}</div>
                   {u.phone && <div className="cell-sub">{u.phone}</div>}
                 </td>
-                <td>{ROLE_LABEL[u.role] ?? u.role}</td>
+                <td>{ROLE_LABELS[u.role] ?? u.role}</td>
                 <td>
                   <span className={`pill ${STATUS_PILL[u.status] ?? "neutral"}`}>
                     {STATUS_LABEL[u.status] ?? u.status}

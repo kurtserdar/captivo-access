@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
-import { can } from "@/lib/auth/roles";
+import { can, ASSIGNABLE_ROLES } from "@/lib/auth/roles";
 import { createInvite } from "@/lib/auth/invite";
 import { managerBaseUrl } from "@/lib/url";
 import { getSmtpConfig, sendMail } from "@/lib/email/mailer";
 import { inviteEmail } from "@/lib/email/templates";
 import type { Role } from "@/generated/prisma/enums";
-
-const VALID_ROLES: Role[] = ["ADMIN", "VENDOR"];
 
 export async function POST(req: NextRequest) {
   const admin = await getCurrentUser();
@@ -26,7 +24,7 @@ export async function POST(req: NextRequest) {
   const company = typeof body.company === "string" ? body.company.trim() : "";
   const sendEmail = body.sendEmail === true;
 
-  if (!name || !email || !role || !VALID_ROLES.includes(role)) {
+  if (!name || !email || !role || !ASSIGNABLE_ROLES.includes(role)) {
     return NextResponse.json({ error: "name_email_role_required" }, { status: 400 });
   }
 

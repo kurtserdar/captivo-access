@@ -2,13 +2,12 @@ import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { getSetupStatus, getDashboardStats, getSiteHealth, getRecentActivity } from "@/lib/dashboard/stats";
+import { isConsoleUser, ROLE_LABELS } from "@/lib/auth/roles";
 import { StatCards } from "./_dashboard/stat-cards";
 import { SiteHealthPanel } from "./_dashboard/site-health-panel";
 import { RecentActivityPanel } from "./_dashboard/recent-activity-panel";
 
 export const dynamic = "force-dynamic";
-
-const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", VENDOR: "Vendor" };
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -17,12 +16,12 @@ export default async function DashboardPage() {
     <div className="page-head">
       <div>
         <h1>Welcome, {user.name}</h1>
-        <p><span className="pill neutral">{ROLE_LABEL[user.role] ?? user.role}</span></p>
+        <p><span className="pill neutral">{ROLE_LABELS[user.role] ?? user.role}</span></p>
       </div>
     </div>
   );
 
-  if (user.role !== "ADMIN") {
+  if (!isConsoleUser(user.role)) {
     const activeGrants = await db.accessGrant.count({ where: { userId: user.id, status: "ACTIVE" } });
     return (
       <main>
@@ -32,6 +31,17 @@ export default async function DashboardPage() {
             You have <strong>{activeGrants}</strong> active access grant{activeGrants === 1 ? "" : "s"}. See the apps
             you can reach and request new access under <Link href="/access">My access</Link>.
           </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (user.role !== "ADMIN") {
+    return (
+      <main>
+        {head}
+        <div className="card">
+          <p>Use the sidebar to review access grants and the audit log.</p>
         </div>
       </main>
     );

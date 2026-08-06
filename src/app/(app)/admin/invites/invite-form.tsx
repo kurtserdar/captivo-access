@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { PhoneInput } from "@/components/phone-input";
+import type { Role } from "@/generated/prisma/enums";
+import { ASSIGNABLE_ROLES, ROLE_LABELS } from "@/lib/auth/roles";
 
 function errorMessage(code: string | undefined): string {
   switch (code) {
@@ -18,7 +20,7 @@ function errorMessage(code: string | undefined): string {
 export function InviteForm({ smtpEnabled }: { smtpEnabled: boolean }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"VENDOR" | "ADMIN">("VENDOR");
+  const [role, setRole] = useState<Role>("VENDOR");
   const [company, setCompany] = useState("");
   const [phone, setPhone] = useState("");
   const [phoneKey, setPhoneKey] = useState(0);
@@ -130,10 +132,11 @@ export function InviteForm({ smtpEnabled }: { smtpEnabled: boolean }) {
             id="invite-role"
             className="select"
             value={role}
-            onChange={(e) => setRole(e.target.value as "VENDOR" | "ADMIN")}
+            onChange={(e) => setRole(e.target.value as Role)}
           >
-            <option value="VENDOR">Vendor</option>
-            <option value="ADMIN">Admin</option>
+            {ASSIGNABLE_ROLES.map((r) => (
+              <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+            ))}
           </select>
         </div>
         {error && (

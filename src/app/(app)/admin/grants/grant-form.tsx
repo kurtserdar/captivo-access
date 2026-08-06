@@ -3,11 +3,8 @@
 import { useState } from "react";
 import { ScheduleBuilder } from "@/app/(app)/access/schedule-builder";
 import type { Schedule } from "@/lib/access/schedule";
-
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: "Admin",
-  VENDOR: "Vendor",
-};
+import { ROLE_LABELS } from "@/lib/auth/roles";
+import type { Role } from "@/generated/prisma/enums";
 
 function errorMessage(code: string | undefined): string {
   switch (code) {
@@ -30,7 +27,7 @@ export function GrantForm({
   users,
   sites,
 }: {
-  users: { id: string; name: string; email: string; role: string }[];
+  users: { id: string; name: string; email: string; role: Role }[];
   sites: { id: string; name: string }[];
 }) {
   const [userId, setUserId] = useState(users[0]?.id ?? "");
@@ -81,7 +78,7 @@ export function GrantForm({
         <select id="grant-user" className="select" value={userId} onChange={(e) => setUserId(e.target.value)} required>
           {users.map((u) => (
             <option key={u.id} value={u.id}>
-              {u.name} ({u.email}) — {ROLE_LABEL[u.role] ?? u.role}
+              {u.name} ({u.email}) — {ROLE_LABELS[u.role] ?? u.role}
             </option>
           ))}
         </select>
