@@ -13,6 +13,9 @@ datasource db {
 
 enum Role {
   ADMIN
+  OPERATOR
+  AUDITOR
+  STAFF
   VENDOR
 }
 
