@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { requireCapability } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { timeAgo } from "@/lib/format";
 import { MarkReadButton } from "./mark-read-button";
+import { MarkOneReadButton } from "./mark-one-read-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Notifications" };
@@ -12,7 +14,18 @@ export default async function AdminNotificationsPage() {
   const notifications = await db.notification.findMany({
     orderBy: { createdAt: "desc" },
     take: 200,
+    select: {
+      id: true,
+      type: true,
+      siteName: true,
+      siteId: true,
+      detail: true,
+      createdAt: true,
+      readAt: true,
+    },
   });
+
+  const unread = notifications.filter((n) => !n.readAt).length;
 
   return (
     <main>
@@ -21,7 +34,7 @@ export default async function AdminNotificationsPage() {
           <h1>Notifications</h1>
           <p>Site down/recovered events from the health probe.</p>
         </div>
-        {notifications.length > 0 && <MarkReadButton />}
+        {unread > 0 && <MarkReadButton />}
       </div>
 
       {notifications.length === 0 ? (
@@ -35,11 +48,12 @@ export default async function AdminNotificationsPage() {
                 <th>Site</th>
                 <th>Detail</th>
                 <th>When</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {notifications.map((n) => (
-                <tr key={n.id}>
+                <tr key={n.id} className={n.readAt ? undefined : "row-unread"}>
                   <td>
                     {n.type === "site_down" ? (
                       <span className="pill danger">Down</span>
@@ -47,9 +61,12 @@ export default async function AdminNotificationsPage() {
                       <span className="pill ok">Recovered</span>
                     )}
                   </td>
-                  <td>{n.siteName}</td>
+                  <td>
+                    <Link href="/admin/sites">{n.siteName}</Link>
+                  </td>
                   <td className="cell-sub">{n.detail ?? "—"}</td>
                   <td className="cell-sub">{timeAgo(n.createdAt)}</td>
+                  <td>{!n.readAt && <MarkOneReadButton id={n.id} />}</td>
                 </tr>
               ))}
             </tbody>

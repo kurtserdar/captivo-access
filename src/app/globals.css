@@ -100,6 +100,7 @@ a{color:inherit;}
 .table td{padding:.65rem .8rem;border-bottom:1px solid var(--line-soft);font-size:.875rem;}
 .table tr:last-child td{border-bottom:none;}
 .table tbody tr:hover{background:var(--surface-hover);}
+.row-unread td{font-weight:600;}
 .cell-sub{color:var(--muted);font-size:.8rem;}
 
 /* ---- pill / badge ---- */
