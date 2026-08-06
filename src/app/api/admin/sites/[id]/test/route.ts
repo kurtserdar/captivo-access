@@ -4,6 +4,7 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { proxyThroughConnector } from "@/lib/connector/dataplane";
 import { probeSite } from "@/lib/connector/health";
+import { classifyTransition, notifyTransition } from "@/lib/notifications";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
@@ -18,9 +19,11 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const site = await db.site.findUnique({
     where: { id },
     select: {
+      name: true,
       connectorId: true,
       upstreamUrl: true,
       insecureSkipVerify: true,
+      probeOk: true,
       connector: { select: { status: true } },
     },
   });
@@ -48,6 +51,16 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   // Refresh the persisted Health column with a fresh probe so the row pill
   // agrees with this manual test instead of lagging until the hourly cron.
   const probe = await probeSite({ connectorId: site.connectorId, upstreamUrl: site.upstreamUrl });
+  // Mirror the cron's transition alerting: a manual test that flips the state
+  // must fire the same site_down/site_recovered notification, otherwise it
+  // silently pre-empts the stored probeOk and the cron never sees the event.
+  const transition = classifyTransition(site.probeOk, probe.probeOk);
+  if (transition) {
+    // Only a down event carries a failure reason; a recovered event has no
+    // meaningful detail (probeDetail is just "reachable" on success).
+    const detail = transition === "site_down" ? probe.probeDetail : null;
+    await notifyTransition({ type: transition, siteId: id, siteName: site.name, detail });
+  }
   await db.site.update({
     where: { id },
     data: { probedAt: new Date(), probeOk: probe.probeOk, probeDetail: probe.probeDetail, probeLatencyMs: probe.probeLatencyMs },
