@@ -115,6 +115,7 @@ export function AuditTable({
   useEffect(() => {
     const seeded = filtersFromParams(new URLSearchParams(searchParams.toString()));
     const hasAny = Object.values(seeded).some((v) => v !== "");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (hasAny) load(seeded, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -14,7 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
   {
-    files: ["src/app/(app)/access/schedule-builder.tsx", "src/app/(app)/admin/audit/audit-table.tsx"],
+    files: ["src/app/(app)/access/schedule-builder.tsx"],
     rules: {
       "react-hooks/set-state-in-effect": "off",
     },
