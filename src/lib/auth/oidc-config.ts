@@ -12,7 +12,14 @@ export type OidcConfigView = {
 };
 
 export async function getOidcConfig(): Promise<OidcConfigView | null> {
-  const c = await db.oidcConfig.findUnique({ where: { id: ID } });
+  let c;
+  try {
+    c = await db.oidcConfig.findUnique({ where: { id: ID } });
+  } catch {
+    // If the table doesn't exist yet (deployed before db push) or the DB is
+    // unavailable, treat SSO as unconfigured so passkey login still works.
+    return null;
+  }
   if (!c) return null;
   return {
     enabled: c.enabled,

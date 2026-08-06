@@ -71,6 +71,7 @@ export async function GET(req: NextRequest) {
     const { payload } = await jwtVerify(tokens.id_token, JWKS, {
       issuer: normalizeIssuer(cfg.issuer),
       audience: cfg.clientId,
+      algorithms: ["RS256", "ES256", "PS256"],
     });
     claims = payload as IdClaims;
   } catch {
@@ -100,14 +101,19 @@ export async function GET(req: NextRequest) {
   const consumed = await db.invite.updateMany({ where: { id: invite.id, usedAt: null }, data: { usedAt: new Date() } });
   if (consumed.count === 0) return fail(req, "no_account");
 
-  const created = await db.user.create({
-    data: {
-      email: invite.email,
-      name: invite.name || claims.name || email.split("@")[0],
-      role: invite.role,
-      status: "ACTIVE",
-    },
-  });
+  let created;
+  try {
+    created = await db.user.create({
+      data: {
+        email: invite.email,
+        name: invite.name || claims.name || email.split("@")[0],
+        role: invite.role,
+        status: "ACTIVE",
+      },
+    });
+  } catch {
+    return fail(req, "sso");
+  }
   await startSession(created.id, req);
   return NextResponse.redirect(new URL(safeReturnTo(saved.returnTo), req.nextUrl));
 }
