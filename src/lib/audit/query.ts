@@ -1,7 +1,8 @@
-import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
+import { buildAuditWhere } from "./filter";
 
 export type AuditFilter = {
+  q?: string;
   userId?: string;
   siteId?: string;
   decision?: "ALLOW" | "DENY";
@@ -33,17 +34,7 @@ export type AuditRow = {
 };
 
 export async function listAuditEvents(filter: AuditFilter): Promise<{ rows: AuditRow[]; total: number }> {
-  const where: Prisma.AuditEventWhereInput = {};
-
-  if (filter.userId) where.userId = filter.userId;
-  if (filter.siteId) where.siteId = filter.siteId;
-  if (filter.decision) where.decision = filter.decision;
-  if (filter.from || filter.to) {
-    where.timestamp = {
-      ...(filter.from ? { gte: filter.from } : {}),
-      ...(filter.to ? { lte: filter.to } : {}),
-    };
-  }
+  const where = buildAuditWhere(filter);
 
   const [events, total] = await Promise.all([
     db.auditEvent.findMany({

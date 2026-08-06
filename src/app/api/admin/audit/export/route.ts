@@ -1,28 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
-import { listAuditEvents, toCsv, type AuditFilter } from "@/lib/audit/query";
+import { listAuditEvents, toCsv } from "@/lib/audit/query";
+import { parseAuditFilter } from "@/lib/audit/filter";
 
 const EXPORT_LIMIT = 10000;
-
-function parseFilter(searchParams: URLSearchParams): AuditFilter {
-  const userId = searchParams.get("userId")?.trim() || undefined;
-  const siteId = searchParams.get("siteId")?.trim() || undefined;
-
-  const decisionParam = searchParams.get("decision");
-  const decision = decisionParam === "ALLOW" || decisionParam === "DENY" ? decisionParam : undefined;
-
-  const from = parseDate(searchParams.get("from"));
-  const to = parseDate(searchParams.get("to"));
-
-  return { userId, siteId, decision, from, to, limit: EXPORT_LIMIT, offset: 0 };
-}
-
-function parseDate(value: string | null): Date | undefined {
-  if (!value) return undefined;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-}
 
 export async function GET(req: NextRequest) {
   const admin = await getCurrentUser();
@@ -33,7 +15,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const filter = parseFilter(req.nextUrl.searchParams);
+  const filter = parseAuditFilter(req.nextUrl.searchParams, { defaultLimit: EXPORT_LIMIT, maxLimit: EXPORT_LIMIT });
   const { rows } = await listAuditEvents(filter);
   const csv = toCsv(rows);
 

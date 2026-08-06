@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export type AuditRowJSON = {
   id: string;
@@ -22,6 +23,7 @@ export type AuditRowJSON = {
 };
 
 type Filters = {
+  q: string;
   userId: string;
   siteId: string;
   decision: "" | "ALLOW" | "DENY";
@@ -29,7 +31,6 @@ type Filters = {
   to: string;
 };
 
-const EMPTY_FILTERS: Filters = { userId: "", siteId: "", decision: "", from: "", to: "" };
 const LIMIT = 50;
 
 function toIso(datetimeLocal: string): string | undefined {
@@ -40,6 +41,7 @@ function toIso(datetimeLocal: string): string | undefined {
 
 function buildParams(filters: Filters, limit: number, offset: number): URLSearchParams {
   const params = new URLSearchParams();
+  if (filters.q) params.set("q", filters.q);
   if (filters.userId) params.set("userId", filters.userId);
   if (filters.siteId) params.set("siteId", filters.siteId);
   if (filters.decision) params.set("decision", filters.decision);
@@ -50,6 +52,18 @@ function buildParams(filters: Filters, limit: number, offset: number): URLSearch
   params.set("limit", String(limit));
   params.set("offset", String(offset));
   return params;
+}
+
+function filtersFromParams(sp: URLSearchParams): Filters {
+  const decision = sp.get("decision");
+  return {
+    q: sp.get("q") ?? "",
+    userId: sp.get("userId") ?? "",
+    siteId: sp.get("siteId") ?? "",
+    decision: decision === "ALLOW" || decision === "DENY" ? decision : "",
+    from: sp.get("from") ?? "",
+    to: sp.get("to") ?? "",
+  };
 }
 
 export function AuditTable({
@@ -63,12 +77,16 @@ export function AuditTable({
   initialRows: AuditRowJSON[];
   initialTotal: number;
 }) {
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [filters, setFilters] = useState<Filters>(() => filtersFromParams(new URLSearchParams(searchParams.toString())));
   const [offset, setOffset] = useState(0);
   const [rows, setRows] = useState<AuditRowJSON[]>(initialRows);
   const [total, setTotal] = useState(initialTotal);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function load(nextFilters: Filters, nextOffset: number) {
     setBusy(true);
@@ -85,12 +103,21 @@ export function AuditTable({
       setTotal(typeof body.total === "number" ? body.total : 0);
       setFilters(nextFilters);
       setOffset(nextOffset);
+      const url = params.toString();
+      router.replace(url ? `${pathname}?${url}` : pathname, { scroll: false });
     } catch {
       setError("Couldn't load audit events, please try again.");
     } finally {
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    const seeded = filtersFromParams(new URLSearchParams(searchParams.toString()));
+    const hasAny = Object.values(seeded).some((v) => v !== "");
+    if (hasAny) load(seeded, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function updateFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
     const nextFilters = { ...filters, [key]: value };
@@ -104,6 +131,22 @@ export function AuditTable({
   return (
     <section>
       <div className="card">
+        <div className="field">
+          <label className="field-label" htmlFor="audit-filter-q">Search</label>
+          <input
+            id="audit-filter-q"
+            type="search"
+            className="input"
+            placeholder="path, host, user, company…"
+            value={filters.q}
+            onChange={(e) => {
+              const q = e.target.value;
+              setFilters((prev) => ({ ...prev, q }));
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              debounceRef.current = setTimeout(() => load({ ...filters, q }, 0), 300);
+            }}
+          />
+        </div>
         <div className="field">
           <label className="field-label" htmlFor="audit-filter-user">
             User
