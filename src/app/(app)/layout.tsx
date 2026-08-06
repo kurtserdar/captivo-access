@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
+import { can, ROLE_LABELS } from "@/lib/auth/roles";
 import { countPendingGrants } from "@/lib/access/grants";
 import { countUnreadNotifications } from "@/lib/notifications";
 import { getSearchRecords } from "@/lib/search";
@@ -23,17 +24,14 @@ import {
 // requireUser() must be read fresh from the DB on every request (session/role changes reflect immediately).
 export const dynamic = "force-dynamic";
 
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: "Admin",
-  VENDOR: "Vendor",
-};
-
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  const admin = user.role === "ADMIN";
-  const pendingCount = admin ? await countPendingGrants() : 0;
-  const unreadNotifications = admin ? await countUnreadNotifications() : 0;
-  const searchRecords = admin ? await getSearchRecords() : [];
+  const showGrants = can(user.role, "approve_grants");
+  const showRead = can(user.role, "read_console");
+  const showConfig = can(user.role, "configure");
+  const pendingCount = showGrants ? await countPendingGrants() : 0;
+  const unreadNotifications = showRead ? await countUnreadNotifications() : 0;
+  const searchRecords = showRead ? await getSearchRecords() : [];
 
   return (
     <div className="app-shell">
@@ -43,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="wordmark"><b>Captivo</b> <span className="wm-sub">Access</span></span>
         </Link>
         <span className="nav-group">Access</span>
-        {admin && (
+        {showRead && (
           <NavLink href="/admin/grants">
             <GrantsIcon />
             Grants
@@ -54,7 +52,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <AccessIcon />
           My access
         </NavLink>
-        {admin && (
+        {showRead && (
+          <>
+            <span className="nav-group">Monitoring</span>
+            <NavLink href="/admin/notifications">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              Notifications
+              {unreadNotifications > 0 && <span className="nav-badge">{unreadNotifications}</span>}
+            </NavLink>
+            <NavLink href="/admin/audit">
+              <AuditIcon />
+              Audit log
+            </NavLink>
+          </>
+        )}
+        {showConfig && (
           <>
             <span className="nav-group">Infrastructure</span>
             <NavLink href="/admin/connectors">
@@ -65,16 +77,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <SitesIcon />
               Sites
             </NavLink>
-            <NavLink href="/admin/notifications">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-              Notifications
-              {unreadNotifications > 0 && <span className="nav-badge">{unreadNotifications}</span>}
-            </NavLink>
             <NavLink href="/admin/email">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
               Email
             </NavLink>
-            <span className="nav-group">People &amp; audit</span>
+            <span className="nav-group">People</span>
             <NavLink href="/admin/users">
               <UsersIcon />
               Users
@@ -87,10 +94,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <SessionsIcon />
               Sessions
             </NavLink>
-            <NavLink href="/admin/audit">
-              <AuditIcon />
-              Audit log
-            </NavLink>
           </>
         )}
         <span className="nav-group">Account</span>
@@ -100,14 +103,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </NavLink>
         <div className="nav-foot">
           <span className="nav-user">
-            {user.name} · {ROLE_LABEL[user.role] ?? user.role}
+            {user.name} · {ROLE_LABELS[user.role] ?? user.role}
           </span>
           <ThemeToggle />
           <LogoutButton />
         </div>
       </aside>
       <div className="main-col">
-        <Topbar records={searchRecords} admin={admin} />
+        <Topbar records={searchRecords} role={user.role} />
         <main className="content">{children}</main>
       </div>
     </div>

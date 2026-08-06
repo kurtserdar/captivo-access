@@ -2,21 +2,23 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import type { Role } from "@/generated/prisma/enums";
+import { can, type Capability } from "@/lib/auth/roles";
 import type { SearchRecord } from "@/lib/search";
 import { filterCommandItems, type CommandItem } from "@/lib/command";
 
-const PAGES: { label: string; href: string; admin: boolean }[] = [
-  { label: "Overview", href: "/", admin: false },
-  { label: "My access", href: "/access", admin: false },
-  { label: "Grants", href: "/admin/grants", admin: true },
-  { label: "Connectors", href: "/admin/connectors", admin: true },
-  { label: "Sites", href: "/admin/sites", admin: true },
-  { label: "Notifications", href: "/admin/notifications", admin: true },
-  { label: "Users", href: "/admin/users", admin: true },
-  { label: "Invites", href: "/admin/invites", admin: true },
-  { label: "Sessions", href: "/admin/sessions", admin: true },
-  { label: "Audit log", href: "/admin/audit", admin: true },
-  { label: "Settings", href: "/settings/passkeys", admin: false },
+const PAGES: { label: string; href: string; cap: Capability | null }[] = [
+  { label: "Overview", href: "/", cap: null },
+  { label: "My access", href: "/access", cap: null },
+  { label: "Grants", href: "/admin/grants", cap: "read_console" },
+  { label: "Connectors", href: "/admin/connectors", cap: "configure" },
+  { label: "Sites", href: "/admin/sites", cap: "configure" },
+  { label: "Notifications", href: "/admin/notifications", cap: "read_console" },
+  { label: "Users", href: "/admin/users", cap: "configure" },
+  { label: "Invites", href: "/admin/invites", cap: "configure" },
+  { label: "Sessions", href: "/admin/sessions", cap: "configure" },
+  { label: "Audit log", href: "/admin/audit", cap: "read_console" },
+  { label: "Settings", href: "/settings/passkeys", cap: null },
 ];
 const GROUP_FOR: Record<SearchRecord["type"], CommandItem["group"]> = {
   site: "Sites",
@@ -36,21 +38,21 @@ function getIsMacServerSnapshot() {
   return false;
 }
 
-export function CommandPalette({ records, admin }: { records: SearchRecord[]; admin: boolean }) {
+export function CommandPalette({ records, role }: { records: SearchRecord[]; role: Role }) {
   const [open, setOpen] = useState(false);
   // useSyncExternalStore (rather than a mount-effect + setState) avoids both
   // a hydration mismatch and an effect-triggered re-render.
   const isMac = useSyncExternalStore(subscribeNever, getIsMacSnapshot, getIsMacServerSnapshot);
 
   const items: CommandItem[] = useMemo(() => {
-    const pages: CommandItem[] = PAGES.filter((p) => admin || !p.admin).map((p) => ({
+    const pages: CommandItem[] = PAGES.filter((p) => p.cap === null || can(role, p.cap)).map((p) => ({
       id: `page:${p.href}`, label: p.label, sub: null, href: p.href, group: "Pages",
     }));
     const recs: CommandItem[] = records.map((r) => ({
       id: `${r.type}:${r.id}`, label: r.label, sub: r.sub, href: r.href, group: GROUP_FOR[r.type],
     }));
     return [...pages, ...recs];
-  }, [records, admin]);
+  }, [records, role]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
