@@ -2,6 +2,7 @@ import { requireCapability } from "@/lib/current-user";
 import { promises as dns } from "node:dns";
 import { accessDomain, wildcardRecord } from "@/lib/domain/custom-domain";
 import { DomainVerifier } from "./domain-verifier";
+import { CopyButton } from "@/app/(app)/_shell/copy-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Custom domain" };
@@ -33,7 +34,10 @@ export default async function AdminDomainPage() {
       <div className="card">
         <div className="card-head"><h2>1. Add this DNS record</h2></div>
         <p>At your DNS provider, add a single record — it covers every current and future app subdomain:</p>
-        <pre className="code"><code>{record}    A    {ip}</code></pre>
+        <div className="row-actions">
+          <pre className="code"><code>{record}    A    {ip}</code></pre>
+          {domain && <CopyButton value={record} label="Copy record" />}
+        </div>
         {!domain && (
           <p className="cell-sub">
             Set <code>MANAGER_PUBLIC_URL</code> (e.g. https://manager.access.yourcompany.com) so we can show your exact values.

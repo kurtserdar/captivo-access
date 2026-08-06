@@ -5,6 +5,7 @@ import { timeAgo } from "@/lib/format";
 import { SiteForm } from "./site-form";
 import { TestConnectionButton } from "./test-connection-button";
 import { DeleteSiteButton } from "./delete-site-button";
+import { CopyButton } from "@/app/(app)/_shell/copy-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Sites" };
@@ -81,9 +82,21 @@ export default async function AdminSitesPage() {
               {sites.map((s) => (
                 <tr key={s.id}>
                   <td>{s.name}</td>
-                  <td className="cell-sub">{s.hostname}</td>
+                  <td className="cell-sub">
+                    <div className="row-actions">
+                      {s.hostname}
+                      <CopyButton value={s.hostname} label="Copy" />
+                    </div>
+                  </td>
                   <td>{s.connector.name}</td>
-                  <td className="cell-sub">{s.upstreamUrl}</td>
+                  <td className="cell-sub">
+                    {s.upstreamUrl && (
+                      <div className="row-actions">
+                        {s.upstreamUrl}
+                        <CopyButton value={s.upstreamUrl} label="Copy" />
+                      </div>
+                    )}
+                  </td>
                   <td className="cell-sub">{s.description ?? "—"}</td>
                   <td>
                     {s.upstreamUrl == null ? (
