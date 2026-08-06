@@ -10,6 +10,20 @@ const MESSAGES: Record<string, { ok: boolean; msg: string }> = {
   undetermined: { ok: false, msg: "Couldn't determine your domain — set MANAGER_PUBLIC_URL first." },
 };
 
+// When the domain is set but the manager hostname has no A record yet, the
+// "set MANAGER_PUBLIC_URL first" advice is wrong — steer to DNS/propagation.
+const UNDETERMINED_BY_REASON: Record<string, { ok: boolean; msg: string }> = {
+  manager_unresolved: { ok: false, msg: "Your manager hostname isn't resolving yet — check its DNS and propagation." },
+};
+
+function messageFor(result: Result): { ok: boolean; msg: string } {
+  if (result.status === "undetermined" && result.reason) {
+    const byReason = UNDETERMINED_BY_REASON[result.reason];
+    if (byReason) return byReason;
+  }
+  return MESSAGES[result.status] ?? { ok: false, msg: "Verification failed — try again." };
+}
+
 export function DomainVerifier({ canVerify }: { canVerify: boolean }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
@@ -27,7 +41,7 @@ export function DomainVerifier({ canVerify }: { canVerify: boolean }) {
     }
   }
 
-  const m = result ? MESSAGES[result.status] ?? { ok: false, msg: "Verification failed — try again." } : null;
+  const m = result ? messageFor(result) : null;
 
   return (
     <div>
