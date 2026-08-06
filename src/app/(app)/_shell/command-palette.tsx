@@ -115,6 +115,8 @@ function PaletteOverlay({ items, onClose }: { items: CommandItem[]; onClose: () 
     } else if (e.key === "Escape") {
       e.preventDefault();
       onClose();
+    } else if (e.key === "Tab") {
+      e.preventDefault();
     }
   }
 
@@ -141,7 +143,7 @@ function PaletteOverlay({ items, onClose }: { items: CommandItem[]; onClose: () 
           onChange={onQueryChange}
           onKeyDown={onInputKey}
         />
-        <div className="cmd-results">
+        <div className="cmd-results" role="listbox" aria-label="Results">
           {results.length === 0 ? (
             <div className="cmd-empty">No matches.</div>
           ) : (
@@ -152,6 +154,8 @@ function PaletteOverlay({ items, onClose }: { items: CommandItem[]; onClose: () 
                   <button
                     key={item.id}
                     className={`cmd-item${index === active ? " active" : ""}`}
+                    role="option"
+                    aria-selected={index === active}
                     onMouseMove={() => setActive(index)}
                     onClick={() => select(item)}
                   >

@@ -11,7 +11,7 @@ export function NavLink({ href, children }: { href: string; children: ReactNode 
   const active = pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <Link href={href} className={active ? "nav-link active" : "nav-link"}>
+    <Link href={href} className={active ? "nav-link active" : "nav-link"} aria-current={active ? "page" : undefined}>
       {children}
     </Link>
   );
