@@ -45,7 +45,7 @@ export default async function AdminGrantsPage() {
   const [users, sites, grants, pending] = await Promise.all([
     db.user.findMany({
       select: { id: true, name: true, email: true, role: true },
-      orderBy: [{ role: "desc" }, { name: "asc" }], // VENDOR before ADMIN
+      orderBy: [{ role: "desc" }, { name: "asc" }], // connect-only roles (Vendor/Staff) first, Admin last
     }),
     db.site.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     listGrants(),
