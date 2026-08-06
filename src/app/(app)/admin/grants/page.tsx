@@ -1,4 +1,5 @@
-import { requireAdmin } from "@/lib/current-user";
+import { requireCapability } from "@/lib/current-user";
+import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { listGrants, listPendingGrants } from "@/lib/access/grants";
 import { classifyGrant, type DecisionReason } from "@/lib/access/evaluate";
@@ -38,7 +39,8 @@ const REASON_PILL: Record<DecisionReason, string> = {
 };
 
 export default async function AdminGrantsPage() {
-  await requireAdmin();
+  const user = await requireCapability("read_console");
+  const canApprove = can(user.role, "approve_grants");
 
   const [users, sites, grants, pending] = await Promise.all([
     db.user.findMany({
@@ -77,7 +79,7 @@ export default async function AdminGrantsPage() {
                       {(() => { const s = parseSchedule(p.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
                     </td>
                     <td className="cell-sub">{p.note ?? "—"}</td>
-                    <td><DecisionButtons grantId={p.id} /></td>
+                    <td>{canApprove ? <DecisionButtons grantId={p.id} /> : <span className="cell-sub">—</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -86,16 +88,18 @@ export default async function AdminGrantsPage() {
         </div>
       )}
 
-      <div className="card">
-        <div className="card-head">
-          <h2>New grant</h2>
+      {canApprove && (
+        <div className="card">
+          <div className="card-head">
+            <h2>New grant</h2>
+          </div>
+          {users.length === 0 || sites.length === 0 ? (
+            <p>Add a user and a site before creating a grant.</p>
+          ) : (
+            <GrantForm users={users} sites={sites} />
+          )}
         </div>
-        {users.length === 0 || sites.length === 0 ? (
-          <p>Add a user and a site before creating a grant.</p>
-        ) : (
-          <GrantForm users={users} sites={sites} />
-        )}
-      </div>
+      )}
 
       <h2>Grants</h2>
       {grants.length === 0 ? (
@@ -136,7 +140,7 @@ export default async function AdminGrantsPage() {
                     <td>
                       {/* A revoked or denied grant is terminal — no Revoke action (revoking a
                           denied grant would collapse the denied-vs-revoked audit distinction). */}
-                      {reason === "revoked" || reason === "denied" ? (
+                      {!canApprove || reason === "revoked" || reason === "denied" ? (
                         <span className="cell-sub">{status}</span>
                       ) : (
                         <RevokeGrantButton id={g.id} />

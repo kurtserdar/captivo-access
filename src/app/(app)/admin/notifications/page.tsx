@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/current-user";
+import { requireCapability } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { timeAgo } from "@/lib/format";
 import { MarkReadButton } from "./mark-read-button";
@@ -6,7 +6,7 @@ import { MarkReadButton } from "./mark-read-button";
 export const dynamic = "force-dynamic";
 
 export default async function AdminNotificationsPage() {
-  await requireAdmin();
+  await requireCapability("read_console");
 
   const notifications = await db.notification.findMany({
     orderBy: { createdAt: "desc" },

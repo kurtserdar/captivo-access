@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/current-user";
+import { requireCapability } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { listAuditEvents } from "@/lib/audit/query";
 import { AuditTable, type AuditRowJSON } from "./audit-table";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const INITIAL_LIMIT = 50;
 
 export default async function AdminAuditPage() {
-  await requireAdmin();
+  await requireCapability("read_console");
 
   const [users, sites, { rows, total }] = await Promise.all([
     db.user.findMany({
