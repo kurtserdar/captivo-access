@@ -4,6 +4,7 @@ import { useState } from "react";
 import { filterUsers, type UserFilter } from "@/lib/admin/filter-users";
 import { ROLE_LABELS, ASSIGNABLE_ROLES } from "@/lib/auth/roles";
 import { ToggleStatusButton } from "./toggle-status-button";
+import { RoleSelect } from "./role-select";
 
 export type UserRow = {
   id: string;
@@ -99,7 +100,7 @@ export function UsersTable({ users, initialQuery }: { users: UserRow[]; initialQ
                     <div>{u.company ?? "—"}</div>
                     {u.phone && <div className="cell-sub">{u.phone}</div>}
                   </td>
-                  <td>{ROLE_LABELS[u.role as keyof typeof ROLE_LABELS] ?? u.role}</td>
+                  <td><RoleSelect userId={u.id} role={u.role} disabled={u.isSelf} /></td>
                   <td>
                     <span className={`pill ${STATUS_PILL[u.status] ?? "neutral"}`}>
                       {STATUS_LABEL[u.status] ?? u.status}

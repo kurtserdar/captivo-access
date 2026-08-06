@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
-import { can } from "@/lib/auth/roles";
+import { can, ASSIGNABLE_ROLES } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { UserStatus } from "@/generated/prisma/enums";
 
@@ -17,14 +17,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const status = typeof body.status === "string" ? body.status : "";
-  if (!status || !VALID_STATUSES.includes(status)) {
+
+  const status = typeof body.status === "string" ? body.status : undefined;
+  const role = typeof body.role === "string" ? body.role : undefined;
+
+  if (!status && !role) {
+    return NextResponse.json({ error: "nothing_to_update" }, { status: 400 });
+  }
+
+  // Validate status if provided
+  if (status !== undefined && !VALID_STATUSES.includes(status)) {
     return NextResponse.json({ error: "invalid_status" }, { status: 400 });
   }
 
   // Self-disable guard: risk of locking out the last admin account.
-  if (id === admin.id && status === "DISABLED") {
+  if (status !== undefined && id === admin.id && status === "DISABLED") {
     return NextResponse.json({ error: "cannot_disable_self" }, { status: 403 });
+  }
+
+  // Validate and apply role if provided
+  if (role !== undefined) {
+    if (!ASSIGNABLE_ROLES.includes(role as (typeof ASSIGNABLE_ROLES)[number])) {
+      return NextResponse.json({ error: "invalid_role" }, { status: 400 });
+    }
+    if (id === admin.id) {
+      return NextResponse.json({ error: "cannot_change_own_role" }, { status: 403 });
+    }
   }
 
   const target = await db.user.findUnique({ where: { id }, select: { id: true } });
@@ -32,6 +50,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  await db.user.update({ where: { id }, data: { status: status as UserStatus } });
+  const updateData: Record<string, unknown> = {};
+  if (status !== undefined) {
+    updateData.status = status as UserStatus;
+  }
+  if (role !== undefined) {
+    updateData.role = role as (typeof ASSIGNABLE_ROLES)[number];
+  }
+
+  await db.user.update({ where: { id }, data: updateData });
   return NextResponse.json({ ok: true });
 }
