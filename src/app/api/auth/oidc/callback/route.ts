@@ -83,14 +83,16 @@ export async function GET(req: NextRequest) {
   const email = checked.email;
 
   // Provisioning (spec §5): existing ACTIVE user, else redeem an invite, else reject.
-  const user = await db.user.findUnique({ where: { email } });
+  const user = await db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
   if (user) {
     if (user.status !== "ACTIVE") return fail(req, "disabled");
     await startSession(user.id, req);
     return NextResponse.redirect(new URL(safeReturnTo(saved.returnTo), req.nextUrl));
   }
 
-  const invite = await db.invite.findFirst({ where: { email, usedAt: null, expiresAt: { gt: new Date() } } });
+  const invite = await db.invite.findFirst({
+    where: { email: { equals: email, mode: "insensitive" }, usedAt: null, expiresAt: { gt: new Date() } },
+  });
   if (!invite) return fail(req, "no_account");
 
   // Atomically consume the invite; a race (or a passkey enrollment in flight)
@@ -100,7 +102,7 @@ export async function GET(req: NextRequest) {
 
   const created = await db.user.create({
     data: {
-      email,
+      email: invite.email,
       name: invite.name || claims.name || email.split("@")[0],
       role: invite.role,
       status: "ACTIVE",

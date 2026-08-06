@@ -54,7 +54,7 @@ function sessionMaxAgeSeconds(): number {
 export async function startSession(userId: string, req: NextRequest): Promise<void> {
   const meta = {
     userAgent: req.headers.get("user-agent") ?? undefined,
-    ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+    ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? undefined,
   };
   const token = await createSession(userId, meta);
   (await cookies()).set(SESSION_COOKIE, token, {
