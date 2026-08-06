@@ -128,9 +128,9 @@ services:
       - "443:443"
     environment:
       ACCESS_DOMAIN: ${ACCESS_DOMAIN:?required}
-      # Optional: only needed if you uncomment the wildcard DNS-01 TLS block
-      # in Caddyfile (requires a custom Caddy build with a DNS plugin — see
-      # deploy/README.md and the comments in Caddyfile).
+      # Optional: only needed if you switch the wildcard block in Caddyfile
+      # from On-Demand TLS to the DNS-01 directive (requires a custom Caddy
+      # build with a DNS plugin — see deploy/README.md and the Caddyfile).
       DNS_API_TOKEN: ${DNS_API_TOKEN:-}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro

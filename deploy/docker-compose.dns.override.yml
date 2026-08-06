@@ -1,7 +1,10 @@
 # Opt-in override: swap the stock caddy:2-alpine for a custom Caddy image with
-# an ACME DNS-01 provider plugin, so Caddy can issue a WILDCARD cert for
-# *.<ACCESS_DOMAIN>. Without this, the prod stack uses stock Caddy (HTTP-01
-# only) and you'd need one host block per site.
+# an ACME DNS-01 provider plugin, so Caddy can issue a single WILDCARD cert for
+# *.<ACCESS_DOMAIN>. By default the prod stack uses stock Caddy, which issues a
+# per-app cert automatically via On-Demand TLS (HTTP-01, no plugin). Use this
+# override only for very large deployments that would hit Let's Encrypt's
+# per-domain new-cert rate limit — the one wildcard cert avoids per-app issuance.
+# See deploy/README.md "Wildcard TLS".
 #
 # Use it ALONGSIDE the prod compose (both -f flags), so the base stack is
 # unchanged and this only overrides the caddy service:
@@ -12,7 +15,9 @@
 #   1. Point your access-subdomain DNS at a host with an API (Cloudflare
 #      full-zone, or deSEC subdomain) — see deploy/README.md "Wildcard TLS".
 #   2. Set DNS_API_TOKEN in .env (and CADDY_DNS_MODULE below if not Cloudflare).
-#   3. Uncomment the *.{$ACCESS_DOMAIN} block in Caddyfile.
+#   3. In Caddyfile, replace `tls { on_demand }` with `tls { dns cloudflare {$DNS_API_TOKEN} }`
+#      in the *.{$ACCESS_DOMAIN} block (for deSEC: `dns desec {$DNS_API_TOKEN}`).
+#      You can also drop the global on_demand_tls block once nothing uses on_demand.
 
 name: captivo-access-prod
 
