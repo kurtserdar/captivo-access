@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 function decodedByteLength(base64: string): number {
   try {
@@ -11,6 +12,7 @@ function decodedByteLength(base64: string): number {
 }
 
 export function TestConnectionButton({ siteId }: { siteId: string }) {
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
@@ -34,6 +36,7 @@ export function TestConnectionButton({ siteId }: { siteId: string }) {
       setResult("Couldn't reach the test endpoint, please try again.");
     } finally {
       setBusy(false);
+      router.refresh();
     }
   }
 

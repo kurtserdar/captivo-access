@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { proxyThroughConnector } from "@/lib/connector/dataplane";
+import { probeSite } from "@/lib/connector/health";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
@@ -42,6 +43,14 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     connectorId: site.connectorId,
     upstreamUrl: site.upstreamUrl,
     insecureSkipVerify: site.insecureSkipVerify,
+  });
+
+  // Refresh the persisted Health column with a fresh probe so the row pill
+  // agrees with this manual test instead of lagging until the hourly cron.
+  const probe = await probeSite({ connectorId: site.connectorId, upstreamUrl: site.upstreamUrl });
+  await db.site.update({
+    where: { id },
+    data: { probedAt: new Date(), probeOk: probe.probeOk, probeDetail: probe.probeDetail, probeLatencyMs: probe.probeLatencyMs },
   });
 
   return NextResponse.json(result);
