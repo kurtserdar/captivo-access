@@ -13,6 +13,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (!invite) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (invite.usedAt) return NextResponse.json({ error: "already_used" }, { status: 409 });
 
-  await db.invite.delete({ where: { id } });
+  // Atomically delete only if still pending: if it was enrolled between the
+  // read above and here, deleteMany matches 0 rows and we bail — never
+  // deleting an invite that has since been consumed.
+  const deleted = await db.invite.deleteMany({ where: { id, usedAt: null } });
+  if (deleted.count === 0) return NextResponse.json({ error: "already_used" }, { status: 409 });
+
   return NextResponse.json({ ok: true });
 }

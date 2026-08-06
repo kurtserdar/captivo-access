@@ -79,7 +79,7 @@ export default async function AdminInvitesPage() {
                     <td className="cell-sub">{inv.expiresAt.toLocaleString("en-US")}</td>
                     <td>
                       {status !== "Used" && (
-                        <div className="flex gap-2">
+                        <div className="row-actions">
                           <ResendInviteButton id={inv.id} email={inv.email} />
                           <CancelInviteButton id={inv.id} email={inv.email} />
                         </div>
