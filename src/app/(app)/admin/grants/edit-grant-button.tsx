@@ -1,0 +1,95 @@
+"use client";
+
+import { useState } from "react";
+
+// ISO → value for <input type="datetime-local"> in the browser's local zone.
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export function EditGrantButton({ id, endsAt, note }: { id: string; endsAt: string | null; note: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [endsAtLocal, setEndsAtLocal] = useState(toLocalInput(endsAt));
+  const [noteValue, setNoteValue] = useState(note ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    setError(null);
+    setBusy(true);
+    try {
+      const payload: { endsAt?: string; note: string } = { note: noteValue };
+      if (endsAtLocal) {
+        const d = new Date(endsAtLocal);
+        if (Number.isNaN(d.getTime())) {
+          setError("Enter a valid end date.");
+          setBusy(false);
+          return;
+        }
+        payload.endsAt = d.toISOString();
+      }
+      const res = await fetch(`/api/admin/grants/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result?.ok) {
+        setError("Couldn't save — the end date must be in the future, or the grant is no longer active.");
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setError("Couldn't save, please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" className="btn sm" onClick={() => setOpen(true)}>
+        Edit
+      </button>
+    );
+  }
+
+  return (
+    <div>
+      <div className="field">
+        <label className="field-label" htmlFor={`edit-ends-${id}`}>End date</label>
+        <input
+          id={`edit-ends-${id}`}
+          type="datetime-local"
+          className="input"
+          value={endsAtLocal}
+          onChange={(e) => setEndsAtLocal(e.target.value)}
+        />
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor={`edit-note-${id}`}>Note</label>
+        <input
+          id={`edit-note-${id}`}
+          type="text"
+          className="input"
+          value={noteValue}
+          maxLength={500}
+          onChange={(e) => setNoteValue(e.target.value)}
+        />
+      </div>
+      <div className="row-actions">
+        <button type="button" className="btn sm" onClick={save} disabled={busy}>
+          {busy ? "Saving…" : "Save"}
+        </button>
+        <button type="button" className="btn sm" onClick={() => setOpen(false)} disabled={busy}>
+          Cancel
+        </button>
+      </div>
+      {error && <p className="notice error" role="alert">{error}</p>}
+    </div>
+  );
+}

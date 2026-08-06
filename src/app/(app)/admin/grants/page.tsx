@@ -6,6 +6,7 @@ import { classifyGrant, type DecisionReason } from "@/lib/access/evaluate";
 import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
 import { GrantForm } from "./grant-form";
 import { RevokeGrantButton } from "./revoke-grant-button";
+import { EditGrantButton } from "./edit-grant-button";
 import { TestAccessWidget } from "./test-access-widget";
 import { DecisionButtons } from "./decision-buttons";
 
@@ -42,6 +43,7 @@ const REASON_PILL: Record<DecisionReason, string> = {
 export default async function AdminGrantsPage() {
   const user = await requireCapability("read_console");
   const canApprove = can(user.role, "approve_grants");
+  const canConfigure = can(user.role, "configure");
 
   const [users, sites, grants, pending] = await Promise.all([
     db.user.findMany({
@@ -139,13 +141,17 @@ export default async function AdminGrantsPage() {
                       <span className={`pill ${REASON_PILL[reason]}`}>{status}</span>
                     </td>
                     <td>
-                      {/* A revoked or denied grant is terminal — no Revoke action (revoking a
-                          denied grant would collapse the denied-vs-revoked audit distinction). */}
-                      {!canApprove || reason === "revoked" || reason === "denied" ? (
-                        <span className="cell-sub">{status}</span>
-                      ) : (
-                        <RevokeGrantButton id={g.id} />
-                      )}
+                      <div className="row-actions">
+                        {canConfigure && g.status === "ACTIVE" && (
+                          <EditGrantButton id={g.id} endsAt={g.endsAt ? g.endsAt.toISOString() : null} note={g.note} />
+                        )}
+                        {/* A revoked or denied grant is terminal — no Revoke action. */}
+                        {!canApprove || reason === "revoked" || reason === "denied" ? (
+                          <span className="cell-sub">{status}</span>
+                        ) : (
+                          <RevokeGrantButton id={g.id} />
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
