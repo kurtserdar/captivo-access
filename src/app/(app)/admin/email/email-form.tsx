@@ -38,6 +38,16 @@ export function EmailForm({ initial, adminEmail }: { initial: Initial; adminEmai
     setBusy(true);
     setNotice(null);
     try {
+      const saveRes = await fetch("/api/admin/smtp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ host, port: Number(port), secure, username, password, fromName, fromEmail, enabled }),
+      });
+      if (!saveRes.ok) {
+        setNotice({ kind: "error", msg: "Couldn't save — check the fields." });
+        return;
+      }
+      setPassword("");
       const res = await fetch("/api/admin/smtp/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -45,12 +55,12 @@ export function EmailForm({ initial, adminEmail }: { initial: Initial; adminEmai
       });
       const r = (await res.json().catch(() => ({}))) as { sent?: boolean; reason?: string };
       const messages: Record<string, string> = {
-        disabled: "Saved, but email is turned off — tick “Enabled” and save first.",
+        disabled: "Saved, but email is turned off — tick 'Enabled' and save first.",
         not_configured: "Configure and save your SMTP settings first.",
       };
       setNotice(
         r.sent
-          ? { kind: "ok", msg: `Test email sent to ${testTo}.` }
+          ? { kind: "ok", msg: `Saved. Test email sent to ${testTo}.` }
           : { kind: "error", msg: (r.reason && messages[r.reason]) || `Test failed: ${r.reason ?? "unknown"}.` },
       );
     } finally { setBusy(false); }
@@ -83,7 +93,7 @@ export function EmailForm({ initial, adminEmail }: { initial: Initial; adminEmai
       {notice && <p className={`notice ${notice.kind === "ok" ? "success" : "error"}`} role="alert">{notice.msg}</p>}
       <div className="row-actions">
         <button type="submit" className="btn primary" disabled={busy}>{busy ? "…" : "Save"}</button>
-        <button type="button" className="btn" onClick={sendTest} disabled={busy}>Send test email</button>
+        <button type="button" className="btn" onClick={sendTest} disabled={busy}>{busy ? "…" : "Save & send test"}</button>
       </div>
     </form>
   );
