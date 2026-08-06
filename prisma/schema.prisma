@@ -239,3 +239,15 @@ model Notification {
   @@index([readAt])
   @@index([createdAt])
 }
+
+// Singleton (id = "singleton") holding OIDC SSO configuration.
+model OidcConfig {
+  id           String   @id
+  enabled      Boolean  @default(false)
+  issuer       String
+  clientId     String
+  clientSecret String                  // encrypted at rest (lib/crypto)
+  buttonLabel  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
