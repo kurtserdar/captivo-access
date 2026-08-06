@@ -88,6 +88,8 @@ a{color:inherit;}
 .phone-input .select{width:auto;flex:none;}
 .phone-input .input{flex:1;}
 
+.filters{display:flex;gap:.5rem;flex-wrap:wrap;margin:.6rem 0;}
+
 /* ---- table ---- */
 .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-lg);}
 .table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;}

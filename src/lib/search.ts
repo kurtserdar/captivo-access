@@ -17,6 +17,12 @@ export async function getSearchRecords(): Promise<SearchRecord[]> {
   return [
     ...sites.map((s) => ({ id: s.id, type: "site" as const, label: s.name, sub: s.hostname, href: "/admin/sites" })),
     ...connectors.map((c) => ({ id: c.id, type: "connector" as const, label: c.name, sub: null, href: "/admin/connectors" })),
-    ...users.map((u) => ({ id: u.id, type: "user" as const, label: u.name, sub: u.email, href: "/admin/users" })),
+    ...users.map((u) => ({
+      id: u.id,
+      type: "user" as const,
+      label: u.name,
+      sub: u.email,
+      href: `/admin/users?q=${encodeURIComponent(u.email)}`,
+    })),
   ];
 }
