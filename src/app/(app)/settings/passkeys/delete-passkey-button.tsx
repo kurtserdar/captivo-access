@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
 function errorMessage(code: string | undefined): string {
   switch (code) {
@@ -18,9 +19,10 @@ function errorMessage(code: string | undefined): string {
 export function DeletePasskeyButton({ id, disabled }: { id: string; disabled: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   async function handleClick() {
-    if (!window.confirm("Are you sure you want to delete this passkey?")) return;
+    if (!(await confirm("Are you sure you want to delete this passkey?", { danger: true }))) return;
 
     setError(null);
     setBusy(true);
@@ -40,21 +42,24 @@ export function DeletePasskeyButton({ id, disabled }: { id: string; disabled: bo
   }
 
   return (
-    <span>
-      <button
-        type="button"
-        className="btn sm danger"
-        onClick={handleClick}
-        disabled={busy || disabled}
-        title={disabled ? "You can't delete your last passkey" : undefined}
-      >
-        {busy ? "Deleting…" : "Delete"}
-      </button>
-      {error && (
-        <p className="notice error" role="alert">
-          {error}
-        </p>
-      )}
-    </span>
+    <>
+      {dialog}
+      <span>
+        <button
+          type="button"
+          className="btn sm danger"
+          onClick={handleClick}
+          disabled={busy || disabled}
+          title={disabled ? "You can't delete your last passkey" : undefined}
+        >
+          {busy ? "Deleting…" : "Delete"}
+        </button>
+        {error && (
+          <p className="notice error" role="alert">
+            {error}
+          </p>
+        )}
+      </span>
+    </>
   );
 }

@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
 export function RemoveRecoveryButton() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   async function handleClick() {
-    if (!window.confirm("Are you sure you want to remove the recovery code?")) return;
+    if (!(await confirm("Are you sure you want to remove the recovery code?", { danger: true }))) return;
 
     setError(null);
     setBusy(true);
@@ -28,6 +30,7 @@ export function RemoveRecoveryButton() {
 
   return (
     <div>
+      {dialog}
       {error && (
         <p className="notice error" role="alert">
           {error}
