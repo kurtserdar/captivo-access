@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { createGrant, listGrants, revokeGrant } from "@/lib/access/grants";
 import { validateSchedule, type Schedule } from "@/lib/access/schedule";
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (admin.role !== "ADMIN") {
+  if (!can(admin.role, "approve_grants")) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
@@ -72,7 +73,7 @@ export async function GET() {
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (admin.role !== "ADMIN") {
+  if (!can(admin.role, "read_console")) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
@@ -85,7 +86,7 @@ export async function DELETE(req: NextRequest) {
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (admin.role !== "ADMIN") {
+  if (!can(admin.role, "approve_grants")) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

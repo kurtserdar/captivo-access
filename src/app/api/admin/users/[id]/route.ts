@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { UserStatus } from "@/generated/prisma/enums";
 
@@ -10,7 +11,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (admin.role !== "ADMIN") {
+  if (!can(admin.role, "configure")) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 
 export async function POST() {
@@ -7,7 +8,7 @@ export async function POST() {
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (admin.role !== "ADMIN") {
+  if (!can(admin.role, "read_console")) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

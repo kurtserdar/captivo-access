@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { verifyChain, type StoredEvent } from "@/lib/audit/verify";
@@ -11,7 +12,7 @@ const PAGE = 1000;
 export async function GET() {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (admin.role !== "ADMIN") return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!can(admin.role, "read_console")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   // Snapshot the chain head first so a concurrent ingest appending newer
   // events while we page can't cause a false head-mismatch: bound the page

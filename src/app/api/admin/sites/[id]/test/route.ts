@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { proxyThroughConnector } from "@/lib/connector/dataplane";
 
@@ -8,7 +9,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (admin.role !== "ADMIN") {
+  if (!can(admin.role, "configure")) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

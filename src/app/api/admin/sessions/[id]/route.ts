@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { can } from "@/lib/auth/roles";
 import { revokeSession } from "@/lib/auth/session";
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -7,7 +8,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (admin.role !== "ADMIN") {
+  if (!can(admin.role, "configure")) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

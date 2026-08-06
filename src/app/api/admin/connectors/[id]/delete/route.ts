@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { canDeleteConnector } from "@/lib/connector/deletion";
 
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (admin.role !== "ADMIN") return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const { id } = await ctx.params;
   const connector = await db.connector.findUnique({

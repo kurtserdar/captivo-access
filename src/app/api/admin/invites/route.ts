@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { can } from "@/lib/auth/roles";
 import { createInvite } from "@/lib/auth/invite";
 import { managerBaseUrl } from "@/lib/url";
 import { getSmtpConfig, sendMail } from "@/lib/email/mailer";
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (admin.role !== "ADMIN") {
+  if (!can(admin.role, "configure")) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

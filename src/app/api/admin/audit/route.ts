@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { can } from "@/lib/auth/roles";
 import { listAuditEvents, type AuditFilter } from "@/lib/audit/query";
 
 const MAX_LIMIT = 200;
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (admin.role !== "ADMIN") {
+  if (!can(admin.role, "read_console")) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
