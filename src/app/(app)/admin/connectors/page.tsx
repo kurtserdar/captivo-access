@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { ConnectorForm } from "./connector-form";
+import { ConnectorName } from "./connector-name";
 import { DeleteConnectorButton } from "./delete-connector-button";
 import { RevokeConnectorButton } from "./revoke-connector-button";
 
@@ -66,7 +67,7 @@ export default async function AdminConnectorsPage() {
             <tbody>
               {connectors.map((c) => (
                 <tr key={c.id}>
-                  <td>{c.name}</td>
+                  <td><ConnectorName id={c.id} name={c.name} /></td>
                   <td>
                     <span className={`pill ${STATUS_PILL[c.status] ?? "neutral"}`}>
                       {STATUS_LABEL[c.status] ?? c.status}
