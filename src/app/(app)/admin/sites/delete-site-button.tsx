@@ -1,13 +1,15 @@
 "use client";
 import { useState } from "react";
+import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
 export function DeleteSiteButton({ id, name, grantCount }: { id: string; name: string; grantCount: number }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   async function handleClick() {
     const grants = grantCount === 1 ? "1 access grant" : `${grantCount} access grants`;
-    if (!window.confirm(`Delete site "${name}"? This also removes ${grants} and can't be undone.`)) return;
+    if (!(await confirm(`Delete site "${name}"? This also removes ${grants} and can't be undone.`, { danger: true }))) return;
     setError(null);
     setBusy(true);
     try {
@@ -26,11 +28,14 @@ export function DeleteSiteButton({ id, name, grantCount }: { id: string; name: s
   }
 
   return (
-    <span>
-      <button type="button" className="btn sm danger" onClick={handleClick} disabled={busy}>
-        {busy ? "Deleting…" : "Delete"}
-      </button>
-      {error && <p className="notice error" role="alert">{error}</p>}
-    </span>
+    <>
+      {dialog}
+      <span>
+        <button type="button" className="btn sm danger" onClick={handleClick} disabled={busy}>
+          {busy ? "Deleting…" : "Delete"}
+        </button>
+        {error && <p className="notice error" role="alert">{error}</p>}
+      </span>
+    </>
   );
 }

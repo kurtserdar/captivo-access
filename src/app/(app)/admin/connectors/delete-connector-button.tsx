@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
 const MESSAGES: Record<string, string> = {
   has_sites: "This connector still has sites — move or remove them under Sites first.",
@@ -9,9 +10,10 @@ const MESSAGES: Record<string, string> = {
 export function DeleteConnectorButton({ id, name }: { id: string; name: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   async function handleClick() {
-    if (!window.confirm(`Permanently delete connector "${name}"? This can't be undone.`)) return;
+    if (!(await confirm(`Permanently delete connector "${name}"? This can't be undone.`, { danger: true }))) return;
     setError(null);
     setBusy(true);
     try {
@@ -30,11 +32,14 @@ export function DeleteConnectorButton({ id, name }: { id: string; name: string }
   }
 
   return (
-    <span>
-      <button type="button" className="btn sm danger" onClick={handleClick} disabled={busy}>
-        {busy ? "Deleting…" : "Delete"}
-      </button>
-      {error && <p className="notice error" role="alert">{error}</p>}
-    </span>
+    <>
+      {dialog}
+      <span>
+        <button type="button" className="btn sm danger" onClick={handleClick} disabled={busy}>
+          {busy ? "Deleting…" : "Delete"}
+        </button>
+        {error && <p className="notice error" role="alert">{error}</p>}
+      </span>
+    </>
   );
 }
