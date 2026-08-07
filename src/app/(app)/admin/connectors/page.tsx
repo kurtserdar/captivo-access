@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { ConnectorForm } from "./connector-form";
 import { ConnectorName } from "./connector-name";
 import { DeleteConnectorButton } from "./delete-connector-button";
+import { RepairConnectorButton } from "./repair-connector-button";
 import { RevokeConnectorButton } from "./revoke-connector-button";
 
 export const dynamic = "force-dynamic";
@@ -77,7 +78,10 @@ export default async function AdminConnectorsPage() {
                   <td className="cell-sub">{c.version ?? "—"}</td>
                   <td>
                     {c.status !== "REVOKED" ? (
-                      <RevokeConnectorButton id={c.id} />
+                      <div className="row-actions">
+                        <RepairConnectorButton id={c.id} />
+                        <RevokeConnectorButton id={c.id} />
+                      </div>
                     ) : c._count.sites === 0 ? (
                       <DeleteConnectorButton id={c.id} name={c.name} />
                     ) : (
