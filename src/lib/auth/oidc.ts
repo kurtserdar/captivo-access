@@ -41,7 +41,7 @@ export function checkClaims(
   return { ok: true, email };
 }
 
-type Discovery = { authorization_endpoint: string; token_endpoint: string; jwks_uri: string; userinfo_endpoint?: string };
+type Discovery = { issuer: string; authorization_endpoint: string; token_endpoint: string; jwks_uri: string; userinfo_endpoint?: string };
 const discoveryCache = new Map<string, { at: number; doc: Discovery }>();
 const DISCOVERY_TTL_MS = 5 * 60 * 1000;
 
@@ -52,7 +52,10 @@ export async function discover(issuer: string): Promise<Discovery> {
   const res = await fetch(`${norm}/.well-known/openid-configuration`, { headers: { accept: "application/json" } });
   if (!res.ok) throw new Error(`discovery_failed_${res.status}`);
   const doc = (await res.json()) as Discovery;
-  if (!doc.authorization_endpoint || !doc.token_endpoint || !doc.jwks_uri) throw new Error("discovery_incomplete");
+  // `issuer` is the authoritative value the IdP stamps into every token's `iss`
+  // (it may differ from the configured issuer by a trailing slash — e.g. Auth0).
+  // The ID-token `iss` is verified against THIS, not the slash-stripped config.
+  if (!doc.issuer || !doc.authorization_endpoint || !doc.token_endpoint || !doc.jwks_uri) throw new Error("discovery_incomplete");
   discoveryCache.set(norm, { at: Date.now(), doc });
   return doc;
 }

@@ -53,4 +53,13 @@ describe("checkClaims", () => {
   it("rejects a missing email", () => {
     expect(checkClaims({ ...good, email: undefined }, base).ok).toBe(false);
   });
+  // The caller passes the discovery document's authoritative `issuer`, which for
+  // some IdPs (e.g. Auth0) carries a trailing slash. A trailing-slash iss must
+  // match a trailing-slash expected issuer exactly — and must NOT match the
+  // slash-stripped form (the bug this guards: never compare against a normalized issuer).
+  it("matches an issuer verbatim, trailing slash included (Auth0)", () => {
+    const slash = { issuer: "https://x.us.auth0.com/", clientId: "client-123", nonce: "n-abc" };
+    expect(checkClaims({ ...good, iss: "https://x.us.auth0.com/" }, slash).ok).toBe(true);
+    expect(checkClaims({ ...good, iss: "https://x.us.auth0.com" }, slash).ok).toBe(false);
+  });
 });

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify, createRemoteJWKSet } from "jose";
 import { db } from "@/lib/db";
 import { getOidcConfig, getOidcSecret } from "@/lib/auth/oidc-config";
-import { discover, checkClaims, normalizeIssuer, type IdClaims } from "@/lib/auth/oidc";
+import { discover, checkClaims, type IdClaims } from "@/lib/auth/oidc";
 import { readOidcState, clearOidcState } from "@/lib/auth/oidc-state";
 import { startSession } from "@/lib/auth/session";
 import { safeReturnTo } from "@/lib/auth/return-to";
@@ -78,7 +78,9 @@ export async function GET(req: NextRequest) {
   try {
     const JWKS = createRemoteJWKSet(new URL(disc.jwks_uri));
     const { payload } = await jwtVerify(tokens.id_token, JWKS, {
-      issuer: normalizeIssuer(cfg.issuer),
+      // Verify against the issuer the IdP declares in discovery — that is what
+      // it stamps into `iss` (Auth0 keeps a trailing slash the config strips).
+      issuer: disc.issuer,
       audience: cfg.clientId,
       algorithms: ["RS256", "ES256", "PS256"],
     });
@@ -88,7 +90,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Remaining claim checks (azp/nonce/email_verified) + email extraction.
-  const checked = checkClaims(claims, { issuer: normalizeIssuer(cfg.issuer), clientId: cfg.clientId, nonce: saved.nonce });
+  const checked = checkClaims(claims, { issuer: disc.issuer, clientId: cfg.clientId, nonce: saved.nonce });
   if (!checked.ok) return fail(req, "sso", `claim_check_failed: ${checked.reason}`);
   const email = checked.email;
 
