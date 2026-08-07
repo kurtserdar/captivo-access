@@ -15,7 +15,7 @@ export function buildAuditWhere(filter: AuditFilter): Prisma.AuditEventWhereInpu
     };
   }
   const q = filter.q?.trim();
-  if (q) {
+  if (q && q.length >= 2) {
     where.OR = [
       { path: { contains: q, mode: "insensitive" } },
       { host: { contains: q, mode: "insensitive" } },

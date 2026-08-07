@@ -24,6 +24,16 @@ describe("buildAuditWhere", () => {
   });
 });
 
+describe("buildAuditWhere q min-length", () => {
+  it("ignores a 1-character q (no OR search)", () => {
+    expect(buildAuditWhere({ q: "a", limit: 50, offset: 0 }).OR).toBeUndefined();
+    expect(buildAuditWhere({ q: "  a  ", limit: 50, offset: 0 }).OR).toBeUndefined();
+  });
+  it("applies the OR search for a 2+ character q", () => {
+    expect(buildAuditWhere({ q: "ab", limit: 50, offset: 0 }).OR).toHaveLength(5);
+  });
+});
+
 describe("parseAuditFilter", () => {
   it("reads q and clamps limit to maxLimit", () => {
     const sp = new URLSearchParams({ q: " test ", limit: "9999" });
