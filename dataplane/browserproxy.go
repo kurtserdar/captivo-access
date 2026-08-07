@@ -113,6 +113,13 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// WebSocket upgrades take a dedicated raw-relay path — they must branch
+	// here, before sanitizeReqHeaders strips the Upgrade/Connection headers.
+	if isWebSocketUpgrade(r) {
+		p.serveWebSocket(w, r, connectorID, siteID, userID, host, upstream, insecureSkipVerify)
+		return
+	}
+
 	// 4. Stream through the connector.
 	sess := p.reg.Get(connectorID)
 	if sess == nil || sess.mux == nil {
