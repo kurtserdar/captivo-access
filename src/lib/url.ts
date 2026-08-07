@@ -60,3 +60,9 @@ export function connectorTunnelUrl(): string {
   if (configured) return configured.replace(/\/+$/, "");
   return deriveTunnelUrl(process.env.MANAGER_PUBLIC_URL) ?? CONNECTOR_TUNNEL_PLACEHOLDER;
 }
+
+// True when the manager URL points at the local host — a connector on another
+// machine can't reach it (the admin is likely browsing via an SSH tunnel).
+export function isLocalManagerUrl(managerUrl: string): boolean {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(managerUrl);
+}

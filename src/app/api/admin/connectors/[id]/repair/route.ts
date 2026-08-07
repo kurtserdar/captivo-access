@@ -6,7 +6,7 @@ import { createPairing } from "@/lib/connector/enrollment";
 import { generateToken, hashToken } from "@/lib/auth/tokens";
 import { kickConnector } from "@/lib/connector/dataplane";
 import { canRepairConnector, buildReconfigureCommand } from "@/lib/connector/repair";
-import { managerBaseUrl, connectorTunnelUrl } from "@/lib/url";
+import { managerBaseUrl, connectorTunnelUrl, isLocalManagerUrl } from "@/lib/url";
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
   const managerUrl = managerBaseUrl(req);
   const reconfigureCommand = buildReconfigureCommand(code, managerUrl, connectorTunnelUrl());
-  const managerUrlIsLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(managerUrl);
+  const managerUrlIsLocal = isLocalManagerUrl(managerUrl);
 
   return NextResponse.json({ code, reconfigureCommand, managerUrlIsLocal });
 }
