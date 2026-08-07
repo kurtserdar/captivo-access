@@ -147,21 +147,14 @@ Caddy fetches the `manager.access.acme.com` and `connect.access.acme.com`
 certificates automatically over HTTP-01 (that's why ports 80/443 must be open).
 Give it a minute; `Ctrl-C` out of the logs once you see certificates obtained.
 
-## Step 6 — Push the database schema (once)
+## Step 6 — Schema migration (automatic)
 
-The images don't run migrations on their own. With Postgres healthy, push the
-schema once from a throwaway container on the same network (substitute your real
-`POSTGRES_PASSWORD`):
-
-```bash
-docker run --rm --network captivo-access-prod_default \
-  -e DATABASE_URL="postgresql://access:<POSTGRES_PASSWORD>@access-postgres:5432/captivo_access" \
-  -v "$PWD/../prisma:/app/prisma" -w /app \
-  node:20-alpine sh -c "corepack enable && npx --yes prisma db push --schema=prisma/schema.prisma"
-```
-
-You repeat this only for a fresh database, or after upgrading to a version whose
-release notes say the schema changed.
+You don't run anything here. The stack includes a one-shot `access-migrate`
+service that pushes the Prisma schema to Postgres automatically every time you
+`up -d` (Step 5), before the Manager starts. It's idempotent — a no-op when the
+schema is already in sync — and refuses any destructive change, so it can't
+silently drop data. If it ever fails, the Manager won't start; check
+`docker compose -f docker-compose.prod.yml logs access-migrate`.
 
 ## Step 7 — Create the first admin
 
@@ -290,9 +283,11 @@ docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Re-run the Step 6 schema push **only** if the release notes say the schema
-changed. Connectors reconnect on their new image automatically (the token in
-`/data` persists) — no re-enrollment.
+The schema is migrated automatically on `up -d` (the `access-migrate` service) —
+nothing to run by hand. Connectors run on their own hosts and are **not** touched
+by this command; update each with `docker pull …connector:latest` + recreate (the
+token in `/data` persists, so no re-enrollment). The console's **Updates** page
+shows the exact commands when an update is available.
 
 ## Troubleshooting
 
@@ -304,7 +299,7 @@ changed. Connectors reconnect on their new image automatically (the token in
 | Opening an app returns **502** | Connector can't reach the Site's internal address, or `ALLOWED_TARGETS` blocks it | Check the internal address is what the *connector* can reach (`http://10.0.5.20:8080`); if `ALLOWED_TARGETS` is set, ensure the target is inside it; confirm the app is up from the connector's host. |
 | Vendor logs in but the app bounces back to login | `COOKIE_DOMAIN` wrong | It must be the **leading-dot** form `.access.acme.com`, restart the manager. |
 | Invite emails don't arrive | SMTP not configured/enabled | Configure it on the **Email** page (and tick *Enabled*). Until then, copy the one-time invite link from the Invites screen and send it manually. |
-| `db push` can't reach the database | Wrong network name or password | The compose network is `captivo-access-prod_default`; use the real `POSTGRES_PASSWORD` from `.env`; ensure `access-postgres` is healthy first. |
+| `access-migrate` fails / Manager won't start | Wrong `POSTGRES_PASSWORD`, Postgres unhealthy, or a destructive schema change | Check `docker compose -f docker-compose.prod.yml logs access-migrate`; ensure `access-postgres` is healthy and `POSTGRES_PASSWORD` matches `.env`. A refused destructive change is intentional (no data loss). |
 
 ## Where to go deeper
 

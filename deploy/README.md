@@ -64,27 +64,13 @@ out of the box via HTTP-01. Watch the logs on first start:
 docker compose -f docker-compose.prod.yml logs -f caddy
 ```
 
-### First-run: push the database schema
+### Schema migration (automatic)
 
-The images don't run migrations automatically. Once `access-postgres` is
-healthy, push the Prisma schema once against it:
-
-```bash
-docker compose -f docker-compose.prod.yml exec -T access-postgres \
-  pg_isready -U access -d captivo_access   # sanity check
-
-# from a machine with the repo checked out and DATABASE_URL pointed at the
-# published postgres port — easiest is to run prisma db push from a throwaway
-# container on the same compose network:
-docker run --rm --network captivo-access-prod_default \
-  -e DATABASE_URL="postgresql://access:<POSTGRES_PASSWORD>@access-postgres:5432/captivo_access" \
-  -v "$PWD/../prisma:/app/prisma" -w /app \
-  node:20-alpine sh -c "corepack enable && npx --yes prisma db push --schema=prisma/schema.prisma"
-```
-
-(Substitute the real `POSTGRES_PASSWORD` from your `.env`.) You only need
-to do this once per fresh database, and again after pulling a new image
-version that changed the schema.
+You don't push the schema by hand. The stack includes a one-shot
+`access-migrate` service that pushes the Prisma schema automatically on every
+`up -d`, before the Manager starts — idempotent (a no-op when already in sync)
+and refusing destructive changes. If it fails, the Manager won't start; check
+`docker compose -f docker-compose.prod.yml logs access-migrate`.
 
 ### Open it
 
@@ -288,8 +274,9 @@ docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Re-run the `prisma db push` step above if the new version changed the
-schema (check the release notes / CHANGELOG).
+The schema migrates automatically on `up -d` (the `access-migrate` service).
+Connectors run on their own hosts — update each with `docker pull …connector:latest`
++ recreate (the token in `/data` persists).
 
 ### Breaking change: v0.2.0 (dynamic upstreams)
 

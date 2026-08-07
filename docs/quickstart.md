@@ -51,17 +51,14 @@ app.{$ACCESS_DOMAIN} {
 }
 ```
 
-## 3. Bring it up and push the schema
+## 3. Bring it up
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d
-
-# one-time schema push
-docker run --rm --network captivo-access-prod_default \
-  -e DATABASE_URL="postgresql://access:<POSTGRES_PASSWORD>@access-postgres:5432/captivo_access" \
-  -v "$PWD/../prisma:/app/prisma" -w /app \
-  node:20-alpine sh -c "corepack enable && npx --yes prisma db push --schema=prisma/schema.prisma"
 ```
+
+The schema is pushed automatically by the one-shot `access-migrate` service on
+`up -d` — nothing to run by hand.
 
 Watch the certs get issued: `docker compose -f docker-compose.prod.yml logs -f caddy`.
 
