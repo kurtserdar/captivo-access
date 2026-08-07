@@ -16,9 +16,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (!name) return NextResponse.json({ error: "invalid_name" }, { status: 400 });
   if (name.length > NAME_MAX) return NextResponse.json({ error: "name_too_long" }, { status: 400 });
 
-  const existing = await db.connector.findUnique({ where: { id }, select: { id: true } });
-  if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
-
-  await db.connector.update({ where: { id }, data: { name } });
+  const updated = await db.connector.updateMany({ where: { id }, data: { name } });
+  if (updated.count === 0) return NextResponse.json({ error: "not_found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

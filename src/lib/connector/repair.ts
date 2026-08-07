@@ -4,12 +4,10 @@ export function canRepairConnector(status: string): boolean {
   return status !== "REVOKED";
 }
 
-// The reconfigure command clears the connector's token volume first, so the Go
-// agent (which ignores PAIR_CODE when /data/token is present) re-enrolls with
-// the new code and rebinds to the SAME manager-side connector.
-export function buildReconfigureCommand(code: string, managerUrl: string, tunnelUrl: string): string {
+// The `docker run` invocation shared by the initial install and the re-pair
+// reconfigure commands. Pure + db-free.
+export function buildConnectorRunCommand(code: string, managerUrl: string, tunnelUrl: string): string {
   return (
-    "docker rm -f access-connector && docker volume rm access_connector_data && " +
     "docker run -d --name access-connector --restart unless-stopped " +
     `-e MANAGER_URL=${managerUrl} ` +
     `-e DATAPLANE_URL=${tunnelUrl} ` +
@@ -17,4 +15,15 @@ export function buildReconfigureCommand(code: string, managerUrl: string, tunnel
     "-v access_connector_data:/data " +
     "ghcr.io/kurtserdar/captivo-access-connector:latest"
   );
+}
+
+export function buildInstallCommand(code: string, managerUrl: string, tunnelUrl: string): string {
+  return buildConnectorRunCommand(code, managerUrl, tunnelUrl);
+}
+
+// Re-pair clears the connector's token volume first, so the Go agent (which
+// ignores PAIR_CODE when /data/token is present) re-enrolls with the new code
+// and rebinds to the SAME manager-side connector.
+export function buildReconfigureCommand(code: string, managerUrl: string, tunnelUrl: string): string {
+  return "docker rm -f access-connector && docker volume rm access_connector_data && " + buildConnectorRunCommand(code, managerUrl, tunnelUrl);
 }

@@ -5,17 +5,7 @@ import { db } from "@/lib/db";
 import { createPairing } from "@/lib/connector/enrollment";
 import { kickConnector } from "@/lib/connector/dataplane";
 import { managerBaseUrl, connectorTunnelUrl } from "@/lib/url";
-
-function buildInstallCommand(code: string, managerUrl: string, tunnelUrl: string): string {
-  return (
-    "docker run -d --name access-connector --restart unless-stopped " +
-    `-e MANAGER_URL=${managerUrl} ` +
-    `-e DATAPLANE_URL=${tunnelUrl} ` +
-    `-e PAIR_CODE=${code} ` +
-    "-v access_connector_data:/data " +
-    "ghcr.io/kurtserdar/captivo-access-connector:latest"
-  );
-}
+import { buildInstallCommand } from "@/lib/connector/repair";
 
 export async function POST(req: NextRequest) {
   const admin = await getCurrentUser();
