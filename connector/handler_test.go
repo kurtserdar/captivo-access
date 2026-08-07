@@ -494,3 +494,32 @@ func TestHandleWSRejectsDisallowedTarget(t *testing.T) {
 		t.Fatalf("expected egress rejection, got %+v", resp)
 	}
 }
+
+// handleWS with a header value containing CR/LF injection must fail closed with
+// a WsDialResponse error and never dial anything. The connector is the security
+// boundary — it validates headers before attempting any connection.
+func TestHandleWSRejectsHeaderInjection(t *testing.T) {
+	open, _ := ParseAllowedTargets("")
+	reqBytes, _ := json.Marshal(tunnel.WsDialRequest{
+		Kind:        "ws",
+		UpstreamUrl: "https://10.0.0.5:8006",
+		Path:        "/x",
+		Header: map[string][]string{
+			"X-Custom": {"value\r\nX-Injected: 1"}, // CRLF injection attempt
+		},
+	})
+	client, server := net.Pipe()
+	defer client.Close()
+	go func() { handleWS(server, open, reqBytes); server.Close() }()
+	frame, err := tunnel.ReadFrame(client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var resp tunnel.WsDialResponse
+	if err := json.Unmarshal(frame, &resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp.Error != "invalid header" {
+		t.Fatalf("expected header injection rejection, got %+v", resp)
+	}
+}

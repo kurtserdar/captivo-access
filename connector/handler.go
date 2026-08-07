@@ -174,6 +174,21 @@ func handleWS(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 		return
 	}
 
+	// Validate headers for CR/LF injection before dialing. The connector is the
+	// security boundary — don't rely on the data-plane to sanitize headers.
+	for k, vs := range wr.Header {
+		if strings.ContainsAny(k, "\r\n") {
+			writeWsErr(st, "invalid header")
+			return
+		}
+		for _, v := range vs {
+			if strings.ContainsAny(v, "\r\n") {
+				writeWsErr(st, "invalid header")
+				return
+			}
+		}
+	}
+
 	hostPort := base.Host
 	if base.Port() == "" {
 		if base.Scheme == "https" {
@@ -195,6 +210,12 @@ func handleWS(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 		return
 	}
 	defer upstream.Close()
+
+	// Set a read deadline for the handshake phase only. A slow/malicious
+	// upstream that accepts then stalls would hang the goroutine forever.
+	// The deadline is cleared after the handshake so the long-lived WS relay
+	// stays unbounded.
+	upstream.SetReadDeadline(time.Now().Add(10 * time.Second))
 
 	// Replay the upgrade request to the upstream. target.RequestURI() carries
 	// the validated, host-less path+query.
@@ -257,6 +278,10 @@ func handleWS(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 	if status != 101 {
 		return // upstream declined the upgrade; data-plane surfaces the failure
 	}
+
+	// Clear the handshake read deadline. The long-lived WS relay must stay
+	// unbounded — no timeouts on the bidirectional byte relay.
+	upstream.SetReadDeadline(time.Time{})
 
 	// Raw bidirectional relay. Read the upstream side from br (it holds any
 	// post-handshake bytes already buffered). When either direction ends, close
