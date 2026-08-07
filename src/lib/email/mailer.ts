@@ -3,8 +3,14 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { buildTransportOptions } from "./transport";
 
-export function getSmtpConfig() {
-  return db.smtpConfig.findUnique({ where: { id: "singleton" } });
+export async function getSmtpConfig() {
+  try {
+    return await db.smtpConfig.findUnique({ where: { id: "singleton" } });
+  } catch {
+    // If the table doesn't exist yet (deployed before db push) or the DB is
+    // unavailable, treat SMTP as unconfigured so notifications still work.
+    return null;
+  }
 }
 
 export async function getAdminEmails(): Promise<string[]> {
