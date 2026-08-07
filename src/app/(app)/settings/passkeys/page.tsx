@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { AddPasskeyButton } from "./add-passkey-button";
 import { DeletePasskeyButton } from "./delete-passkey-button";
 
@@ -55,9 +56,9 @@ export default async function PasskeysPage() {
               {passkeys.map((pk) => (
                 <tr key={pk.id}>
                   <td>{pk.label}</td>
-                  <td className="cell-sub">{pk.createdAt.toLocaleString("en-US")}</td>
+                  <td className="cell-sub"><LocalTime iso={pk.createdAt.toISOString()} /></td>
                   <td className="cell-sub">
-                    {pk.lastUsedAt ? pk.lastUsedAt.toLocaleString("en-US") : "—"}
+                    {pk.lastUsedAt ? <LocalTime iso={pk.lastUsedAt.toISOString()} /> : "—"}
                   </td>
                   <td>
                     <DeletePasskeyButton id={pk.id} disabled={!canDelete} />

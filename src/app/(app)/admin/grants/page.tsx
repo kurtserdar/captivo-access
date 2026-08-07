@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { listGrants, listPendingGrants } from "@/lib/access/grants";
 import { classifyGrant, type DecisionReason } from "@/lib/access/evaluate";
 import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { GrantForm } from "./grant-form";
 import { RevokeGrantButton } from "./revoke-grant-button";
 import { EditGrantButton } from "./edit-grant-button";
@@ -78,7 +79,7 @@ export default async function AdminGrantsPage() {
                     <td>{p.user.name}<div className="cell-sub">{p.user.email}</div></td>
                     <td>{p.site.name}</td>
                     <td className="cell-sub">
-                      {(p.startsAt ? p.startsAt.toLocaleString("en-US") : "Immediately")} → {(p.endsAt ? p.endsAt.toLocaleString("en-US") : "Permanent")}
+                      {p.startsAt ? <LocalTime iso={p.startsAt.toISOString()} /> : "Immediately"} → {p.endsAt ? <LocalTime iso={p.endsAt.toISOString()} /> : "Permanent"}
                       {(() => { const s = parseSchedule(p.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
                     </td>
                     <td className="cell-sub">{p.note ?? "—"}</td>
@@ -124,8 +125,6 @@ export default async function AdminGrantsPage() {
               {grants.map((g) => {
                 const reason = classifyGrant(g, now);
                 const status = REASON_LABEL[reason];
-                const start = g.startsAt ? g.startsAt.toLocaleString("en-US") : "Immediately";
-                const end = g.endsAt ? g.endsAt.toLocaleString("en-US") : "Permanent";
                 return (
                   <tr key={g.id}>
                     <td>
@@ -133,7 +132,7 @@ export default async function AdminGrantsPage() {
                     </td>
                     <td>{g.site.name}</td>
                     <td className="cell-sub">
-                      {start} → {end}
+                      {g.startsAt ? <LocalTime iso={g.startsAt.toISOString()} /> : "Immediately"} → {g.endsAt ? <LocalTime iso={g.endsAt.toISOString()} /> : "Permanent"}
                       {(() => { const s = parseSchedule(g.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
                     </td>
                     <td className="cell-sub">{g.note ?? "—"}</td>

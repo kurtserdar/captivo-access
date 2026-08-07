@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 
 export function UpdatesForm({
   initialEnabled,
@@ -72,7 +73,7 @@ export function UpdatesForm({
       <p className="cell-sub">
         This manager: <strong>v{currentVersion}</strong>
         {latestVersion && <> · latest: <strong>v{latestVersion}</strong></>}
-        {lastCheckedAt && <> · last checked {new Date(lastCheckedAt).toLocaleString("en-US")} {lastCheckOk === false ? "(failed)" : ""}</>}
+        {lastCheckedAt && <> · last checked <LocalTime iso={lastCheckedAt} /> {lastCheckOk === false ? "(failed)" : ""}</>}
       </p>
 
       <div className="row-actions">

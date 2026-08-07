@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { getSmtpConfig } from "@/lib/email/mailer";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { InviteForm } from "./invite-form";
 import { ResendInviteButton } from "./resend-invite-button";
 import { CancelInviteButton } from "./cancel-invite-button";
@@ -76,7 +77,7 @@ export default async function AdminInvitesPage() {
                     <td>
                       <span className={`pill ${STATUS_PILL[status] ?? "neutral"}`}>{status}</span>
                     </td>
-                    <td className="cell-sub">{inv.expiresAt.toLocaleString("en-US")}</td>
+                    <td className="cell-sub"><LocalTime iso={inv.expiresAt.toISOString()} /></td>
                     <td>
                       {status !== "Used" && (
                         <div className="row-actions">

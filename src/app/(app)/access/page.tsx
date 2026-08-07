@@ -2,16 +2,20 @@ import { requireUser } from "@/lib/current-user";
 import { listUserGrants } from "@/lib/access/grants";
 import { classifyGrant } from "@/lib/access/evaluate";
 import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { RequestAccessForm } from "./request-access-form";
 import { WithdrawRequestButton } from "./withdraw-request-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "My access" };
 
-function formatWindow(startsAt: Date | null, endsAt: Date | null): string {
-  const start = startsAt ? startsAt.toLocaleString("en-US") : "Immediately";
-  const end = endsAt ? endsAt.toLocaleString("en-US") : "Permanent";
-  return `${start} → ${end}`;
+function AccessWindow({ startsAt, endsAt }: { startsAt: Date | null; endsAt: Date | null }) {
+  return (
+    <>
+      {startsAt ? <LocalTime iso={startsAt.toISOString()} /> : "Immediately"} →{" "}
+      {endsAt ? <LocalTime iso={endsAt.toISOString()} /> : "Permanent"}
+    </>
+  );
 }
 
 type Grant = Awaited<ReturnType<typeof listUserGrants>>[number];
@@ -33,7 +37,7 @@ function GrantTable({ grants, badge, openable }: { grants: Grant[]; badge: React
             <tr key={g.id}>
               <td>{g.site.name}</td>
               <td className="cell-sub">
-                {formatWindow(g.startsAt, g.endsAt)}
+                <AccessWindow startsAt={g.startsAt} endsAt={g.endsAt} />
                 {(() => { const s = parseSchedule(g.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
               </td>
               <td>{badge}</td>
@@ -119,7 +123,7 @@ export default async function AccessPage() {
                 {requests.map(({ grant, reason }) => (
                   <tr key={grant.id}>
                     <td>{grant.site.name}</td>
-                    <td className="cell-sub">{formatWindow(grant.startsAt, grant.endsAt)}</td>
+                    <td className="cell-sub"><AccessWindow startsAt={grant.startsAt} endsAt={grant.endsAt} /></td>
                     <td>
                       {reason === "pending_approval"
                         ? <span className="pill warn">Pending approval</span>

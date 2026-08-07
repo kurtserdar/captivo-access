@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { managerVersion } from "@/lib/version";
 import { isConnectorOutdated } from "@/lib/updates/semver";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { ConnectorForm } from "./connector-form";
 import { ConnectorName } from "./connector-name";
 import { DeleteConnectorButton } from "./delete-connector-button";
@@ -78,7 +79,7 @@ export default async function AdminConnectorsPage() {
                       {STATUS_LABEL[c.status] ?? c.status}
                     </span>
                   </td>
-                  <td className="cell-sub">{c.lastSeenAt ? c.lastSeenAt.toLocaleString("en-US") : "Never"}</td>
+                  <td className="cell-sub">{c.lastSeenAt ? <LocalTime iso={c.lastSeenAt.toISOString()} /> : "Never"}</td>
                   <td className="cell-sub">
                     {c.version ?? "—"}
                     {isConnectorOutdated(c.version, mgr) && (

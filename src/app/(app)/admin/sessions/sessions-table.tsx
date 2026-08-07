@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { RevokeSessionButton } from "./revoke-session-button";
 
 export type SessionRow = {
@@ -103,7 +104,7 @@ export function SessionsTable({ sessions, currentSessionId }: { sessions: Sessio
                   </td>
                   <td className="cell-sub">{s.ip ?? "—"}</td>
                   <td className="cell-sub">{s.userAgent ?? "—"}</td>
-                  <td className="cell-sub">{new Date(s.lastSeenAt).toLocaleString("en-US")}</td>
+                  <td className="cell-sub"><LocalTime iso={s.lastSeenAt} /></td>
                   {/* No single-revoke on your own current session — use Log out. Matches
                       the bulk-revoke self-exclusion so this page can't lock you out. */}
                   <td>{isCurrent ? <span className="cell-sub">—</span> : <RevokeSessionButton id={s.id} />}</td>

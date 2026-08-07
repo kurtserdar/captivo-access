@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 
 export type AuditRowJSON = {
   id: string;
@@ -260,7 +261,7 @@ export function AuditTable({
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td className="cell-sub">{new Date(r.timestamp).toLocaleString("en-US")}</td>
+                  <td className="cell-sub"><LocalTime iso={r.timestamp} /></td>
                   <td>
                     <div>{r.userName ?? "—"}</div>
                     {r.userEmail && <div className="cell-sub">{r.userEmail}</div>}
