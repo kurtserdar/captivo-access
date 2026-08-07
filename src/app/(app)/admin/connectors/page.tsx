@@ -1,5 +1,7 @@
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
+import { managerVersion } from "@/lib/version";
+import { isConnectorOutdated } from "@/lib/updates/semver";
 import { ConnectorForm } from "./connector-form";
 import { ConnectorName } from "./connector-name";
 import { DeleteConnectorButton } from "./delete-connector-button";
@@ -30,6 +32,8 @@ export default async function AdminConnectorsPage() {
     select: { id: true, name: true, status: true, lastSeenAt: true, version: true, _count: { select: { sites: true } } },
     orderBy: { createdAt: "desc" },
   });
+
+  const mgr = managerVersion();
 
   return (
     <main>
@@ -75,7 +79,12 @@ export default async function AdminConnectorsPage() {
                     </span>
                   </td>
                   <td className="cell-sub">{c.lastSeenAt ? c.lastSeenAt.toLocaleString("en-US") : "Never"}</td>
-                  <td className="cell-sub">{c.version ?? "—"}</td>
+                  <td className="cell-sub">
+                    {c.version ?? "—"}
+                    {isConnectorOutdated(c.version, mgr) && (
+                      <span className="pill warn" style={{ marginLeft: ".4rem" }}>Outdated</span>
+                    )}
+                  </td>
                   <td>
                     {c.status !== "REVOKED" ? (
                       <div className="row-actions">

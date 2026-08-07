@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
+import { managerVersion } from "@/lib/version";
+import { isConnectorOutdated } from "@/lib/updates/semver";
 import { getSetupStatus, getDashboardStats, getSiteHealth, getRecentActivity } from "@/lib/dashboard/stats";
 import { isConsoleUser, ROLE_LABELS } from "@/lib/auth/roles";
 import { StatCards } from "./_dashboard/stat-cards";
@@ -81,9 +83,19 @@ export default async function DashboardPage() {
 
   const [stats, siteHealth, activity] = await Promise.all([getDashboardStats(), getSiteHealth(), getRecentActivity()]);
 
+  const conns = await db.connector.findMany({ where: { status: { not: "REVOKED" } }, select: { version: true } });
+  const mgr = managerVersion();
+  const outdated = conns.filter((c) => isConnectorOutdated(c.version, mgr)).length;
+
   return (
     <main>
       {head}
+      {outdated > 0 && (
+        <div className="notice">
+          {outdated} connector{outdated === 1 ? "" : "s"} {outdated === 1 ? "is" : "are"} older than the manager (v{mgr}).{" "}
+          <Link href="/admin/connectors">Review →</Link>
+        </div>
+      )}
       <StatCards s={stats} />
       <div className="dash-cols">
         <SiteHealthPanel sites={siteHealth} />
