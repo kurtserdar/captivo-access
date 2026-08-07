@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
-import { CopyButton } from "@/app/(app)/_shell/copy-button";
 
 export type AuditRowJSON = {
   id: string;
@@ -270,10 +269,7 @@ export function AuditTable({
                   <td className="cell-sub">{r.company ?? "—"}</td>
                   <td>{r.siteName ?? r.host}</td>
                   <td className="cell-sub">
-                    <div className="cell-inline">
-                      <span className="cell-truncate" title={`${r.method} ${r.path}`}>{r.method} {r.path}</span>
-                      <CopyButton value={`${r.method} ${r.path}`} label="Copy" />
-                    </div>
+                    {r.method} {r.path}
                   </td>
                   <td className="cell-sub">{r.status}</td>
                   <td>
