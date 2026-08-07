@@ -29,7 +29,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     data.endsAt = endsAt;
   }
   if (hasNote) {
-    const note = typeof body.note === "string" ? body.note.trim() : "";
+    if (typeof body.note !== "string") return NextResponse.json({ error: "invalid_note" }, { status: 400 });
+    const note = body.note.trim();
     if (note.length > NOTE_MAX) return NextResponse.json({ error: "note_too_long" }, { status: 400 });
     data.note = note || null;
   }

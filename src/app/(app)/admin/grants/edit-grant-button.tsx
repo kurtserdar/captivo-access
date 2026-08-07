@@ -11,6 +11,20 @@ function toLocalInput(iso: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function saveError(code: string | undefined): string {
+  switch (code) {
+    case "ends_at_in_past": return "The end date must be in the future.";
+    case "ends_at_before_start": return "The end date must be after the start date.";
+    case "invalid_ends_at": return "Enter a valid end date.";
+    case "note_too_long": return "The note is too long (max 500 characters).";
+    case "invalid_note": return "The note must be text.";
+    case "not_active": return "This grant is no longer active and can't be edited.";
+    case "nothing_to_update": return "Nothing to save.";
+    case "forbidden": return "Admin privileges are required.";
+    default: return "Couldn't save, please try again.";
+  }
+}
+
 export function EditGrantButton({ id, endsAt, note }: { id: string; endsAt: string | null; note: string | null }) {
   const [open, setOpen] = useState(false);
   const [endsAtLocal, setEndsAtLocal] = useState(toLocalInput(endsAt));
@@ -39,7 +53,7 @@ export function EditGrantButton({ id, endsAt, note }: { id: string; endsAt: stri
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok || !result?.ok) {
-        setError("Couldn't save — the end date must be in the future, or the grant is no longer active.");
+        setError(saveError(result?.error));
         return;
       }
       window.location.reload();
