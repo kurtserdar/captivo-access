@@ -38,6 +38,7 @@ export async function listGrants() {
       approvedAt: true,
       schedule: true,
       note: true,
+      denyReason: true,
       createdAt: true,
       user: { select: { name: true, email: true } },
       site: { select: { name: true, hostname: true } },
@@ -61,6 +62,7 @@ export async function listUserGrants(userId: string) {
       requiresApproval: true,
       approvedAt: true,
       schedule: true,
+      denyReason: true,
       site: { select: { name: true, hostname: true } },
     },
   });
@@ -141,12 +143,13 @@ export async function decideGrant(
   id: string,
   decision: "approve" | "deny",
   adminId: string,
+  reason?: string | null,
 ): Promise<number> {
   const now = new Date();
   const data =
     decision === "approve"
       ? { approvedAt: now, approvedById: adminId }
-      : { status: "DENIED" as const, approvedAt: now, approvedById: adminId };
+      : { status: "DENIED" as const, approvedAt: now, approvedById: adminId, denyReason: reason ?? null };
   const res = await db.accessGrant.updateMany({ where: { id, ...PENDING_WHERE }, data });
   return res.count;
 }

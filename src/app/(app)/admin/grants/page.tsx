@@ -139,6 +139,7 @@ export default async function AdminGrantsPage() {
                     <td className="cell-sub">{g.note ?? "—"}</td>
                     <td>
                       <span className={`pill ${REASON_PILL[reason]}`}>{status}</span>
+                      {reason === "denied" && g.denyReason && <div className="cell-sub">{g.denyReason}</div>}
                     </td>
                     <td>
                       <div className="row-actions">

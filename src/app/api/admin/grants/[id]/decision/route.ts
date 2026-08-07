@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { decideGrant } from "@/lib/access/grants";
+import { normalizeDenyReason } from "@/lib/access/deny-reason";
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
@@ -15,7 +16,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "invalid_decision" }, { status: 400 });
   }
 
-  const count = await decideGrant(id, decision, admin.id);
+  const reason = normalizeDenyReason(body.reason);
+  const count = await decideGrant(id, decision, admin.id, reason);
   if (count === 0) return NextResponse.json({ error: "not_pending" }, { status: 409 });
 
   return NextResponse.json({ ok: true });

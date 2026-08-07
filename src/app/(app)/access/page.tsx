@@ -124,6 +124,7 @@ export default async function AccessPage() {
                       {reason === "pending_approval"
                         ? <span className="pill warn">Pending approval</span>
                         : <span className="pill danger">Denied</span>}
+                      {reason === "denied" && grant.denyReason && <div className="cell-sub">{grant.denyReason}</div>}
                     </td>
                     <td>
                       {reason === "pending_approval" && <WithdrawRequestButton id={grant.id} />}
