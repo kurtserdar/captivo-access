@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canRepairConnector, buildReconfigureCommand, buildConnectorRunCommand } from "./repair";
+import { canRepairConnector, buildReconfigureCommand, buildConnectorRunCommand, buildConnectorUpdateCommand } from "./repair";
 
 describe("canRepairConnector", () => {
   it("allows re-pair for non-revoked connectors", () => {
@@ -36,5 +36,22 @@ describe("buildConnectorRunCommand", () => {
     const run = buildConnectorRunCommand("C", "M", "T");
     const reconfigure = buildReconfigureCommand("C", "M", "T");
     expect(reconfigure).toBe("docker rm -f access-connector && docker volume rm access_connector_data && " + run);
+  });
+});
+
+describe("buildConnectorUpdateCommand", () => {
+  it("pulls the new image and recreates the container without re-pairing", () => {
+    const cmd = buildConnectorUpdateCommand("https://mgr.example.com", "wss://connect.example.com");
+    expect(cmd).toContain("docker pull ghcr.io/kurtserdar/captivo-access-connector:latest");
+    expect(cmd).toContain("docker rm -f access-connector");
+    expect(cmd).toContain("MANAGER_URL=https://mgr.example.com");
+    expect(cmd).toContain("DATAPLANE_URL=wss://connect.example.com");
+    expect(cmd).toContain("-v access_connector_data:/data");
+    expect(cmd).toContain("ghcr.io/kurtserdar/captivo-access-connector:latest");
+  });
+  it("does NOT include a pair code or wipe the token volume", () => {
+    const cmd = buildConnectorUpdateCommand("https://mgr.example.com", "wss://connect.example.com");
+    expect(cmd).not.toContain("PAIR_CODE");
+    expect(cmd).not.toContain("docker volume rm");
   });
 });
