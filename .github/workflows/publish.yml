@@ -29,6 +29,9 @@ jobs:
           - image: connector
             dockerfile: connector/Dockerfile
             platforms: linux/amd64,linux/arm64
+          - image: migrate
+            dockerfile: migrate/Dockerfile
+            platforms: linux/amd64
     steps:
       - uses: actions/checkout@v4
 
