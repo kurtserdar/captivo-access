@@ -1,0 +1,86 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+export function UpdatesForm({
+  initialEnabled,
+  currentVersion,
+  latestVersion,
+  lastCheckedAt,
+  lastCheckOk,
+}: {
+  initialEnabled: boolean;
+  currentVersion: string;
+  latestVersion: string | null;
+  lastCheckedAt: string | null;
+  lastCheckOk: boolean | null;
+}) {
+  const router = useRouter();
+  const [enabled, setEnabled] = useState(initialEnabled);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function toggle(next: boolean) {
+    setEnabled(next);
+    setBusy(true);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/admin/updates", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled: next }),
+      });
+      if (!res.ok) {
+        setEnabled(!next); // revert on failure
+        setNotice("Couldn't save, please try again.");
+      }
+    } catch {
+      setEnabled(!next);
+      setNotice("Couldn't save, please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function checkNow() {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/admin/updates/check", { method: "POST" });
+      const j = await res.json().catch(() => ({}));
+      if (j.ok) setNotice(j.latestVersion ? `Latest release: ${j.latestVersion}.` : "Checked — no release found.");
+      else setNotice(j.reason === "disabled" ? "Update checks are turned off." : "Couldn't reach GitHub — try again later.");
+      router.refresh();
+    } catch {
+      setNotice("Couldn't reach GitHub — try again later.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="field">
+        <label className="field-label" style={{ display: "flex", gap: ".5rem", alignItems: "center" }}>
+          <input type="checkbox" checked={enabled} disabled={busy} onChange={(e) => toggle(e.target.checked)} />
+          Check GitHub for new releases
+        </label>
+        <p className="cell-sub">Checks GitHub for the latest release. No information about your installation is sent.</p>
+      </div>
+
+      <p className="cell-sub">
+        This manager: <strong>v{currentVersion}</strong>
+        {latestVersion && <> · latest: <strong>v{latestVersion}</strong></>}
+        {lastCheckedAt && <> · last checked {new Date(lastCheckedAt).toLocaleString("en-US")} {lastCheckOk === false ? "(failed)" : ""}</>}
+      </p>
+
+      <div className="row-actions">
+        <button type="button" className="btn sm" onClick={checkNow} disabled={busy || !enabled}>
+          {busy ? "Checking…" : "Check now"}
+        </button>
+      </div>
+      {notice && <p className="notice" role="status">{notice}</p>}
+    </div>
+  );
+}

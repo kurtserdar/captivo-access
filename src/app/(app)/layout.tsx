@@ -4,6 +4,10 @@ import { can, ROLE_LABELS } from "@/lib/auth/roles";
 import { countPendingGrants } from "@/lib/access/grants";
 import { countUnreadNotifications } from "@/lib/notifications";
 import { getSearchRecords } from "@/lib/search";
+import { UpdateBanner } from "@/app/(app)/_shell/update-banner";
+import { getUpdateCheckConfig } from "@/lib/updates/update-check-config";
+import { managerVersion } from "@/lib/version";
+import { isUpdateAvailable } from "@/lib/updates/semver";
 import { LogoutButton } from "./logout-button";
 import { NavLink } from "./nav-link";
 import { Topbar } from "./_shell/topbar";
@@ -32,6 +36,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const pendingCount = showGrants ? await countPendingGrants() : 0;
   const unreadNotifications = showRead ? await countUnreadNotifications() : 0;
   const searchRecords = showRead ? await getSearchRecords() : [];
+  const mgr = managerVersion();
+  const upd = showConfig ? await getUpdateCheckConfig() : null;
+  const updateEnabled = upd?.enabled ?? false;
+  const bannerLatest = upd && isUpdateAvailable(upd.latestVersion, mgr) ? upd.latestVersion : null;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  // eslint-disable-next-line react-hooks/purity
+  const staleCheck = !!upd?.enabled && (upd.lastCheckedAt == null || Date.now() - upd.lastCheckedAt.getTime() > DAY_MS);
 
   return (
     <div className="app-shell">
@@ -89,6 +100,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
               Custom domain
             </NavLink>
+            <NavLink href="/admin/updates">
+              <SettingsIcon />
+              Updates
+            </NavLink>
             <span className="nav-group">People</span>
             <NavLink href="/admin/users">
               <UsersIcon />
@@ -118,6 +133,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
       <div className="main-col">
+        {showConfig && (
+          <UpdateBanner
+            enabled={updateEnabled}
+            staleCheck={staleCheck}
+            currentVersion={mgr}
+            latestVersion={bannerLatest}
+            latestUrl={upd?.latestUrl ?? null}
+          />
+        )}
         <Topbar records={searchRecords} role={user.role} />
         <main className="content">{children}</main>
       </div>
