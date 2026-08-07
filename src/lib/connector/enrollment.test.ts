@@ -27,7 +27,7 @@ const mockDb = db as unknown as {
 // Fake `tx` handed to the `db.$transaction(async (tx) => ...)` callback.
 const tx = {
   connectorPairing: { updateMany: vi.fn() },
-  connector: { create: vi.fn(), update: vi.fn() },
+  connector: { create: vi.fn(), updateMany: vi.fn() },
 };
 
 beforeEach(() => {
@@ -184,26 +184,31 @@ describe("redeemPairing re-pair branch (pairing bound to an existing connector)"
       { id: "pair1", codeHash, name: "HQ", connectorId: "conn-existing", usedAt: null, expiresAt: new Date(Date.now() + 60_000) },
     ]);
     tx.connectorPairing.updateMany.mockResolvedValue({ count: 1 });
-    tx.connector.update.mockResolvedValue({ id: "conn-existing" });
+    tx.connector.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await redeemPairing(code, { version: "1.2.3" });
 
     expect(result).toEqual({ connectorId: "conn-existing", token: expect.any(String) });
-    expect(tx.connector.update).toHaveBeenCalledTimes(1);
-    expect(tx.connector.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "conn-existing" }, data: expect.objectContaining({ status: "PENDING" }) }),
+    expect(tx.connector.updateMany).toHaveBeenCalledTimes(1);
+    expect(tx.connector.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "conn-existing", status: { not: "REVOKED" } },
+        data: expect.objectContaining({ status: "PENDING" }),
+      }),
     );
     expect(tx.connector.create).not.toHaveBeenCalled();
   });
 
-  it("returns null when the target connector no longer exists (P2025)", async () => {
+  it("returns null when the target connector is gone or has been revoked", async () => {
     const code = generateToken();
     const codeHash = await hashToken(code);
     mockDb.connectorPairing.findMany.mockResolvedValue([
       { id: "pair1", codeHash, name: "HQ", connectorId: "conn-gone", usedAt: null, expiresAt: new Date(Date.now() + 60_000) },
     ]);
     tx.connectorPairing.updateMany.mockResolvedValue({ count: 1 });
-    tx.connector.update.mockRejectedValue(Object.assign(new Error("not found"), { code: "P2025" }));
+    // count: 0 covers both cases the WHERE guard rules out: the connector
+    // row no longer exists, or it still exists but is REVOKED (kill-switch).
+    tx.connector.updateMany.mockResolvedValue({ count: 0 });
 
     const result = await redeemPairing(code, {});
     expect(result).toBeNull();
@@ -221,6 +226,6 @@ describe("redeemPairing re-pair branch (pairing bound to an existing connector)"
     const result = await redeemPairing(code, {});
     expect(result).toEqual({ connectorId: "conn-new", token: expect.any(String) });
     expect(tx.connector.create).toHaveBeenCalledTimes(1);
-    expect(tx.connector.update).not.toHaveBeenCalled();
+    expect(tx.connector.updateMany).not.toHaveBeenCalled();
   });
 });

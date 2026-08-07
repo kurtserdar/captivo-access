@@ -38,20 +38,16 @@ export async function redeemPairing(
           });
           if (consumed.count === 0) throw new Error("PAIRING_ALREADY_USED");
           if (p.connectorId) {
-            // Re-pair: rotate the token on the EXISTING connector, preserving
-            // its id (and thus all Site bindings). If it was deleted since the
-            // pairing was issued, the pairing is stale.
-            try {
-              return await tx.connector.update({
-                where: { id: p.connectorId },
-                data: { tokenHash, status: "PENDING", version: meta.version ?? undefined },
-              });
-            } catch (e) {
-              if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2025") {
-                throw new Error("CONNECTOR_GONE");
-              }
-              throw e;
-            }
+            // Re-pair: rotate the token on the EXISTING connector (preserving its id and
+            // its Site bindings) — but ONLY if it isn't REVOKED. The status guard is in
+            // the WHERE clause so a concurrent revoke can't be un-done by a redeem race;
+            // count === 0 means the connector is gone or has been revoked → stale pairing.
+            const rotated = await tx.connector.updateMany({
+              where: { id: p.connectorId, status: { not: "REVOKED" } },
+              data: { tokenHash, status: "PENDING", version: meta.version ?? undefined },
+            });
+            if (rotated.count === 0) throw new Error("CONNECTOR_GONE");
+            return { id: p.connectorId };
           }
           return tx.connector.create({
             data: { name: meta.name?.trim() || p.name, tokenHash, status: "PENDING", version: meta.version ?? null },
