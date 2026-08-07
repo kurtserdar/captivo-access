@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"crypto/tls"
 	"encoding/json"
 	"io"
@@ -27,6 +28,32 @@ func serveStreams(mux *yamux.Session, allow *TargetMatcher) {
 	}
 }
 
+// resolveUpstreamTarget validates a tunnel upstream URL + path against the
+// egress boundary (allow) and the host-confusion rules, returning the resolved
+// target URL and the base URL, or a non-empty errMsg. Shared by handleDial and
+// handleWS so the connector's core security boundary lives in exactly one place.
+func resolveUpstreamTarget(upstreamURL, path string, allow *TargetMatcher) (target, base *url.URL, errMsg string) {
+	base, err := url.Parse(upstreamURL)
+	if err != nil || (base.Scheme != "http" && base.Scheme != "https") || base.Hostname() == "" {
+		return nil, nil, "bad upstream url"
+	}
+	if !allow.Allowed(base.Host) {
+		return nil, nil, "target not allowed" // egress boundary — fail closed
+	}
+	if !strings.HasPrefix(path, "/") {
+		return nil, nil, "invalid path"
+	}
+	ref, err := url.Parse(path)
+	if err != nil || ref.IsAbs() || ref.Host != "" {
+		return nil, nil, "invalid path"
+	}
+	target = base.ResolveReference(ref)
+	if target.Scheme != base.Scheme || target.Host != base.Host {
+		return nil, nil, "invalid path"
+	}
+	return target, base, ""
+}
+
 // handleStream reads the first control frame, peeks its kind, and dispatches
 // to the dial (proxied HTTP) or probe (TCP reachability) handler.
 func handleStream(st io.ReadWriteCloser, allow *TargetMatcher) {
@@ -41,6 +68,10 @@ func handleStream(st io.ReadWriteCloser, allow *TargetMatcher) {
 	_ = json.Unmarshal(reqBytes, &peek)
 	if peek.Kind == "probe" {
 		handleProbe(st, allow, reqBytes)
+		return
+	}
+	if peek.Kind == "ws" {
+		handleWS(st, allow, reqBytes)
 		return
 	}
 	handleDial(st, allow, reqBytes)
@@ -60,40 +91,9 @@ func handleDial(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 		return
 	}
 
-	baseURL, err := url.Parse(dr.UpstreamUrl)
-	if err != nil || (baseURL.Scheme != "http" && baseURL.Scheme != "https") || baseURL.Hostname() == "" {
-		writeErr(st, "bad upstream url")
-		return
-	}
-	if !allow.Allowed(baseURL.Host) {
-		writeErr(st, "target not allowed") // egress boundary — fail closed
-		return
-	}
-	// dr.Path comes from the far end of the tunnel and MUST be treated as an
-	// untrusted, path-only reference — never as a string to concatenate onto
-	// the host. url.NewRequest re-parses a concatenated string as a URL, so a
-	// crafted Path like "@evil.com/" or "//evil.com/" would be reinterpreted
-	// with evil.com as the host (userinfo/scheme-relative confusion),
-	// silently defeating the allowlist below. Requiring a leading "/" and
-	// rejecting any parsed Path with a Host or absolute scheme closes that
-	// off before ResolveReference ever runs.
-	if !strings.HasPrefix(dr.Path, "/") {
-		writeErr(st, "invalid path")
-		return
-	}
-	ref, err := url.Parse(dr.Path)
-	if err != nil || ref.IsAbs() || ref.Host != "" {
-		writeErr(st, "invalid path")
-		return
-	}
-	target := baseURL.ResolveReference(ref)
-	// Defense in depth: the resolved target MUST stay on the allowlisted
-	// upstream's scheme+host. This should already be guaranteed by the
-	// checks above, but re-verifying against the final resolved URL means
-	// a future change to the validation logic above can't silently regress
-	// the core security boundary.
-	if target.Scheme != baseURL.Scheme || target.Host != baseURL.Host {
-		writeErr(st, "invalid path")
+	target, _, errMsg := resolveUpstreamTarget(dr.UpstreamUrl, dr.Path, allow)
+	if errMsg != "" {
+		writeErr(st, errMsg)
 		return
 	}
 
@@ -150,6 +150,128 @@ func handleDial(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 
 func writeErr(st io.Writer, msg string) {
 	b, err := json.Marshal(tunnel.DialResponse{Status: 0, Error: msg})
+	if err != nil {
+		return
+	}
+	_ = tunnel.WriteFrame(st, b)
+}
+
+// handleWS services a WebSocket-passthrough stream: it validates the upstream
+// against the SAME egress boundary as handleDial, raw-dials it (TLS for https,
+// honoring the per-Site InsecureSkipVerify), replays the browser's upgrade
+// request, reads the upstream handshake response, and — on a 101 — relays raw
+// bytes in both directions between the tunnel stream and the upstream socket.
+// The WS body is never HTTP-body-framed; it is a transparent byte pipe, so any
+// subprotocol/extension passes through untouched.
+func handleWS(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
+	var wr tunnel.WsDialRequest
+	if json.Unmarshal(reqBytes, &wr) != nil {
+		return
+	}
+	target, base, errMsg := resolveUpstreamTarget(wr.UpstreamUrl, wr.Path, allow)
+	if errMsg != "" {
+		writeWsErr(st, errMsg)
+		return
+	}
+
+	hostPort := base.Host
+	if base.Port() == "" {
+		if base.Scheme == "https" {
+			hostPort = net.JoinHostPort(base.Hostname(), "443")
+		} else {
+			hostPort = net.JoinHostPort(base.Hostname(), "80")
+		}
+	}
+	var upstream net.Conn
+	var err error
+	if base.Scheme == "https" {
+		upstream, err = tls.DialWithDialer(&net.Dialer{Timeout: 10 * time.Second}, "tcp", hostPort,
+			&tls.Config{InsecureSkipVerify: wr.InsecureSkipVerify, ServerName: base.Hostname()})
+	} else {
+		upstream, err = net.DialTimeout("tcp", hostPort, 10*time.Second)
+	}
+	if err != nil {
+		writeWsErr(st, "upstream unreachable")
+		return
+	}
+	defer upstream.Close()
+
+	// Replay the upgrade request to the upstream. target.RequestURI() carries
+	// the validated, host-less path+query.
+	var b strings.Builder
+	b.WriteString("GET " + target.RequestURI() + " HTTP/1.1\r\n")
+	b.WriteString("Host: " + base.Host + "\r\n")
+	for k, vs := range wr.Header {
+		if strings.EqualFold(k, "Host") {
+			continue
+		}
+		for _, v := range vs {
+			b.WriteString(k + ": " + v + "\r\n")
+		}
+	}
+	b.WriteString("\r\n")
+	if _, err := io.WriteString(upstream, b.String()); err != nil {
+		writeWsErr(st, "upstream write failed")
+		return
+	}
+
+	// Read the upstream handshake head manually (status line + headers up to a
+	// blank line). Manual parsing keeps the relay transparent — no http.Client
+	// body-framing semantics on the 101 — and any bytes the upstream already
+	// sent past the header terminator stay buffered in br for the relay.
+	br := bufio.NewReader(upstream)
+	statusLine, err := br.ReadString('\n')
+	if err != nil {
+		writeWsErr(st, "upstream handshake failed")
+		return
+	}
+	status := 0
+	if parts := strings.SplitN(strings.TrimSpace(statusLine), " ", 3); len(parts) >= 2 {
+		status, _ = strconv.Atoi(parts[1])
+	}
+	header := map[string][]string{}
+	for {
+		line, err := br.ReadString('\n')
+		if err != nil {
+			writeWsErr(st, "upstream handshake failed")
+			return
+		}
+		line = strings.TrimRight(line, "\r\n")
+		if line == "" {
+			break
+		}
+		if i := strings.IndexByte(line, ':'); i >= 0 {
+			k := strings.TrimSpace(line[:i])
+			v := strings.TrimSpace(line[i+1:])
+			header[k] = append(header[k], v)
+		}
+	}
+
+	respMeta, err := json.Marshal(tunnel.WsDialResponse{Status: status, Header: header})
+	if err != nil {
+		return
+	}
+	if tunnel.WriteFrame(st, respMeta) != nil {
+		return
+	}
+	if status != 101 {
+		return // upstream declined the upgrade; data-plane surfaces the failure
+	}
+
+	// Raw bidirectional relay. Read the upstream side from br (it holds any
+	// post-handshake bytes already buffered). When either direction ends, close
+	// both conns so the other io.Copy unblocks.
+	done := make(chan struct{}, 2)
+	go func() { _, _ = io.Copy(st, br); done <- struct{}{} }()       // upstream → tunnel
+	go func() { _, _ = io.Copy(upstream, st); done <- struct{}{} }() // tunnel → upstream
+	<-done
+	_ = upstream.Close()
+	_ = st.Close()
+	<-done
+}
+
+func writeWsErr(st io.Writer, msg string) {
+	b, err := json.Marshal(tunnel.WsDialResponse{Status: 0, Error: msg})
 	if err != nil {
 		return
 	}

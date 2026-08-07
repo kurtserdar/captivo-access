@@ -438,3 +438,59 @@ func TestHandleStreamRejectsPathHostInjection(t *testing.T) {
 		t.Fatalf("evil server was hit %d time(s) — connector dialed a host outside the request's own upstream URL, host guard bypassed", got)
 	}
 }
+
+func TestResolveUpstreamTarget(t *testing.T) {
+	open, _ := ParseAllowedTargets("") // open boundary
+	cases := []struct {
+		name, upstream, path, wantErr string
+	}{
+		{"ok", "https://10.0.0.5:8006", "/api2/json/x", ""},
+		{"bad scheme", "ftp://10.0.0.5", "/x", "bad upstream url"},
+		{"no host", "https://", "/x", "bad upstream url"},
+		{"path not leading slash", "https://10.0.0.5", "x", "invalid path"},
+		{"host-confusing path", "https://10.0.0.5", "//evil.com/x", "invalid path"},
+		{"absolute path", "https://10.0.0.5", "https://evil.com/x", "invalid path"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, _, errMsg := resolveUpstreamTarget(c.upstream, c.path, open)
+			if errMsg != c.wantErr {
+				t.Fatalf("errMsg=%q want %q", errMsg, c.wantErr)
+			}
+		})
+	}
+}
+
+func TestResolveUpstreamTargetEgressBoundary(t *testing.T) {
+	only, err := ParseAllowedTargets("10.0.0.5:8006")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, e := resolveUpstreamTarget("https://10.0.0.5:8006", "/x", only); e != "" {
+		t.Fatalf("allowed target rejected: %q", e)
+	}
+	if _, _, e := resolveUpstreamTarget("https://10.0.0.9:8006", "/x", only); e != "target not allowed" {
+		t.Fatalf("disallowed target not blocked: %q", e)
+	}
+}
+
+// handleWS on a disallowed target must fail closed with a WsDialResponse error
+// and never dial anything.
+func TestHandleWSRejectsDisallowedTarget(t *testing.T) {
+	only, _ := ParseAllowedTargets("10.0.0.5") // 10.0.0.9 is NOT allowed
+	reqBytes, _ := json.Marshal(tunnel.WsDialRequest{Kind: "ws", UpstreamUrl: "https://10.0.0.9:8006", Path: "/x"})
+	client, server := net.Pipe()
+	defer client.Close()
+	go func() { handleWS(server, only, reqBytes); server.Close() }()
+	frame, err := tunnel.ReadFrame(client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var resp tunnel.WsDialResponse
+	if err := json.Unmarshal(frame, &resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp.Error != "target not allowed" {
+		t.Fatalf("expected egress rejection, got %+v", resp)
+	}
+}
