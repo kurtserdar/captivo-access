@@ -9,7 +9,7 @@
 #   # edit .env with real values
 #   docker compose -f docker-compose.prod.yml up -d
 #
-# See deploy/README.md for the full walkthrough (DNS, first-run db push, TLS).
+# See deploy/README.md for the full walkthrough (DNS, TLS). Schema migration runs automatically via the access-migrate service.
 name: captivo-access-prod
 
 services:
@@ -29,7 +29,7 @@ services:
       timeout: 3s
       retries: 10
     # No published port: only reachable from other containers on this
-    # compose network. Connect from the host (e.g. for `prisma db push`)
+    # compose network. Connect from the host for maintenance
     # via `docker compose -f docker-compose.prod.yml exec access-postgres ...`
     # or a one-off `docker run --network container:access-postgres ...`.
 

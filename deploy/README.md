@@ -291,6 +291,8 @@ changes both the schema and the connector↔data-plane protocol:
 - **Re-set each Site's address.** `db push` drops the old `upstreamName` column
   and adds `upstreamUrl`; existing Sites come out blank. Open each Site and set
   its **Internal address** (`http://host:port`) before it will route.
+
+  > Because the automatic `access-migrate` service refuses destructive changes, this specific legacy jump (which drops the `upstreamName` column) will halt the migration and keep the Manager down. For this one upgrade, apply the schema change manually once (with a destructive-change override) before bringing the stack up.
 - **Connectors no longer take `UPSTREAMS`.** Drop it from the `docker run`
   command. Optionally add `ALLOWED_TARGETS` (e.g. `10.0.5.0/24`) to cap what a
   connector may reach.
