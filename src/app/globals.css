@@ -102,6 +102,16 @@ a{color:inherit;}
 .table tbody tr:hover{background:var(--surface-hover);}
 .row-unread td{font-weight:600;}
 .cell-sub{color:var(--muted);font-size:.8rem;}
+/* Long unbreakable values (URLs, paths, emails) never force a table wider than
+   its wrapper — they wrap instead of scrolling. Applies to every table. */
+.table td { overflow-wrap: anywhere; }
+/* A cell holding a value + an inline action (Copy): the value flexes and may
+   shrink to nothing (min-width:0); the button keeps its size. */
+.cell-inline { display: flex; align-items: center; gap: .4rem; min-width: 0; }
+.cell-inline > :first-child { min-width: 0; flex: 1 1 auto; }
+/* Truncate a long free-form value to one line with an ellipsis; pair with a
+   title= carrying the full value. */
+.cell-truncate { display: block; max-width: 22rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---- pill / badge ---- */
 .pill{display:inline-flex;align-items:center;gap:.34rem;font-size:.75rem;font-weight:600;
