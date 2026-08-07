@@ -1,7 +1,12 @@
 import { requireCapability } from "@/lib/current-user";
+import { db } from "@/lib/db";
 import { getUpdateCheckConfig } from "@/lib/updates/update-check-config";
+import { isUpdateAvailable, isConnectorOutdated } from "@/lib/updates/semver";
+import { connectorTunnelUrl } from "@/lib/url";
+import { buildConnectorUpdateCommand } from "@/lib/connector/repair";
 import { managerVersion } from "@/lib/version";
 import { UpdatesForm } from "./updates-form";
+import { UpgradeGuide } from "./upgrade-guide";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Updates" };
@@ -9,6 +14,24 @@ export const metadata = { title: "Updates" };
 export default async function AdminUpdatesPage() {
   await requireCapability("configure");
   const cfg = await getUpdateCheckConfig();
+  const mgr = managerVersion();
+  const updateAvailable = isUpdateAvailable(cfg?.latestVersion, mgr);
+
+  // Only when an update is available do we look at connector drift and build the
+  // per-connector command (the token volume is kept, so it's a plain update).
+  let outdatedConnectors = 0;
+  let connectorCommand: string | null = null;
+  if (updateAvailable) {
+    const connectors = await db.connector.findMany({
+      where: { status: { not: "REVOKED" } },
+      select: { version: true },
+    });
+    outdatedConnectors = connectors.filter((c) => isConnectorOutdated(c.version, mgr)).length;
+    if (outdatedConnectors > 0) {
+      const managerUrl = process.env.MANAGER_PUBLIC_URL?.replace(/\/+$/, "") || "https://manager.<your-access-domain>";
+      connectorCommand = buildConnectorUpdateCommand(managerUrl, connectorTunnelUrl());
+    }
+  }
 
   return (
     <main>
@@ -21,12 +44,21 @@ export default async function AdminUpdatesPage() {
       <div className="card">
         <UpdatesForm
           initialEnabled={cfg?.enabled ?? true}
-          currentVersion={managerVersion()}
+          currentVersion={mgr}
           latestVersion={cfg?.latestVersion ?? null}
           lastCheckedAt={cfg?.lastCheckedAt ? cfg.lastCheckedAt.toISOString() : null}
           lastCheckOk={cfg?.lastCheckOk ?? null}
         />
       </div>
+      {updateAvailable && (
+        <UpgradeGuide
+          currentVersion={mgr}
+          latestVersion={cfg?.latestVersion ?? ""}
+          latestUrl={cfg?.latestUrl ?? null}
+          connectorCommand={connectorCommand}
+          outdatedConnectors={outdatedConnectors}
+        />
+      )}
     </main>
   );
 }
