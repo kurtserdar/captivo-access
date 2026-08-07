@@ -16,6 +16,8 @@ RUN pnpm db:generate && pnpm build
 # ---- runner ----
 FROM node:20-alpine AS runner
 WORKDIR /app
+ARG VERSION=dev
+ENV APP_VERSION=$VERSION
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 # Next.js standalone output
