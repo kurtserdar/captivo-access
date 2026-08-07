@@ -200,6 +200,12 @@ a{color:inherit;}
 .auth-card p{color:var(--muted);margin:0 0 1.3rem;font-size:.9rem;}
 .auth-card .field{text-align:left;}
 .auth-card .btn.primary{width:100%;justify-content:center;padding:.6rem;}
+/* Login actions: stack the passkey (primary) and SSO (secondary) buttons with
+   clear separation and an "or" divider between them. */
+.auth-actions{display:flex;flex-direction:column;gap:.75rem;}
+.auth-actions .btn{width:100%;justify-content:center;padding:.6rem;}
+.auth-or{display:flex;align-items:center;gap:.6rem;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;}
+.auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:var(--line);}
 
 /* ---- confirm dialog ---- */
 .confirm-panel{padding:1.1rem;}

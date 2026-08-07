@@ -63,14 +63,19 @@ export function LoginForm({
           {error} <a href="/recover">Recover your account</a>
         </p>
       )}
-      {ssoEnabled && (
-        <a className="btn primary" href={`/api/auth/oidc/start?returnTo=${encodeURIComponent(returnTo)}`}>
-          {ssoLabel}
-        </a>
-      )}
-      <button type="button" className="btn primary" onClick={handleClick} disabled={busy}>
-        {busy ? "Verifying…" : "Sign in with passkey"}
-      </button>
+      <div className="auth-actions">
+        <button type="button" className="btn primary" onClick={handleClick} disabled={busy}>
+          {busy ? "Verifying…" : "Sign in with passkey"}
+        </button>
+        {ssoEnabled && (
+          <>
+            <div className="auth-or"><span>or</span></div>
+            <a className="btn" href={`/api/auth/oidc/start?returnTo=${encodeURIComponent(returnTo)}`}>
+              {ssoLabel}
+            </a>
+          </>
+        )}
+      </div>
     </div>
   );
 }
