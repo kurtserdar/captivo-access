@@ -2,12 +2,15 @@ import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { managerVersion } from "@/lib/version";
 import { isConnectorOutdated } from "@/lib/updates/semver";
+import { buildConnectorUpdateCommand } from "@/lib/connector/repair";
+import { connectorTunnelUrl, isLocalManagerUrl } from "@/lib/url";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { ConnectorForm } from "./connector-form";
 import { ConnectorName } from "./connector-name";
 import { DeleteConnectorButton } from "./delete-connector-button";
 import { RepairConnectorButton } from "./repair-connector-button";
 import { RevokeConnectorButton } from "./revoke-connector-button";
+import { UpdateConnectorButton } from "./update-connector-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Connectors" };
@@ -35,6 +38,9 @@ export default async function AdminConnectorsPage() {
   });
 
   const mgr = managerVersion();
+  const managerUrl = process.env.MANAGER_PUBLIC_URL?.replace(/\/+$/, "") || "https://manager.<your-access-domain>";
+  const updateCommand = buildConnectorUpdateCommand(managerUrl, connectorTunnelUrl());
+  const managerUrlIsLocal = isLocalManagerUrl(managerUrl);
 
   return (
     <main>
@@ -89,6 +95,9 @@ export default async function AdminConnectorsPage() {
                   <td>
                     {c.status !== "REVOKED" ? (
                       <div className="row-actions">
+                        {isConnectorOutdated(c.version, mgr) && (
+                          <UpdateConnectorButton command={updateCommand} managerUrlIsLocal={managerUrlIsLocal} />
+                        )}
                         <RepairConnectorButton id={c.id} />
                         <RevokeConnectorButton id={c.id} />
                       </div>
