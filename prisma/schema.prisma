@@ -156,6 +156,7 @@ model AccessGrant {
   endsAt   DateTime?
   status   GrantStatus @default(ACTIVE)
   note     String?
+  denyReason String?
 
   requiresApproval Boolean   @default(false)
   approvedAt       DateTime?
@@ -223,7 +224,10 @@ model SmtpConfig {
   password  String
   fromName  String
   fromEmail String
-  enabled   Boolean  @default(false)
+  enabled            Boolean  @default(false)
+  lastVerifiedAt     DateTime?
+  lastVerifiedOk     Boolean?
+  lastVerifiedDetail String?
   updatedAt DateTime @updatedAt
 }
 
@@ -247,7 +251,10 @@ model OidcConfig {
   issuer       String
   clientId     String
   clientSecret String                  // encrypted at rest (lib/crypto)
-  buttonLabel  String?
+  buttonLabel        String?
+  lastVerifiedAt     DateTime?
+  lastVerifiedOk     Boolean?
+  lastVerifiedDetail String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
