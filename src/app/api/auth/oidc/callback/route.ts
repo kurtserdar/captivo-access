@@ -10,10 +10,15 @@ import { managerBaseUrl } from "@/lib/url";
 
 export const dynamic = "force-dynamic";
 
-function fail(req: NextRequest, error: string) {
-  const url = new URL(`/login?error=${error}`, req.nextUrl);
-  const res = NextResponse.redirect(url);
-  return res;
+// Redirect back to /login with a generic, user-safe error code. The specific
+// `reason` is logged server-side only (never shown to the user) so an opaque
+// `error=sso` can be diagnosed from the manager logs. The base is the manager's
+// public URL (managerBaseUrl), NOT req.nextUrl — behind the proxy the latter
+// resolves to the container's own hostname and sends the browser somewhere it
+// can't reach.
+function fail(req: NextRequest, error: string, reason?: string) {
+  console.error(`[oidc] login failed (${error})${reason ? `: ${reason}` : ""}`);
+  return NextResponse.redirect(new URL(`/login?error=${error}`, managerBaseUrl(req)));
 }
 
 export async function GET(req: NextRequest) {
@@ -21,24 +26,25 @@ export async function GET(req: NextRequest) {
   const saved = await readOidcState();
   await clearOidcState(); // single-use, always cleared
 
-  if (!cfg || !cfg.enabled) return fail(req, "sso");
-  if (!saved) return fail(req, "sso");
+  if (!cfg || !cfg.enabled) return fail(req, "sso", "sso_not_enabled");
+  if (!saved) return fail(req, "sso", "no_saved_state (ca_oidc cookie missing/expired)");
 
   const params = req.nextUrl.searchParams;
-  if (params.get("error")) return fail(req, "sso");
+  const idpError = params.get("error");
+  if (idpError) return fail(req, "sso", `idp_returned_error: ${idpError} ${params.get("error_description") ?? ""}`.trim());
   const code = params.get("code");
   const state = params.get("state");
-  if (!code || !state || state !== saved.state) return fail(req, "sso");
+  if (!code || !state || state !== saved.state) return fail(req, "sso", "missing_code_or_state_mismatch");
 
   let disc;
   try {
     disc = await discover(cfg.issuer);
-  } catch {
-    return fail(req, "sso");
+  } catch (e) {
+    return fail(req, "sso", `discover_failed: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   const secret = await getOidcSecret();
-  if (!secret) return fail(req, "sso");
+  if (!secret) return fail(req, "sso", "no_client_secret_saved");
 
   // Exchange the code (PKCE + client_secret_post).
   const redirectUri = `${managerBaseUrl(req)}/api/auth/oidc/callback`;
@@ -57,12 +63,15 @@ export async function GET(req: NextRequest) {
       headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
       body,
     });
-    if (!res.ok) return fail(req, "sso");
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      return fail(req, "sso", `token_endpoint_${res.status}: ${detail.slice(0, 300)}`);
+    }
     tokens = await res.json();
-  } catch {
-    return fail(req, "sso");
+  } catch (e) {
+    return fail(req, "sso", `token_request_threw: ${e instanceof Error ? e.message : String(e)}`);
   }
-  if (!tokens.id_token) return fail(req, "sso");
+  if (!tokens.id_token) return fail(req, "sso", "no_id_token_in_response");
 
   // Verify the ID token: signature (JWKS) + iss + aud + exp/nbf via jose.
   let claims: IdClaims;
@@ -74,13 +83,13 @@ export async function GET(req: NextRequest) {
       algorithms: ["RS256", "ES256", "PS256"],
     });
     claims = payload as IdClaims;
-  } catch {
-    return fail(req, "sso");
+  } catch (e) {
+    return fail(req, "sso", `id_token_verify_failed: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // Remaining claim checks (azp/nonce/email_verified) + email extraction.
   const checked = checkClaims(claims, { issuer: normalizeIssuer(cfg.issuer), clientId: cfg.clientId, nonce: saved.nonce });
-  if (!checked.ok) return fail(req, "sso");
+  if (!checked.ok) return fail(req, "sso", `claim_check_failed: ${checked.reason}`);
   const email = checked.email;
 
   // Provisioning (spec §5): existing ACTIVE user, else redeem an invite, else reject.
@@ -88,7 +97,7 @@ export async function GET(req: NextRequest) {
   if (user) {
     if (user.status !== "ACTIVE") return fail(req, "disabled");
     await startSession(user.id, req);
-    return NextResponse.redirect(new URL(safeReturnTo(saved.returnTo), req.nextUrl));
+    return NextResponse.redirect(new URL(safeReturnTo(saved.returnTo), managerBaseUrl(req)));
   }
 
   const invite = await db.invite.findFirst({
@@ -111,9 +120,9 @@ export async function GET(req: NextRequest) {
         status: "ACTIVE",
       },
     });
-  } catch {
-    return fail(req, "sso");
+  } catch (e) {
+    return fail(req, "sso", `user_create_failed: ${e instanceof Error ? e.message : String(e)}`);
   }
   await startSession(created.id, req);
-  return NextResponse.redirect(new URL(safeReturnTo(saved.returnTo), req.nextUrl));
+  return NextResponse.redirect(new URL(safeReturnTo(saved.returnTo), managerBaseUrl(req)));
 }

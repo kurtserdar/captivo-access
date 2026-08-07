@@ -9,7 +9,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const cfg = await getOidcConfig();
-  if (!cfg || !cfg.enabled) return NextResponse.redirect(new URL("/login", req.nextUrl));
+  // Browser redirects use managerBaseUrl (the public URL), NOT req.nextUrl —
+  // behind the proxy the latter resolves to the container's own hostname.
+  const base = managerBaseUrl(req);
+  if (!cfg || !cfg.enabled) return NextResponse.redirect(new URL("/login", base));
 
   const returnTo = safeReturnTo(req.nextUrl.searchParams.get("returnTo"));
   const state = randomUrlSafe();
@@ -19,8 +22,9 @@ export async function GET(req: NextRequest) {
   let authorizationEndpoint: string;
   try {
     authorizationEndpoint = (await discover(cfg.issuer)).authorization_endpoint;
-  } catch {
-    return NextResponse.redirect(new URL("/login?error=sso", req.nextUrl));
+  } catch (e) {
+    console.error(`[oidc] start failed (sso): discover_failed: ${e instanceof Error ? e.message : String(e)}`);
+    return NextResponse.redirect(new URL("/login?error=sso", base));
   }
 
   await setOidcState({ state, nonce, codeVerifier, returnTo });
