@@ -261,3 +261,14 @@ model OidcConfig {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+// Singleton (id = "singleton") holding GitHub release check configuration.
+model UpdateCheckConfig {
+  id            String    @id
+  enabled       Boolean   @default(true)
+  latestVersion String?
+  latestUrl     String?
+  lastCheckedAt DateTime?
+  lastCheckOk   Boolean?
+  updatedAt     DateTime  @updatedAt
+}
