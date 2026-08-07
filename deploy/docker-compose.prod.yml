@@ -33,6 +33,20 @@ services:
     # via `docker compose -f docker-compose.prod.yml exec access-postgres ...`
     # or a one-off `docker run --network container:access-postgres ...`.
 
+  # One-shot schema migration. Runs `prisma db push` once against Postgres and
+  # exits; the Manager waits for it to complete successfully before starting.
+  # Idempotent (a no-op when already in sync) and fail-closed on a destructive
+  # diff — see deploy/README.md.
+  access-migrate:
+    image: ghcr.io/kurtserdar/captivo-access-migrate:latest
+    container_name: access-migrate
+    depends_on:
+      access-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://access:${POSTGRES_PASSWORD:?required}@access-postgres:5432/captivo_access
+    restart: "no"
+
   access-manager:
     image: ghcr.io/kurtserdar/captivo-access-manager:latest
     container_name: access-manager
@@ -40,6 +54,8 @@ services:
     depends_on:
       access-postgres:
         condition: service_healthy
+      access-migrate:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://access:${POSTGRES_PASSWORD:?required}@access-postgres:5432/captivo_access
       SESSION_SECRET: ${SESSION_SECRET:?required}
