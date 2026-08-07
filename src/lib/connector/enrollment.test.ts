@@ -27,7 +27,7 @@ const mockDb = db as unknown as {
 // Fake `tx` handed to the `db.$transaction(async (tx) => ...)` callback.
 const tx = {
   connectorPairing: { updateMany: vi.fn() },
-  connector: { create: vi.fn() },
+  connector: { create: vi.fn(), update: vi.fn() },
 };
 
 beforeEach(() => {
@@ -47,7 +47,7 @@ describe("createPairing", () => {
       createdAt: new Date(),
     });
 
-    const result = await createPairing("Branch A", 30);
+    const result = await createPairing("Branch A", undefined, 30);
 
     expect(result.id).toBe("pair-1");
     expect(typeof result.code).toBe("string");
@@ -173,5 +173,54 @@ describe("validateConnectorToken", () => {
     const revoked = await validateConnectorToken(token);
 
     expect(revoked).toBeNull();
+  });
+});
+
+describe("redeemPairing re-pair branch (pairing bound to an existing connector)", () => {
+  it("updates the existing connector's token instead of creating a new one", async () => {
+    const code = generateToken();
+    const codeHash = await hashToken(code);
+    mockDb.connectorPairing.findMany.mockResolvedValue([
+      { id: "pair1", codeHash, name: "HQ", connectorId: "conn-existing", usedAt: null, expiresAt: new Date(Date.now() + 60_000) },
+    ]);
+    tx.connectorPairing.updateMany.mockResolvedValue({ count: 1 });
+    tx.connector.update.mockResolvedValue({ id: "conn-existing" });
+
+    const result = await redeemPairing(code, { version: "1.2.3" });
+
+    expect(result).toEqual({ connectorId: "conn-existing", token: expect.any(String) });
+    expect(tx.connector.update).toHaveBeenCalledTimes(1);
+    expect(tx.connector.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "conn-existing" }, data: expect.objectContaining({ status: "PENDING" }) }),
+    );
+    expect(tx.connector.create).not.toHaveBeenCalled();
+  });
+
+  it("returns null when the target connector no longer exists (P2025)", async () => {
+    const code = generateToken();
+    const codeHash = await hashToken(code);
+    mockDb.connectorPairing.findMany.mockResolvedValue([
+      { id: "pair1", codeHash, name: "HQ", connectorId: "conn-gone", usedAt: null, expiresAt: new Date(Date.now() + 60_000) },
+    ]);
+    tx.connectorPairing.updateMany.mockResolvedValue({ count: 1 });
+    tx.connector.update.mockRejectedValue(Object.assign(new Error("not found"), { code: "P2025" }));
+
+    const result = await redeemPairing(code, {});
+    expect(result).toBeNull();
+  });
+
+  it("still creates a new connector when the pairing has no connectorId", async () => {
+    const code = generateToken();
+    const codeHash = await hashToken(code);
+    mockDb.connectorPairing.findMany.mockResolvedValue([
+      { id: "pair1", codeHash, name: "HQ", connectorId: null, usedAt: null, expiresAt: new Date(Date.now() + 60_000) },
+    ]);
+    tx.connectorPairing.updateMany.mockResolvedValue({ count: 1 });
+    tx.connector.create.mockResolvedValue({ id: "conn-new" });
+
+    const result = await redeemPairing(code, {});
+    expect(result).toEqual({ connectorId: "conn-new", token: expect.any(String) });
+    expect(tx.connector.create).toHaveBeenCalledTimes(1);
+    expect(tx.connector.update).not.toHaveBeenCalled();
   });
 });
