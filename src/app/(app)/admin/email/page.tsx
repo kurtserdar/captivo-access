@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/current-user";
 import { getSmtpConfig } from "@/lib/email/mailer";
+import { LastVerified } from "@/app/(app)/_shell/last-verified";
 import { EmailForm } from "./email-form";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export default async function AdminEmailPage() {
         </div>
       </div>
       <div className="card">
+        <LastVerified at={cfg?.lastVerifiedAt ?? null} ok={cfg?.lastVerifiedOk ?? null} detail={cfg?.lastVerifiedDetail ?? null} />
         <EmailForm initial={initial} adminEmail={admin.email} />
       </div>
     </main>

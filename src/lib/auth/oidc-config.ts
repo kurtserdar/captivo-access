@@ -9,6 +9,9 @@ export type OidcConfigView = {
   clientId: string;
   buttonLabel: string | null;
   hasSecret: boolean;
+  lastVerifiedAt: Date | null;
+  lastVerifiedOk: boolean | null;
+  lastVerifiedDetail: string | null;
 };
 
 export async function getOidcConfig(): Promise<OidcConfigView | null> {
@@ -27,6 +30,9 @@ export async function getOidcConfig(): Promise<OidcConfigView | null> {
     clientId: c.clientId,
     buttonLabel: c.buttonLabel,
     hasSecret: c.clientSecret.length > 0,
+    lastVerifiedAt: c.lastVerifiedAt,
+    lastVerifiedOk: c.lastVerifiedOk,
+    lastVerifiedDetail: c.lastVerifiedDetail,
   };
 }
 

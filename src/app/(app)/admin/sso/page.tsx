@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { requireCapability } from "@/lib/current-user";
 import { getOidcConfig } from "@/lib/auth/oidc-config";
+import { LastVerified } from "@/app/(app)/_shell/last-verified";
 import { SsoForm } from "./sso-form";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,7 @@ export default async function AdminSsoPage() {
         <p className="cell-sub">Create an OIDC app in your IdP, add the redirect URI above, then paste its Issuer, Client ID, and Client secret below. Request scopes <code>openid email profile</code>.</p>
       </div>
       <div className="card">
+        <LastVerified at={cfg?.lastVerifiedAt ?? null} ok={cfg?.lastVerifiedOk ?? null} detail={cfg?.lastVerifiedDetail ?? null} />
         <SsoForm initial={initial} />
       </div>
     </main>
