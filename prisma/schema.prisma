@@ -112,15 +112,18 @@ model Connector {
   remoteAddr String?
   createdAt  DateTime        @default(now())
   sites      Site[]
+  pairings   ConnectorPairing[]
 }
 
 model ConnectorPairing {
-  id        String    @id @default(cuid())
-  codeHash  String
-  name      String
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
+  id          String     @id @default(cuid())
+  codeHash    String
+  name        String
+  connectorId String?
+  connector   Connector? @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime   @default(now())
 }
 
 model Site {
