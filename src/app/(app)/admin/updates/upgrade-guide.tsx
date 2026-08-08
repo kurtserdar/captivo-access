@@ -13,12 +13,14 @@ export function UpgradeGuide({
   latestUrl,
   connectorCommand,
   outdatedConnectors,
+  hasGatewayHost = false,
 }: {
   currentVersion: string;
   latestVersion: string;
   latestUrl: string | null;
   connectorCommand: string | null;
   outdatedConnectors: number;
+  hasGatewayHost?: boolean;
 }) {
   return (
     <div className="card">
@@ -62,6 +64,13 @@ export function UpgradeGuide({
           <div className="row-actions">
             <CopyButton value={connectorCommand} label="Copy command" />
           </div>
+          {hasGatewayHost && (
+            <p className="cell-sub">
+              If a connector also runs the Guacamole gateway, update it from{" "}
+              <a href="/admin/connectors">Connectors</a> instead — that command keeps it on the gateway
+              network.
+            </p>
+          )}
         </div>
       )}
     </div>
