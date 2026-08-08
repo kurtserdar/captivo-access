@@ -3,6 +3,7 @@ import { listUserGrants } from "@/lib/access/grants";
 import { classifyGrant } from "@/lib/access/evaluate";
 import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
+import { SiteAvatar } from "@/app/(app)/_shell/site-avatar";
 import { RequestAccessForm } from "./request-access-form";
 import { WithdrawRequestButton } from "./withdraw-request-button";
 
@@ -35,7 +36,7 @@ function GrantTable({ grants, badge, openable }: { grants: Grant[]; badge: React
         <tbody>
           {grants.map((g) => (
             <tr key={g.id}>
-              <td>{g.site.name}</td>
+              <td><span className="cell-inline"><SiteAvatar name={g.site.name} /> {g.site.name}</span></td>
               <td className="cell-sub">
                 <AccessWindow startsAt={g.startsAt} endsAt={g.endsAt} />
                 {(() => { const s = parseSchedule(g.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
@@ -122,7 +123,7 @@ export default async function AccessPage() {
               <tbody>
                 {requests.map(({ grant, reason }) => (
                   <tr key={grant.id}>
-                    <td>{grant.site.name}</td>
+                    <td><span className="cell-inline"><SiteAvatar name={grant.site.name} /> {grant.site.name}</span></td>
                     <td className="cell-sub"><AccessWindow startsAt={grant.startsAt} endsAt={grant.endsAt} /></td>
                     <td>
                       {reason === "pending_approval"
