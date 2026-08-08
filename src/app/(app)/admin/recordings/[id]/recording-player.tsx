@@ -1,12 +1,14 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { eventWithTime } from "rrweb";
+import { hasFullSnapshot } from "@/lib/recording/snapshot";
 
 export function RecordingPlayer({ id }: { id: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const playerRef = useRef<{ $destroy?: () => void } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [empty, setEmpty] = useState(false);
+  const [incomplete, setIncomplete] = useState(false);
 
   useEffect(() => {
     let disposed = false;
@@ -17,6 +19,7 @@ export function RecordingPlayer({ id }: { id: string }) {
         const body = await res.json();
         const events: unknown[] = Array.isArray(body.events) ? body.events : [];
         if (events.length < 2) { setEmpty(true); return; }
+        if (!hasFullSnapshot(events)) { setIncomplete(true); return; }
         if (disposed || !ref.current) return;
         const { default: Player } = await import("rrweb-player");
         await import("rrweb-player/dist/style.css");
@@ -39,5 +42,7 @@ export function RecordingPlayer({ id }: { id: string }) {
 
   if (error) return <p className="notice error">{error}</p>;
   if (empty) return <p className="notice">This recording is too short to play.</p>;
+  if (incomplete)
+    return <p className="notice">This recording is incomplete and can't be replayed (its opening snapshot was not captured).</p>;
   return <div ref={ref} />;
 }
