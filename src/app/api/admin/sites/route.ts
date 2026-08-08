@@ -20,8 +20,10 @@ export async function POST(req: NextRequest) {
   const upstreamUrl = typeof body.upstreamUrl === "string" ? body.upstreamUrl.trim() : "";
   const description = typeof body.description === "string" && body.description.trim() ? body.description.trim() : null;
   const insecureSkipVerify = body.insecureSkipVerify === true;
-  const recordSessions = recordingEnabled() && body.recordSessions === true;
   const accessMode = body.accessMode === "GATEWAY" ? "GATEWAY" : "TRANSPARENT";
+  // Gateway sites are recorded by Guacamole, not rrweb — rrweb cannot capture a
+  // gateway's canvas, so recording must never be persisted as enabled for them.
+  const recordSessions = accessMode === "GATEWAY" ? false : recordingEnabled() && body.recordSessions === true;
 
   if (!connectorId || !name || !upstreamUrl) {
     return NextResponse.json({ error: "connector_name_upstream_required" }, { status: 400 });
