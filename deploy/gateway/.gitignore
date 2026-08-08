@@ -1,0 +1,4 @@
+# Generated (version-matched to the guacamole image) — see README step 1.
+initdb/
+# Secrets.
+.env

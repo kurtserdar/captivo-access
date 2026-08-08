@@ -1,0 +1,95 @@
+# Captivo Access — Pro session gateway (Apache Guacamole) · OPTIONAL, opt-in.
+#
+# Run this ALONGSIDE the connector, on the SAME on-prem host, when you want
+# isolated + RECORDED RDP / SSH / VNC sessions. guacd reaches the RDP/SSH/VNC
+# targets over the customer LAN; the Guacamole web UI (HTTP + WebSocket) is then
+# published as an ordinary Captivo Site, so it reuses Captivo's passkey identity,
+# time-boxed grants, and audit — while Guacamole records each session natively,
+# and the recording NEVER leaves the customer network (KVKK/5651).
+#
+# Default Captivo deployment stays connector-only — this file is separate weight
+# you turn on deliberately. Requires real compute (JVM + guacd + per-session
+# video); size the host accordingly.
+#
+# Setup (see deploy/gateway/README.md for the full walkthrough):
+#   1. Generate the Guacamole DB schema ONCE (version-matched to the image):
+#        mkdir -p initdb
+#        docker run --rm guacamole/guacamole:1.5.5 \
+#          /opt/guacamole/bin/initdb.sh --postgresql > initdb/01-schema.sql
+#   2. cp .env.gateway.example .env  (set GUAC_DB_PASSWORD)
+#   3. docker compose -f docker-compose.gateway.yml up -d
+#   4. In Captivo: add a Site pointing at http://<this-host>:8080/guacamole/,
+#      then in Guacamole create an RDP/SSH/VNC connection with recording enabled.
+#
+# Validated locally 2026-08-08 (guacamole/guacd 1.5.5): stack boots, web UI +
+# guacadmin auth work, guacd listens on 4822. The record-init below fixes the
+# real gotcha found in validation: guacd runs as uid 1000 and cannot write a
+# root-owned recordings volume.
+name: captivo-access-gateway
+
+services:
+  guac-postgres:
+    image: postgres:16-alpine
+    container_name: cap-guac-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: guacamole
+      POSTGRES_USER: guacamole
+      POSTGRES_PASSWORD: ${GUAC_DB_PASSWORD:?required}
+    volumes:
+      - guac_pgdata:/var/lib/postgresql/data
+      # One-time schema (generated in setup step 1). Applied on first init only.
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guacamole -d guacamole"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  # guacd runs as uid 1000 and cannot write a root-owned named volume, so make
+  # the recordings volume writable by it before guacd starts (validation gotcha).
+  guac-record-init:
+    image: busybox
+    container_name: cap-guac-record-init
+    command: ["sh", "-c", "chown -R 1000:1000 /rec && chmod 0770 /rec"]
+    volumes:
+      - guac_recordings:/rec
+    restart: "no"
+
+  guacd:
+    image: guacamole/guacd:1.5.5
+    container_name: cap-guacd
+    restart: unless-stopped
+    depends_on:
+      guac-record-init:
+        condition: service_completed_successfully
+    volumes:
+      # guacd writes raw session recordings here; the Guacamole web UI plays them
+      # back natively (guacenc is only needed to export a standalone video file).
+      - guac_recordings:/var/lib/guacamole/recordings
+
+  guacamole:
+    image: guacamole/guacamole:1.5.5
+    container_name: cap-guacamole
+    restart: unless-stopped
+    depends_on:
+      guac-postgres:
+        condition: service_healthy
+      guacd:
+        condition: service_started
+    environment:
+      GUACD_HOSTNAME: guacd
+      POSTGRESQL_HOSTNAME: guac-postgres
+      POSTGRESQL_DATABASE: guacamole
+      POSTGRESQL_USER: guacamole
+      POSTGRESQL_PASSWORD: ${GUAC_DB_PASSWORD:?required}
+    # Bind to localhost only: Captivo (via the connector) reaches this over the
+    # LAN; it is NOT exposed to the internet directly. Publish it through Captivo
+    # as a Site instead. Change the left side if the connector reaches it by a
+    # different address.
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  guac_pgdata: {}
+  guac_recordings: {}
