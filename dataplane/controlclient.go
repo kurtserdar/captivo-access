@@ -21,9 +21,8 @@ type ControlClient struct {
 	BaseURL, Secret string
 	HTTP            *http.Client
 
-	recorderOnce sync.Once
-	recorderJS   []byte
-	recorderErr  error
+	recorderMu sync.Mutex
+	recorderJS []byte
 }
 
 func NewControlClient(base, secret string) *ControlClient {
@@ -89,38 +88,38 @@ func (c *ControlClient) SiteByHost(host string) (siteID, connectorID, upstreamUr
 }
 
 // RecorderJS returns the rrweb recorder bundle served by the control plane
-// at GET /api/internal/recorder. The response is fetched once per process
-// and cached in memory (via sync.Once) — including a fetch error, so a
-// failed first attempt keeps failing until the process restarts. That's an
-// acceptable trade-off here: recording is fail-silent (browserproxy replies
-// 404 on error, which simply disables recording for that page load) and the
-// bundle never changes at runtime.
+// at GET /api/internal/recorder. A successful fetch is cached in memory for
+// the lifetime of the process (the bundle never changes at runtime), but a
+// failed fetch is never cached — the next call retries against the control
+// plane. This matters because recording is fail-silent (browserproxy replies
+// 404 on error): caching a transient failure would otherwise disable
+// recording for the whole process until a restart. recorder.js is fetched
+// rarely, so holding the mutex across the network call is fine.
 func (c *ControlClient) RecorderJS() ([]byte, error) {
-	c.recorderOnce.Do(func() {
-		req, err := http.NewRequest(http.MethodGet, c.BaseURL+"/api/internal/recorder", nil)
-		if err != nil {
-			c.recorderErr = err
-			return
-		}
-		req.Header.Set("x-dataplane-secret", c.Secret)
-		resp, err := c.HTTP.Do(req)
-		if err != nil {
-			c.recorderErr = err
-			return
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			c.recorderErr = &httpError{resp.StatusCode}
-			return
-		}
-		b, err := io.ReadAll(resp.Body)
-		if err != nil {
-			c.recorderErr = err
-			return
-		}
-		c.recorderJS = b
-	})
-	return c.recorderJS, c.recorderErr
+	c.recorderMu.Lock()
+	defer c.recorderMu.Unlock()
+	if c.recorderJS != nil {
+		return c.recorderJS, nil
+	}
+	req, err := http.NewRequest(http.MethodGet, c.BaseURL+"/api/internal/recorder", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("x-dataplane-secret", c.Secret)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, &httpError{resp.StatusCode}
+	}
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	c.recorderJS = b
+	return b, nil
 }
 
 // SendRecording ships one rrweb batch to the control plane's ingest
