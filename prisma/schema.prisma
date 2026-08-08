@@ -114,6 +114,7 @@ model Connector {
   status     ConnectorStatus @default(PENDING)
   lastSeenAt DateTime?
   version    String?
+  gatewayHost Boolean @default(false)
   remoteAddr String?
   createdAt  DateTime        @default(now())
   sites      Site[]
