@@ -10,6 +10,7 @@ import { ConnectorName } from "./connector-name";
 import { DeleteConnectorButton } from "./delete-connector-button";
 import { RepairConnectorButton } from "./repair-connector-button";
 import { RevokeConnectorButton } from "./revoke-connector-button";
+import { ToggleGatewayButton } from "./toggle-gateway-button";
 import { UpdateConnectorButton } from "./update-connector-button";
 
 export const dynamic = "force-dynamic";
@@ -33,13 +34,12 @@ export default async function AdminConnectorsPage() {
   await requireAdmin();
 
   const connectors = await db.connector.findMany({
-    select: { id: true, name: true, status: true, lastSeenAt: true, version: true, _count: { select: { sites: true } } },
+    select: { id: true, name: true, status: true, lastSeenAt: true, version: true, gatewayHost: true, _count: { select: { sites: true } } },
     orderBy: { createdAt: "desc" },
   });
 
   const mgr = managerVersion();
   const managerUrl = process.env.MANAGER_PUBLIC_URL?.replace(/\/+$/, "") || "https://manager.<your-access-domain>";
-  const updateCommand = buildConnectorUpdateCommand(managerUrl, connectorTunnelUrl());
   const managerUrlIsLocal = isLocalManagerUrl(managerUrl);
 
   return (
@@ -77,38 +77,43 @@ export default async function AdminConnectorsPage() {
               </tr>
             </thead>
             <tbody>
-              {connectors.map((c) => (
-                <tr key={c.id}>
-                  <td><ConnectorName id={c.id} name={c.name} /></td>
-                  <td>
-                    <span className={`pill ${STATUS_PILL[c.status] ?? "neutral"}`}>
-                      {STATUS_LABEL[c.status] ?? c.status}
-                    </span>
-                  </td>
-                  <td className="cell-sub">{c.lastSeenAt ? <LocalTime iso={c.lastSeenAt.toISOString()} /> : "Never"}</td>
-                  <td className="cell-sub">
-                    {c.version ?? "—"}
-                    {isConnectorOutdated(c.version, mgr) && (
-                      <span className="pill warn" style={{ marginLeft: ".4rem" }}>Outdated</span>
-                    )}
-                  </td>
-                  <td>
-                    {c.status !== "REVOKED" ? (
-                      <div className="row-actions">
-                        {isConnectorOutdated(c.version, mgr) && (
-                          <UpdateConnectorButton command={updateCommand} managerUrlIsLocal={managerUrlIsLocal} />
-                        )}
-                        <RepairConnectorButton id={c.id} />
-                        <RevokeConnectorButton id={c.id} />
-                      </div>
-                    ) : c._count.sites === 0 ? (
-                      <DeleteConnectorButton id={c.id} name={c.name} />
-                    ) : (
-                      <span className="cell-sub">Revoked · remove its {c._count.sites} site{c._count.sites === 1 ? "" : "s"} under Sites to delete this connector</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {connectors.map((c) => {
+                const updateCommand = buildConnectorUpdateCommand(managerUrl, connectorTunnelUrl(), c.gatewayHost);
+                return (
+                  <tr key={c.id}>
+                    <td><ConnectorName id={c.id} name={c.name} /></td>
+                    <td>
+                      <span className={`pill ${STATUS_PILL[c.status] ?? "neutral"}`}>
+                        {STATUS_LABEL[c.status] ?? c.status}
+                      </span>
+                      {c.gatewayHost && <span className="pill neutral" style={{ marginLeft: ".4rem" }}>Gateway</span>}
+                    </td>
+                    <td className="cell-sub">{c.lastSeenAt ? <LocalTime iso={c.lastSeenAt.toISOString()} /> : "Never"}</td>
+                    <td className="cell-sub">
+                      {c.version ?? "—"}
+                      {isConnectorOutdated(c.version, mgr) && (
+                        <span className="pill warn" style={{ marginLeft: ".4rem" }}>Outdated</span>
+                      )}
+                    </td>
+                    <td>
+                      {c.status !== "REVOKED" ? (
+                        <div className="row-actions">
+                          {isConnectorOutdated(c.version, mgr) && (
+                            <UpdateConnectorButton command={updateCommand} managerUrlIsLocal={managerUrlIsLocal} />
+                          )}
+                          <RepairConnectorButton id={c.id} />
+                          <ToggleGatewayButton id={c.id} gatewayHost={c.gatewayHost} />
+                          <RevokeConnectorButton id={c.id} />
+                        </div>
+                      ) : c._count.sites === 0 ? (
+                        <DeleteConnectorButton id={c.id} name={c.name} />
+                      ) : (
+                        <span className="cell-sub">Revoked · remove its {c._count.sites} site{c._count.sites === 1 ? "" : "s"} under Sites to delete this connector</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

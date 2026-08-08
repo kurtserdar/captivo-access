@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const { id } = await ctx.params;
 
-  const connector = await db.connector.findUnique({ where: { id }, select: { id: true, name: true, status: true } });
+  const connector = await db.connector.findUnique({ where: { id }, select: { id: true, name: true, status: true, gatewayHost: true } });
   if (!connector) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (!canRepairConnector(connector.status)) return NextResponse.json({ error: "not_repairable" }, { status: 409 });
 
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   }
 
   const managerUrl = managerBaseUrl(req);
-  const reconfigureCommand = buildReconfigureCommand(code, managerUrl, connectorTunnelUrl());
+  const reconfigureCommand = buildReconfigureCommand(code, managerUrl, connectorTunnelUrl(), connector.gatewayHost);
   const managerUrlIsLocal = isLocalManagerUrl(managerUrl);
 
   return NextResponse.json({ code, reconfigureCommand, managerUrlIsLocal });
