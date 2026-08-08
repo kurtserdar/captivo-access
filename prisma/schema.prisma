@@ -74,8 +74,8 @@ model Invite {
   tokenHash   String    @unique // argon2(random 32B); plaintext only in the link
   expiresAt   DateTime
   usedAt      DateTime?
-  createdById String
-  createdBy   User      @relation("InviteCreator", fields: [createdById], references: [id])
+  createdById String?
+  createdBy   User?     @relation("InviteCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())
 
   @@index([email])
@@ -165,12 +165,12 @@ model AccessGrant {
   requiresApproval Boolean   @default(false)
   approvedAt       DateTime?
   approvedById     String?
-  approvedBy       User?     @relation("GrantApprover", fields: [approvedById], references: [id])
+  approvedBy       User?     @relation("GrantApprover", fields: [approvedById], references: [id], onDelete: SetNull)
 
   schedule Json?
 
-  createdById String
-  createdBy   User     @relation("GrantCreator", fields: [createdById], references: [id])
+  createdById String?
+  createdBy   User?    @relation("GrantCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 
   @@index([userId, siteId])
