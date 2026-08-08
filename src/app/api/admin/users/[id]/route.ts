@@ -61,3 +61,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   await db.user.update({ where: { id }, data: updateData });
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await getCurrentUser();
+  if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  const { id } = await params;
+  if (id === admin.id) return NextResponse.json({ error: "cannot_delete_self" }, { status: 403 });
+
+  const target = await db.user.findUnique({ where: { id }, select: { id: true, role: true } });
+  if (!target) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (target.role === "ADMIN") return NextResponse.json({ error: "cannot_delete_admin" }, { status: 403 });
+
+  // Cascades Passkey/TotpSecret/Session/own-AccessGrant; SetNulls the creator/
+  // approver attribution on other users' invites/grants; AuditEvent +
+  // SessionRecording (no relation) are untouched.
+  await db.user.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}
