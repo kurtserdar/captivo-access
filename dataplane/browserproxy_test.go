@@ -318,6 +318,12 @@ func TestBrowserProxyUnknownSite(t *testing.T) {
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusNotFound)
 	}
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Fatalf("Content-Type = %q, want text/html prefix", ct)
+	}
+	if want := "No application here"; !strings.Contains(w.Body.String(), want) {
+		t.Fatalf("body = %q, want to contain %q", w.Body.String(), want)
+	}
 	if evs := p.audit.drain(10); len(evs) != 0 {
 		t.Fatalf("audit events = %+v, want none (no-site must not be audited)", evs)
 	}
@@ -335,6 +341,12 @@ func TestBrowserProxyConnectorOffline(t *testing.T) {
 
 	if w.Code != http.StatusBadGateway {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusBadGateway)
+	}
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Fatalf("Content-Type = %q, want text/html prefix", ct)
+	}
+	if want := "connector for this application is offline"; !strings.Contains(w.Body.String(), want) {
+		t.Fatalf("body = %q, want to contain %q", w.Body.String(), want)
 	}
 }
 

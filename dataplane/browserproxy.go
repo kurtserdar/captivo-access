@@ -158,9 +158,9 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	siteID, connectorID, upstream, insecureSkipVerify, recordSessions, err := p.ctrl.SiteByHost(host)
 	if err != nil {
 		if errors.Is(err, ErrNoSite) {
-			http.Error(w, "unknown site", http.StatusNotFound)
+			errorPage(w, http.StatusNotFound, "No application here", "There's no application published at this address.", "Check the link, or contact your administrator.")
 		} else {
-			http.Error(w, "site lookup failed", http.StatusBadGateway)
+			errorPage(w, http.StatusBadGateway, "Application unavailable", "The application didn't respond.", "Try again shortly.")
 		}
 		return
 	}
@@ -168,7 +168,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 3. Access decision.
 	allow, reason, err := p.ctrl.CheckAccess(userID, siteID)
 	if err != nil {
-		http.Error(w, "access check failed", http.StatusBadGateway)
+		errorPage(w, http.StatusBadGateway, "Application unavailable", "The application didn't respond.", "Try again shortly.")
 		return
 	}
 	if !allow {
@@ -196,12 +196,12 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 4. Stream through the connector.
 	sess := p.reg.Get(connectorID)
 	if sess == nil || sess.mux == nil {
-		http.Error(w, "connector offline", http.StatusBadGateway)
+		errorPage(w, http.StatusBadGateway, "Application unavailable", "The connector for this application is offline.", "Try again shortly, or contact your administrator.")
 		return
 	}
 	st, err := sess.mux.Open()
 	if err != nil {
-		http.Error(w, "connector offline", http.StatusBadGateway)
+		errorPage(w, http.StatusBadGateway, "Application unavailable", "The connector for this application is offline.", "Try again shortly, or contact your administrator.")
 		return
 	}
 	defer st.Close() // also unblocks a still-running WriteBody goroutine below
@@ -222,11 +222,11 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	reqBytes, err := json.Marshal(dr)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		errorPage(w, http.StatusInternalServerError, "Something went wrong", "An unexpected error occurred.", "Try again shortly.")
 		return
 	}
 	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
-		http.Error(w, "tunnel error", http.StatusBadGateway)
+		errorPage(w, http.StatusBadGateway, "Application unavailable", "The application didn't respond.", "Try again shortly.")
 		return
 	}
 
@@ -244,16 +244,16 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	respBytes, err := tunnel.ReadFrame(st)
 	if err != nil {
-		http.Error(w, "tunnel error", http.StatusBadGateway)
+		errorPage(w, http.StatusBadGateway, "Application unavailable", "The application didn't respond.", "Try again shortly.")
 		return
 	}
 	var resp tunnel.DialResponse
 	if err := json.Unmarshal(respBytes, &resp); err != nil {
-		http.Error(w, "tunnel error", http.StatusBadGateway)
+		errorPage(w, http.StatusBadGateway, "Application unavailable", "The application didn't respond.", "Try again shortly.")
 		return
 	}
 	if resp.Error != "" {
-		http.Error(w, "upstream error", http.StatusBadGateway)
+		errorPage(w, http.StatusBadGateway, "Application unavailable", "The application didn't respond.", "Try again shortly.")
 		return
 	}
 
