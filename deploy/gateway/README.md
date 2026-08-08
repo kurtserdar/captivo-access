@@ -18,16 +18,34 @@ On the **same on-prem host as the connector**. `guacd` reaches the RDP/SSH/VNC t
 the connector tunnel keeps carrying only HTTP + WebSocket (which it already does) — there is no "tunnel raw
 TCP" problem. The Guacamole web UI is just another internal web app that you publish through Captivo.
 
-## 1. Deploy the gateway — one command
-On the connector host, in `captivo-access/deploy/gateway/`:
+## 1. Get the pack + deploy — one command
+You don't need the whole repo — the gateway is self-contained. On the connector host, grab **two files**:
 
+```bash
+mkdir gateway && cd gateway
+base=https://raw.githubusercontent.com/kurtserdar/captivo-access/main/deploy/gateway
+curl -fsSLO "$base/docker-compose.gateway.yml"
+curl -fsSLO "$base/setup.sh" && chmod +x setup.sh
+```
+(Or `git clone` the repo and `cd deploy/gateway` if you already have it.)
+
+Then pick one mode:
+
+**Gateway only** — you'll pair/attach the connector separately:
 ```bash
 ./setup.sh
 ```
 
-That's it. `setup.sh` generates the Guacamole DB schema, writes a random DB password to `.env`, brings the stack
-up, attaches your `access-connector` to the gateway network if one is running here, and prints the next steps.
-It's idempotent — safe to re-run.
+**All-in-one gateway host** — also pair + run the connector on the gateway network in one go. Copy
+`MANAGER_URL`, `DATAPLANE_URL`, and the pairing code from the console's **Add connector**:
+```bash
+MANAGER_URL=https://manager.access.<domain> \
+DATAPLANE_URL=wss://connect.access.<domain> \
+./setup.sh <PAIR_CODE>
+```
+
+`setup.sh` generates the Guacamole schema, writes a random DB password to `.env`, brings the stack up, wires the
+connector to the gateway network, and prints the next steps. Idempotent — safe to re-run.
 
 The Guacamole web UI is then at `http://127.0.0.1:8080/` (served at the root path via `WEBAPP_CONTEXT: ROOT`, so
 it publishes cleanly as a Site; bound to localhost). First login is `guacadmin` / `guacadmin` — **change this
