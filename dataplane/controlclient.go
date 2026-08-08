@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -18,6 +20,10 @@ var ErrNoSite = errors.New("no site for host")
 type ControlClient struct {
 	BaseURL, Secret string
 	HTTP            *http.Client
+
+	recorderOnce sync.Once
+	recorderJS   []byte
+	recorderErr  error
 }
 
 func NewControlClient(base, secret string) *ControlClient {
@@ -63,21 +69,79 @@ func (c *ControlClient) ResolveSession(token string) (string, error) {
 
 // SiteByHost resolves a browser-facing hostname to the site/connector it's
 // routed to. If the control plane has no site for host, it returns
-// ErrNoSite.
-func (c *ControlClient) SiteByHost(host string) (siteID, connectorID, upstreamUrl string, insecureSkipVerify bool, err error) {
+// ErrNoSite. recordSessions reports whether session recording is enabled for
+// this site (see Site.recordSessions).
+func (c *ControlClient) SiteByHost(host string) (siteID, connectorID, upstreamUrl string, insecureSkipVerify bool, recordSessions bool, err error) {
 	var out struct {
 		SiteID             string `json:"siteId"`
 		ConnectorID        string `json:"connectorId"`
 		UpstreamUrl        string `json:"upstreamUrl"`
 		InsecureSkipVerify bool   `json:"insecureSkipVerify"`
+		RecordSessions     bool   `json:"recordSessions"`
 	}
 	if err := c.post("/api/internal/site/by-host", map[string]string{"host": host}, &out); err != nil {
 		if he, ok := err.(*httpError); ok && he.code == http.StatusNotFound {
-			return "", "", "", false, ErrNoSite
+			return "", "", "", false, false, ErrNoSite
 		}
-		return "", "", "", false, err
+		return "", "", "", false, false, err
 	}
-	return out.SiteID, out.ConnectorID, out.UpstreamUrl, out.InsecureSkipVerify, nil
+	return out.SiteID, out.ConnectorID, out.UpstreamUrl, out.InsecureSkipVerify, out.RecordSessions, nil
+}
+
+// RecorderJS returns the rrweb recorder bundle served by the control plane
+// at GET /api/internal/recorder. The response is fetched once per process
+// and cached in memory (via sync.Once) — including a fetch error, so a
+// failed first attempt keeps failing until the process restarts. That's an
+// acceptable trade-off here: recording is fail-silent (browserproxy replies
+// 404 on error, which simply disables recording for that page load) and the
+// bundle never changes at runtime.
+func (c *ControlClient) RecorderJS() ([]byte, error) {
+	c.recorderOnce.Do(func() {
+		req, err := http.NewRequest(http.MethodGet, c.BaseURL+"/api/internal/recorder", nil)
+		if err != nil {
+			c.recorderErr = err
+			return
+		}
+		req.Header.Set("x-dataplane-secret", c.Secret)
+		resp, err := c.HTTP.Do(req)
+		if err != nil {
+			c.recorderErr = err
+			return
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			c.recorderErr = &httpError{resp.StatusCode}
+			return
+		}
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.recorderErr = err
+			return
+		}
+		c.recorderJS = b
+	})
+	return c.recorderJS, c.recorderErr
+}
+
+// SendRecording ships one rrweb batch to the control plane's ingest
+// endpoint. body is the raw JSON the browser posted to /__captivo/rec —
+// {recordingKey, seq, events} — which is merged with the userId/siteId/host
+// the proxy resolved for this request into the shape
+// src/app/api/internal/recording/ingest/route.ts expects. Best-effort: the
+// caller (browserproxy) ignores the error, since recording must never affect
+// the proxied response.
+func (c *ControlClient) SendRecording(userID, siteID, host string, body []byte) error {
+	var batch map[string]any
+	if err := json.Unmarshal(body, &batch); err != nil {
+		return err
+	}
+	if batch == nil {
+		batch = map[string]any{}
+	}
+	batch["userId"] = userID
+	batch["siteId"] = siteID
+	batch["host"] = host
+	return c.post("/api/internal/recording/ingest", batch, nil)
 }
 
 // CheckAccess evaluates whether userId is allowed to reach siteId right
@@ -120,7 +184,9 @@ func (c *ControlClient) post(path string, body any, out any) error {
 		return err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
+	// Accept any 2xx as success: most internal routes reply 200, but
+	// /api/internal/recording/ingest replies 204 (no body) on success.
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return &httpError{resp.StatusCode}
 	}
 	if out != nil {

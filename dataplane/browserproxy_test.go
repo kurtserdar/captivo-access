@@ -24,21 +24,36 @@ type fakeControl struct {
 
 	siteID, connID, upstream string
 	insecureSkipVerify       bool
+	recordSessions           bool
 	siteErr                  error
 
 	allow     bool
 	reason    string
 	accessErr error
+
+	recorderJS  []byte
+	recorderErr error
+
+	sentUserID, sentSiteID, sentHost string
+	sentBody                         []byte
+	sendRecordingErr                 error
 }
 
 func (f *fakeControl) ResolveSession(string) (string, error) { return f.userID, f.resolveErr }
 
-func (f *fakeControl) SiteByHost(string) (string, string, string, bool, error) {
-	return f.siteID, f.connID, f.upstream, f.insecureSkipVerify, f.siteErr
+func (f *fakeControl) SiteByHost(string) (string, string, string, bool, bool, error) {
+	return f.siteID, f.connID, f.upstream, f.insecureSkipVerify, f.recordSessions, f.siteErr
 }
 
 func (f *fakeControl) CheckAccess(string, string) (bool, string, error) {
 	return f.allow, f.reason, f.accessErr
+}
+
+func (f *fakeControl) RecorderJS() ([]byte, error) { return f.recorderJS, f.recorderErr }
+
+func (f *fakeControl) SendRecording(userID, siteID, host string, body []byte) error {
+	f.sentUserID, f.sentSiteID, f.sentHost, f.sentBody = userID, siteID, host, body
+	return f.sendRecordingErr
 }
 
 // (a) No session cookie -> 302 to the manager's login page with returnTo set
@@ -319,6 +334,89 @@ func TestBrowserProxyConnectorOffline(t *testing.T) {
 
 	if w.Code != http.StatusBadGateway {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusBadGateway)
+	}
+}
+
+// (f) A recording-enabled Site's GET /__captivo/rec.js is intercepted
+// before it ever reaches the connector/upstream, and returns the cached
+// recorder bundle as text/javascript.
+func TestBrowserProxyServesRecorderBundle(t *testing.T) {
+	ctrl := &fakeControl{
+		userID: "u1", siteID: "s1", connID: "c-missing", upstream: "http://wiki.internal",
+		allow: true, reason: "allow", recordSessions: true,
+		recorderJS: []byte("console.log('rec')"),
+	}
+	// Registry is empty / connector missing on purpose: if the request were
+	// forwarded upstream instead of intercepted, this would 502, not 200.
+	p := &BrowserProxy{reg: NewRegistry(), ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
+
+	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/__captivo/rec.js", nil)
+	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/javascript") {
+		t.Fatalf("Content-Type = %q, want text/javascript prefix", ct)
+	}
+	if w.Body.String() != "console.log('rec')" {
+		t.Fatalf("body = %q, want the recorder bundle", w.Body.String())
+	}
+}
+
+// (g) A recording-enabled Site's POST /__captivo/rec is intercepted, forwards
+// the batch (merged with userId/siteId/host) to SendRecording, and replies
+// 204 regardless of upstream/connector state.
+func TestBrowserProxyIngestsRecordingBatch(t *testing.T) {
+	ctrl := &fakeControl{
+		userID: "u1", siteID: "s1", connID: "c-missing", upstream: "http://wiki.internal",
+		allow: true, reason: "allow", recordSessions: true,
+	}
+	p := &BrowserProxy{reg: NewRegistry(), ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
+
+	batch := `{"recordingKey":"k1","seq":0,"events":[{"type":1}]}`
+	req := httptest.NewRequest(http.MethodPost, "http://app.example.com/__captivo/rec", strings.NewReader(batch))
+	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusNoContent)
+	}
+	if ctrl.sentUserID != "u1" || ctrl.sentSiteID != "s1" || ctrl.sentHost != "app.example.com" {
+		t.Fatalf("SendRecording called with userID=%q siteID=%q host=%q, want u1/s1/app.example.com",
+			ctrl.sentUserID, ctrl.sentSiteID, ctrl.sentHost)
+	}
+	if string(ctrl.sentBody) != batch {
+		t.Fatalf("SendRecording body = %q, want %q", ctrl.sentBody, batch)
+	}
+}
+
+// (h) A non-recording Site's /__captivo/* paths 404, both for the recorder
+// bundle and the ingest endpoint — recording must be opt-in per site.
+func TestBrowserProxyRecordingDisabledIs404(t *testing.T) {
+	ctrl := &fakeControl{
+		userID: "u1", siteID: "s1", connID: "c-missing", upstream: "http://wiki.internal",
+		allow: true, reason: "allow", recordSessions: false,
+		recorderJS: []byte("console.log('rec')"),
+	}
+	p := &BrowserProxy{reg: NewRegistry(), ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
+
+	for _, req := range []*http.Request{
+		httptest.NewRequest(http.MethodGet, "http://app.example.com/__captivo/rec.js", nil),
+		httptest.NewRequest(http.MethodPost, "http://app.example.com/__captivo/rec", strings.NewReader("{}")),
+	} {
+		req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
+		w := httptest.NewRecorder()
+		p.ServeHTTP(w, req)
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("%s %s: status = %d, want %d", req.Method, req.URL.Path, w.Code, http.StatusNotFound)
+		}
+	}
+	if ctrl.sentBody != nil {
+		t.Fatalf("SendRecording must not be called when recording is disabled, got body %q", ctrl.sentBody)
 	}
 }
 

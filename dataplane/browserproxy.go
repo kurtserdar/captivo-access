@@ -63,8 +63,10 @@ var denyReasonText = map[string]string{
 // production use.
 type proxyControl interface {
 	ResolveSession(token string) (userID string, err error)
-	SiteByHost(host string) (siteID, connectorID, upstreamUrl string, insecureSkipVerify bool, err error)
+	SiteByHost(host string) (siteID, connectorID, upstreamUrl string, insecureSkipVerify bool, recordSessions bool, err error)
 	CheckAccess(userID, siteID string) (allow bool, reason string, err error)
+	RecorderJS() ([]byte, error)
+	SendRecording(userID, siteID, host string, body []byte) error
 }
 
 // BrowserProxy is the browser-facing identity-aware reverse proxy: it
@@ -91,7 +93,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Site by host.
-	siteID, connectorID, upstream, insecureSkipVerify, err := p.ctrl.SiteByHost(host)
+	siteID, connectorID, upstream, insecureSkipVerify, recordSessions, err := p.ctrl.SiteByHost(host)
 	if err != nil {
 		if errors.Is(err, ErrNoSite) {
 			http.Error(w, "unknown site", http.StatusNotFound)
@@ -110,6 +112,15 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !allow {
 		p.audit.Enqueue(auditEvent("DENY", reason, userID, siteID, host, r, http.StatusForbidden, 0))
 		denyPage(w, reason)
+		return
+	}
+
+	// Reserved recording endpoints the recorder bundle talks to
+	// (src/recorder/record-init.ts): never proxied upstream. Handled here,
+	// after session/site/access are resolved, so recording is scoped to an
+	// authenticated, allowed user on a recording-enabled site.
+	if strings.HasPrefix(r.URL.Path, "/__captivo/") {
+		p.serveRecording(w, r, userID, siteID, host, recordSessions)
 		return
 	}
 
@@ -182,6 +193,45 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	written, _ := io.Copy(w, tunnel.NewBodyReader(st))
 	accessLog(userID, siteID, host, r.Method, r.URL.Path, resp.Status, written)
 	p.audit.Enqueue(auditEvent("ALLOW", "", userID, siteID, host, r, resp.Status, written))
+}
+
+// maxRecordingBatchBytes caps a single POST /__captivo/rec body. The
+// recorder bundle (src/recorder/record-init.ts) flushes every 50 rrweb
+// events or 5s, whichever comes first, so a batch is normally small; this is
+// just a backstop against a runaway/malicious client.
+const maxRecordingBatchBytes = 2 << 20 // 2 MiB
+
+// serveRecording intercepts the two reserved /__captivo/* paths the
+// recorder bundle talks to. It never reaches the upstream app. Recording is
+// fail-silent throughout: any error (site not recording-enabled, control
+// plane unreachable, oversized body) yields a 404 rather than surfacing to
+// the page, since a recording hiccup must never be visible to the user or
+// break the app being proxied.
+func (p *BrowserProxy) serveRecording(w http.ResponseWriter, r *http.Request, userID, siteID, host string, recordSessions bool) {
+	if !recordSessions {
+		http.NotFound(w, r)
+		return
+	}
+	switch {
+	case r.Method == http.MethodGet && r.URL.Path == "/__captivo/rec.js":
+		js, err := p.ctrl.RecorderJS()
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		_, _ = w.Write(js)
+	case r.Method == http.MethodPost && r.URL.Path == "/__captivo/rec":
+		body, err := io.ReadAll(io.LimitReader(r.Body, maxRecordingBatchBytes))
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		_ = p.ctrl.SendRecording(userID, siteID, host, body) // best-effort
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		http.NotFound(w, r)
+	}
 }
 
 // forwardedHost returns the browser-facing hostname for this request: the
