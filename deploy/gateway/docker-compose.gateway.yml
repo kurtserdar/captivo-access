@@ -92,7 +92,11 @@ services:
     # as a Site instead. Change the left side if the connector reaches it by a
     # different address.
     ports:
-      - "127.0.0.1:8080:8080"
+      # Host port for your local admin access only (change guacadmin's password).
+      # The connector reaches Guacamole by container name on the compose network
+      # (cap-guacamole:8080), not this port. Override GUAC_PORT if 8080 is taken
+      # on the host (e.g. another app already uses it).
+      - "127.0.0.1:${GUAC_PORT:-8080}:8080"
 
 volumes:
   guac_pgdata: {}

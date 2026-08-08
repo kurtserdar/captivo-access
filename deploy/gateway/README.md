@@ -18,28 +18,24 @@ On the **same on-prem host as the connector**. `guacd` reaches the RDP/SSH/VNC t
 the connector tunnel keeps carrying only HTTP + WebSocket (which it already does) — there is no "tunnel raw
 TCP" problem. The Guacamole web UI is just another internal web app that you publish through Captivo.
 
-## 1. Deploy the gateway
+## 1. Deploy the gateway — one command
 On the connector host, in `captivo-access/deploy/gateway/`:
 
 ```bash
-# a. Generate the Guacamole DB schema ONCE (version-matched to the image).
-mkdir -p initdb
-docker run --rm guacamole/guacamole:1.5.5 \
-  /opt/guacamole/bin/initdb.sh --postgresql > initdb/01-schema.sql
-
-# b. Set the DB password.
-cp .env.gateway.example .env
-# edit .env → GUAC_DB_PASSWORD=$(openssl rand -hex 32)
-
-# c. Bring it up.
-docker compose -f docker-compose.gateway.yml up -d
+./setup.sh
 ```
 
-The Guacamole web UI is now at `http://<connector-host>:8080/` (served at the root path via
-`WEBAPP_CONTEXT: ROOT`, so it publishes cleanly as a Site; bound to localhost by default —
-change the port mapping if the connector reaches it by another address). First login is `guacadmin` /
-`guacadmin` — **change this password immediately** (top-right menu → Settings → Preferences), it is the
-gateway's admin.
+That's it. `setup.sh` generates the Guacamole DB schema, writes a random DB password to `.env`, brings the stack
+up, attaches your `access-connector` to the gateway network if one is running here, and prints the next steps.
+It's idempotent — safe to re-run.
+
+The Guacamole web UI is then at `http://127.0.0.1:8080/` (served at the root path via `WEBAPP_CONTEXT: ROOT`, so
+it publishes cleanly as a Site; bound to localhost). First login is `guacadmin` / `guacadmin` — **change this
+password immediately** (top-right → Settings → Preferences); it's the gateway's admin.
+
+> **Port 8080 already in use on this host?** Put `GUAC_PORT=9000` (any free port) in `.env` and re-run
+> `./setup.sh`. That only changes your local admin port — the connector still reaches Guacamole by container
+> name inside the compose network, so nothing else changes.
 
 ## 2. Publish it as a Captivo Site
 In the Captivo console → **Sites → Add site**:
