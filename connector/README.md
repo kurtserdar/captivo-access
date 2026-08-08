@@ -9,7 +9,9 @@ private VPC, home lab — anywhere that isn't internet-reachable). It:
   connections, never needs an open firewall port),
 - proxies HTTP requests from the data-plane to the internal address the
   Manager sends for each request — that address is defined once, per app,
-  as a **Site** in the Manager console, not on the connector itself.
+  as a **Site** in the Manager console, not on the connector itself,
+- relays **WebSocket** connections and answers **TCP reachability probes** for
+  the same targets — both bounded by the same `ALLOWED_TARGETS` check as HTTP.
 
 It shares wire-format and dial types with the data-plane via the
 [`tunnel`](../tunnel) module.

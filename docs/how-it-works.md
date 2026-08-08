@@ -16,7 +16,7 @@ The whole thing is **two pieces**:
 
 | Piece | Where it runs | What it is |
 |---|---|---|
-| **Manager** | your cloud (internet-facing) | The front door. It verifies who the user is (passkey), decides whether they're allowed, and proxies the request inward. This is the address everyone sees. |
+| **Manager** | your cloud (internet-facing) | The front door: identity (passkey/SSO), the admin console, and the access policy. Admins sign in at this address; vendors don't — they reach per-app hostnames served by a companion identity-aware proxy (below). |
 | **Connector** | deep inside your network | A small agent that dials **outbound only** — no inbound port is ever opened to it. It's the only thing that reaches your internal apps, and their real addresses never leave your network. |
 
 Setting it up:
@@ -111,6 +111,14 @@ Step by step:
 > written to an append-only, hash-chained audit log — who, when, which app, which
 > decision. That tamper-evident trail is what backs the compliance story
 > (KVKK / Law No. 5651).
+
+> **A few variations on the same path.** WebSocket apps (e.g. a browser-based
+> console) are relayed the same way; **web sessions can be recorded** per Site
+> and replayed in the console; internal staff/admins can optionally sign in via
+> **SSO/OIDC** instead of a passkey; and for recorded **RDP/SSH/VNC**, an
+> optional Guacamole gateway is published as just another Site. Who can do what
+> in the console is governed by five roles (`ADMIN`, `OPERATOR`, `AUDITOR`,
+> `STAFF`, `VENDOR`).
 
 ---
 

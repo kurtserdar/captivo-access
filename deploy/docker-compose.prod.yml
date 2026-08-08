@@ -91,6 +91,9 @@ services:
       # Optional outbound alert when a Site goes down or recovers (best-effort
       # POST). Unset = disabled. See deploy/.env.prod.example.
       NOTIFICATION_WEBHOOK_URL: ${NOTIFICATION_WEBHOOK_URL:-}
+      # Session recording (Pro). Off by default; set to 1/true/on to allow the
+      # per-Site "Record sessions" toggle to take effect. See deploy/.env.prod.example.
+      RECORDING_ENABLED: ${RECORDING_ENABLED:-}
     # Not published to the host — only Caddy (on the compose network) reaches
     # it, at http://access-manager:3100.
     expose:

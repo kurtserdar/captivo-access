@@ -17,4 +17,7 @@ reasonable time to patch before public disclosure.
 
 ## Supported Versions
 
-This project is in early development (Slice 0). No production support yet.
+Only the latest tagged release (`vX.Y.Z`) is supported — fixes land there, not in
+older tags. The project is functional and used, but not yet formally
+production-hardened; review the [Security model](./README.md#security-model) and
+run your own assessment before relying on it.

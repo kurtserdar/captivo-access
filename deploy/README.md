@@ -42,8 +42,9 @@ production — use this directory instead.
 3. Docker + Docker Compose v2 on the host, ports 80 and 443 reachable from
    the internet.
 4. Nothing to build — this stack pulls the published images
-   (`ghcr.io/kurtserdar/captivo-access-manager:latest` and
-   `...-dataplane:latest`).
+   (`ghcr.io/kurtserdar/captivo-access-manager:latest`, `...-dataplane:latest`,
+   and `...-migrate:latest` — the one-shot schema-migration image the Manager
+   waits on).
 
 ## Deploy steps
 
@@ -292,7 +293,16 @@ changes both the schema and the connector↔data-plane protocol:
   and adds `upstreamUrl`; existing Sites come out blank. Open each Site and set
   its **Internal address** (`http://host:port`) before it will route.
 
-  > Because the automatic `access-migrate` service refuses destructive changes, this specific legacy jump (which drops the `upstreamName` column) will halt the migration and keep the Manager down. For this one upgrade, apply the schema change manually once (with a destructive-change override) before bringing the stack up.
+  > The automatic `access-migrate` service refuses destructive changes, so this
+  > one legacy jump (dropping `upstreamName`) halts it and keeps the Manager
+  > down. Apply it once by hand before `up -d`:
+  >
+  > ```bash
+  > docker run --rm --network captivo-access-prod_default \
+  >   -e DATABASE_URL="postgresql://access:<POSTGRES_PASSWORD>@access-postgres:5432/captivo_access" \
+  >   ghcr.io/kurtserdar/captivo-access-migrate:latest \
+  >   ./node_modules/.bin/prisma db push --accept-data-loss --schema=prisma/schema.prisma
+  > ```
 - **Connectors no longer take `UPSTREAMS`.** Drop it from the `docker run`
   command. Optionally add `ALLOWED_TARGETS` (e.g. `10.0.5.0/24`) to cap what a
   connector may reach.

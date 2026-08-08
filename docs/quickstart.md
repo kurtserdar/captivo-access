@@ -39,17 +39,14 @@ WEBAUTHN_RP_ID=SERVER_IP.sslip.io
 # DATAPLANE_SECRET / CRON_SECRET — each: openssl rand -hex 32
 ```
 
-## 2. Add one site block to the Caddyfile
+## 2. TLS is automatic — no Caddyfile edit
 
-The shipped `Caddyfile` already serves `manager.` and `connect.` over HTTPS via
-HTTP-01 (no DNS plugin needed — perfect for sslip.io). Add one block for the app
-you'll expose:
-
-```caddyfile
-app.{$ACCESS_DOMAIN} {
-    reverse_proxy access-dataplane:3103
-}
-```
+The shipped `Caddyfile` already serves `manager.` and `connect.`, **and** a
+wildcard `*.{$ACCESS_DOMAIN}` block (On-Demand TLS, gated by the Manager) that
+covers every per-site vendor hostname automatically. Any app hostname you add
+later — e.g. `app.SERVER_IP.sslip.io` — falls under that wildcard, so there's
+nothing to edit here: you just pick the hostname when you create the Site (step
+6). Move on.
 
 ## 3. Bring it up
 

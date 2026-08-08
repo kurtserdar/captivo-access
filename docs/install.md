@@ -308,6 +308,8 @@ shows the exact commands when an update is available.
   deployments, and provider-delegation recipes (deSEC / Cloudflare).
 - [`connector/README.md`](../connector/README.md) — connector environment
   variables, `ALLOWED_TARGETS`, and building from source.
+- [`deploy/gateway/README.md`](../deploy/gateway/README.md) — optional Guacamole
+  gateway (run beside the connector) for recorded RDP/SSH/VNC access.
 - [`docs/how-it-works.md`](how-it-works.md) — the journey of a single request, in
   plain terms.
 - [`docs/quickstart.md`](quickstart.md) — a zero-DNS local demo in ~5 minutes.

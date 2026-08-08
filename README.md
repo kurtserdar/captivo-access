@@ -14,10 +14,13 @@ and no traffic that passes through anyone's infrastructure but your own.
 > connector tunnel, time-boxed access grants (with an approval flow and
 > recurring schedules), the identity-aware reverse proxy, and a
 > tamper-evident (hash-chained) audit trail are all implemented and working
-> end-to-end (see [Features](#features)). Session isolation/recording and
-> credential vaulting — the future "Pro" layer — are **not built yet**; see
-> [Roadmap](#roadmap-not-yet). Not production-hardened; review the
-> [Security model](#security-model) yourself before relying on it.
+> end-to-end (see [Features](#features)). SSO/OIDC login, session recording
+> (web sessions via rrweb, plus an optional Guacamole gateway for recorded
+> RDP/SSH/VNC), and a light/dark/system console are shipped too. Session
+> isolation (remote-browser rendering) and a credential vault — the rest of the
+> "Pro" layer — are **not built yet**; see [Roadmap](#roadmap-not-yet). Not
+> production-hardened; review the [Security model](#security-model) yourself
+> before relying on it.
 
 > **New here?** [Quickstart](./docs/quickstart.md) gets you a working
 > end-to-end demo in ~5 minutes with **zero DNS setup**.
@@ -107,7 +110,8 @@ Shipped and working today:
 - **Append-only audit log** — every allowed request and every authenticated
   denial is recorded, with KVKK/5651-oriented retention cleanup and CSV
   export from the admin console.
-- **Dark/light admin console UI.**
+- **Light / dark / system theme** — the console follows the OS by default, with
+  a light/dark switcher in the header.
 
 - **Approval flow** — a vendor can request access to a site; the request is
   pending (and denied) until an admin approves it, or the admin denies it.
@@ -123,6 +127,29 @@ Shipped and working today:
   Site goes down or recovers, an in-console notification is raised (nav bell +
   list) and, optionally, a best-effort webhook is fired
   (`NOTIFICATION_WEBHOOK_URL`, Slack/Teams-friendly) — no mail server required.
+- **SSO / OIDC login** — internal staff/admins can sign in with an identity
+  provider (Entra, Google, Okta) alongside passkeys; accounts are
+  invite-matched (no auto-provisioning). Vendors stay passkey-only.
+- **Roles** — five fixed roles (`ADMIN`, `OPERATOR`, `AUDITOR`, `STAFF`,
+  `VENDOR`) drive a capability layer across the console and APIs.
+- **Custom domains** — publish a Site on its own hostname with automatic TLS
+  (Caddy On-Demand), configured from the console.
+- **WebSocket passthrough** — the proxy relays WebSocket upgrades transparently,
+  so WS/streaming internal apps (e.g. a Proxmox noVNC console) work end-to-end.
+- **Session recording (rrweb)** — for Sites with recording enabled
+  (`RECORDING_ENABLED` + a per-Site toggle), the proxy injects an rrweb DOM
+  recorder into web sessions; admins replay them in the console. For console
+  protocols (RDP/SSH/VNC), an optional **Guacamole gateway** pack
+  ([`deploy/gateway/`](deploy/gateway/README.md)) is published as a Site and
+  records natively, on-prem. Sites carry a `TRANSPARENT` vs `GATEWAY` label.
+- **Email (SMTP)** — configured from the console (`/admin/email`); invites can
+  be emailed directly, or copy the one-time link and send it yourself.
+- **Automatic schema migration + guided upgrade** — the deploy stack runs
+  migrations automatically on `up -d` (a one-shot `access-migrate` service), and
+  the console shows in-app update notifications with a copyable one-command
+  upgrade + per-connector update commands.
+- **User management** — disable/enable and **delete** non-admin users (deletion
+  removes the account + credentials but preserves the audit trail).
 
 ## Quick start (local/dev)
 
@@ -189,14 +216,15 @@ cp .env.prod.example .env   # fill in ACCESS_DOMAIN and secrets
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Images are published to `ghcr.io/kurtserdar/captivo-access-{manager,dataplane,connector}`
+Images are published to `ghcr.io/kurtserdar/captivo-access-{manager,dataplane,connector,migrate}`
 on each `vX.Y.Z` release tag (plus `latest`) — see
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml) and the
 [releases](https://github.com/kurtserdar/captivo-access/releases). Pull the
 `latest` tag (or pin a specific `vX.Y.Z`); the `deploy/` scaffold references
-them already. `deploy/README.md` also covers the wildcard-TLS trade-off (one
-Caddy DNS-01 plugin vs. one explicit host block per vendor site) and how to
-push the schema against the production database.
+them already. The **schema is migrated automatically** on `up -d` by the
+one-shot `access-migrate` service — no manual `db push` step. `deploy/README.md`
+also covers the wildcard-TLS trade-off (one Caddy DNS-01 plugin vs. the
+On-Demand default that needs no per-site setup).
 
 ## How access works
 
@@ -311,22 +339,22 @@ instead, replicate that routing and forward those headers.
 
 Explicitly **not** built — don't assume these exist:
 
-- **Session isolation / remote-browser rendering, session recording, and
-  credential vaulting** — planned as a future "Pro" tier on top of this
-  open-source proxy, not part of it today.
+- **Session isolation / remote-browser rendering, and a credential vault** —
+  the rest of the future "Pro" layer, on top of what ships today. (Session
+  *recording* is already here — see [Features](#features).)
 - **External audit anchoring** — the audit log is hash-chained and
   tamper-evident, but the chain head is not yet anchored to an external
   trusted timestamp (RFC 3161 / KamuSM). That external anchor is what would
   defend against an actor able to rewrite the entire database.
-- **RDP/SSH bridging** — this is an HTTP(S) reverse proxy today, not a
-  general-purpose bastion.
-- **Outbound email (SMTP)** — not built yet, which shows up in two places
-  today: **vendor invites are delivered manually** — you create an invite, copy
-  its one-time link, and send it to the vendor yourself — and there are no email
-  notifications. (In-console notifications *do* exist for site up/down, with an
-  optional webhook via `NOTIFICATION_WEBHOOK_URL`; approval requests surface as a
-  pending list + a nav badge.) Emailing invite links directly, and email
-  notifications, are both planned.
+- **RDP/SSH/VNC** — the core is an HTTP(S) + WebSocket proxy, not a
+  general-purpose bastion. Recorded console access is available today via the
+  opt-in **Guacamole gateway** pack ([`deploy/gateway/`](deploy/gateway/README.md)),
+  published as a Site — not by the proxy itself. Single-sign-on into the gateway
+  (header-auth, to drop the second login) is a fast-follow.
+- **Email notifications** — SMTP is configured in the console and invites can be
+  emailed; broader event emails (site down, approvals) are a fast-follow. (Those
+  events already raise in-console notifications, with an optional
+  `NOTIFICATION_WEBHOOK_URL`.)
 
 The console is intentionally **English-only** (Turkish localization is not
 planned for the console itself; the KVKK/5651 framing is about data behavior,

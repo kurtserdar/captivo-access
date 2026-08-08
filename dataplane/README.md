@@ -14,7 +14,10 @@ It has **three listeners**:
 - a **browser-facing identity-aware reverse proxy** (`:3103`) that serves vendor
   traffic per site — it checks the session cookie and the access grant on
   **every request** (fail-closed) before streaming it down the right connector's
-  tunnel, and emits an audit event for each decision;
+  tunnel, and emits an audit event for each decision. It also relays
+  **WebSocket** upgrades transparently, and — for Sites with recording enabled —
+  injects an rrweb recorder into HTML responses and serves the reserved
+  `/__captivo/*` endpoints (never forwarded upstream);
 - an **internal API** (`:3102`) the Manager calls to round-trip an allowlisted
   HTTP request (`/proxy`) or run a reachability probe (`/probe`) through a
   specific connector.
