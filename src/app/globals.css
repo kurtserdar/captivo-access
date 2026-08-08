@@ -1,5 +1,19 @@
 :root{
-  /* dark = default */
+  /* light = default */
+  --bg:#f7f8fc; --surface:#ffffff; --surface-2:#f1f4f9; --surface-hover:#eef2f8;
+  --line:#e4e8f0; --line-soft:#eef1f6;
+  --fg:#1a2230; --muted:#5f6b7e; --faint:#97a1b2;
+  --accent:#3358d4; --accent-2:#2743b0; --accent-fg:#ffffff; --accent-soft:rgba(51,88,212,.09);
+  --ok:#12805c; --ok-soft:rgba(18,128,92,.11);
+  --warn:#b45309; --warn-soft:rgba(180,83,9,.12);
+  --danger:#c1352f; --danger-soft:rgba(193,53,47,.10);
+  --radius:6px; --radius-lg:12px; --shadow:0 14px 34px -22px rgba(20,30,55,.20);
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --display:var(--font-plex-sans),"Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:var(--font-plex-mono),ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
   --bg:#0b0e14; --surface:#141a26; --surface-2:#0e131c; --surface-hover:#1b2436;
   --line:#212a3a; --line-soft:#1a2230;
   --fg:#e7ebf2; --muted:#8b96a9; --faint:#5d6a7c;
@@ -7,22 +21,8 @@
   --ok:#42d19a; --ok-soft:rgba(66,209,154,.13);
   --warn:#f5b544; --warn-soft:rgba(245,181,68,.14);
   --danger:#ff6b7a; --danger-soft:rgba(255,107,122,.13);
-  --radius:6px; --radius-lg:11px; --shadow:0 18px 40px -24px rgba(0,0,0,.6);
-  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  --display:var(--font-plex-sans),"Segoe UI",system-ui,-apple-system,sans-serif;
-  --mono:var(--font-plex-mono),ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+  --shadow:0 18px 40px -24px rgba(0,0,0,.6);
   color-scheme:dark;
-}
-:root[data-theme="light"]{
-  --bg:#f6f8fb; --surface:#ffffff; --surface-2:#f0f3f8; --surface-hover:#eef3fb;
-  --line:#e2e7ef; --line-soft:#eaeef4;
-  --fg:#18202e; --muted:#647083; --faint:#94a0b1;
-  --accent:#3358d4; --accent-2:#2743b0; --accent-fg:#ffffff; --accent-soft:rgba(51,88,212,.10);
-  --ok:#12805c; --ok-soft:rgba(18,128,92,.10);
-  --warn:#b45309; --warn-soft:rgba(180,83,9,.11);
-  --danger:#c1352f; --danger-soft:rgba(193,53,47,.10);
-  --shadow:0 14px 34px -22px rgba(20,30,55,.28);
-  color-scheme:light;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}

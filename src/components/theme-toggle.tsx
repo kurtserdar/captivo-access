@@ -11,11 +11,11 @@ function subscribe(listener: () => void) {
 }
 
 function getSnapshot(): Theme {
-  return (document.documentElement.dataset.theme as Theme) || "dark";
+  return (document.documentElement.dataset.theme as Theme) || "light";
 }
 
 function getServerSnapshot(): Theme {
-  return "dark";
+  return "light";
 }
 
 function setTheme(next: Theme) {
