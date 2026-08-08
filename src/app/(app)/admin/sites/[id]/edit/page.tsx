@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
+import { recordingEnabled } from "@/lib/recording/enabled";
 import { SiteForm } from "../../site-form";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
   const [site, connectors] = await Promise.all([
     db.site.findUnique({
       where: { id },
-      select: { id: true, connectorId: true, name: true, hostname: true, upstreamUrl: true, description: true, insecureSkipVerify: true },
+      select: { id: true, connectorId: true, name: true, hostname: true, upstreamUrl: true, description: true, insecureSkipVerify: true, recordSessions: true },
     }),
     db.connector.findMany({ where: { status: { not: "REVOKED" } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
@@ -31,6 +32,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
         <div className="card">
           <SiteForm
             connectors={connectors}
+            recordingEnabled={recordingEnabled()}
             site={{
               id: site.id,
               connectorId: site.connectorId,
@@ -39,6 +41,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
               upstreamUrl: site.upstreamUrl ?? "",
               description: site.description ?? "",
               insecureSkipVerify: site.insecureSkipVerify,
+              recordSessions: site.recordSessions,
             }}
           />
         </div>

@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const site = host
     ? await db.site.findUnique({
         where: { hostname: host.toLowerCase().trim() },
-        select: { id: true, connectorId: true, upstreamUrl: true, insecureSkipVerify: true },
+        select: { id: true, connectorId: true, upstreamUrl: true, insecureSkipVerify: true, recordSessions: true },
       })
     : null;
   if (!site) return NextResponse.json({ error: "no_site" }, { status: 404 });
@@ -22,5 +22,6 @@ export async function POST(req: NextRequest) {
     connectorId: site.connectorId,
     upstreamUrl: site.upstreamUrl,
     insecureSkipVerify: site.insecureSkipVerify,
+    recordSessions: site.recordSessions,
   });
 }

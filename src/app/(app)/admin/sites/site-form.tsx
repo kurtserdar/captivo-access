@@ -22,9 +22,17 @@ function errorMessage(code: string | undefined, isEdit: boolean): string {
   }
 }
 
-type SiteInitial = { id: string; connectorId: string; name: string; hostname: string; upstreamUrl: string; description: string; insecureSkipVerify: boolean };
+type SiteInitial = { id: string; connectorId: string; name: string; hostname: string; upstreamUrl: string; description: string; insecureSkipVerify: boolean; recordSessions: boolean };
 
-export function SiteForm({ connectors, site }: { connectors: { id: string; name: string }[]; site?: SiteInitial }) {
+export function SiteForm({
+  connectors,
+  site,
+  recordingEnabled = false,
+}: {
+  connectors: { id: string; name: string }[];
+  site?: SiteInitial;
+  recordingEnabled?: boolean;
+}) {
   const router = useRouter();
   const [connectorId, setConnectorId] = useState(site?.connectorId ?? connectors[0]?.id ?? "");
   const [name, setName] = useState(site?.name ?? "");
@@ -32,6 +40,7 @@ export function SiteForm({ connectors, site }: { connectors: { id: string; name:
   const [upstreamUrl, setUpstreamUrl] = useState(site?.upstreamUrl ?? "");
   const [description, setDescription] = useState(site?.description ?? "");
   const [insecureSkipVerify, setInsecureSkipVerify] = useState(site?.insecureSkipVerify ?? false);
+  const [recordSessions, setRecordSessions] = useState(site?.recordSessions ?? false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,6 +59,7 @@ export function SiteForm({ connectors, site }: { connectors: { id: string; name:
           upstreamUrl,
           description: description.trim() || undefined,
           insecureSkipVerify,
+          recordSessions: recordingEnabled && recordSessions,
         }),
       });
       const result = await res.json().catch(() => ({}));
@@ -150,6 +160,21 @@ export function SiteForm({ connectors, site }: { connectors: { id: string; name:
           Only for internal devices you trust — the certificate on the connector→app leg won&apos;t be verified.
         </span>
       </div>
+      {recordingEnabled && (
+        <div className="field">
+          <label className="field-label">
+            <input
+              type="checkbox"
+              checked={recordSessions}
+              onChange={(e) => setRecordSessions(e.target.checked)}
+            />{" "}
+            Record sessions (rrweb)
+          </label>
+          <span className="hint">
+            Captures a replayable recording of vendor sessions on this site for audit purposes.
+          </span>
+        </div>
+      )}
       <div className="field">
         <label className="field-label" htmlFor="site-description">
           Description (optional)

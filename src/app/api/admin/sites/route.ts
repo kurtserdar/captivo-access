@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
+import { recordingEnabled } from "@/lib/recording/enabled";
 
 export async function POST(req: NextRequest) {
   const admin = await getCurrentUser();
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
   const upstreamUrl = typeof body.upstreamUrl === "string" ? body.upstreamUrl.trim() : "";
   const description = typeof body.description === "string" && body.description.trim() ? body.description.trim() : null;
   const insecureSkipVerify = body.insecureSkipVerify === true;
+  const recordSessions = recordingEnabled() && body.recordSessions === true;
 
   if (!connectorId || !name || !upstreamUrl) {
     return NextResponse.json({ error: "connector_name_upstream_required" }, { status: 400 });
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
   }
 
   const site = await db.site.create({
-    data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify },
+    data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions },
     select: { id: true },
   });
 

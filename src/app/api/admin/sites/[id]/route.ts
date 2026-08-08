@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
+import { recordingEnabled } from "@/lib/recording/enabled";
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
@@ -16,6 +17,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const upstreamUrl = typeof body.upstreamUrl === "string" ? body.upstreamUrl.trim() : "";
   const description = typeof body.description === "string" && body.description.trim() ? body.description.trim() : null;
   const insecureSkipVerify = body.insecureSkipVerify === true;
+  const recordSessions = recordingEnabled() && body.recordSessions === true;
 
   if (!connectorId || !name || !upstreamUrl) return NextResponse.json({ error: "connector_name_upstream_required" }, { status: 400 });
   if (!hostname) return NextResponse.json({ error: "invalid_hostname" }, { status: 400 });
@@ -30,7 +32,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   try {
-    await db.site.update({ where: { id }, data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify } });
+    await db.site.update({ where: { id }, data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions } });
   } catch (e) {
     // P2002 = the hostname unique constraint is taken by a different site.
     if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2002") {

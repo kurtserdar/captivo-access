@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { timeAgo } from "@/lib/format";
+import { recordingEnabled } from "@/lib/recording/enabled";
 import { SiteForm } from "./site-form";
 import { TestConnectionButton } from "./test-connection-button";
 import { DeleteSiteButton } from "./delete-site-button";
@@ -57,7 +58,7 @@ export default async function AdminSitesPage() {
         {connectors.length === 0 ? (
           <p>Add a connector first before creating a site.</p>
         ) : (
-          <SiteForm connectors={connectors} />
+          <SiteForm connectors={connectors} recordingEnabled={recordingEnabled()} />
         )}
       </div>
 
