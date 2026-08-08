@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `document.documentElement.dataset.theme = localStorage.getItem('ca-theme') || 'light';`,
+            __html: `(function(){try{var p=localStorage.getItem('ca-theme');var t=(p==='light'||p==='dark')?p:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();`,
           }}
         />
       </head>

@@ -11,7 +11,6 @@ import { isUpdateAvailable } from "@/lib/updates/semver";
 import { LogoutButton } from "./logout-button";
 import { NavLink } from "./nav-link";
 import { Topbar } from "./_shell/topbar";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { BrandMark } from "@/components/brand";
 import {
   GrantsIcon,
@@ -129,7 +128,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="nav-user">
             {user.name} · {ROLE_LABELS[user.role] ?? user.role}
           </span>
-          <ThemeToggle />
           <LogoutButton />
         </div>
       </aside>
