@@ -12,6 +12,7 @@ import { readRecoverToken, clearRecoverToken } from "@/lib/auth/recover-token";
 import { getCurrentUser } from "@/lib/current-user";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getRpId, originMatchesRp, requestOrigin } from "@/lib/auth/rp";
+import { normalizeEmail } from "@/lib/auth/email";
 
 function sessionMaxAgeSeconds(): number {
   const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
@@ -232,7 +233,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_mode" }, { status: 400 });
   }
 
-  const email = typeof body.email === "string" ? body.email.trim() : "";
+  const email = typeof body.email === "string" ? normalizeEmail(body.email) : "";
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const response = body.response as RegistrationResponseJSON | undefined;
   const label = typeof body.label === "string" && body.label.trim() ? body.label.trim() : "Primary passkey";

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can, ASSIGNABLE_ROLES } from "@/lib/auth/roles";
 import { createInvite } from "@/lib/auth/invite";
+import { normalizeEmail } from "@/lib/auth/email";
 import { managerBaseUrl } from "@/lib/url";
 import { getSmtpConfig, sendMail } from "@/lib/email/mailer";
 import { inviteEmail } from "@/lib/email/templates";
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const name = typeof body.name === "string" ? body.name.trim() : "";
-  const email = typeof body.email === "string" ? body.email.trim() : "";
+  const email = typeof body.email === "string" ? normalizeEmail(body.email) : "";
   const role = typeof body.role === "string" ? (body.role as Role) : undefined;
   const phone = typeof body.phone === "string" ? body.phone.trim() : "";
   const company = typeof body.company === "string" ? body.company.trim() : "";

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { generateToken, hashToken, verifyTokenHash } from "./tokens";
+import { normalizeEmail } from "./email";
 import type { Role } from "@/generated/prisma/enums";
 
 function ttlMs() {
@@ -18,7 +19,7 @@ export async function createInvite(input: {
   const token = generateToken();
   const inv = await db.invite.create({
     data: {
-      email: input.email,
+      email: normalizeEmail(input.email),
       name: input.name,
       role: input.role,
       phone: input.phone ?? null,
