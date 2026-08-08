@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { canRepairConnector, buildReconfigureCommand, buildConnectorRunCommand, buildConnectorUpdateCommand } from "./repair";
+import {
+  canRepairConnector,
+  buildReconfigureCommand,
+  buildConnectorRunCommand,
+  buildConnectorUpdateCommand,
+  GATEWAY_NETWORK,
+  buildInstallCommand,
+} from "./repair";
 
 describe("canRepairConnector", () => {
   it("allows re-pair for non-revoked connectors", () => {
@@ -53,5 +60,36 @@ describe("buildConnectorUpdateCommand", () => {
     const cmd = buildConnectorUpdateCommand("https://mgr.example.com", "wss://connect.example.com");
     expect(cmd).not.toContain("PAIR_CODE");
     expect(cmd).not.toContain("docker volume rm");
+  });
+});
+
+describe("gateway-host connector commands", () => {
+  const m = "https://manager.access.example.com";
+  const t = "wss://connect.access.example.com";
+
+  it("injects the network + ensure-prefix when gatewayHost is true (install)", () => {
+    const cmd = buildInstallCommand("CODE123", m, t, true);
+    expect(cmd).toContain(`--network ${GATEWAY_NETWORK}`);
+    expect(cmd).toContain(`docker network inspect ${GATEWAY_NETWORK}`);
+    expect(cmd).toContain(`docker network create ${GATEWAY_NETWORK}`);
+  });
+
+  it("omits the network when gatewayHost is false/default (install)", () => {
+    expect(buildInstallCommand("CODE123", m, t)).not.toContain("--network");
+    expect(buildInstallCommand("CODE123", m, t, false)).not.toContain("--network");
+  });
+
+  it("injects the network for the update command when gatewayHost is true", () => {
+    const cmd = buildConnectorUpdateCommand(m, t, true);
+    expect(cmd).toContain(`--network ${GATEWAY_NETWORK}`);
+    expect(cmd).toContain("docker pull");
+  });
+
+  it("omits the network for the update command by default", () => {
+    expect(buildConnectorUpdateCommand(m, t)).not.toContain("--network");
+  });
+
+  it("injects the network for the re-pair command when gatewayHost is true", () => {
+    expect(buildReconfigureCommand("CODE123", m, t, true)).toContain(`--network ${GATEWAY_NETWORK}`);
   });
 });
