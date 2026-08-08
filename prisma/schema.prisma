@@ -102,6 +102,11 @@ enum ConnectorStatus {
   REVOKED
 }
 
+enum SiteAccessMode {
+  TRANSPARENT
+  GATEWAY
+}
+
 model Connector {
   id         String          @id @default(cuid())
   name       String
@@ -140,6 +145,7 @@ model Site {
   probeDetail        String?
   probeLatencyMs     Int?
   recordSessions     Boolean       @default(false)
+  accessMode         SiteAccessMode @default(TRANSPARENT)
   createdAt          DateTime      @default(now())
   grants             AccessGrant[]
 }
