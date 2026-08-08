@@ -120,12 +120,27 @@ func errorPage(w http.ResponseWriter, status int, title, detail, hint string) {
 	_ = errPageTmpl.Execute(w, errPageData{Status: status, Title: title, Detail: detail, Hint: hint})
 }
 
+// gatewayUserHeader carries the authenticated vendor's identity to a gateway
+// Site's Guacamole (header-auth). It is TRUSTED by Guacamole, so it is stripped
+// from all client input and set only from the server-resolved session, only for
+// gateway Sites (see setGatewayIdentity). Guacamole must never be reachable
+// except through this proxy.
+const gatewayUserHeader = "X-Captivo-User"
+
+// setGatewayIdentity injects the vendor's email as the trusted gateway header,
+// only for gateway Sites with a resolved email.
+func setGatewayIdentity(h map[string][]string, gateway bool, email string) {
+	if gateway && email != "" {
+		h[gatewayUserHeader] = []string{email}
+	}
+}
+
 // proxyControl is the subset of ControlClient that BrowserProxy depends on.
 // Tests inject a fake implementation; *ControlClient satisfies it for
 // production use.
 type proxyControl interface {
-	ResolveSession(token string) (userID string, err error)
-	SiteByHost(host string) (siteID, connectorID, upstreamUrl string, insecureSkipVerify bool, recordSessions bool, err error)
+	ResolveSession(token string) (userID, email string, err error)
+	SiteByHost(host string) (siteID, connectorID, upstreamUrl string, insecureSkipVerify, recordSessions, gateway bool, err error)
 	CheckAccess(userID, siteID string) (allow bool, reason string, err error)
 	RecorderJS() ([]byte, error)
 	SendRecording(userID, siteID, host string, body []byte) error
@@ -147,7 +162,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// 1. Session.
 	token := readCookie(r, sessionCookieName)
-	userID, _ := p.ctrl.ResolveSession(token)
+	userID, email, _ := p.ctrl.ResolveSession(token)
 	if userID == "" {
 		orig := absoluteURL(r, host)
 		http.Redirect(w, r, p.managerURL+"/login?returnTo="+url.QueryEscape(orig), http.StatusFound)
@@ -155,7 +170,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Site by host.
-	siteID, connectorID, upstream, insecureSkipVerify, recordSessions, err := p.ctrl.SiteByHost(host)
+	siteID, connectorID, upstream, insecureSkipVerify, recordSessions, gateway, err := p.ctrl.SiteByHost(host)
 	if err != nil {
 		if errors.Is(err, ErrNoSite) {
 			errorPage(w, http.StatusNotFound, "No application here", "There's no application published at this address.", "Check the link, or contact your administrator.")
@@ -189,7 +204,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// WebSocket upgrades take a dedicated raw-relay path — they must branch
 	// here, before sanitizeReqHeaders strips the Upgrade/Connection headers.
 	if isWebSocketUpgrade(r) {
-		p.serveWebSocket(w, r, connectorID, siteID, userID, host, upstream, insecureSkipVerify)
+		p.serveWebSocket(w, r, connectorID, siteID, userID, host, upstream, insecureSkipVerify, gateway, email)
 		return
 	}
 
@@ -207,6 +222,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer st.Close() // also unblocks a still-running WriteBody goroutine below
 
 	reqHeaders := sanitizeReqHeaders(r, host)
+	setGatewayIdentity(reqHeaders, gateway, email)
 	if recordSessions {
 		// Force uncompressed HTML from the upstream so the response-path
 		// injection below (Step 3) can buffer, modify, and recompute
@@ -494,12 +510,14 @@ func absoluteURL(r *http.Request, host string) string {
 
 // sanitizeReqHeaders builds the header set forwarded to the connector: the
 // inbound request's headers minus hop-by-hop ones, the session cookie
-// stripped out of Cookie (other cookies pass through to the app), and
-// X-Forwarded-For/X-Forwarded-Host added toward the app.
+// stripped out of Cookie (other cookies pass through to the app), any
+// client-supplied gatewayUserHeader dropped (anti-spoofing — see
+// setGatewayIdentity), and X-Forwarded-For/X-Forwarded-Host added toward the
+// app.
 func sanitizeReqHeaders(r *http.Request, host string) map[string][]string {
 	out := map[string][]string{}
 	for k, vs := range r.Header {
-		if hopByHopHeaders[strings.ToLower(k)] || strings.EqualFold(k, "Cookie") {
+		if hopByHopHeaders[strings.ToLower(k)] || strings.EqualFold(k, "Cookie") || strings.EqualFold(k, gatewayUserHeader) {
 			continue
 		}
 		cp := make([]string, len(vs))

@@ -49,42 +49,45 @@ func (c *ControlClient) ReportStatus(connectorID, status, remoteAddr, version st
 		map[string]string{"connectorId": connectorID, "status": status, "remoteAddr": remoteAddr, "version": version}, nil)
 }
 
-// ResolveSession exchanges a browser session token for the userId it
+// ResolveSession exchanges a browser session token for the userId/email it
 // belongs to. A non-200 response (no such session, or an expired/invalid
 // token) is not treated as an error: it simply means "no session", and the
 // caller should treat the request as unauthenticated.
-func (c *ControlClient) ResolveSession(token string) (string, error) {
+func (c *ControlClient) ResolveSession(token string) (userID, email string, err error) {
 	var out struct {
 		UserID string `json:"userId"`
+		Email  string `json:"email"`
 	}
 	if err := c.post("/api/internal/session/resolve", map[string]string{"token": token}, &out); err != nil {
 		if isHTTPStatus(err) {
-			return "", nil
+			return "", "", nil
 		}
-		return "", err
+		return "", "", err
 	}
-	return out.UserID, nil
+	return out.UserID, out.Email, nil
 }
 
 // SiteByHost resolves a browser-facing hostname to the site/connector it's
 // routed to. If the control plane has no site for host, it returns
 // ErrNoSite. recordSessions reports whether session recording is enabled for
-// this site (see Site.recordSessions).
-func (c *ControlClient) SiteByHost(host string) (siteID, connectorID, upstreamUrl string, insecureSkipVerify bool, recordSessions bool, err error) {
+// this site (see Site.recordSessions). gateway reports whether the site's
+// accessMode is GATEWAY (see setGatewayIdentity in browserproxy.go).
+func (c *ControlClient) SiteByHost(host string) (siteID, connectorID, upstreamUrl string, insecureSkipVerify, recordSessions, gateway bool, err error) {
 	var out struct {
 		SiteID             string `json:"siteId"`
 		ConnectorID        string `json:"connectorId"`
 		UpstreamUrl        string `json:"upstreamUrl"`
 		InsecureSkipVerify bool   `json:"insecureSkipVerify"`
 		RecordSessions     bool   `json:"recordSessions"`
+		AccessMode         string `json:"accessMode"`
 	}
 	if err := c.post("/api/internal/site/by-host", map[string]string{"host": host}, &out); err != nil {
 		if he, ok := err.(*httpError); ok && he.code == http.StatusNotFound {
-			return "", "", "", false, false, ErrNoSite
+			return "", "", "", false, false, false, ErrNoSite
 		}
-		return "", "", "", false, false, err
+		return "", "", "", false, false, false, err
 	}
-	return out.SiteID, out.ConnectorID, out.UpstreamUrl, out.InsecureSkipVerify, out.RecordSessions, nil
+	return out.SiteID, out.ConnectorID, out.UpstreamUrl, out.InsecureSkipVerify, out.RecordSessions, out.AccessMode == "GATEWAY", nil
 }
 
 // RecorderJS returns the rrweb recorder bundle served by the control plane

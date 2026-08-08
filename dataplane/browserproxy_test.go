@@ -21,11 +21,13 @@ import (
 // the three control-plane calls' return values.
 type fakeControl struct {
 	userID     string
+	email      string
 	resolveErr error
 
 	siteID, connID, upstream string
 	insecureSkipVerify       bool
 	recordSessions           bool
+	gateway                  bool
 	siteErr                  error
 
 	allow     bool
@@ -40,10 +42,12 @@ type fakeControl struct {
 	sendRecordingErr                 error
 }
 
-func (f *fakeControl) ResolveSession(string) (string, error) { return f.userID, f.resolveErr }
+func (f *fakeControl) ResolveSession(string) (string, string, error) {
+	return f.userID, f.email, f.resolveErr
+}
 
-func (f *fakeControl) SiteByHost(string) (string, string, string, bool, bool, error) {
-	return f.siteID, f.connID, f.upstream, f.insecureSkipVerify, f.recordSessions, f.siteErr
+func (f *fakeControl) SiteByHost(string) (string, string, string, bool, bool, bool, error) {
+	return f.siteID, f.connID, f.upstream, f.insecureSkipVerify, f.recordSessions, f.gateway, f.siteErr
 }
 
 func (f *fakeControl) CheckAccess(string, string) (bool, string, error) {
@@ -55,6 +59,53 @@ func (f *fakeControl) RecorderJS() ([]byte, error) { return f.recorderJS, f.reco
 func (f *fakeControl) SendRecording(userID, siteID, host string, body []byte) error {
 	f.sentUserID, f.sentSiteID, f.sentHost, f.sentBody = userID, siteID, host, body
 	return f.sendRecordingErr
+}
+
+// TestSanitizeReqHeaders_StripsInboundGatewayHeader proves a client can never
+// smuggle its own X-Captivo-User: sanitizeReqHeaders (the HTTP proxy path)
+// must strip it from inbound request headers, on every Site, not just
+// gateway ones.
+func TestSanitizeReqHeaders_StripsInboundGatewayHeader(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "http://app.example/", nil)
+	r.Header.Set("X-Captivo-User", "attacker@evil.test")
+	out := sanitizeReqHeaders(r, "app.example")
+	if _, present := out[gatewayUserHeader]; present {
+		t.Fatalf("inbound %s must be stripped, got %v", gatewayUserHeader, out[gatewayUserHeader])
+	}
+}
+
+// TestWsRequestHeaders_StripsInboundGatewayHeader is the WebSocket-path
+// counterpart of TestSanitizeReqHeaders_StripsInboundGatewayHeader.
+func TestWsRequestHeaders_StripsInboundGatewayHeader(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "http://app.example/", nil)
+	r.Header.Set("X-Captivo-User", "attacker@evil.test")
+	out := wsRequestHeaders(r, "app.example")
+	if _, present := out[gatewayUserHeader]; present {
+		t.Fatalf("inbound %s must be stripped in ws path, got %v", gatewayUserHeader, out[gatewayUserHeader])
+	}
+}
+
+// TestSetGatewayIdentity proves setGatewayIdentity only sets the trusted
+// header when both gateway=true and a resolved email are present.
+func TestSetGatewayIdentity(t *testing.T) {
+	// gateway + email -> header set
+	h := map[string][]string{}
+	setGatewayIdentity(h, true, "alice@x.io")
+	if got := h[gatewayUserHeader]; len(got) != 1 || got[0] != "alice@x.io" {
+		t.Fatalf("gateway+email: want [alice@x.io], got %v", got)
+	}
+	// transparent -> not set
+	h = map[string][]string{}
+	setGatewayIdentity(h, false, "alice@x.io")
+	if _, present := h[gatewayUserHeader]; present {
+		t.Fatalf("transparent site must not set %s", gatewayUserHeader)
+	}
+	// gateway + empty email -> not set
+	h = map[string][]string{}
+	setGatewayIdentity(h, true, "")
+	if _, present := h[gatewayUserHeader]; present {
+		t.Fatalf("empty email must not set %s", gatewayUserHeader)
+	}
 }
 
 // (a) No session cookie -> 302 to the manager's login page with returnTo set

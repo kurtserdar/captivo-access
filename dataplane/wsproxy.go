@@ -26,8 +26,9 @@ func isWebSocketUpgrade(r *http.Request) bool {
 
 // wsRequestHeaders builds the header set forwarded to the connector for a WS
 // handshake. It mirrors sanitizeReqHeaders (reserved auth cookies stripped from
-// Cookie, XFF/XFH added) EXCEPT it keeps the Upgrade/Connection handshake
-// headers (Sec-WebSocket-* are not hop-by-hop and pass through anyway).
+// Cookie, any client-supplied gatewayUserHeader dropped, XFF/XFH added)
+// EXCEPT it keeps the Upgrade/Connection handshake headers (Sec-WebSocket-*
+// are not hop-by-hop and pass through anyway).
 func wsRequestHeaders(r *http.Request, host string) map[string][]string {
 	out := map[string][]string{}
 	for k, vs := range r.Header {
@@ -37,6 +38,9 @@ func wsRequestHeaders(r *http.Request, host string) map[string][]string {
 		}
 		if strings.EqualFold(k, "Cookie") {
 			continue // rebuilt below without reserved auth cookies
+		}
+		if strings.EqualFold(k, gatewayUserHeader) {
+			continue // client must never smuggle the trusted gateway identity header
 		}
 		cp := make([]string, len(vs))
 		copy(cp, vs)
@@ -61,7 +65,7 @@ func wsRequestHeaders(r *http.Request, host string) map[string][]string {
 // the tunnel handshake first (so a failure needs no hijack), then hijacks the
 // browser connection and raw-relays bytes both directions until either side
 // closes. Two audit events bracket the session.
-func (p *BrowserProxy) serveWebSocket(w http.ResponseWriter, r *http.Request, connectorID, siteID, userID, host, upstream string, insecureSkipVerify bool) {
+func (p *BrowserProxy) serveWebSocket(w http.ResponseWriter, r *http.Request, connectorID, siteID, userID, host, upstream string, insecureSkipVerify, gateway bool, email string) {
 	sess := p.reg.Get(connectorID)
 	if sess == nil || sess.mux == nil {
 		http.Error(w, "connector offline", http.StatusBadGateway)
@@ -74,11 +78,14 @@ func (p *BrowserProxy) serveWebSocket(w http.ResponseWriter, r *http.Request, co
 	}
 	defer st.Close()
 
+	hdr := wsRequestHeaders(r, host)
+	setGatewayIdentity(hdr, gateway, email)
+
 	wr := tunnel.WsDialRequest{
 		Kind:               "ws",
 		UpstreamUrl:        upstream,
 		Path:               r.URL.RequestURI(),
-		Header:             wsRequestHeaders(r, host),
+		Header:             hdr,
 		InsecureSkipVerify: insecureSkipVerify,
 	}
 	reqBytes, err := json.Marshal(wr)
