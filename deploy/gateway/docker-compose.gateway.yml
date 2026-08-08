@@ -83,6 +83,10 @@ services:
       POSTGRESQL_DATABASE: guacamole
       POSTGRESQL_USER: guacamole
       POSTGRESQL_PASSWORD: ${GUAC_DB_PASSWORD:?required}
+      # Serve the app at the ROOT path (/) instead of the default /guacamole/, so
+      # it publishes cleanly as a Captivo Site: the vendor hits the bare hostname
+      # and the Site's Internal address is just http://cap-guacamole:8080 (no path).
+      WEBAPP_CONTEXT: ROOT
     # Bind to localhost only: Captivo (via the connector) reaches this over the
     # LAN; it is NOT exposed to the internet directly. Publish it through Captivo
     # as a Site instead. Change the left side if the connector reaches it by a

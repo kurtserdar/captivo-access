@@ -35,16 +35,17 @@ cp .env.gateway.example .env
 docker compose -f docker-compose.gateway.yml up -d
 ```
 
-The Guacamole web UI is now at `http://<connector-host>:8080/guacamole/` (bound to localhost by default —
+The Guacamole web UI is now at `http://<connector-host>:8080/` (served at the root path via
+`WEBAPP_CONTEXT: ROOT`, so it publishes cleanly as a Site; bound to localhost by default —
 change the port mapping if the connector reaches it by another address). First login is `guacadmin` /
 `guacadmin` — **change this password immediately** (top-right menu → Settings → Preferences), it is the
 gateway's admin.
 
 ## 2. Publish it as a Captivo Site
 In the Captivo console → **Sites → Add site**:
-- **Internal address:** `http://<connector-host>:8080/guacamole/` (the address guacd/guacamole is reachable at
-  from the connector — often `http://cap-guacamole:8080/guacamole/` if you attach the connector to this compose
-  network, or the host IP:8080).
+- **Internal address:** `http://cap-guacamole:8080` — no path (the app is at the root, and `cap-guacamole`
+  resolves over the compose network once you attach the connector to it; use `http://<host-ip>:8080` if the
+  connector reaches it by host address instead).
 - Give it a hostname (e.g. `console.access.example.com`) and the connector that runs the gateway.
 
 Now a vendor with a Captivo grant reaches Guacamole through Captivo — passkey login, time-boxed/approved
