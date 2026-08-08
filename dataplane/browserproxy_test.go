@@ -543,6 +543,45 @@ func TestInjectRecorderNonASCIIHead(t *testing.T) {
 	}
 }
 
+// (g2) A POST /__captivo/rec batch larger than maxRecordingBatchBytes is
+// dropped whole rather than forwarded truncated (which would poison the
+// chunk with corrupt JSON): 204 is still returned (fail-silent), but
+// SendRecording is never called.
+func TestServeRecording_DropsOversizeBatch(t *testing.T) {
+	ctrl := &fakeControl{}
+	p := &BrowserProxy{ctrl: ctrl}
+
+	big := bytes.Repeat([]byte("x"), maxRecordingBatchBytes+1)
+	req := httptest.NewRequest(http.MethodPost, "/__captivo/rec", bytes.NewReader(big))
+	rec := httptest.NewRecorder()
+	p.serveRecording(rec, req, "u1", "s1", "host", true)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
+	}
+	if ctrl.sentBody != nil {
+		t.Fatalf("oversize batch must not be forwarded, got SendRecording body %q", ctrl.sentBody)
+	}
+}
+
+// (g3) A batch at or under the cap still forwards normally.
+func TestServeRecording_ForwardsNormalBatch(t *testing.T) {
+	ctrl := &fakeControl{}
+	p := &BrowserProxy{ctrl: ctrl}
+
+	body := []byte(`{"recordingKey":"k","seq":0,"events":[{"type":2}]}`)
+	req := httptest.NewRequest(http.MethodPost, "/__captivo/rec", bytes.NewReader(body))
+	rec := httptest.NewRecorder()
+	p.serveRecording(rec, req, "u1", "s1", "host", true)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
+	}
+	if string(ctrl.sentBody) != string(body) {
+		t.Fatalf("SendRecording body = %q, want %q", ctrl.sentBody, body)
+	}
+}
+
 // newTunnelPair returns a connected pair of yamux sessions — srv is what
 // ServeHTTP's connector Registry entry uses to open streams, cli is the
 // test's stand-in for the connector, accepting those streams. Both sessions

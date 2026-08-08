@@ -349,10 +349,12 @@ func insertAt(body, tag []byte, i int) []byte {
 }
 
 // maxRecordingBatchBytes caps a single POST /__captivo/rec body. The
-// recorder bundle (src/recorder/record-init.ts) flushes every 50 rrweb
-// events or 5s, whichever comes first, so a batch is normally small; this is
-// just a backstop against a runaway/malicious client.
-const maxRecordingBatchBytes = 2 << 20 // 2 MiB
+// recorder flushes the FullSnapshot as its own batch via a plain (uncapped)
+// fetch, so a single batch can be large; 8 MiB is a generous backstop
+// against a runaway/malicious client. An oversize body is dropped whole
+// (below) rather than forwarded truncated, which would poison the chunk
+// with corrupt JSON.
+const maxRecordingBatchBytes = 8 << 20 // 8 MiB
 
 // serveRecording intercepts the two reserved /__captivo/* paths the
 // recorder bundle talks to. It never reaches the upstream app. Recording is
@@ -375,9 +377,16 @@ func (p *BrowserProxy) serveRecording(w http.ResponseWriter, r *http.Request, us
 		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		_, _ = w.Write(js)
 	case r.Method == http.MethodPost && r.URL.Path == "/__captivo/rec":
-		body, err := io.ReadAll(io.LimitReader(r.Body, maxRecordingBatchBytes))
+		body, err := io.ReadAll(io.LimitReader(r.Body, maxRecordingBatchBytes+1))
 		if err != nil {
 			http.NotFound(w, r)
+			return
+		}
+		if len(body) > maxRecordingBatchBytes {
+			// Oversize: drop cleanly rather than forward a truncated,
+			// corrupt body. Fail-silent — recording must never surface to
+			// the page.
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 		_ = p.ctrl.SendRecording(userID, siteID, host, body) // best-effort
