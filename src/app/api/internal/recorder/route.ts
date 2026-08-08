@@ -5,7 +5,8 @@ import { RECORDER_JS } from "@/recorder/rec.bundle";
 export const dynamic = "force-dynamic";
 
 export function GET(req: Request) {
-  if (req.headers.get("x-dataplane-secret") !== process.env.DATAPLANE_SECRET) {
+  const secret = process.env.DATAPLANE_SECRET;
+  if (!secret || req.headers.get("x-dataplane-secret") !== secret) {
     return new NextResponse("forbidden", { status: 403 });
   }
   if (!recordingEnabled()) return new NextResponse("", { status: 404 });
