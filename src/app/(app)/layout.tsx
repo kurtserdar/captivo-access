@@ -23,6 +23,7 @@ import {
   SessionsIcon,
   AuditIcon,
   SettingsIcon,
+  UpdatesIcon,
 } from "@/components/icons";
 
 // requireUser() must be read fresh from the DB on every request (session/role changes reflect immediately).
@@ -101,7 +102,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Custom domain
             </NavLink>
             <NavLink href="/admin/updates">
-              <SettingsIcon />
+              <UpdatesIcon />
               Updates
             </NavLink>
             <span className="nav-group">People</span>
