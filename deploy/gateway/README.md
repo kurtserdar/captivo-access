@@ -78,7 +78,27 @@ Now a vendor with a Captivo grant reaches Guacamole through Captivo — passkey 
 access, and every request in the Captivo audit log. (WebSocket passthrough — which Guacamole's tunnel needs —
 is already supported by the Captivo proxy.)
 
-## 4. Create a recorded connection
+## 4. Single sign-on
+Gateway Sites auto-log the vendor into Guacamole — no second login. Captivo injects the vendor's **email**
+as a trusted header (`X-Captivo-User`); Guacamole's header-auth extension reads it and signs the vendor in
+automatically.
+
+- **Operator step (identity pass-through):** create a Guacamole user for each vendor **email**
+  (Settings → Users → New user, username = the vendor's email exactly) and assign their connections. Until
+  you do this, the vendor still logs in via the header, but sees an empty connection list.
+- **Trust boundary (important):** Guacamole trusts this header absolutely — anyone who can set it is
+  whoever they claim to be. Never expose Guacamole's port to anything but the Captivo connector/data-plane;
+  it must be reachable **only through Captivo**, which strips any client-supplied `X-Captivo-User` before
+  injecting its own. Keep it bound to localhost / the internal `captivo-gateway` network, exactly as this
+  pack already sets it up — do not publish port 8080 directly or put another reverse proxy in front of it.
+- **After upgrading** this pack (new compose or new `guacamole/guacamole` image), re-pull the gateway
+  compose and restart Guacamole so header-auth is active:
+  ```bash
+  curl -fsSLO https://raw.githubusercontent.com/kurtserdar/captivo-access/main/deploy/gateway/docker-compose.gateway.yml
+  docker compose -f docker-compose.gateway.yml up -d
+  ```
+
+## 5. Create a recorded connection
 In the Guacamole UI → Settings → Connections → New connection. Pick **RDP / SSH / VNC**, set the target host
 (reachable from guacd over the LAN) + credentials, and under **"Screen Recording"** set:
 - **Recording path:** `/var/lib/guacamole/recordings`
@@ -88,15 +108,15 @@ In the Guacamole UI → Settings → Connections → New connection. Pick **RDP 
 guacd writes the raw recording to the `guac_recordings` volume. (The compose's `guac-record-init` makes that
 volume writable by guacd's uid 1000 — the one real gotcha of this stack.)
 
-## 5. Watch recordings
+## 6. Watch recordings
 In the Guacamole UI → Settings → **History**, each recorded session has a **play** control that replays the raw
 recording in the built-in player — no extra tooling. (To export a standalone `.m4v`, run `guacenc` over the raw
 recording file separately; not required just to watch.)
 
 ## Notes & caveats
-- **Double login (for now):** the vendor logs into Captivo, then into Guacamole. A later iteration can wire
-  Guacamole **header-auth** so Captivo passes an authenticated header and Guacamole auto-logs-in (no second
-  password). Deferred.
+- **Single sign-on:** the vendor logs into Captivo only — Guacamole auto-logs-in via the trusted
+  `X-Captivo-User` header. See [Single sign-on](#4-single-sign-on) above for the operator step (per-vendor
+  user provisioning) and the trust boundary.
 - **Compute:** the host needs headroom for the JVM + guacd + per-session encoding. Opt-in, so acceptable —
   but plan for it.
 - **Patching:** you now run Guacamole (guacd/Tomcat) — keep it updated for CVEs.

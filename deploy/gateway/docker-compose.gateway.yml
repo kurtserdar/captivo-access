@@ -84,6 +84,14 @@ services:
       # it publishes cleanly as a Captivo Site: the vendor hits the bare hostname
       # and the Site's Internal address is just http://cap-guacamole:8080 (no path).
       WEBAPP_CONTEXT: ROOT
+      # Single sign-on from Captivo: Guacamole trusts this header (set only by the
+      # Captivo data-plane, which strips any client-supplied copy) and auto-logs
+      # the vendor in. Keep the POSTGRESQL_* auth too — postgres holds the
+      # per-user connections. HEADER_ENABLED is required alongside
+      # HTTP_AUTH_HEADER: the image's start.sh only wires up the header-auth
+      # extension when HEADER_ENABLED=true (HTTP_AUTH_HEADER alone is a no-op).
+      HEADER_ENABLED: "true"
+      HTTP_AUTH_HEADER: X-Captivo-User
     # Bind to localhost only: Captivo (via the connector) reaches this over the
     # LAN; it is NOT exposed to the internet directly. Publish it through Captivo
     # as a Site instead. Change the left side if the connector reaches it by a
