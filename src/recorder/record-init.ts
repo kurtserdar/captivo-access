@@ -12,7 +12,10 @@ type RRWebEvent = { type?: number };
     // meta-refresh, SPA hard nav) continues ONE recording instead of starting a
     // fresh, snapshot-orphaned one. sessionStorage is per-tab and cleared when
     // the tab closes — exactly one vendor visit. Falls back to an in-memory key
-    // when storage is unavailable (private mode).
+    // when storage is unavailable (private mode). Note: a duplicated tab
+    // inherits a copy of sessionStorage, so both tabs would share this key+seq;
+    // that only interleaves chunks (never blanks a replay) and is an accepted
+    // consequence of the per-tab design.
     let key: string;
     let seq: number;
     try {
@@ -37,11 +40,13 @@ type RRWebEvent = { type?: number };
     const send = (batch: RRWebEvent[], s: number) => {
       const body = JSON.stringify({ recordingKey: key, seq: s, events: batch });
       try {
-        void fetch("/__captivo/rec", {
+        // .catch swallows async rejections too (a bare `void fetch` would let a
+        // network-blip rejection surface as an unhandledrejection in the app).
+        fetch("/__captivo/rec", {
           method: "POST",
           body,
           headers: { "content-type": "application/json" },
-        });
+        }).catch(() => {});
       } catch { /* recording must never break the app */ }
     };
 
@@ -54,12 +59,12 @@ type RRWebEvent = { type?: number };
       try {
         const blob = new Blob([body], { type: "application/json" });
         if (!navigator.sendBeacon("/__captivo/rec", blob)) {
-          void fetch("/__captivo/rec", {
+          fetch("/__captivo/rec", {
             method: "POST",
             body,
             headers: { "content-type": "application/json" },
             keepalive: true,
-          });
+          }).catch(() => {});
         }
       } catch { /* fail silent */ }
     };
