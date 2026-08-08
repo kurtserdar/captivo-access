@@ -62,7 +62,7 @@ a{color:inherit;}
 /* ---- buttons ---- */
 .btn{font:inherit;font-size:.875rem;font-weight:550;cursor:pointer;border:1px solid var(--line);
   background:var(--surface);color:var(--fg);border-radius:var(--radius);padding:.5rem .85rem;
-  display:inline-flex;align-items:center;gap:.4rem;transition:background .12s,border-color .12s;}
+  display:inline-flex;align-items:center;gap:.4rem;transition:background .12s,border-color .12s;white-space:nowrap;}
 .btn:hover{background:var(--surface-hover);}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);}
 .btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2);}
@@ -103,9 +103,19 @@ a{color:inherit;}
 .row-unread td{font-weight:600;}
 .cell-sub{color:var(--muted);font-size:.8rem;}
 
+/* Cells stay on one line — never break a word/pill/button mid-character.
+   Long free-form values truncate; the table scrolls (via .table-wrap) only if
+   it still overflows. Do not use overflow-wrap anywhere here; it stacks
+   letters vertically. */
+.table td{white-space:nowrap;}
+.cell-inline{display:inline-flex;align-items:center;gap:.4rem;max-width:100%;vertical-align:middle;}
+.cell-truncate{display:inline-block;max-width:24rem;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;vertical-align:middle;}
+.cell-inline .cell-truncate{max-width:20rem;}
+
 /* ---- pill / badge ---- */
 .pill{display:inline-flex;align-items:center;gap:.34rem;font-size:.75rem;font-weight:600;
-  padding:.18rem .55rem;border-radius:99px;border:1px solid transparent;}
+  padding:.18rem .55rem;border-radius:99px;border:1px solid transparent;white-space:nowrap;}
 .pill::before{content:"";width:6px;height:6px;border-radius:99px;background:currentColor;}
 .pill.ok{color:var(--ok);background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 32%,transparent);}
 .pill.warn{color:var(--warn);background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 32%,transparent);}

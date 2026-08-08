@@ -83,18 +83,18 @@ export default async function AdminSitesPage() {
                 <tr key={s.id}>
                   <td>{s.name}</td>
                   <td className="cell-sub">
-                    <div className="row-actions">
-                      {s.hostname}
+                    <span className="cell-inline">
+                      <span className="cell-truncate" title={s.hostname}>{s.hostname}</span>
                       <CopyButton value={s.hostname} label="Copy" />
-                    </div>
+                    </span>
                   </td>
                   <td>{s.connector.name}</td>
                   <td className="cell-sub">
                     {s.upstreamUrl && (
-                      <div className="row-actions">
-                        {s.upstreamUrl}
+                      <span className="cell-inline">
+                        <span className="cell-truncate" title={s.upstreamUrl}>{s.upstreamUrl}</span>
                         <CopyButton value={s.upstreamUrl} label="Copy" />
-                      </div>
+                      </span>
                     )}
                   </td>
                   <td className="cell-sub">{s.description ?? "—"}</td>
