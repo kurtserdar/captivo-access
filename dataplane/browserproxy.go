@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -144,11 +145,18 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer st.Close() // also unblocks a still-running WriteBody goroutine below
 
+	reqHeaders := sanitizeReqHeaders(r, host)
+	if recordSessions {
+		// Force uncompressed HTML from the upstream so the response-path
+		// injection below (Step 3) can buffer, modify, and recompute
+		// Content-Length without also having to decompress it.
+		reqHeaders["Accept-Encoding"] = []string{"identity"}
+	}
 	dr := tunnel.DialRequest{
 		UpstreamUrl:        upstream,
 		Method:             r.Method,
 		Path:               r.URL.RequestURI(),
-		Header:             sanitizeReqHeaders(r, host),
+		Header:             reqHeaders,
 		InsecureSkipVerify: insecureSkipVerify,
 	}
 	reqBytes, err := json.Marshal(dr)
@@ -189,10 +197,106 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	copyRespHeaders(w.Header(), resp.Header)
-	w.WriteHeader(resp.Status)
-	written, _ := io.Copy(w, tunnel.NewBodyReader(st))
+	body := tunnel.NewBodyReader(st)
+	written := p.writeProxyResponse(w, resp, body, recordSessions)
 	accessLog(userID, siteID, host, r.Method, r.URL.Path, resp.Status, written)
 	p.audit.Enqueue(auditEvent("ALLOW", "", userID, siteID, host, r, resp.Status, written))
+}
+
+// writeProxyResponse writes the upstream response (status, already-copied
+// headers, and body) to w, returning the number of body bytes written. For
+// recorded Sites whose response Content-Type starts with text/html, it
+// buffers the body (capped at maxInjectableBodyBytes), injects the recorder
+// script tag, strips the response's CSP headers (which would otherwise
+// block the injected script and the recorder's own outbound requests), and
+// recomputes Content-Length. Every other response — non-recorded Sites,
+// non-HTML content types, and oversized HTML bodies — is streamed exactly
+// as it arrives, unmodified.
+func (p *BrowserProxy) writeProxyResponse(w http.ResponseWriter, resp tunnel.DialResponse, body io.Reader, recordSessions bool) int64 {
+	if !recordSessions || !isHTMLContentType(resp.Header) {
+		w.WriteHeader(resp.Status)
+		written, _ := io.Copy(w, body)
+		return written
+	}
+
+	// Read up to maxInjectableBodyBytes+1 bytes: if that many are present,
+	// the body exceeds the cap and must be streamed unchanged instead of
+	// buffered/injected. buf below holds at most that many bytes read so
+	// far either way — for the oversize case it's simply written back out
+	// verbatim followed by the rest of the stream, so the response the
+	// browser receives is identical to the un-injected path.
+	buf, _ := io.ReadAll(io.LimitReader(body, maxInjectableBodyBytes+1))
+	if int64(len(buf)) > maxInjectableBodyBytes {
+		w.WriteHeader(resp.Status)
+		n1, _ := w.Write(buf)
+		n2, _ := io.Copy(w, body)
+		return int64(n1) + n2
+	}
+
+	injected := injectRecorder(buf)
+	w.Header().Del("Content-Security-Policy")
+	w.Header().Del("Content-Security-Policy-Report-Only")
+	w.Header().Set("Content-Length", strconv.Itoa(len(injected)))
+	w.WriteHeader(resp.Status)
+	n, _ := w.Write(injected)
+	return int64(n)
+}
+
+// isHTMLContentType reports whether header's Content-Type value(s) start
+// with "text/html" (case-insensitively, ignoring leading whitespace — e.g.
+// "text/html; charset=utf-8" matches). Header keys are matched
+// case-insensitively since they originate from the connector's JSON-encoded
+// response, not necessarily Go's canonical form.
+func isHTMLContentType(header map[string][]string) bool {
+	for k, vs := range header {
+		if !strings.EqualFold(k, "Content-Type") {
+			continue
+		}
+		for _, v := range vs {
+			if strings.HasPrefix(strings.ToLower(strings.TrimSpace(v)), "text/html") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// recorderScriptTag is injected into recorded-Site HTML responses. It loads
+// the recorder bundle from the reserved /__captivo/rec.js endpoint (served
+// by serveRecording, never proxied upstream) with `defer` so it never blocks
+// page rendering.
+const recorderScriptTag = `<script src="/__captivo/rec.js" defer></script>`
+
+// maxInjectableBodyBytes caps how large a recorded-Site HTML response body
+// may be for injectRecorder to run against a fully-buffered copy. Above
+// this, the response is streamed unchanged (no injection) rather than
+// buffering an unbounded body in memory.
+const maxInjectableBodyBytes = 8 << 20 // 8 MiB
+
+// injectRecorder inserts recorderScriptTag into an HTML document: before the
+// first case-insensitive `</head>` if present, else before the first
+// case-insensitive `</body>` if present, else prepended to the whole body.
+// The tag is inserted exactly once. Pure function — no I/O.
+func injectRecorder(body []byte) []byte {
+	lower := strings.ToLower(string(body))
+	if i := strings.Index(lower, "</head>"); i >= 0 {
+		out := make([]byte, 0, len(body)+len(recorderScriptTag))
+		out = append(out, body[:i]...)
+		out = append(out, recorderScriptTag...)
+		out = append(out, body[i:]...)
+		return out
+	}
+	if i := strings.Index(lower, "</body>"); i >= 0 {
+		out := make([]byte, 0, len(body)+len(recorderScriptTag))
+		out = append(out, body[:i]...)
+		out = append(out, recorderScriptTag...)
+		out = append(out, body[i:]...)
+		return out
+	}
+	out := make([]byte, 0, len(body)+len(recorderScriptTag))
+	out = append(out, recorderScriptTag...)
+	out = append(out, body...)
+	return out
 }
 
 // maxRecordingBatchBytes caps a single POST /__captivo/rec body. The

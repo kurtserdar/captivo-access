@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -487,5 +488,233 @@ func TestBrowserProxyRespondsBeforeBodyDrained(t *testing.T) {
 	}
 	if w.Body.String() != "too large" {
 		t.Fatalf("body = %q, want %q", w.Body.String(), "too large")
+	}
+}
+
+// TestInjectRecorder proves the pure injectRecorder helper's placement
+// rules: before </head> when present, else before </body>, else prepended
+// to the whole body — case-insensitively, and inserted exactly once.
+func TestInjectRecorder(t *testing.T) {
+	tag := `<script src="/__captivo/rec.js" defer></script>`
+	// before </head>
+	got := string(injectRecorder([]byte("<html><head><title>x</title></head><body>y</body></html>")))
+	if !strings.Contains(got, tag+"</head>") {
+		t.Fatalf("not before </head>: %s", got)
+	}
+	// fallback before </body> when no </head>
+	got = string(injectRecorder([]byte("<body>y</body>")))
+	if !strings.Contains(got, tag+"</body>") {
+		t.Fatalf("not before </body>: %s", got)
+	}
+	// fallback prepend when neither
+	got = string(injectRecorder([]byte("plain")))
+	if !strings.HasPrefix(got, tag) {
+		t.Fatalf("not prepended: %s", got)
+	}
+}
+
+// newTunnelPair returns a connected pair of yamux sessions — srv is what
+// ServeHTTP's connector Registry entry uses to open streams, cli is the
+// test's stand-in for the connector, accepting those streams. Both sessions
+// are closed automatically at test cleanup.
+func newTunnelPair(t *testing.T) (srv, cli *yamux.Session) {
+	t.Helper()
+	a, b := net.Pipe()
+	var err error
+	srv, err = yamux.Server(a, tunnel.SessionConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	cli, err = yamux.Client(b, tunnel.SessionConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = srv.Close()
+		_ = cli.Close()
+	})
+	return srv, cli
+}
+
+// (i) A recorded Site's text/html response gets the recorder script tag
+// injected before </head>, its CSP headers stripped (so both the injected
+// script and the recorder's own outbound requests aren't blocked by the
+// upstream app's policy), and Content-Length recomputed for the modified
+// body.
+func TestBrowserProxyInjectsRecorderIntoRecordedSiteHTML(t *testing.T) {
+	srv, cli := newTunnelPair(t)
+	const upstreamBody = "<html><head><title>x</title></head><body>hi</body></html>"
+	var gotDR tunnel.DialRequest
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		st, err := cli.Accept()
+		if err != nil {
+			return
+		}
+		defer st.Close()
+		reqBytes, err := tunnel.ReadFrame(st)
+		if err != nil {
+			return
+		}
+		_ = json.Unmarshal(reqBytes, &gotDR)
+		_, _ = io.ReadAll(tunnel.NewBodyReader(st))
+		respBytes, _ := json.Marshal(tunnel.DialResponse{
+			Status: http.StatusOK,
+			Header: map[string][]string{
+				"Content-Type":                        {"text/html; charset=utf-8"},
+				"Content-Security-Policy":             {"default-src 'self'"},
+				"Content-Security-Policy-Report-Only": {"default-src 'self'"},
+			},
+		})
+		if err := tunnel.WriteFrame(st, respBytes); err != nil {
+			return
+		}
+		_ = tunnel.WriteBody(st, strings.NewReader(upstreamBody))
+	}()
+
+	reg := NewRegistry()
+	reg.Set("c1", &Session{mux: srv})
+	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "http://wiki.internal", allow: true, reason: "allow", recordSessions: true}
+	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
+
+	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/", nil)
+	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	<-done
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if vs, ok := gotDR.Header["Accept-Encoding"]; !ok || len(vs) != 1 || vs[0] != "identity" {
+		t.Fatalf("forwarded Accept-Encoding = %+v, want [\"identity\"] for a recorded Site", gotDR.Header["Accept-Encoding"])
+	}
+	body := w.Body.String()
+	const wantTag = `<script src="/__captivo/rec.js" defer></script></head>`
+	if !strings.Contains(body, wantTag) {
+		t.Fatalf("recorder script not injected before </head>: %s", body)
+	}
+	if w.Header().Get("Content-Security-Policy") != "" {
+		t.Fatalf("Content-Security-Policy must be stripped for recorded-Site HTML, got %q", w.Header().Get("Content-Security-Policy"))
+	}
+	if w.Header().Get("Content-Security-Policy-Report-Only") != "" {
+		t.Fatalf("Content-Security-Policy-Report-Only must be stripped for recorded-Site HTML, got %q", w.Header().Get("Content-Security-Policy-Report-Only"))
+	}
+	if got, want := w.Header().Get("Content-Length"), strconv.Itoa(len(body)); got != want {
+		t.Fatalf("Content-Length = %q, want %q (actual written body length)", got, want)
+	}
+
+	evs := p.audit.drain(10)
+	if len(evs) != 1 || evs[0].BytesOut != int64(len(body)) {
+		t.Fatalf("audit event = %+v, want BytesOut=%d", evs, len(body))
+	}
+}
+
+// (j) A recorded Site's non-HTML response (application/json) is streamed
+// unchanged: no script injected, CSP headers left intact.
+func TestBrowserProxyRecordedSiteNonHTMLUnchanged(t *testing.T) {
+	srv, cli := newTunnelPair(t)
+	const upstreamBody = `{"ok":true}`
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		st, err := cli.Accept()
+		if err != nil {
+			return
+		}
+		defer st.Close()
+		if _, err := tunnel.ReadFrame(st); err != nil {
+			return
+		}
+		_, _ = io.ReadAll(tunnel.NewBodyReader(st))
+		respBytes, _ := json.Marshal(tunnel.DialResponse{
+			Status: http.StatusOK,
+			Header: map[string][]string{
+				"Content-Type":            {"application/json"},
+				"Content-Security-Policy": {"default-src 'self'"},
+			},
+		})
+		if err := tunnel.WriteFrame(st, respBytes); err != nil {
+			return
+		}
+		_ = tunnel.WriteBody(st, strings.NewReader(upstreamBody))
+	}()
+
+	reg := NewRegistry()
+	reg.Set("c1", &Session{mux: srv})
+	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "http://wiki.internal", allow: true, reason: "allow", recordSessions: true}
+	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
+
+	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/api", nil)
+	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	<-done
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if w.Body.String() != upstreamBody {
+		t.Fatalf("body = %q, want unchanged %q", w.Body.String(), upstreamBody)
+	}
+	if w.Header().Get("Content-Security-Policy") != "default-src 'self'" {
+		t.Fatalf("CSP must be preserved for non-HTML responses, got %q", w.Header().Get("Content-Security-Policy"))
+	}
+}
+
+// (k) A non-recorded Site's text/html response is streamed unchanged: no
+// script injected, CSP headers left intact — recording (and therefore
+// injection) is strictly opt-in per Site.
+func TestBrowserProxyNonRecordedSiteHTMLUnchanged(t *testing.T) {
+	srv, cli := newTunnelPair(t)
+	const upstreamBody = "<html><head><title>x</title></head><body>hi</body></html>"
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		st, err := cli.Accept()
+		if err != nil {
+			return
+		}
+		defer st.Close()
+		if _, err := tunnel.ReadFrame(st); err != nil {
+			return
+		}
+		_, _ = io.ReadAll(tunnel.NewBodyReader(st))
+		respBytes, _ := json.Marshal(tunnel.DialResponse{
+			Status: http.StatusOK,
+			Header: map[string][]string{
+				"Content-Type":            {"text/html; charset=utf-8"},
+				"Content-Security-Policy": {"default-src 'self'"},
+			},
+		})
+		if err := tunnel.WriteFrame(st, respBytes); err != nil {
+			return
+		}
+		_ = tunnel.WriteBody(st, strings.NewReader(upstreamBody))
+	}()
+
+	reg := NewRegistry()
+	reg.Set("c1", &Session{mux: srv})
+	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "http://wiki.internal", allow: true, reason: "allow", recordSessions: false}
+	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
+
+	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/", nil)
+	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	<-done
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if w.Body.String() != upstreamBody {
+		t.Fatalf("body = %q, want unchanged %q", w.Body.String(), upstreamBody)
+	}
+	if strings.Contains(w.Body.String(), "/__captivo/rec.js") {
+		t.Fatalf("recorder script must not be injected for a non-recorded Site: %s", w.Body.String())
+	}
+	if w.Header().Get("Content-Security-Policy") != "default-src 'self'" {
+		t.Fatalf("CSP must be preserved for a non-recorded Site, got %q", w.Header().Get("Content-Security-Policy"))
 	}
 }
