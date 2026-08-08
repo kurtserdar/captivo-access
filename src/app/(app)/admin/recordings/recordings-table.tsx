@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { DeleteRecordingButton } from "./delete-recording-button";
@@ -20,6 +20,14 @@ export interface RecordingRowJSON {
 }
 
 type Opt = { id: string; name: string | null; email?: string | null };
+
+type Filters = {
+  q: string;
+  userId: string;
+  siteId: string;
+  from: string;
+  to: string;
+};
 
 const PAGE = 50;
 
@@ -44,44 +52,46 @@ export function RecordingsTable({
   initialRows: RecordingRowJSON[];
   initialTotal: number;
 }) {
-  const [rows, setRows] = useState(initialRows);
-  const [total, setTotal] = useState(initialTotal);
-  const [q, setQ] = useState("");
-  const [userId, setUserId] = useState("");
-  const [siteId, setSiteId] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [filters, setFilters] = useState<Filters>({ q: "", userId: "", siteId: "", from: "", to: "" });
   const [offset, setOffset] = useState(0);
+  const [rows, setRows] = useState<RecordingRowJSON[]>(initialRows);
+  const [total, setTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Bumped on every load() call; a response is applied only if it's still the
+  // most recently issued request, so a slow stale response can't clobber
+  // newer rows (e.g. filter change while a page fetch is still in flight).
+  const requestIdRef = useRef(0);
 
-  const load = useCallback(async () => {
+  async function load(nextFilters: Filters, nextOffset: number) {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     try {
       const sp = new URLSearchParams();
-      if (q.trim()) sp.set("q", q.trim());
-      if (userId) sp.set("userId", userId);
-      if (siteId) sp.set("siteId", siteId);
-      if (from) sp.set("from", from);
-      if (to) sp.set("to", to);
+      if (nextFilters.q.trim()) sp.set("q", nextFilters.q.trim());
+      if (nextFilters.userId) sp.set("userId", nextFilters.userId);
+      if (nextFilters.siteId) sp.set("siteId", nextFilters.siteId);
+      if (nextFilters.from) sp.set("from", nextFilters.from);
+      if (nextFilters.to) sp.set("to", nextFilters.to);
       sp.set("limit", String(PAGE));
-      sp.set("offset", String(offset));
+      sp.set("offset", String(nextOffset));
       const res = await fetch(`/api/admin/recordings?${sp.toString()}`);
       if (!res.ok) return;
       const body = (await res.json()) as { rows: RecordingRowJSON[]; total: number };
+      if (requestId !== requestIdRef.current) return; // stale response, a newer request has since been issued
       setRows(body.rows);
       setTotal(body.total);
+      setFilters(nextFilters);
+      setOffset(nextOffset);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [q, userId, siteId, from, to, offset]);
+  }
 
-  // Reset to first page whenever a filter changes.
-  useEffect(() => {
-    setOffset(0);
-  }, [q, userId, siteId, from, to]);
-  useEffect(() => {
-    void load();
-  }, [load]);
+  function updateFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
+    const nextFilters = { ...filters, [key]: value };
+    void load(nextFilters, 0);
+  }
 
   const start = total === 0 ? 0 : offset + 1;
   const end = Math.min(offset + PAGE, total);
@@ -96,13 +106,18 @@ export function RecordingsTable({
             type="search"
             className="input"
             placeholder="Search host…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
+            value={filters.q}
+            onChange={(e) => {
+              const q = e.target.value;
+              setFilters((prev) => ({ ...prev, q }));
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              debounceRef.current = setTimeout(() => void load({ ...filters, q }, 0), 300);
+            }}
           />
         </div>
         <div className="field">
           <label className="field-label" htmlFor="rec-filter-site">Site</label>
-          <select id="rec-filter-site" className="select" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
+          <select id="rec-filter-site" className="select" value={filters.siteId} onChange={(e) => updateFilter("siteId", e.target.value)}>
             <option value="">All sites</option>
             {sites.map((s) => (
               <option key={s.id} value={s.id}>
@@ -113,7 +128,7 @@ export function RecordingsTable({
         </div>
         <div className="field">
           <label className="field-label" htmlFor="rec-filter-user">Vendor</label>
-          <select id="rec-filter-user" className="select" value={userId} onChange={(e) => setUserId(e.target.value)}>
+          <select id="rec-filter-user" className="select" value={filters.userId} onChange={(e) => updateFilter("userId", e.target.value)}>
             <option value="">All vendors</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>
@@ -124,11 +139,11 @@ export function RecordingsTable({
         </div>
         <div className="field">
           <label className="field-label" htmlFor="rec-filter-from">From</label>
-          <input id="rec-filter-from" type="date" className="input" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <input id="rec-filter-from" type="date" className="input" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} />
         </div>
         <div className="field">
           <label className="field-label" htmlFor="rec-filter-to">To</label>
-          <input id="rec-filter-to" type="date" className="input" value={to} onChange={(e) => setTo(e.target.value)} />
+          <input id="rec-filter-to" type="date" className="input" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} />
         </div>
       </div>
 
@@ -174,10 +189,10 @@ export function RecordingsTable({
       <div className="card-head">
         <span className="cell-sub">{loading ? "Loading…" : `${start}–${end} of ${total}`}</span>
         <div className="row-actions">
-          <button type="button" className="btn sm" disabled={offset === 0 || loading} onClick={() => setOffset(Math.max(0, offset - PAGE))}>
+          <button type="button" className="btn sm" disabled={offset === 0 || loading} onClick={() => void load(filters, Math.max(0, offset - PAGE))}>
             Previous
           </button>
-          <button type="button" className="btn sm" disabled={end >= total || loading} onClick={() => setOffset(offset + PAGE)}>
+          <button type="button" className="btn sm" disabled={end >= total || loading} onClick={() => void load(filters, offset + PAGE)}>
             Next
           </button>
         </div>
