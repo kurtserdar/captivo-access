@@ -129,8 +129,10 @@ Now edit `.env`. Every variable, with an example value:
 | `AUDIT_RETENTION_DAYS` | `730` | How long audit logs are kept before the retention cron trims them. Set per your legal obligations. |
 
 Leave the optional/commented ones (`DNS_API_TOKEN`, `CADDY_DNS_MODULE`,
-`NOTIFICATION_WEBHOOK_URL`, the TTL overrides) alone unless you know you need
-them. `DNS_API_TOKEN` is **only** for the large-scale wildcard-certificate escape
+`NOTIFICATION_WEBHOOK_URL`, `RECORDING_ENABLED` (Pro session recording — gates the
+per-Site "Record sessions" toggle), `CONNECTOR_TUNNEL_URL` (overrides the default
+`wss://connect.<ACCESS_DOMAIN>` endpoint), the TTL overrides) alone unless you
+know you need them. `DNS_API_TOKEN` is **only** for the large-scale wildcard-certificate escape
 hatch — you do not need it for a normal install.
 
 **Never commit `.env`.** It holds every secret.
@@ -192,15 +194,15 @@ internal app. It only dials outward — no inbound port.
 
    ```bash
    docker run -d \
-     --name captivo-access-connector \
+     --name access-connector --restart unless-stopped \
      -e MANAGER_URL=https://manager.access.acme.com \
      -e DATAPLANE_URL=wss://connect.access.acme.com \
      -e PAIR_CODE=<one-time code from the console> \
-     -v conn-data:/data \
+     -v access_connector_data:/data \
      ghcr.io/kurtserdar/captivo-access-connector:latest
    ```
 
-   The `-v conn-data:/data` volume stores the connector's token so it reconnects
+   The `-v access_connector_data:/data` volume stores the connector's token so it reconnects
    after restarts without the pairing code. Optionally add
    `-e ALLOWED_TARGETS=10.0.5.0/24` to hard-limit what this connector may ever
    reach.
@@ -295,7 +297,7 @@ shows the exact commands when an update is available.
 |---|---|---|
 | Passkey setup/login fails ("Something went wrong") at `/setup` | `WEBAUTHN_RP_ID` doesn't match the host in the browser | Set `WEBAUTHN_RP_ID=access.acme.com` (the bare access domain), restart the manager, retry. It must be equal to, or a parent of, the host you actually open. |
 | An app hostname shows a TLS/certificate error | Wildcard `*.access` A record missing, or the hostname isn't a configured Site | Run **Custom domain → Verify DNS** in the console. Confirm the Site exists (Caddy only issues certs for real Sites). Fresh DNS can take a few minutes. |
-| New connector stays **Offline** | Wrong `DATAPLANE_URL` (must be `wss://connect.…`, not `ws://`), or the machine can't reach the internet outbound | Re-copy the exact command from the console; verify the connector host can reach `connect.access.acme.com:443` outbound; check `docker logs captivo-access-connector`. |
+| New connector stays **Offline** | Wrong `DATAPLANE_URL` (must be `wss://connect.…`, not `ws://`), or the machine can't reach the internet outbound | Re-copy the exact command from the console; verify the connector host can reach `connect.access.acme.com:443` outbound; check `docker logs access-connector`. |
 | Opening an app returns **502** | Connector can't reach the Site's internal address, or `ALLOWED_TARGETS` blocks it | Check the internal address is what the *connector* can reach (`http://10.0.5.20:8080`); if `ALLOWED_TARGETS` is set, ensure the target is inside it; confirm the app is up from the connector's host. |
 | Vendor logs in but the app bounces back to login | `COOKIE_DOMAIN` wrong | It must be the **leading-dot** form `.access.acme.com`, restart the manager. |
 | Invite emails don't arrive | SMTP not configured/enabled | Configure it on the **Email** page (and tick *Enabled*). Until then, copy the one-time invite link from the Invites screen and send it manually. |

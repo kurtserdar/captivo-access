@@ -11,15 +11,12 @@
 # you turn on deliberately. Requires real compute (JVM + guacd + per-session
 # video); size the host accordingly.
 #
-# Setup (see deploy/gateway/README.md for the full walkthrough):
-#   1. Generate the Guacamole DB schema ONCE (version-matched to the image):
-#        mkdir -p initdb
-#        docker run --rm guacamole/guacamole:1.5.5 \
-#          /opt/guacamole/bin/initdb.sh --postgresql > initdb/01-schema.sql
-#   2. cp .env.gateway.example .env  (set GUAC_DB_PASSWORD)
-#   3. docker compose -f docker-compose.gateway.yml up -d
-#   4. In Captivo: add a Site pointing at http://<this-host>:8080/guacamole/,
-#      then in Guacamole create an RDP/SSH/VNC connection with recording enabled.
+# Setup: run `./setup.sh` (it generates the DB schema, writes a random
+# GUAC_DB_PASSWORD, ensures the shared `captivo-gateway` network, and brings the
+# stack up). See deploy/gateway/README.md for the full walkthrough. Then, in
+# Captivo, add a Site pointing at http://cap-guacamole:8080 (no path — the app is
+# served at ROOT), and in Guacamole create an RDP/SSH/VNC connection with
+# recording enabled.
 #
 # Validated locally 2026-08-08 (guacamole/guacd 1.5.5): stack boots, web UI +
 # guacadmin auth work, guacd listens on 4822. The record-init below fixes the

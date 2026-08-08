@@ -138,7 +138,8 @@ Shipped and working today:
   so WS/streaming internal apps (e.g. a Proxmox noVNC console) work end-to-end.
 - **Session recording (rrweb)** — for Sites with recording enabled
   (`RECORDING_ENABLED` + a per-Site toggle), the proxy injects an rrweb DOM
-  recorder into web sessions; admins replay them in the console. For console
+  recorder into web sessions; admins filter, replay, and delete them at
+  `/admin/recordings` (each deletion is written to the audit log). For console
   protocols (RDP/SSH/VNC), an optional **Guacamole gateway** pack
   ([`deploy/gateway/`](deploy/gateway/README.md)) is published as a Site and
   records natively, on-prem. Sites carry a `TRANSPARENT` vs `GATEWAY` label.

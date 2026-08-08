@@ -268,13 +268,21 @@ tamper-evident hash chain. Leave it unscheduled to keep audit history forever.
 Like the other cron endpoints, both fail closed — with `CRON_SECRET` unset or a
 missing/wrong Bearer header they return `401` and do nothing.
 
+## Optional: recorded RDP/SSH/VNC (Guacamole gateway)
+
+For recorded console-protocol (RDP/SSH/VNC) sessions, an optional Guacamole
+gateway pack runs alongside a connector and is published as an ordinary Site.
+See [`gateway/README.md`](gateway/README.md).
+
 ## Updating
 
 ```bash
+git pull
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
 
+`git pull` first so a changed `docker-compose.prod.yml`/`Caddyfile` is picked up.
 The schema migrates automatically on `up -d` (the `access-migrate` service).
 Connectors run on their own hosts — update each with `docker pull …connector:latest`
 + recreate (the token in `/data` persists).

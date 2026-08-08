@@ -64,23 +64,35 @@ run:
 
 ```bash
 docker run -d \
-  --name captivo-access-connector \
+  --name access-connector --restart unless-stopped \
   -e MANAGER_URL=https://access.example.com \
   -e DATAPLANE_URL=wss://connect.access.example.com \
   -e PAIR_CODE=<one-time code from the Manager UI> \
-  -v conn-data:/data \
+  -v access_connector_data:/data \
   ghcr.io/kurtserdar/captivo-access-connector:latest
 ```
+
+The Manager generates this exact command for you (with your real
+`MANAGER_URL`/`DATAPLANE_URL`/pairing code) under **Add connector** — copy it
+from there rather than hand-editing, so the container name (`access-connector`)
+and token volume (`access_connector_data`) match what the console's
+Repair / Update / Enable-gateway-mode commands expect.
 
 To cap what this connector may reach, add `-e ALLOWED_TARGETS=10.0.5.0/24`
 (or a comma-separated list of CIDRs/hosts) to the command above — optional,
 and unrelated to which apps route through this connector, which is decided
 entirely by Sites in the Manager.
 
+If this connector will also host the optional Guacamole gateway (recorded
+RDP/SSH/VNC), don't attach the gateway network by hand: flag the connector as a
+**gateway host** in the console (`/admin/connectors` → Enable gateway mode) so
+its generated command joins the shared `captivo-gateway` network durably. See
+[`deploy/gateway/README.md`](../deploy/gateway/README.md).
+
 You can still build from source with the `docker build` command above if
 you prefer (or need a version that hasn't been tagged yet).
 
 On first start, the connector redeems `PAIR_CODE` and stores its token in
-the `conn-data` volume. On subsequent restarts, `PAIR_CODE` is no longer
+the `access_connector_data` volume. On subsequent restarts, `PAIR_CODE` is no longer
 needed (and is ignored if still set) — the connector reads its stored token
 from `/data/token` and reconnects.
