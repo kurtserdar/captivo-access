@@ -42,6 +42,10 @@ const OPTIONS: { pref: ThemePref; label: string }[] = [
 export function ThemeSwitcher() {
   const pref = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
+  useEffect(() => {
+    apply(pref);
+  }, [pref]);
+
   // While following the OS, react to OS theme changes live.
   useEffect(() => {
     if (pref !== "system") return;
