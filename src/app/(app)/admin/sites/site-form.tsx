@@ -70,7 +70,7 @@ export function SiteForm({
           upstreamUrl,
           description: description.trim() || undefined,
           insecureSkipVerify,
-          recordSessions: recordingEnabled && recordSessions,
+          recordSessions: accessMode === "GATEWAY" ? false : recordSessions,
           accessMode,
         }),
       });
@@ -192,7 +192,7 @@ export function SiteForm({
           Only for internal devices you trust — the certificate on the connector→app leg won&apos;t be verified.
         </span>
       </div>
-      {recordingEnabled && (
+      {recordingEnabled && accessMode !== "GATEWAY" && (
         <div className="field">
           <label className="field-label">
             <input
@@ -205,6 +205,14 @@ export function SiteForm({
           <span className="hint">
             Captures a replayable recording of vendor sessions on this site for audit purposes.
           </span>
+        </div>
+      )}
+      {recordingEnabled && accessMode === "GATEWAY" && (
+        <div className="field">
+          <p className="hint">
+            Gateway sessions are recorded by Guacamole itself, on the gateway host — see{" "}
+            <code>deploy/gateway/</code>.
+          </p>
         </div>
       )}
       <div className="field">
