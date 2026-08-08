@@ -18,6 +18,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const description = typeof body.description === "string" && body.description.trim() ? body.description.trim() : null;
   const insecureSkipVerify = body.insecureSkipVerify === true;
   const recordSessions = recordingEnabled() && body.recordSessions === true;
+  const accessMode = body.accessMode === "GATEWAY" ? "GATEWAY" : "TRANSPARENT";
 
   if (!connectorId || !name || !upstreamUrl) return NextResponse.json({ error: "connector_name_upstream_required" }, { status: 400 });
   if (!hostname) return NextResponse.json({ error: "invalid_hostname" }, { status: 400 });
@@ -32,7 +33,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   try {
-    await db.site.update({ where: { id }, data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions } });
+    await db.site.update({ where: { id }, data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, accessMode } });
   } catch (e) {
     // P2002 = the hostname unique constraint is taken by a different site.
     if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2002") {

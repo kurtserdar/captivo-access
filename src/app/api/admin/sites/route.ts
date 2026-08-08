@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
   const description = typeof body.description === "string" && body.description.trim() ? body.description.trim() : null;
   const insecureSkipVerify = body.insecureSkipVerify === true;
   const recordSessions = recordingEnabled() && body.recordSessions === true;
+  const accessMode = body.accessMode === "GATEWAY" ? "GATEWAY" : "TRANSPARENT";
 
   if (!connectorId || !name || !upstreamUrl) {
     return NextResponse.json({ error: "connector_name_upstream_required" }, { status: 400 });
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
   }
 
   const site = await db.site.create({
-    data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions },
+    data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, accessMode },
     select: { id: true },
   });
 

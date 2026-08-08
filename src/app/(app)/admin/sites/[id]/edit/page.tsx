@@ -13,7 +13,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
   const [site, connectors] = await Promise.all([
     db.site.findUnique({
       where: { id },
-      select: { id: true, connectorId: true, name: true, hostname: true, upstreamUrl: true, description: true, insecureSkipVerify: true, recordSessions: true },
+      select: { id: true, connectorId: true, name: true, hostname: true, upstreamUrl: true, description: true, insecureSkipVerify: true, recordSessions: true, accessMode: true },
     }),
     db.connector.findMany({ where: { status: { not: "REVOKED" } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
@@ -42,6 +42,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
               description: site.description ?? "",
               insecureSkipVerify: site.insecureSkipVerify,
               recordSessions: site.recordSessions,
+              accessMode: site.accessMode,
             }}
           />
         </div>

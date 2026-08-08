@@ -22,7 +22,17 @@ function errorMessage(code: string | undefined, isEdit: boolean): string {
   }
 }
 
-type SiteInitial = { id: string; connectorId: string; name: string; hostname: string; upstreamUrl: string; description: string; insecureSkipVerify: boolean; recordSessions: boolean };
+type SiteInitial = {
+  id: string;
+  connectorId: string;
+  name: string;
+  hostname: string;
+  upstreamUrl: string;
+  description: string;
+  insecureSkipVerify: boolean;
+  recordSessions: boolean;
+  accessMode: "TRANSPARENT" | "GATEWAY";
+};
 
 export function SiteForm({
   connectors,
@@ -41,6 +51,7 @@ export function SiteForm({
   const [description, setDescription] = useState(site?.description ?? "");
   const [insecureSkipVerify, setInsecureSkipVerify] = useState(site?.insecureSkipVerify ?? false);
   const [recordSessions, setRecordSessions] = useState(site?.recordSessions ?? false);
+  const [accessMode, setAccessMode] = useState<"TRANSPARENT" | "GATEWAY">(site?.accessMode ?? "TRANSPARENT");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +71,7 @@ export function SiteForm({
           description: description.trim() || undefined,
           insecureSkipVerify,
           recordSessions: recordingEnabled && recordSessions,
+          accessMode,
         }),
       });
       const result = await res.json().catch(() => ({}));
@@ -146,6 +158,26 @@ export function SiteForm({
           It&apos;s stored on your Manager and sent to the connector over the tunnel; the connector dials it
           inside your network. To cap what a connector may reach, set <code>ALLOWED_TARGETS</code> on it.
         </p>
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="site-access-mode">
+          Access mode
+        </label>
+        <select
+          id="site-access-mode"
+          className="select"
+          value={accessMode}
+          onChange={(e) => setAccessMode(e.target.value === "GATEWAY" ? "GATEWAY" : "TRANSPARENT")}
+        >
+          <option value="TRANSPARENT">Transparent web app</option>
+          <option value="GATEWAY">Gateway (RDP/SSH/VNC via Guacamole)</option>
+        </select>
+        {accessMode === "GATEWAY" && (
+          <p className="hint">
+            Publish a Guacamole gateway (see <code>deploy/gateway/</code>) as this Site for recorded
+            RDP/SSH/VNC access.
+          </p>
+        )}
       </div>
       <div className="field">
         <label className="field-label">
