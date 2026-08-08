@@ -26,6 +26,7 @@ export default async function AdminSitesPage() {
         probeOk: true,
         probeDetail: true,
         probeLatencyMs: true,
+        accessMode: true,
         connector: { select: { name: true, status: true } },
         _count: { select: { grants: true } },
       },
@@ -82,7 +83,15 @@ export default async function AdminSitesPage() {
             <tbody>
               {sites.map((s) => (
                 <tr key={s.id}>
-                  <td>{s.name}</td>
+                  <td>
+                    {s.name}
+                    {s.accessMode === "GATEWAY" && (
+                      <>
+                        {" "}
+                        <span className="pill neutral">Gateway</span>
+                      </>
+                    )}
+                  </td>
                   <td className="cell-sub">
                     <span className="cell-inline">
                       <span className="cell-truncate" title={s.hostname}>{s.hostname}</span>
