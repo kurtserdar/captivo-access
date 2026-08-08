@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const site = host
     ? await db.site.findUnique({
         where: { hostname: host.toLowerCase().trim() },
-        select: { id: true, connectorId: true, upstreamUrl: true, insecureSkipVerify: true, recordSessions: true },
+        select: { id: true, connectorId: true, upstreamUrl: true, insecureSkipVerify: true, recordSessions: true, accessMode: true },
       })
     : null;
   if (!site) return NextResponse.json({ error: "no_site" }, { status: 404 });
@@ -28,5 +28,6 @@ export async function POST(req: NextRequest) {
     // stop injecting the recorder script and stripping CSP immediately,
     // without needing every recording Site to be individually re-toggled.
     recordSessions: site.recordSessions && recordingEnabled(),
+    accessMode: site.accessMode,
   });
 }

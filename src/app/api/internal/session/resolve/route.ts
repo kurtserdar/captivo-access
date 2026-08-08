@@ -12,5 +12,5 @@ export async function POST(req: NextRequest) {
   const token = typeof body.token === "string" ? body.token : "";
   const user = token ? await getSessionUser(token) : null;
   if (!user) return NextResponse.json({ error: "no_session" }, { status: 401 });
-  return NextResponse.json({ userId: user.id });
+  return NextResponse.json({ userId: user.id, email: user.email });
 }
