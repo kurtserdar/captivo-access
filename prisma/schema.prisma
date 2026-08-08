@@ -139,6 +139,7 @@ model Site {
   probeOk            Boolean?
   probeDetail        String?
   probeLatencyMs     Int?
+  recordSessions     Boolean       @default(false)
   createdAt          DateTime      @default(now())
   grants             AccessGrant[]
 }
@@ -271,4 +272,32 @@ model UpdateCheckConfig {
   lastCheckedAt DateTime?
   lastCheckOk   Boolean?
   updatedAt     DateTime  @updatedAt
+}
+
+model SessionRecording {
+  id           String           @id @default(cuid())
+  recordingKey String           @unique
+  siteId       String
+  userId       String
+  host         String
+  startedAt    DateTime         @default(now())
+  lastEventAt  DateTime         @default(now())
+  eventCount   Int              @default(0)
+  bytes        Int              @default(0)
+  chunks       RecordingChunk[]
+
+  @@index([siteId])
+  @@index([userId])
+  @@index([startedAt])
+}
+
+model RecordingChunk {
+  id          String           @id @default(cuid())
+  recordingId String
+  seq         Int
+  data        Bytes
+  createdAt   DateTime         @default(now())
+  recording   SessionRecording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+
+  @@index([recordingId, seq])
 }
