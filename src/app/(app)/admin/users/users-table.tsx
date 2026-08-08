@@ -4,6 +4,7 @@ import { useState } from "react";
 import { filterUsers, type UserFilter } from "@/lib/admin/filter-users";
 import { ROLE_LABELS, ASSIGNABLE_ROLES } from "@/lib/auth/roles";
 import { ToggleStatusButton } from "./toggle-status-button";
+import { DeleteUserButton } from "./delete-user-button";
 import { RoleSelect } from "./role-select";
 
 export type UserRow = {
@@ -113,7 +114,14 @@ export function UsersTable({ users, initialQuery }: { users: UserRow[]; initialQ
                         (this account)
                       </span>
                     ) : (
-                      <ToggleStatusButton userId={u.id} status={u.status} />
+                      <>
+                        <ToggleStatusButton userId={u.id} status={u.status} />
+                        {u.role !== "ADMIN" && (
+                          <span style={{ marginLeft: ".4rem" }}>
+                            <DeleteUserButton userId={u.id} name={u.name} />
+                          </span>
+                        )}
+                      </>
                     )}
                   </td>
                 </tr>
