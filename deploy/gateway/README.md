@@ -44,8 +44,9 @@ DATAPLANE_URL=wss://connect.access.<domain> \
 ./setup.sh <PAIR_CODE>
 ```
 
-`setup.sh` generates the Guacamole schema, writes a random DB password to `.env`, brings the stack up, wires the
-connector to the gateway network, and prints the next steps. Idempotent — safe to re-run.
+`setup.sh` generates the Guacamole schema, writes a random DB password to `.env`, creates the shared
+`captivo-gateway` network if it doesn't exist yet, brings the stack up, and prints the next steps — including how
+to join an existing connector to the gateway network durably (see below). Idempotent — safe to re-run.
 
 The Guacamole web UI is then at `http://127.0.0.1:8080/` (served at the root path via `WEBAPP_CONTEXT: ROOT`, so
 it publishes cleanly as a Site; bound to localhost). First login is `guacadmin` / `guacadmin` — **change this
@@ -53,20 +54,31 @@ password immediately** (top-right → Settings → Preferences); it's the gatewa
 
 > **Port 8080 already in use on this host?** Put `GUAC_PORT=9000` (any free port) in `.env` and re-run
 > `./setup.sh`. That only changes your local admin port — the connector still reaches Guacamole by container
-> name inside the compose network, so nothing else changes.
+> name over the gateway network, so nothing else changes.
 
-## 2. Publish it as a Captivo Site
+## 2. Join the connector to the gateway network
+For the connector to reach `cap-guacamole` by name, it needs to be on the shared `captivo-gateway` network
+(created for you by `setup.sh`). Do this **in the console**, not with a manual `docker network connect` — that
+attach doesn't survive a connector recreate, so it silently breaks on the next update:
+
+1. Console → **/admin/connectors** → find the connector running on this host → **Enable gateway mode**.
+2. Run the update command it shows you, once.
+
+That bakes `--network captivo-gateway` into the connector's own `docker run`, so it rejoins the network every
+time the container is recreated — including future connector updates — with no further action needed.
+
+## 3. Publish it as a Captivo Site
 In the Captivo console → **Sites → Add site**:
 - **Internal address:** `http://cap-guacamole:8080` — no path (the app is at the root, and `cap-guacamole`
-  resolves over the compose network once you attach the connector to it; use `http://<host-ip>:8080` if the
-  connector reaches it by host address instead).
+  resolves over the shared gateway network once the connector has joined it as above; use `http://<host-ip>:8080`
+  if the connector reaches it by host address instead).
 - Give it a hostname (e.g. `console.access.example.com`) and the connector that runs the gateway.
 
 Now a vendor with a Captivo grant reaches Guacamole through Captivo — passkey login, time-boxed/approved
 access, and every request in the Captivo audit log. (WebSocket passthrough — which Guacamole's tunnel needs —
 is already supported by the Captivo proxy.)
 
-## 3. Create a recorded connection
+## 4. Create a recorded connection
 In the Guacamole UI → Settings → Connections → New connection. Pick **RDP / SSH / VNC**, set the target host
 (reachable from guacd over the LAN) + credentials, and under **"Screen Recording"** set:
 - **Recording path:** `/var/lib/guacamole/recordings`
@@ -76,7 +88,7 @@ In the Guacamole UI → Settings → Connections → New connection. Pick **RDP 
 guacd writes the raw recording to the `guac_recordings` volume. (The compose's `guac-record-init` makes that
 volume writable by guacd's uid 1000 — the one real gotcha of this stack.)
 
-## 4. Watch recordings
+## 5. Watch recordings
 In the Guacamole UI → Settings → **History**, each recorded session has a **play** control that replays the raw
 recording in the built-in player — no extra tooling. (To export a standalone `.m4v`, run `guacenc` over the raw
 recording file separately; not required just to watch.)

@@ -97,6 +97,16 @@ services:
       # (cap-guacamole:8080), not this port. Override GUAC_PORT if 8080 is taken
       # on the host (e.g. another app already uses it).
       - "127.0.0.1:${GUAC_PORT:-8080}:8080"
+    # Also join the shared external network so a gateway-host connector (which
+    # joins captivo-gateway via its own console-generated command — durable
+    # across connector updates) can reach this container by name.
+    networks:
+      - default
+      - captivo-gateway
+
+networks:
+  captivo-gateway:
+    external: true
 
 volumes:
   guac_pgdata: {}
