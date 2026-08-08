@@ -221,6 +221,8 @@ a{color:inherit;}
 .confirm-panel{padding:1.1rem;}
 .confirm-msg{margin:0 0 1rem;font-size:.95rem;}
 .confirm-actions{display:flex;justify-content:flex-end;gap:.5rem;}
+.modal-panel{padding:1.15rem 1.25rem;}
+.modal-panel .card-head{margin-bottom:.6rem;}
 
 /* ---- update banner ---- */
 .update-banner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.5rem .9rem;background:var(--warn-soft,var(--surface-2));border-bottom:1px solid var(--line);font-size:.86rem;}
