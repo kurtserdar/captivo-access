@@ -513,6 +513,36 @@ func TestInjectRecorder(t *testing.T) {
 	}
 }
 
+// TestInjectRecorderNonASCIIHead guards against a regression where
+// injectRecorder located the `</head>`/`</body>` offset in a
+// strings.ToLower(string(body)) copy and then sliced the ORIGINAL body at
+// that index. ToLower can change a multi-byte UTF-8 rune's byte length
+// (Turkish İ, U+0130, is 2 bytes but lowercases to i̇, 3 bytes), which
+// desyncs the offset from the original body — corrupting the splice, or
+// panicking on body[:i]/body[i:] for a length-growing rune before the
+// match. The title here ("İşlem", Turkish for "Transaction") contains such
+// a rune before </head>, so a byte-length-changing lowercase pass would
+// place the tag inside the markup (or panic) instead of immediately before
+// </head>.
+func TestInjectRecorderNonASCIIHead(t *testing.T) {
+	tag := `<script src="/__captivo/rec.js" defer></script>`
+	in := "<html><head><title>İşlem</title></head><body>x</body></html>"
+
+	got := string(injectRecorder([]byte(in)))
+
+	if !strings.Contains(got, tag+"</head>") {
+		t.Fatalf("tag not immediately before </head>: %s", got)
+	}
+	if !strings.Contains(got, "<title>İşlem</title>") {
+		t.Fatalf("title content corrupted (rune misalignment): %s", got)
+	}
+	// Removing the tag once must reproduce the original input exactly —
+	// proves nothing else in the body was shifted, dropped, or duplicated.
+	if withoutTag := strings.Replace(got, tag, "", 1); withoutTag != in {
+		t.Fatalf("body corrupted beyond the injected tag:\n got  %q\n want %q", withoutTag, in)
+	}
+}
+
 // newTunnelPair returns a connected pair of yamux sessions — srv is what
 // ServeHTTP's connector Registry entry uses to open streams, cli is the
 // test's stand-in for the connector, accepting those streams. Both sessions
@@ -660,6 +690,69 @@ func TestBrowserProxyRecordedSiteNonHTMLUnchanged(t *testing.T) {
 	}
 	if w.Header().Get("Content-Security-Policy") != "default-src 'self'" {
 		t.Fatalf("CSP must be preserved for non-HTML responses, got %q", w.Header().Get("Content-Security-Policy"))
+	}
+}
+
+// (j2) A recorded Site's text/html response that the upstream compressed
+// anyway (ignoring the Accept-Encoding: identity sent toward it) must be
+// streamed unchanged: injectRecorder only understands raw HTML, so running
+// it against gzip bytes would corrupt the body. CSP is left intact too,
+// since injection (and only injection) is what makes stripping it correct.
+func TestBrowserProxyRecordedSiteCompressedHTMLUnchanged(t *testing.T) {
+	srv, cli := newTunnelPair(t)
+	// Not real gzip bytes — the point is that injectRecorder/writeProxyResponse
+	// must never attempt to parse this as HTML at all when Content-Encoding
+	// says it's compressed, so arbitrary bytes proves the guard fires purely
+	// off the header, before any body inspection.
+	const upstreamBody = "\x1f\x8b\x00not-really-gzip-but-opaque-bytes<html><head></head></html>"
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		st, err := cli.Accept()
+		if err != nil {
+			return
+		}
+		defer st.Close()
+		if _, err := tunnel.ReadFrame(st); err != nil {
+			return
+		}
+		_, _ = io.ReadAll(tunnel.NewBodyReader(st))
+		respBytes, _ := json.Marshal(tunnel.DialResponse{
+			Status: http.StatusOK,
+			Header: map[string][]string{
+				"Content-Type":            {"text/html; charset=utf-8"},
+				"Content-Encoding":        {"gzip"},
+				"Content-Security-Policy": {"default-src 'self'"},
+			},
+		})
+		if err := tunnel.WriteFrame(st, respBytes); err != nil {
+			return
+		}
+		_ = tunnel.WriteBody(st, strings.NewReader(upstreamBody))
+	}()
+
+	reg := NewRegistry()
+	reg.Set("c1", &Session{mux: srv})
+	ctrl := &fakeControl{userID: "u1", siteID: "s1", connID: "c1", upstream: "http://wiki.internal", allow: true, reason: "allow", recordSessions: true}
+	p := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: "https://manager.example", audit: NewAuditQueue(100)}
+
+	req := httptest.NewRequest(http.MethodGet, "http://app.example.com/", nil)
+	req.AddCookie(&http.Cookie{Name: "ca_session", Value: "tok"})
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	<-done
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if w.Body.String() != upstreamBody {
+		t.Fatalf("body = %q, want unchanged %q", w.Body.String(), upstreamBody)
+	}
+	if strings.Contains(w.Body.String(), "/__captivo/rec.js") {
+		t.Fatalf("recorder script must not be injected into a compressed body: %s", w.Body.String())
+	}
+	if w.Header().Get("Content-Security-Policy") != "default-src 'self'" {
+		t.Fatalf("CSP must be preserved when the response is compressed, got %q", w.Header().Get("Content-Security-Policy"))
 	}
 }
 

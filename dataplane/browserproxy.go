@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -213,7 +214,11 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // non-HTML content types, and oversized HTML bodies — is streamed exactly
 // as it arrives, unmodified.
 func (p *BrowserProxy) writeProxyResponse(w http.ResponseWriter, resp tunnel.DialResponse, body io.Reader, recordSessions bool) int64 {
-	if !recordSessions || !isHTMLContentType(resp.Header) {
+	// isCompressed: an upstream that ignored the Accept-Encoding: identity
+	// sent toward it (Step 2) and returned compressed HTML anyway must not
+	// have its bytes mangled by injectRecorder, which only understands raw
+	// HTML — stream it through unchanged instead, same as the non-HTML path.
+	if !recordSessions || !isHTMLContentType(resp.Header) || isCompressed(resp.Header) {
 		w.WriteHeader(resp.Status)
 		written, _ := io.Copy(w, body)
 		return written
@@ -261,6 +266,25 @@ func isHTMLContentType(header map[string][]string) bool {
 	return false
 }
 
+// isCompressed reports whether header carries a non-empty Content-Encoding
+// value other than "identity" — i.e. the body is compressed and must not be
+// treated as raw HTML by injectRecorder. Matched case-insensitively on both
+// the header name and its value, for the same reason as isHTMLContentType.
+func isCompressed(header map[string][]string) bool {
+	for k, vs := range header {
+		if !strings.EqualFold(k, "Content-Encoding") {
+			continue
+		}
+		for _, v := range vs {
+			v = strings.TrimSpace(v)
+			if v != "" && !strings.EqualFold(v, "identity") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // recorderScriptTag is injected into recorded-Site HTML responses. It loads
 // the recorder bundle from the reserved /__captivo/rec.js endpoint (served
 // by serveRecording, never proxied upstream) with `defer` so it never blocks
@@ -277,25 +301,50 @@ const maxInjectableBodyBytes = 8 << 20 // 8 MiB
 // first case-insensitive `</head>` if present, else before the first
 // case-insensitive `</body>` if present, else prepended to the whole body.
 // The tag is inserted exactly once. Pure function — no I/O.
+//
+// The search is done directly over the original bytes with an ASCII-only
+// case fold (via indexFold/bytes.EqualFold), never through
+// strings.ToLower(string(body)): ToLower can change a multi-byte UTF-8
+// rune's byte length (e.g. Turkish İ, U+0130, is 2 bytes but lowercases to
+// i̇, 3 bytes), which would desync any byte offset found in the lowered
+// copy from the original body — corrupting the splice or, for
+// length-growing runes before the match, panicking with a
+// slice-bounds-out-of-range on body[:i]/body[i:]. `</head>` and `</body>`
+// are themselves pure ASCII, so matching case-insensitively per byte against
+// the untouched original is both correct and simpler.
 func injectRecorder(body []byte) []byte {
-	lower := strings.ToLower(string(body))
-	if i := strings.Index(lower, "</head>"); i >= 0 {
-		out := make([]byte, 0, len(body)+len(recorderScriptTag))
-		out = append(out, body[:i]...)
-		out = append(out, recorderScriptTag...)
-		out = append(out, body[i:]...)
-		return out
+	if i := indexFold(body, []byte("</head>")); i >= 0 {
+		return insertAt(body, []byte(recorderScriptTag), i)
 	}
-	if i := strings.Index(lower, "</body>"); i >= 0 {
-		out := make([]byte, 0, len(body)+len(recorderScriptTag))
-		out = append(out, body[:i]...)
-		out = append(out, recorderScriptTag...)
-		out = append(out, body[i:]...)
-		return out
+	if i := indexFold(body, []byte("</body>")); i >= 0 {
+		return insertAt(body, []byte(recorderScriptTag), i)
 	}
 	out := make([]byte, 0, len(body)+len(recorderScriptTag))
 	out = append(out, recorderScriptTag...)
 	out = append(out, body...)
+	return out
+}
+
+// indexFold returns the index of sub's first ASCII-case-insensitive match
+// in b, or -1 if none. Byte-for-byte (not rune-aware) by design: sub is
+// always a pure-ASCII marker (`</head>`/`</body>`), so this never needs to
+// reason about multi-byte runes in b, unlike strings.ToLower on arbitrary
+// UTF-8 content.
+func indexFold(b, sub []byte) int {
+	for i := 0; i+len(sub) <= len(b); i++ {
+		if bytes.EqualFold(b[i:i+len(sub)], sub) {
+			return i
+		}
+	}
+	return -1
+}
+
+// insertAt splices tag into body immediately before byte offset i.
+func insertAt(body, tag []byte, i int) []byte {
+	out := make([]byte, 0, len(body)+len(tag))
+	out = append(out, body[:i]...)
+	out = append(out, tag...)
+	out = append(out, body[i:]...)
 	return out
 }
 

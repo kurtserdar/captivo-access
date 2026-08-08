@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { recordingEnabled } from "@/lib/recording/enabled";
 
 function dataplaneAuthorized(req: NextRequest): boolean {
   const s = process.env.DATAPLANE_SECRET;
@@ -22,6 +23,10 @@ export async function POST(req: NextRequest) {
     connectorId: site.connectorId,
     upstreamUrl: site.upstreamUrl,
     insecureSkipVerify: site.insecureSkipVerify,
-    recordSessions: site.recordSessions,
+    // Runtime-gated, not just the per-Site toggle: if RECORDING_ENABLED is
+    // turned off after a Site was configured to record, the dataplane must
+    // stop injecting the recorder script and stripping CSP immediately,
+    // without needing every recording Site to be individually re-toggled.
+    recordSessions: site.recordSessions && recordingEnabled(),
   });
 }
