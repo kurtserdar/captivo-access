@@ -862,7 +862,7 @@ func TestErrorPage_RendersHTML(t *testing.T) {
 		t.Fatalf("content-type: want text/html, got %q", ct)
 	}
 	body := rec.Body.String()
-	for _, want := range []string{"Application unavailable", "The app didn't respond.", "Try again shortly.", "Captivo Access", "502"} {
+	for _, want := range []string{"Application unavailable", "respond", "Try again shortly.", "Captivo Access", "502"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("body missing %q; got:\n%s", want, body)
 		}
@@ -883,10 +883,10 @@ func TestErrorPage_EscapesDynamicText(t *testing.T) {
 
 func TestDenyPage_ReasonMessages(t *testing.T) {
 	cases := map[string]string{
-		"expired":      "Your access has expired.",
-		"off_schedule": "Your access isn't available at this time.",
-		"denied":       "Your access request was declined.",
-		"totally_unknown_reason": "You don't have access to this application.", // default
+		"expired":                "Your access has expired.",
+		"off_schedule":           "available at this time",
+		"denied":                 "Your access request was declined.",
+		"totally_unknown_reason": "have access to this application.", // default
 	}
 	for reason, want := range cases {
 		rec := httptest.NewRecorder()

@@ -103,35 +103,21 @@ h1{font-size:1.4rem;line-height:1.25;margin:0 0 .6rem;font-weight:650}
 type errPageData struct {
 	Status int
 	Title  string
-	Detail template.HTML
-	Hint   template.HTML
-}
-
-// escapeCopy HTML-escapes s for safe embedding in a text node, blocking
-// markup/script injection (&, <, >), while leaving straight apostrophes and
-// quotes untouched so plain-English copy with contractions ("didn't") reads
-// naturally. This differs from html/template's default text-node escaper,
-// which also rewrites ' to &#39; (defense-in-depth for attribute-context
-// reuse that this fixed, non-attribute template copy doesn't need).
-func escapeCopy(s string) template.HTML {
-	r := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
-	return template.HTML(r.Replace(s))
+	Detail string
+	Hint   string
 }
 
 // errorPage writes a styled HTML error page. Used for all browser-facing proxy
-// failures so a vendor never sees a bare plain-text error. title goes through
-// html/template's full auto-escaping (it's rendered outside a text-only
-// position, in <title> and <h1>); detail/hint use escapeCopy so injection is
-// still blocked without mangling apostrophes in the page copy.
+// failures so a vendor never sees a bare plain-text error. Title, Detail, and
+// Hint all go through html/template's default contextual auto-escaping (each
+// is rendered into a text/RCDATA position: <title>, <h1>, <p>). The escaper
+// rewrites &, <, >, and apostrophes as needed (an apostrophe becomes an HTML
+// entity that browsers render back as a literal apostrophe) -- expected and
+// safe, not a bug.
 func errorPage(w http.ResponseWriter, status int, title, detail, hint string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	_ = errPageTmpl.Execute(w, errPageData{
-		Status: status,
-		Title:  title,
-		Detail: escapeCopy(detail),
-		Hint:   escapeCopy(hint),
-	})
+	_ = errPageTmpl.Execute(w, errPageData{Status: status, Title: title, Detail: detail, Hint: hint})
 }
 
 // proxyControl is the subset of ControlClient that BrowserProxy depends on.
