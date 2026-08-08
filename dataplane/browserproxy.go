@@ -358,9 +358,9 @@ const maxRecordingBatchBytes = 8 << 20 // 8 MiB
 
 // serveRecording intercepts the two reserved /__captivo/* paths the
 // recorder bundle talks to. It never reaches the upstream app. Recording is
-// fail-silent throughout: any error (site not recording-enabled, control
-// plane unreachable, oversized body) yields a 404 rather than surfacing to
-// the page, since a recording hiccup must never be visible to the user or
+// fail-silent throughout: any error is swallowed rather than surfaced to the
+// page (a site not recording-enabled yields 404; an oversized batch is dropped
+// with 204), since a recording hiccup must never be visible to the user or
 // break the app being proxied.
 func (p *BrowserProxy) serveRecording(w http.ResponseWriter, r *http.Request, userID, siteID, host string, recordSessions bool) {
 	if !recordSessions {
