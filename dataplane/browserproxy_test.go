@@ -850,3 +850,55 @@ func TestBrowserProxyNonRecordedSiteHTMLUnchanged(t *testing.T) {
 		t.Fatalf("CSP must be preserved for a non-recorded Site, got %q", w.Header().Get("Content-Security-Policy"))
 	}
 }
+
+func TestErrorPage_RendersHTML(t *testing.T) {
+	rec := httptest.NewRecorder()
+	errorPage(rec, http.StatusBadGateway, "Application unavailable", "The app didn't respond.", "Try again shortly.")
+
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status: want 502, got %d", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Fatalf("content-type: want text/html, got %q", ct)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{"Application unavailable", "The app didn't respond.", "Try again shortly.", "Captivo Access", "502"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("body missing %q; got:\n%s", want, body)
+		}
+	}
+}
+
+func TestErrorPage_EscapesDynamicText(t *testing.T) {
+	rec := httptest.NewRecorder()
+	errorPage(rec, http.StatusForbidden, "<script>x</script>", "d&d", "h")
+	body := rec.Body.String()
+	if strings.Contains(body, "<script>x</script>") {
+		t.Fatalf("title was not HTML-escaped: %s", body)
+	}
+	if !strings.Contains(body, "&lt;script&gt;") {
+		t.Fatalf("expected escaped title in body: %s", body)
+	}
+}
+
+func TestDenyPage_ReasonMessages(t *testing.T) {
+	cases := map[string]string{
+		"expired":      "Your access has expired.",
+		"off_schedule": "Your access isn't available at this time.",
+		"denied":       "Your access request was declined.",
+		"totally_unknown_reason": "You don't have access to this application.", // default
+	}
+	for reason, want := range cases {
+		rec := httptest.NewRecorder()
+		denyPage(rec, reason)
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("[%s] status: want 403, got %d", reason, rec.Code)
+		}
+		if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+			t.Fatalf("[%s] content-type: want text/html, got %q", reason, ct)
+		}
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Fatalf("[%s] body missing %q", reason, want)
+		}
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"html/template"
 	"io"
 	"log"
 	"net"
@@ -58,6 +59,79 @@ var denyReasonText = map[string]string{
 	"revoked":          "Your access was revoked.",
 	"pending_approval": "Your access is awaiting approval.",
 	"user_disabled":    "Your account is disabled.",
+	"off_schedule":     "Your access isn't available at this time.",
+	"denied":           "Your access request was declined.",
+}
+
+// errPageTmpl renders the browser-facing proxy error page: a neutral,
+// self-contained "Captivo Access" card, light/dark aware, no external assets
+// or JS. Dynamic fields are auto-HTML-escaped by html/template.
+var errPageTmpl = template.Must(template.New("errpage").Parse(`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · Captivo Access</title>
+<style>
+:root { --bg:#f6f7f9; --card:#fff; --fg:#1a1d21; --muted:#6b7280; --border:#e5e7eb; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#0f1115; --card:#171a1f; --fg:#e6e8eb; --muted:#9aa1ab; --border:#262a30; }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;max-width:30rem;width:100%;padding:2.25rem 2rem;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06)}
+.brand{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 1.25rem}
+.status{font-size:.8rem;color:var(--muted);font-weight:600;margin:0 0 .35rem}
+h1{font-size:1.4rem;line-height:1.25;margin:0 0 .6rem;font-weight:650}
+.detail{margin:0 0 1rem}
+.hint{margin:0;color:var(--muted);font-size:.92rem}
+</style>
+</head>
+<body>
+<main class="card">
+<p class="brand">Captivo Access</p>
+<p class="status">{{.Status}}</p>
+<h1>{{.Title}}</h1>
+<p class="detail">{{.Detail}}</p>
+<p class="hint">{{.Hint}}</p>
+</main>
+</body>
+</html>
+`))
+
+type errPageData struct {
+	Status int
+	Title  string
+	Detail template.HTML
+	Hint   template.HTML
+}
+
+// escapeCopy HTML-escapes s for safe embedding in a text node, blocking
+// markup/script injection (&, <, >), while leaving straight apostrophes and
+// quotes untouched so plain-English copy with contractions ("didn't") reads
+// naturally. This differs from html/template's default text-node escaper,
+// which also rewrites ' to &#39; (defense-in-depth for attribute-context
+// reuse that this fixed, non-attribute template copy doesn't need).
+func escapeCopy(s string) template.HTML {
+	r := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
+	return template.HTML(r.Replace(s))
+}
+
+// errorPage writes a styled HTML error page. Used for all browser-facing proxy
+// failures so a vendor never sees a bare plain-text error. title goes through
+// html/template's full auto-escaping (it's rendered outside a text-only
+// position, in <title> and <h1>); detail/hint use escapeCopy so injection is
+// still blocked without mangling apostrophes in the page copy.
+func errorPage(w http.ResponseWriter, status int, title, detail, hint string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	_ = errPageTmpl.Execute(w, errPageData{
+		Status: status,
+		Title:  title,
+		Detail: escapeCopy(detail),
+		Hint:   escapeCopy(hint),
+	})
 }
 
 // proxyControl is the subset of ControlClient that BrowserProxy depends on.
@@ -531,9 +605,8 @@ func denyPage(w http.ResponseWriter, reason string) {
 	if !ok {
 		msg = "You don't have access to this application."
 	}
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusForbidden)
-	_, _ = io.WriteString(w, msg)
+	errorPage(w, http.StatusForbidden, "Access denied", msg,
+		"Contact your administrator if you think this is a mistake.")
 }
 
 // auditEvent builds the AuditEvent for one access decision (allow or
