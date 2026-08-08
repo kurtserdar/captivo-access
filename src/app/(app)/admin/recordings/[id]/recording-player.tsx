@@ -4,6 +4,7 @@ import type { eventWithTime } from "rrweb";
 
 export function RecordingPlayer({ id }: { id: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<{ $destroy?: () => void } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [empty, setEmpty] = useState(false);
 
@@ -20,15 +21,20 @@ export function RecordingPlayer({ id }: { id: string }) {
         const { default: Player } = await import("rrweb-player");
         await import("rrweb-player/dist/style.css");
         ref.current.innerHTML = "";
-        new Player({
+        const p = new Player({
           target: ref.current,
           props: { events: events as unknown as eventWithTime[], autoPlay: true, showController: true },
         });
+        playerRef.current = p as unknown as { $destroy?: () => void };
       } catch {
         setError("Couldn't play this recording.");
       }
     })();
-    return () => { disposed = true; };
+    return () => {
+      disposed = true;
+      playerRef.current?.$destroy?.();
+      playerRef.current = null;
+    };
   }, [id]);
 
   if (error) return <p className="notice error">{error}</p>;
