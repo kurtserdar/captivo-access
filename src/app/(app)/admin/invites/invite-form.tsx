@@ -12,6 +12,8 @@ function errorMessage(code: string | undefined): string {
       return "Name, email, and role are required.";
     case "forbidden":
       return "Admin privileges are required for this action.";
+    case "email_registered":
+      return "This email already has an account.";
     default:
       return "Couldn't create the invite, please try again.";
   }

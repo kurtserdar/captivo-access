@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can, ASSIGNABLE_ROLES } from "@/lib/auth/roles";
 import { createInvite } from "@/lib/auth/invite";
 import { normalizeEmail } from "@/lib/auth/email";
+import { db } from "@/lib/db";
 import { managerBaseUrl } from "@/lib/url";
 import { getSmtpConfig, sendMail } from "@/lib/email/mailer";
 import { inviteEmail } from "@/lib/email/templates";
@@ -27,6 +28,17 @@ export async function POST(req: NextRequest) {
 
   if (!name || !email || !role || !ASSIGNABLE_ROLES.includes(role)) {
     return NextResponse.json({ error: "name_email_role_required" }, { status: 400 });
+  }
+
+  // Don't create a dead invite for an email that already has an account
+  // (redemption would fail with email_taken). Case-insensitive to catch any
+  // pre-existing mixed-case rows.
+  const existing = await db.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (existing) {
+    return NextResponse.json({ error: "email_registered" }, { status: 409 });
   }
 
   const { token } = await createInvite({
