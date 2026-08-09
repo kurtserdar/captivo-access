@@ -89,6 +89,64 @@ func TestHandleStreamRejectsOutOfBoundaryTarget(t *testing.T) {
 	// happens.
 }
 
+func TestHandleLdapRejectsOutOfBoundaryTarget(t *testing.T) {
+	dataplane, connector := pairedSessions(t)
+	allow, err := ParseAllowedTargets("ad.internal:389") // boundary excludes the requested target
+	if err != nil {
+		t.Fatalf("ParseAllowedTargets: %v", err)
+	}
+	go serveStreams(connector, allow)
+
+	st, err := dataplane.Open()
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer st.Close()
+
+	reqBytes, _ := json.Marshal(tunnel.LdapDialRequest{Kind: "ldap", Target: "evil.internal:389"})
+	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
+		t.Fatalf("WriteFrame: %v", err)
+	}
+	respBytes, err := tunnel.ReadFrame(st)
+	if err != nil {
+		t.Fatalf("ReadFrame: %v", err)
+	}
+	var resp tunnel.LdapDialResponse
+	if err := json.Unmarshal(respBytes, &resp); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	if resp.Error != "target not allowed" {
+		t.Fatalf("expected target not allowed, got %+v", resp)
+	}
+}
+
+func TestHandleLdapBadTarget(t *testing.T) {
+	dataplane, connector := pairedSessions(t)
+	go serveStreams(connector, openMatcher(t))
+
+	st, err := dataplane.Open()
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer st.Close()
+
+	reqBytes, _ := json.Marshal(tunnel.LdapDialRequest{Kind: "ldap", Target: "no-port"})
+	if err := tunnel.WriteFrame(st, reqBytes); err != nil {
+		t.Fatalf("WriteFrame: %v", err)
+	}
+	respBytes, err := tunnel.ReadFrame(st)
+	if err != nil {
+		t.Fatalf("ReadFrame: %v", err)
+	}
+	var resp tunnel.LdapDialResponse
+	if err := json.Unmarshal(respBytes, &resp); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	if resp.Error != "bad target" {
+		t.Fatalf("expected bad target, got %+v", resp)
+	}
+}
+
 func TestHandleStreamRejectsBadUpstreamUrl(t *testing.T) {
 	// A malformed URL, a non-http(s) scheme, and an empty host must all be
 	// rejected fail-closed with "bad upstream url" before any dial.

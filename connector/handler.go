@@ -74,7 +74,60 @@ func handleStream(st io.ReadWriteCloser, allow *TargetMatcher) {
 		handleWS(st, allow, reqBytes)
 		return
 	}
+	if peek.Kind == "ldap" {
+		handleLdap(st, allow, reqBytes)
+		return
+	}
 	handleDial(st, allow, reqBytes)
+}
+
+// handleLdap services a raw LDAP relay. The first frame is a
+// tunnel.LdapDialRequest carrying a "host:port"; handleLdap validates it against
+// the connector's egress boundary (allow), plain-TCP-dials it, and relays bytes
+// bidirectionally. It does NO TLS or LDAP parsing — LDAPS/StartTLS is negotiated
+// end-to-end between the data-plane's LDAP client and the directory, tunnelled
+// as opaque bytes. Same fail-closed egress boundary as handleDial/handleWS.
+func handleLdap(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
+	var lr tunnel.LdapDialRequest
+	if json.Unmarshal(reqBytes, &lr) != nil {
+		return
+	}
+	host, port, err := net.SplitHostPort(lr.Target)
+	if err != nil || host == "" || port == "" {
+		writeLdapErr(st, "bad target")
+		return
+	}
+	if !allow.Allowed(lr.Target) {
+		writeLdapErr(st, "target not allowed") // egress boundary — fail closed
+		return
+	}
+	upstream, err := net.DialTimeout("tcp", lr.Target, 10*time.Second)
+	if err != nil {
+		writeLdapErr(st, "directory unreachable")
+		return
+	}
+	defer upstream.Close()
+	if b, mErr := json.Marshal(tunnel.LdapDialResponse{}); mErr == nil {
+		if tunnel.WriteFrame(st, b) != nil {
+			return
+		}
+	} else {
+		return
+	}
+	// Raw bidirectional relay until either side closes; closing st/upstream
+	// unblocks the other io.Copy.
+	done := make(chan struct{}, 2)
+	go func() { _, _ = io.Copy(st, upstream); done <- struct{}{} }() // directory -> tunnel
+	go func() { _, _ = io.Copy(upstream, st); done <- struct{}{} }() // tunnel -> directory
+	<-done
+}
+
+func writeLdapErr(st io.Writer, msg string) {
+	b, err := json.Marshal(tunnel.LdapDialResponse{Error: msg})
+	if err != nil {
+		return
+	}
+	_ = tunnel.WriteFrame(st, b)
 }
 
 // handleDial services a single proxied HTTP request. The first frame on the
