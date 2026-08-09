@@ -54,46 +54,50 @@ export function ConnectorForm() {
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
-        <div className="field">
-          <label className="field-label" htmlFor="connector-name">
-            Connector name
-          </label>
-          <input
-            id="connector-name"
-            type="text"
-            className="input"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            placeholder="e.g. Customer HQ"
-          />
-        </div>
-        <div className="field">
-          <label className="form-check">
-            <input type="checkbox" checked={gateway} onChange={(e) => setGateway(e.target.checked)} />
-            <span>This host will also run the Guacamole gateway</span>
-          </label>
-          <p className="cell-sub">
-            Bakes <code>--network captivo-gateway</code> into the connector command so it can reach Guacamole
-            — no separate &quot;Enable gateway mode&quot; step. See <code>deploy/gateway/README.md</code>.
-          </p>
-        </div>
-        {error && (
-          <p className="notice error" role="alert">
-            {error}
-          </p>
-        )}
-        <button type="submit" className="btn primary" disabled={busy}>
-          {busy ? "Creating…" : "Add connector"}
-        </button>
-      </form>
-
-      {pairing && (
+      {!pairing ? (
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label className="field-label" htmlFor="connector-name">
+              Connector name
+            </label>
+            <input
+              id="connector-name"
+              type="text"
+              className="input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              placeholder="e.g. Customer HQ"
+            />
+          </div>
+          <div className="field">
+            <label className="form-check">
+              <input type="checkbox" checked={gateway} onChange={(e) => setGateway(e.target.checked)} />
+              <span>This host will also run the Guacamole gateway</span>
+            </label>
+            <p className="cell-sub">
+              Bakes <code>--network captivo-gateway</code> into the connector command so it can reach Guacamole
+              — no separate &quot;Enable gateway mode&quot; step. See <code>deploy/gateway/README.md</code>.
+            </p>
+          </div>
+          {error && (
+            <p className="notice error" role="alert">
+              {error}
+            </p>
+          )}
+          <button type="submit" className="btn primary" disabled={busy}>
+            {busy ? "Creating…" : "Add connector"}
+          </button>
+        </form>
+      ) : (
         <div role="status" className="notice">
           <p>
-            This pairing code is shown only once — it&apos;s embedded in the command below. Run it on a
-            host inside the customer&apos;s network to enroll the connector.
+            <span className="pill ok">Pairing created</span>
+          </p>
+          <p>
+            Run the command below on a host inside the customer&apos;s network. The connector then shows up
+            in the list (as <b>Pending</b>, then <b>Online</b>) once it connects — creating it here doesn&apos;t
+            add a row until then. This pairing code is shown only once.
           </p>
           <CommandBlock
             command={pairing.installCommand}
@@ -126,6 +130,9 @@ export function ConnectorForm() {
             <code>wss://connect.your-domain</code>) in the server&apos;s <code>.env</code>. Always use{" "}
             <code>wss://</code> — a plain <code>ws://</code> tunnel is unencrypted.
           </p>
+          <div className="row-actions">
+            <button type="button" className="btn" onClick={() => setPairing(null)}>Add another connector</button>
+          </div>
         </div>
       )}
     </div>

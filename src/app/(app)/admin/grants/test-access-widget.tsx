@@ -51,7 +51,7 @@ export function TestAccessWidget({
   }
 
   return (
-    <div className="card">
+    <div className="card" style={{ marginTop: "1.6rem" }}>
       <div className="card-head">
         <h2>Check access</h2>
       </div>

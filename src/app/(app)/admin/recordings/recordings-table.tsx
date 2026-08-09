@@ -186,7 +186,7 @@ export function RecordingsTable({
         </div>
       )}
 
-      <div className="card-head">
+      <div className="card-head" style={{ marginTop: "1rem" }}>
         <span className="cell-sub">{loading ? "Loading…" : `${start}–${end} of ${total}`}</span>
         <div className="row-actions">
           <button type="button" className="btn sm" disabled={offset === 0 || loading} onClick={() => void load(filters, Math.max(0, offset - PAGE))}>
