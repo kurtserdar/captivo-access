@@ -15,7 +15,7 @@ function errorMessage(code: string | undefined): string {
   }
 }
 
-export function ConnectorForm() {
+export function ConnectorForm({ onDone }: { onDone?: () => void }) {
   const [name, setName] = useState("");
   const [gateway, setGateway] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -131,7 +131,7 @@ export function ConnectorForm() {
             <code>wss://</code> — a plain <code>ws://</code> tunnel is unencrypted.
           </p>
           <div className="row-actions">
-            <button type="button" className="btn" onClick={() => setPairing(null)}>Add another connector</button>
+            <button type="button" className="btn primary" onClick={() => (onDone ? onDone() : setPairing(null))}>Done</button>
           </div>
         </div>
       )}

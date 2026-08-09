@@ -18,7 +18,7 @@ export function AddConnectorButton() {
         Add connector
       </button>
       <Modal open={open} onClose={close} title="Add connector" size="lg">
-        <ConnectorForm />
+        <ConnectorForm onDone={close} />
       </Modal>
     </>
   );
