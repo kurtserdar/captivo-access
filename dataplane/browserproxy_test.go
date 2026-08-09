@@ -965,3 +965,64 @@ func TestDenyPage_ReasonMessages(t *testing.T) {
 		}
 	}
 }
+
+func TestConsentReturnTo(t *testing.T) {
+	cases := map[string]string{
+		"/webpages/index.html": "/webpages/index.html",
+		"/":                    "/",
+		"//evil.example":       "/", // protocol-relative -> open-redirect guard
+		"https://evil.example": "/",
+		"":                     "/",
+	}
+	for in, want := range cases {
+		r := httptest.NewRequest(http.MethodGet, "/__captivo/consent?returnTo="+url.QueryEscape(in), nil)
+		if got := consentReturnTo(r); got != want {
+			t.Fatalf("consentReturnTo(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestRecordingConsentRequired(t *testing.T) {
+	t.Setenv("RECORDING_CONSENT_REQUIRED", "")
+	if recordingConsentRequired() {
+		t.Fatal("empty env should be off")
+	}
+	for _, v := range []string{"1", "true", "on", "YES"} {
+		t.Setenv("RECORDING_CONSENT_REQUIRED", v)
+		if !recordingConsentRequired() {
+			t.Fatalf("%q should enable the consent gate", v)
+		}
+	}
+	t.Setenv("RECORDING_CONSENT_REQUIRED", "off")
+	if recordingConsentRequired() {
+		t.Fatal("\"off\" should be off")
+	}
+}
+
+func TestConsentPage(t *testing.T) {
+	p := &BrowserProxy{managerURL: "https://manager.example"}
+	r := httptest.NewRequest(http.MethodGet, "/webpages/index.html", nil)
+	rec := httptest.NewRecorder()
+	p.consentPage(rec, r)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Fatalf("content-type: want text/html, got %q", ct)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"This session will be recorded",
+		"/__captivo/consent?returnTo=",
+		"https://manager.example/access",
+		"I understand",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("consent page missing %q", want)
+		}
+	}
+	if strings.Contains(body, "<script") {
+		t.Fatalf("consent page must contain no script")
+	}
+}

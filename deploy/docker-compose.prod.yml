@@ -111,6 +111,10 @@ services:
       CONTROL_PLANE_URL: http://access-manager:3100
       WSS_ADDR: ":3101"
       INTERNAL_ADDR: ":3102"
+      # Optional: on recorded Sites, require the vendor to acknowledge recording
+      # once per session (audited) before app content loads. Off by default; the
+      # in-session banner + /access "Recorded" label are the default notice.
+      RECORDING_CONSENT_REQUIRED: ${RECORDING_CONSENT_REQUIRED:-}
       # Browser-facing identity-aware proxy listener — this is the port
       # Caddy forwards vendor HTTP(S) traffic to, keyed by hostname.
       PROXY_ADDR: ":3103"

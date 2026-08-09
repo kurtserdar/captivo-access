@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -135,6 +136,104 @@ func setGatewayIdentity(h map[string][]string, gateway bool, email string) {
 	}
 }
 
+// --- Recording consent gate (opt-in) ---
+
+const consentCookieName = "ca_rec_consent"
+const consentPath = "/__captivo/consent"
+
+// recordingConsentRequired reports whether recorded Sites must show a one-time
+// per-session consent gate before serving app content. Opt-in: off unless
+// RECORDING_CONSENT_REQUIRED is set (1/true/on). The recording banner + the
+// /access "Recorded" label remain the default; this adds explicit acknowledgement.
+func recordingConsentRequired() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("RECORDING_CONSENT_REQUIRED"))) {
+	case "1", "true", "on", "yes":
+		return true
+	}
+	return false
+}
+
+// setConsentCookie marks that the vendor acknowledged recording. Session-scoped
+// (no expiry -> cleared on browser close -> fresh consent each session) and
+// host-only (-> per recorded Site).
+func setConsentCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     consentCookieName,
+		Value:    "1",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+// consentReturnTo returns a safe same-site path to resume after consent: the
+// ?returnTo query if it is a site-relative path, else "/". Guards open redirects.
+func consentReturnTo(r *http.Request) string {
+	rt := r.URL.Query().Get("returnTo")
+	if strings.HasPrefix(rt, "/") && !strings.HasPrefix(rt, "//") {
+		return rt
+	}
+	return "/"
+}
+
+type consentData struct {
+	ContinueHref template.URL
+	BackHref     template.URL
+}
+
+// consentTmpl is the self-contained recording-consent interstitial (inline CSS,
+// light/dark, no JS). The hrefs are server-built and marked template.URL; there
+// is no free dynamic text.
+var consentTmpl = template.Must(template.New("consent").Parse(`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>This session is recorded · Captivo Access</title>
+<style>
+:root { --bg:#f6f7f9; --card:#fff; --fg:#1a1d21; --muted:#6b7280; --border:#e5e7eb; --accent:#3358d4; }
+@media (prefers-color-scheme: dark){ :root{ --bg:#0f1115; --card:#171a1f; --fg:#e6e8eb; --muted:#9aa1ab; --border:#262a30; --accent:#5b8cff; } }
+*{box-sizing:border-box} html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;max-width:31rem;width:100%;padding:2.25rem 2rem;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06)}
+.brand{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 1.1rem}
+.rec{display:inline-flex;align-items:center;gap:.4rem;font-size:.75rem;font-weight:600;color:var(--muted);margin:0 0 .5rem}
+.rec .dot{width:8px;height:8px;border-radius:50%;background:#ef4444}
+h1{font-size:1.4rem;line-height:1.25;margin:0 0 .6rem;font-weight:650}
+.detail{margin:0 0 1.4rem;color:var(--fg)}
+.actions{display:flex;flex-wrap:wrap;gap:.6rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border);text-decoration:none;color:var(--fg);font-weight:600;font-size:.9rem}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<main class="card">
+<p class="brand">Captivo Access</p>
+<p class="rec"><span class="dot"></span> Recording notice</p>
+<h1>This session will be recorded</h1>
+<p class="detail">Your activity in this application will be recorded for security and compliance for the duration of your session. Continue only if you agree.</p>
+<div class="actions">
+<a class="btn primary" href="{{.ContinueHref}}">I understand — continue</a>
+<a class="btn" href="{{.BackHref}}">Not now</a>
+</div>
+</main>
+</body>
+</html>
+`))
+
+// consentPage serves the interstitial for the vendor's original request. The
+// Continue link carries the original path so consent can resume it.
+func (p *BrowserProxy) consentPage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(http.StatusOK)
+	_ = consentTmpl.Execute(w, consentData{
+		ContinueHref: template.URL(consentPath + "?returnTo=" + url.QueryEscape(r.URL.RequestURI())),
+		BackHref:     template.URL(p.managerURL + "/access"),
+	})
+}
+
 // proxyControl is the subset of ControlClient that BrowserProxy depends on.
 // Tests inject a fake implementation; *ControlClient satisfies it for
 // production use.
@@ -190,6 +289,25 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p.audit.Enqueue(auditEvent("DENY", reason, userID, siteID, host, r, http.StatusForbidden, 0))
 		denyPage(w, reason)
 		return
+	}
+
+	// Recording consent gate (opt-in via RECORDING_CONSENT_REQUIRED): on a
+	// recorded Site, the vendor must acknowledge recording once per browser
+	// session before any app content is served, and the acknowledgement is
+	// audited. recordSessions is already false unless recording is active
+	// (RECORDING_ENABLED + the per-Site toggle). Reserved /__captivo/* paths
+	// are exempt (recorder infra).
+	if recordSessions && recordingConsentRequired() {
+		if r.URL.Path == consentPath {
+			setConsentCookie(w)
+			p.audit.Enqueue(auditEvent("ALLOW", "recording_consent", userID, siteID, host, r, http.StatusFound, 0))
+			http.Redirect(w, r, consentReturnTo(r), http.StatusFound)
+			return
+		}
+		if !strings.HasPrefix(r.URL.Path, "/__captivo/") && readCookie(r, consentCookieName) == "" {
+			p.consentPage(w, r)
+			return
+		}
 	}
 
 	// Reserved recording endpoints the recorder bundle talks to
