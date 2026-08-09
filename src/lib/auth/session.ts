@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { generateToken, sha256 } from "./tokens";
 import { cookieSecure, cookieDomain } from "./cookies";
+import { getSessionPolicy, sessionTtlMs, idleExpired, evictionIds } from "@/lib/policy/session-policy";
 
 export const SESSION_COOKIE = "ca_session";
 function ttlMs(): number {
@@ -12,11 +13,26 @@ function ttlMs(): number {
 
 export async function createSession(userId: string, meta?: { userAgent?: string; ip?: string }): Promise<string> {
   const token = generateToken();
+  const policy = await getSessionPolicy();
+  const envHours = Number(process.env.SESSION_TTL_HOURS ?? "12");
+  const ttl = sessionTtlMs(policy.maxSessionHours, Number.isFinite(envHours) && envHours > 0 ? envHours : 12);
+
+  // Concurrent-session cap: evict the user's oldest live sessions to make room.
+  if (policy.maxConcurrentPerUser && policy.maxConcurrentPerUser > 0) {
+    const active = await db.session.findMany({
+      where: { userId, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    const evict = evictionIds(active, policy.maxConcurrentPerUser);
+    if (evict.length) await db.session.deleteMany({ where: { id: { in: evict } } });
+  }
+
   await db.session.create({
     data: {
       userId,
       tokenHash: sha256(token),
-      expiresAt: new Date(Date.now() + ttlMs()),
+      expiresAt: new Date(Date.now() + ttl),
       userAgent: meta?.userAgent ?? null,
       ip: meta?.ip ?? null,
     },
@@ -29,6 +45,13 @@ export async function getSessionUser(token: string) {
   const s = await db.session.findUnique({ where: { tokenHash: sha256(token) }, include: { user: true } });
   if (!s || s.expiresAt < new Date()) return null;
   if (s.user.status !== "ACTIVE") return null;
+  // Idle timeout: lastSeenAt is the previous request's time, so this measures
+  // true inactivity. Covers both console + vendor sessions (shared function).
+  const policy = await getSessionPolicy();
+  if (idleExpired(s.lastSeenAt, new Date(), policy.idleTimeoutMinutes)) {
+    await db.session.delete({ where: { id: s.id } }).catch(() => {});
+    return null;
+  }
   // sliding: update last-seen (extending expiry is optional — MVP only updates lastSeenAt)
   await db.session.update({ where: { id: s.id }, data: { lastSeenAt: new Date() } }).catch(() => {});
   return s.user;
