@@ -38,6 +38,7 @@ export type AccessGrantMinAggregateOutputType = {
   approvedById: string | null
   createdById: string | null
   createdAt: Date | null
+  directoryManaged: boolean | null
 }
 
 export type AccessGrantMaxAggregateOutputType = {
@@ -54,6 +55,7 @@ export type AccessGrantMaxAggregateOutputType = {
   approvedById: string | null
   createdById: string | null
   createdAt: Date | null
+  directoryManaged: boolean | null
 }
 
 export type AccessGrantCountAggregateOutputType = {
@@ -71,6 +73,7 @@ export type AccessGrantCountAggregateOutputType = {
   schedule: number
   createdById: number
   createdAt: number
+  directoryManaged: number
   _all: number
 }
 
@@ -89,6 +92,7 @@ export type AccessGrantMinAggregateInputType = {
   approvedById?: true
   createdById?: true
   createdAt?: true
+  directoryManaged?: true
 }
 
 export type AccessGrantMaxAggregateInputType = {
@@ -105,6 +109,7 @@ export type AccessGrantMaxAggregateInputType = {
   approvedById?: true
   createdById?: true
   createdAt?: true
+  directoryManaged?: true
 }
 
 export type AccessGrantCountAggregateInputType = {
@@ -122,6 +127,7 @@ export type AccessGrantCountAggregateInputType = {
   schedule?: true
   createdById?: true
   createdAt?: true
+  directoryManaged?: true
   _all?: true
 }
 
@@ -212,6 +218,7 @@ export type AccessGrantGroupByOutputType = {
   schedule: runtime.JsonValue | null
   createdById: string | null
   createdAt: Date
+  directoryManaged: boolean
   _count: AccessGrantCountAggregateOutputType | null
   _min: AccessGrantMinAggregateOutputType | null
   _max: AccessGrantMaxAggregateOutputType | null
@@ -250,6 +257,7 @@ export type AccessGrantWhereInput = {
   schedule?: Prisma.JsonNullableFilter<"AccessGrant">
   createdById?: Prisma.StringNullableFilter<"AccessGrant"> | string | null
   createdAt?: Prisma.DateTimeFilter<"AccessGrant"> | Date | string
+  directoryManaged?: Prisma.BoolFilter<"AccessGrant"> | boolean
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   site?: Prisma.XOR<Prisma.SiteScalarRelationFilter, Prisma.SiteWhereInput>
   approvedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
@@ -271,6 +279,7 @@ export type AccessGrantOrderByWithRelationInput = {
   schedule?: Prisma.SortOrderInput | Prisma.SortOrder
   createdById?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  directoryManaged?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   site?: Prisma.SiteOrderByWithRelationInput
   approvedBy?: Prisma.UserOrderByWithRelationInput
@@ -295,6 +304,7 @@ export type AccessGrantWhereUniqueInput = Prisma.AtLeast<{
   schedule?: Prisma.JsonNullableFilter<"AccessGrant">
   createdById?: Prisma.StringNullableFilter<"AccessGrant"> | string | null
   createdAt?: Prisma.DateTimeFilter<"AccessGrant"> | Date | string
+  directoryManaged?: Prisma.BoolFilter<"AccessGrant"> | boolean
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   site?: Prisma.XOR<Prisma.SiteScalarRelationFilter, Prisma.SiteWhereInput>
   approvedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
@@ -316,6 +326,7 @@ export type AccessGrantOrderByWithAggregationInput = {
   schedule?: Prisma.SortOrderInput | Prisma.SortOrder
   createdById?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  directoryManaged?: Prisma.SortOrder
   _count?: Prisma.AccessGrantCountOrderByAggregateInput
   _max?: Prisma.AccessGrantMaxOrderByAggregateInput
   _min?: Prisma.AccessGrantMinOrderByAggregateInput
@@ -339,6 +350,7 @@ export type AccessGrantScalarWhereWithAggregatesInput = {
   schedule?: Prisma.JsonNullableWithAggregatesFilter<"AccessGrant">
   createdById?: Prisma.StringNullableWithAggregatesFilter<"AccessGrant"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AccessGrant"> | Date | string
+  directoryManaged?: Prisma.BoolWithAggregatesFilter<"AccessGrant"> | boolean
 }
 
 export type AccessGrantCreateInput = {
@@ -352,6 +364,7 @@ export type AccessGrantCreateInput = {
   approvedAt?: Date | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  directoryManaged?: boolean
   user: Prisma.UserCreateNestedOneWithoutGrantsSubjectInput
   site: Prisma.SiteCreateNestedOneWithoutGrantsInput
   approvedBy?: Prisma.UserCreateNestedOneWithoutGrantsApprovedInput
@@ -373,6 +386,7 @@ export type AccessGrantUncheckedCreateInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: string | null
   createdAt?: Date | string
+  directoryManaged?: boolean
 }
 
 export type AccessGrantUpdateInput = {
@@ -386,6 +400,7 @@ export type AccessGrantUpdateInput = {
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
   user?: Prisma.UserUpdateOneRequiredWithoutGrantsSubjectNestedInput
   site?: Prisma.SiteUpdateOneRequiredWithoutGrantsNestedInput
   approvedBy?: Prisma.UserUpdateOneWithoutGrantsApprovedNestedInput
@@ -407,6 +422,7 @@ export type AccessGrantUncheckedUpdateInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type AccessGrantCreateManyInput = {
@@ -424,6 +440,7 @@ export type AccessGrantCreateManyInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: string | null
   createdAt?: Date | string
+  directoryManaged?: boolean
 }
 
 export type AccessGrantUpdateManyMutationInput = {
@@ -437,6 +454,7 @@ export type AccessGrantUpdateManyMutationInput = {
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type AccessGrantUncheckedUpdateManyInput = {
@@ -454,6 +472,7 @@ export type AccessGrantUncheckedUpdateManyInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type AccessGrantListRelationFilter = {
@@ -481,6 +500,7 @@ export type AccessGrantCountOrderByAggregateInput = {
   schedule?: Prisma.SortOrder
   createdById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  directoryManaged?: Prisma.SortOrder
 }
 
 export type AccessGrantMaxOrderByAggregateInput = {
@@ -497,6 +517,7 @@ export type AccessGrantMaxOrderByAggregateInput = {
   approvedById?: Prisma.SortOrder
   createdById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  directoryManaged?: Prisma.SortOrder
 }
 
 export type AccessGrantMinOrderByAggregateInput = {
@@ -513,6 +534,7 @@ export type AccessGrantMinOrderByAggregateInput = {
   approvedById?: Prisma.SortOrder
   createdById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  directoryManaged?: Prisma.SortOrder
 }
 
 export type AccessGrantCreateNestedManyWithoutUserInput = {
@@ -698,6 +720,7 @@ export type AccessGrantCreateWithoutUserInput = {
   approvedAt?: Date | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  directoryManaged?: boolean
   site: Prisma.SiteCreateNestedOneWithoutGrantsInput
   approvedBy?: Prisma.UserCreateNestedOneWithoutGrantsApprovedInput
   createdBy?: Prisma.UserCreateNestedOneWithoutGrantsCreatedInput
@@ -717,6 +740,7 @@ export type AccessGrantUncheckedCreateWithoutUserInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: string | null
   createdAt?: Date | string
+  directoryManaged?: boolean
 }
 
 export type AccessGrantCreateOrConnectWithoutUserInput = {
@@ -740,6 +764,7 @@ export type AccessGrantCreateWithoutApprovedByInput = {
   approvedAt?: Date | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  directoryManaged?: boolean
   user: Prisma.UserCreateNestedOneWithoutGrantsSubjectInput
   site: Prisma.SiteCreateNestedOneWithoutGrantsInput
   createdBy?: Prisma.UserCreateNestedOneWithoutGrantsCreatedInput
@@ -759,6 +784,7 @@ export type AccessGrantUncheckedCreateWithoutApprovedByInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: string | null
   createdAt?: Date | string
+  directoryManaged?: boolean
 }
 
 export type AccessGrantCreateOrConnectWithoutApprovedByInput = {
@@ -782,6 +808,7 @@ export type AccessGrantCreateWithoutCreatedByInput = {
   approvedAt?: Date | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  directoryManaged?: boolean
   user: Prisma.UserCreateNestedOneWithoutGrantsSubjectInput
   site: Prisma.SiteCreateNestedOneWithoutGrantsInput
   approvedBy?: Prisma.UserCreateNestedOneWithoutGrantsApprovedInput
@@ -801,6 +828,7 @@ export type AccessGrantUncheckedCreateWithoutCreatedByInput = {
   approvedById?: string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  directoryManaged?: boolean
 }
 
 export type AccessGrantCreateOrConnectWithoutCreatedByInput = {
@@ -847,6 +875,7 @@ export type AccessGrantScalarWhereInput = {
   schedule?: Prisma.JsonNullableFilter<"AccessGrant">
   createdById?: Prisma.StringNullableFilter<"AccessGrant"> | string | null
   createdAt?: Prisma.DateTimeFilter<"AccessGrant"> | Date | string
+  directoryManaged?: Prisma.BoolFilter<"AccessGrant"> | boolean
 }
 
 export type AccessGrantUpsertWithWhereUniqueWithoutApprovedByInput = {
@@ -892,6 +921,7 @@ export type AccessGrantCreateWithoutSiteInput = {
   approvedAt?: Date | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  directoryManaged?: boolean
   user: Prisma.UserCreateNestedOneWithoutGrantsSubjectInput
   approvedBy?: Prisma.UserCreateNestedOneWithoutGrantsApprovedInput
   createdBy?: Prisma.UserCreateNestedOneWithoutGrantsCreatedInput
@@ -911,6 +941,7 @@ export type AccessGrantUncheckedCreateWithoutSiteInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: string | null
   createdAt?: Date | string
+  directoryManaged?: boolean
 }
 
 export type AccessGrantCreateOrConnectWithoutSiteInput = {
@@ -953,6 +984,7 @@ export type AccessGrantCreateManyUserInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: string | null
   createdAt?: Date | string
+  directoryManaged?: boolean
 }
 
 export type AccessGrantCreateManyApprovedByInput = {
@@ -969,6 +1001,7 @@ export type AccessGrantCreateManyApprovedByInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: string | null
   createdAt?: Date | string
+  directoryManaged?: boolean
 }
 
 export type AccessGrantCreateManyCreatedByInput = {
@@ -985,6 +1018,7 @@ export type AccessGrantCreateManyCreatedByInput = {
   approvedById?: string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  directoryManaged?: boolean
 }
 
 export type AccessGrantUpdateWithoutUserInput = {
@@ -998,6 +1032,7 @@ export type AccessGrantUpdateWithoutUserInput = {
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
   site?: Prisma.SiteUpdateOneRequiredWithoutGrantsNestedInput
   approvedBy?: Prisma.UserUpdateOneWithoutGrantsApprovedNestedInput
   createdBy?: Prisma.UserUpdateOneWithoutGrantsCreatedNestedInput
@@ -1017,6 +1052,7 @@ export type AccessGrantUncheckedUpdateWithoutUserInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type AccessGrantUncheckedUpdateManyWithoutUserInput = {
@@ -1033,6 +1069,7 @@ export type AccessGrantUncheckedUpdateManyWithoutUserInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type AccessGrantUpdateWithoutApprovedByInput = {
@@ -1046,6 +1083,7 @@ export type AccessGrantUpdateWithoutApprovedByInput = {
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
   user?: Prisma.UserUpdateOneRequiredWithoutGrantsSubjectNestedInput
   site?: Prisma.SiteUpdateOneRequiredWithoutGrantsNestedInput
   createdBy?: Prisma.UserUpdateOneWithoutGrantsCreatedNestedInput
@@ -1065,6 +1103,7 @@ export type AccessGrantUncheckedUpdateWithoutApprovedByInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type AccessGrantUncheckedUpdateManyWithoutApprovedByInput = {
@@ -1081,6 +1120,7 @@ export type AccessGrantUncheckedUpdateManyWithoutApprovedByInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type AccessGrantUpdateWithoutCreatedByInput = {
@@ -1094,6 +1134,7 @@ export type AccessGrantUpdateWithoutCreatedByInput = {
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
   user?: Prisma.UserUpdateOneRequiredWithoutGrantsSubjectNestedInput
   site?: Prisma.SiteUpdateOneRequiredWithoutGrantsNestedInput
   approvedBy?: Prisma.UserUpdateOneWithoutGrantsApprovedNestedInput
@@ -1113,6 +1154,7 @@ export type AccessGrantUncheckedUpdateWithoutCreatedByInput = {
   approvedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type AccessGrantUncheckedUpdateManyWithoutCreatedByInput = {
@@ -1129,6 +1171,7 @@ export type AccessGrantUncheckedUpdateManyWithoutCreatedByInput = {
   approvedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type AccessGrantCreateManySiteInput = {
@@ -1145,6 +1188,7 @@ export type AccessGrantCreateManySiteInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: string | null
   createdAt?: Date | string
+  directoryManaged?: boolean
 }
 
 export type AccessGrantUpdateWithoutSiteInput = {
@@ -1158,6 +1202,7 @@ export type AccessGrantUpdateWithoutSiteInput = {
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
   user?: Prisma.UserUpdateOneRequiredWithoutGrantsSubjectNestedInput
   approvedBy?: Prisma.UserUpdateOneWithoutGrantsApprovedNestedInput
   createdBy?: Prisma.UserUpdateOneWithoutGrantsCreatedNestedInput
@@ -1177,6 +1222,7 @@ export type AccessGrantUncheckedUpdateWithoutSiteInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type AccessGrantUncheckedUpdateManyWithoutSiteInput = {
@@ -1193,6 +1239,7 @@ export type AccessGrantUncheckedUpdateManyWithoutSiteInput = {
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -1212,6 +1259,7 @@ export type AccessGrantSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   schedule?: boolean
   createdById?: boolean
   createdAt?: boolean
+  directoryManaged?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   site?: boolean | Prisma.SiteDefaultArgs<ExtArgs>
   approvedBy?: boolean | Prisma.AccessGrant$approvedByArgs<ExtArgs>
@@ -1233,6 +1281,7 @@ export type AccessGrantSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   schedule?: boolean
   createdById?: boolean
   createdAt?: boolean
+  directoryManaged?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   site?: boolean | Prisma.SiteDefaultArgs<ExtArgs>
   approvedBy?: boolean | Prisma.AccessGrant$approvedByArgs<ExtArgs>
@@ -1254,6 +1303,7 @@ export type AccessGrantSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   schedule?: boolean
   createdById?: boolean
   createdAt?: boolean
+  directoryManaged?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   site?: boolean | Prisma.SiteDefaultArgs<ExtArgs>
   approvedBy?: boolean | Prisma.AccessGrant$approvedByArgs<ExtArgs>
@@ -1275,9 +1325,10 @@ export type AccessGrantSelectScalar = {
   schedule?: boolean
   createdById?: boolean
   createdAt?: boolean
+  directoryManaged?: boolean
 }
 
-export type AccessGrantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "siteId" | "startsAt" | "endsAt" | "status" | "note" | "denyReason" | "requiresApproval" | "approvedAt" | "approvedById" | "schedule" | "createdById" | "createdAt", ExtArgs["result"]["accessGrant"]>
+export type AccessGrantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "siteId" | "startsAt" | "endsAt" | "status" | "note" | "denyReason" | "requiresApproval" | "approvedAt" | "approvedById" | "schedule" | "createdById" | "createdAt" | "directoryManaged", ExtArgs["result"]["accessGrant"]>
 export type AccessGrantInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   site?: boolean | Prisma.SiteDefaultArgs<ExtArgs>
@@ -1320,6 +1371,7 @@ export type $AccessGrantPayload<ExtArgs extends runtime.Types.Extensions.Interna
     schedule: runtime.JsonValue | null
     createdById: string | null
     createdAt: Date
+    directoryManaged: boolean
   }, ExtArgs["result"]["accessGrant"]>
   composites: {}
 }
@@ -1761,6 +1813,7 @@ export interface AccessGrantFieldRefs {
   readonly schedule: Prisma.FieldRef<"AccessGrant", 'Json'>
   readonly createdById: Prisma.FieldRef<"AccessGrant", 'String'>
   readonly createdAt: Prisma.FieldRef<"AccessGrant", 'DateTime'>
+  readonly directoryManaged: Prisma.FieldRef<"AccessGrant", 'Boolean'>
 }
     
 

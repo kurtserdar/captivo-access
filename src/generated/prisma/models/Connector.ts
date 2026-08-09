@@ -421,10 +421,6 @@ export type EnumConnectorStatusFieldUpdateOperationsInput = {
   set?: $Enums.ConnectorStatus
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type ConnectorCreateNestedOneWithoutPairingsInput = {
   create?: Prisma.XOR<Prisma.ConnectorCreateWithoutPairingsInput, Prisma.ConnectorUncheckedCreateWithoutPairingsInput>
   connectOrCreate?: Prisma.ConnectorCreateOrConnectWithoutPairingsInput

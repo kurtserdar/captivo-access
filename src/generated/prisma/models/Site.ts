@@ -306,6 +306,7 @@ export type SiteWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Site"> | Date | string
   connector?: Prisma.XOR<Prisma.ConnectorScalarRelationFilter, Prisma.ConnectorWhereInput>
   grants?: Prisma.AccessGrantListRelationFilter
+  groupMappings?: Prisma.GroupMappingListRelationFilter
 }
 
 export type SiteOrderByWithRelationInput = {
@@ -327,6 +328,7 @@ export type SiteOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   connector?: Prisma.ConnectorOrderByWithRelationInput
   grants?: Prisma.AccessGrantOrderByRelationAggregateInput
+  groupMappings?: Prisma.GroupMappingOrderByRelationAggregateInput
 }
 
 export type SiteWhereUniqueInput = Prisma.AtLeast<{
@@ -351,6 +353,7 @@ export type SiteWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Site"> | Date | string
   connector?: Prisma.XOR<Prisma.ConnectorScalarRelationFilter, Prisma.ConnectorWhereInput>
   grants?: Prisma.AccessGrantListRelationFilter
+  groupMappings?: Prisma.GroupMappingListRelationFilter
 }, "id" | "hostname">
 
 export type SiteOrderByWithAggregationInput = {
@@ -417,6 +420,7 @@ export type SiteCreateInput = {
   createdAt?: Date | string
   connector: Prisma.ConnectorCreateNestedOneWithoutSitesInput
   grants?: Prisma.AccessGrantCreateNestedManyWithoutSiteInput
+  groupMappings?: Prisma.GroupMappingCreateNestedManyWithoutSiteInput
 }
 
 export type SiteUncheckedCreateInput = {
@@ -437,6 +441,7 @@ export type SiteUncheckedCreateInput = {
   logoType?: string | null
   createdAt?: Date | string
   grants?: Prisma.AccessGrantUncheckedCreateNestedManyWithoutSiteInput
+  groupMappings?: Prisma.GroupMappingUncheckedCreateNestedManyWithoutSiteInput
 }
 
 export type SiteUpdateInput = {
@@ -457,6 +462,7 @@ export type SiteUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   connector?: Prisma.ConnectorUpdateOneRequiredWithoutSitesNestedInput
   grants?: Prisma.AccessGrantUpdateManyWithoutSiteNestedInput
+  groupMappings?: Prisma.GroupMappingUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteUncheckedUpdateInput = {
@@ -477,6 +483,7 @@ export type SiteUncheckedUpdateInput = {
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   grants?: Prisma.AccessGrantUncheckedUpdateManyWithoutSiteNestedInput
+  groupMappings?: Prisma.GroupMappingUncheckedUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteCreateManyInput = {
@@ -615,6 +622,11 @@ export type SiteScalarRelationFilter = {
   isNot?: Prisma.SiteWhereInput
 }
 
+export type SiteNullableScalarRelationFilter = {
+  is?: Prisma.SiteWhereInput | null
+  isNot?: Prisma.SiteWhereInput | null
+}
+
 export type SiteCreateNestedManyWithoutConnectorInput = {
   create?: Prisma.XOR<Prisma.SiteCreateWithoutConnectorInput, Prisma.SiteUncheckedCreateWithoutConnectorInput> | Prisma.SiteCreateWithoutConnectorInput[] | Prisma.SiteUncheckedCreateWithoutConnectorInput[]
   connectOrCreate?: Prisma.SiteCreateOrConnectWithoutConnectorInput | Prisma.SiteCreateOrConnectWithoutConnectorInput[]
@@ -691,6 +703,22 @@ export type SiteUpdateOneRequiredWithoutGrantsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.SiteUpdateToOneWithWhereWithoutGrantsInput, Prisma.SiteUpdateWithoutGrantsInput>, Prisma.SiteUncheckedUpdateWithoutGrantsInput>
 }
 
+export type SiteCreateNestedOneWithoutGroupMappingsInput = {
+  create?: Prisma.XOR<Prisma.SiteCreateWithoutGroupMappingsInput, Prisma.SiteUncheckedCreateWithoutGroupMappingsInput>
+  connectOrCreate?: Prisma.SiteCreateOrConnectWithoutGroupMappingsInput
+  connect?: Prisma.SiteWhereUniqueInput
+}
+
+export type SiteUpdateOneWithoutGroupMappingsNestedInput = {
+  create?: Prisma.XOR<Prisma.SiteCreateWithoutGroupMappingsInput, Prisma.SiteUncheckedCreateWithoutGroupMappingsInput>
+  connectOrCreate?: Prisma.SiteCreateOrConnectWithoutGroupMappingsInput
+  upsert?: Prisma.SiteUpsertWithoutGroupMappingsInput
+  disconnect?: Prisma.SiteWhereInput | boolean
+  delete?: Prisma.SiteWhereInput | boolean
+  connect?: Prisma.SiteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SiteUpdateToOneWithWhereWithoutGroupMappingsInput, Prisma.SiteUpdateWithoutGroupMappingsInput>, Prisma.SiteUncheckedUpdateWithoutGroupMappingsInput>
+}
+
 export type SiteCreateWithoutConnectorInput = {
   id?: string
   name: string
@@ -708,6 +736,7 @@ export type SiteCreateWithoutConnectorInput = {
   logoType?: string | null
   createdAt?: Date | string
   grants?: Prisma.AccessGrantCreateNestedManyWithoutSiteInput
+  groupMappings?: Prisma.GroupMappingCreateNestedManyWithoutSiteInput
 }
 
 export type SiteUncheckedCreateWithoutConnectorInput = {
@@ -727,6 +756,7 @@ export type SiteUncheckedCreateWithoutConnectorInput = {
   logoType?: string | null
   createdAt?: Date | string
   grants?: Prisma.AccessGrantUncheckedCreateNestedManyWithoutSiteInput
+  groupMappings?: Prisma.GroupMappingUncheckedCreateNestedManyWithoutSiteInput
 }
 
 export type SiteCreateOrConnectWithoutConnectorInput = {
@@ -794,6 +824,7 @@ export type SiteCreateWithoutGrantsInput = {
   logoType?: string | null
   createdAt?: Date | string
   connector: Prisma.ConnectorCreateNestedOneWithoutSitesInput
+  groupMappings?: Prisma.GroupMappingCreateNestedManyWithoutSiteInput
 }
 
 export type SiteUncheckedCreateWithoutGrantsInput = {
@@ -813,6 +844,7 @@ export type SiteUncheckedCreateWithoutGrantsInput = {
   logo?: runtime.Bytes | null
   logoType?: string | null
   createdAt?: Date | string
+  groupMappings?: Prisma.GroupMappingUncheckedCreateNestedManyWithoutSiteInput
 }
 
 export type SiteCreateOrConnectWithoutGrantsInput = {
@@ -848,6 +880,7 @@ export type SiteUpdateWithoutGrantsInput = {
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   connector?: Prisma.ConnectorUpdateOneRequiredWithoutSitesNestedInput
+  groupMappings?: Prisma.GroupMappingUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteUncheckedUpdateWithoutGrantsInput = {
@@ -867,6 +900,103 @@ export type SiteUncheckedUpdateWithoutGrantsInput = {
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  groupMappings?: Prisma.GroupMappingUncheckedUpdateManyWithoutSiteNestedInput
+}
+
+export type SiteCreateWithoutGroupMappingsInput = {
+  id?: string
+  name: string
+  hostname: string
+  upstreamUrl?: string | null
+  insecureSkipVerify?: boolean
+  description?: string | null
+  probedAt?: Date | string | null
+  probeOk?: boolean | null
+  probeDetail?: string | null
+  probeLatencyMs?: number | null
+  recordSessions?: boolean
+  accessMode?: $Enums.SiteAccessMode
+  logo?: runtime.Bytes | null
+  logoType?: string | null
+  createdAt?: Date | string
+  connector: Prisma.ConnectorCreateNestedOneWithoutSitesInput
+  grants?: Prisma.AccessGrantCreateNestedManyWithoutSiteInput
+}
+
+export type SiteUncheckedCreateWithoutGroupMappingsInput = {
+  id?: string
+  connectorId: string
+  name: string
+  hostname: string
+  upstreamUrl?: string | null
+  insecureSkipVerify?: boolean
+  description?: string | null
+  probedAt?: Date | string | null
+  probeOk?: boolean | null
+  probeDetail?: string | null
+  probeLatencyMs?: number | null
+  recordSessions?: boolean
+  accessMode?: $Enums.SiteAccessMode
+  logo?: runtime.Bytes | null
+  logoType?: string | null
+  createdAt?: Date | string
+  grants?: Prisma.AccessGrantUncheckedCreateNestedManyWithoutSiteInput
+}
+
+export type SiteCreateOrConnectWithoutGroupMappingsInput = {
+  where: Prisma.SiteWhereUniqueInput
+  create: Prisma.XOR<Prisma.SiteCreateWithoutGroupMappingsInput, Prisma.SiteUncheckedCreateWithoutGroupMappingsInput>
+}
+
+export type SiteUpsertWithoutGroupMappingsInput = {
+  update: Prisma.XOR<Prisma.SiteUpdateWithoutGroupMappingsInput, Prisma.SiteUncheckedUpdateWithoutGroupMappingsInput>
+  create: Prisma.XOR<Prisma.SiteCreateWithoutGroupMappingsInput, Prisma.SiteUncheckedCreateWithoutGroupMappingsInput>
+  where?: Prisma.SiteWhereInput
+}
+
+export type SiteUpdateToOneWithWhereWithoutGroupMappingsInput = {
+  where?: Prisma.SiteWhereInput
+  data: Prisma.XOR<Prisma.SiteUpdateWithoutGroupMappingsInput, Prisma.SiteUncheckedUpdateWithoutGroupMappingsInput>
+}
+
+export type SiteUpdateWithoutGroupMappingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  hostname?: Prisma.StringFieldUpdateOperationsInput | string
+  upstreamUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  insecureSkipVerify?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  probedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  probeOk?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  probeDetail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
+  logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
+  logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  connector?: Prisma.ConnectorUpdateOneRequiredWithoutSitesNestedInput
+  grants?: Prisma.AccessGrantUpdateManyWithoutSiteNestedInput
+}
+
+export type SiteUncheckedUpdateWithoutGroupMappingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  connectorId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  hostname?: Prisma.StringFieldUpdateOperationsInput | string
+  upstreamUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  insecureSkipVerify?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  probedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  probeOk?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  probeDetail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
+  logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
+  logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  grants?: Prisma.AccessGrantUncheckedUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteCreateManyConnectorInput = {
@@ -904,6 +1034,7 @@ export type SiteUpdateWithoutConnectorInput = {
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   grants?: Prisma.AccessGrantUpdateManyWithoutSiteNestedInput
+  groupMappings?: Prisma.GroupMappingUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteUncheckedUpdateWithoutConnectorInput = {
@@ -923,6 +1054,7 @@ export type SiteUncheckedUpdateWithoutConnectorInput = {
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   grants?: Prisma.AccessGrantUncheckedUpdateManyWithoutSiteNestedInput
+  groupMappings?: Prisma.GroupMappingUncheckedUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteUncheckedUpdateManyWithoutConnectorInput = {
@@ -950,10 +1082,12 @@ export type SiteUncheckedUpdateManyWithoutConnectorInput = {
 
 export type SiteCountOutputType = {
   grants: number
+  groupMappings: number
 }
 
 export type SiteCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   grants?: boolean | SiteCountOutputTypeCountGrantsArgs
+  groupMappings?: boolean | SiteCountOutputTypeCountGroupMappingsArgs
 }
 
 /**
@@ -971,6 +1105,13 @@ export type SiteCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
  */
 export type SiteCountOutputTypeCountGrantsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.AccessGrantWhereInput
+}
+
+/**
+ * SiteCountOutputType without action
+ */
+export type SiteCountOutputTypeCountGroupMappingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.GroupMappingWhereInput
 }
 
 
@@ -993,6 +1134,7 @@ export type SiteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   connector?: boolean | Prisma.ConnectorDefaultArgs<ExtArgs>
   grants?: boolean | Prisma.Site$grantsArgs<ExtArgs>
+  groupMappings?: boolean | Prisma.Site$groupMappingsArgs<ExtArgs>
   _count?: boolean | Prisma.SiteCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["site"]>
 
@@ -1059,6 +1201,7 @@ export type SiteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = run
 export type SiteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   connector?: boolean | Prisma.ConnectorDefaultArgs<ExtArgs>
   grants?: boolean | Prisma.Site$grantsArgs<ExtArgs>
+  groupMappings?: boolean | Prisma.Site$groupMappingsArgs<ExtArgs>
   _count?: boolean | Prisma.SiteCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SiteIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1073,6 +1216,7 @@ export type $SitePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   objects: {
     connector: Prisma.$ConnectorPayload<ExtArgs>
     grants: Prisma.$AccessGrantPayload<ExtArgs>[]
+    groupMappings: Prisma.$GroupMappingPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1487,6 +1631,7 @@ export interface Prisma__SiteClient<T, Null = never, ExtArgs extends runtime.Typ
   readonly [Symbol.toStringTag]: "PrismaPromise"
   connector<T extends Prisma.ConnectorDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ConnectorDefaultArgs<ExtArgs>>): Prisma.Prisma__ConnectorClient<runtime.Types.Result.GetResult<Prisma.$ConnectorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   grants<T extends Prisma.Site$grantsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Site$grantsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AccessGrantPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  groupMappings<T extends Prisma.Site$groupMappingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Site$groupMappingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GroupMappingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1954,6 +2099,30 @@ export type Site$grantsArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
   take?: number
   skip?: number
   distinct?: Prisma.AccessGrantScalarFieldEnum | Prisma.AccessGrantScalarFieldEnum[]
+}
+
+/**
+ * Site.groupMappings
+ */
+export type Site$groupMappingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GroupMapping
+   */
+  select?: Prisma.GroupMappingSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GroupMapping
+   */
+  omit?: Prisma.GroupMappingOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GroupMappingInclude<ExtArgs> | null
+  where?: Prisma.GroupMappingWhereInput
+  orderBy?: Prisma.GroupMappingOrderByWithRelationInput | Prisma.GroupMappingOrderByWithRelationInput[]
+  cursor?: Prisma.GroupMappingWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.GroupMappingScalarFieldEnum | Prisma.GroupMappingScalarFieldEnum[]
 }
 
 /**

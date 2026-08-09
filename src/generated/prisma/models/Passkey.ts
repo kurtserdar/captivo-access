@@ -514,10 +514,6 @@ export type PasskeyUpdatetransportsInput = {
   push?: string | string[]
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type PasskeyCreateWithoutUserInput = {
   id?: string
   credentialId: string

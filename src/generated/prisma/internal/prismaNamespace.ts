@@ -412,6 +412,7 @@ export const ModelName = {
   Notification: 'Notification',
   OidcConfig: 'OidcConfig',
   DirectoryConfig: 'DirectoryConfig',
+  GroupMapping: 'GroupMapping',
   UpdateCheckConfig: 'UpdateCheckConfig',
   SessionRecording: 'SessionRecording',
   RecordingChunk: 'RecordingChunk'
@@ -430,7 +431,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "accessGrant" | "auditEvent" | "auditChainState" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "updateCheckConfig" | "sessionRecording" | "recordingChunk"
+    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "accessGrant" | "auditEvent" | "auditChainState" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "groupMapping" | "updateCheckConfig" | "sessionRecording" | "recordingChunk"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1544,6 +1545,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    GroupMapping: {
+      payload: Prisma.$GroupMappingPayload<ExtArgs>
+      fields: Prisma.GroupMappingFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.GroupMappingFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GroupMappingPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.GroupMappingFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GroupMappingPayload>
+        }
+        findFirst: {
+          args: Prisma.GroupMappingFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GroupMappingPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.GroupMappingFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GroupMappingPayload>
+        }
+        findMany: {
+          args: Prisma.GroupMappingFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GroupMappingPayload>[]
+        }
+        create: {
+          args: Prisma.GroupMappingCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GroupMappingPayload>
+        }
+        createMany: {
+          args: Prisma.GroupMappingCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.GroupMappingCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GroupMappingPayload>[]
+        }
+        delete: {
+          args: Prisma.GroupMappingDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GroupMappingPayload>
+        }
+        update: {
+          args: Prisma.GroupMappingUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GroupMappingPayload>
+        }
+        deleteMany: {
+          args: Prisma.GroupMappingDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.GroupMappingUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.GroupMappingUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GroupMappingPayload>[]
+        }
+        upsert: {
+          args: Prisma.GroupMappingUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GroupMappingPayload>
+        }
+        aggregate: {
+          args: Prisma.GroupMappingAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateGroupMapping>
+        }
+        groupBy: {
+          args: Prisma.GroupMappingGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GroupMappingGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.GroupMappingCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GroupMappingCountAggregateOutputType> | number
+        }
+      }
+    }
     UpdateCheckConfig: {
       payload: Prisma.$UpdateCheckConfigPayload<ExtArgs>
       fields: Prisma.UpdateCheckConfigFieldRefs
@@ -1813,7 +1888,9 @@ export const UserScalarFieldEnum = {
   company: 'company',
   role: 'role',
   status: 'status',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  directoryManaged: 'directoryManaged',
+  directoryLastVerifiedAt: 'directoryLastVerifiedAt'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -1939,7 +2016,8 @@ export const AccessGrantScalarFieldEnum = {
   approvedById: 'approvedById',
   schedule: 'schedule',
   createdById: 'createdById',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  directoryManaged: 'directoryManaged'
 } as const
 
 export type AccessGrantScalarFieldEnum = (typeof AccessGrantScalarFieldEnum)[keyof typeof AccessGrantScalarFieldEnum]
@@ -2050,6 +2128,20 @@ export const DirectoryConfigScalarFieldEnum = {
 } as const
 
 export type DirectoryConfigScalarFieldEnum = (typeof DirectoryConfigScalarFieldEnum)[keyof typeof DirectoryConfigScalarFieldEnum]
+
+
+export const GroupMappingScalarFieldEnum = {
+  id: 'id',
+  groupDN: 'groupDN',
+  kind: 'kind',
+  role: 'role',
+  siteId: 'siteId',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type GroupMappingScalarFieldEnum = (typeof GroupMappingScalarFieldEnum)[keyof typeof GroupMappingScalarFieldEnum]
 
 
 export const UpdateCheckConfigScalarFieldEnum = {
@@ -2195,6 +2287,13 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
  * Reference to a field of type 'Bytes'
  */
 export type BytesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Bytes'>
@@ -2233,13 +2332,6 @@ export type EnumConnectorStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$
  * Reference to a field of type 'ConnectorStatus[]'
  */
 export type ListEnumConnectorStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ConnectorStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -2492,6 +2584,7 @@ export type GlobalOmitConfig = {
   notification?: Prisma.NotificationOmit
   oidcConfig?: Prisma.OidcConfigOmit
   directoryConfig?: Prisma.DirectoryConfigOmit
+  groupMapping?: Prisma.GroupMappingOmit
   updateCheckConfig?: Prisma.UpdateCheckConfigOmit
   sessionRecording?: Prisma.SessionRecordingOmit
   recordingChunk?: Prisma.RecordingChunkOmit

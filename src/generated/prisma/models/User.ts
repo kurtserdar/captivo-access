@@ -33,6 +33,8 @@ export type UserMinAggregateOutputType = {
   role: $Enums.Role | null
   status: $Enums.UserStatus | null
   createdAt: Date | null
+  directoryManaged: boolean | null
+  directoryLastVerifiedAt: Date | null
 }
 
 export type UserMaxAggregateOutputType = {
@@ -44,6 +46,8 @@ export type UserMaxAggregateOutputType = {
   role: $Enums.Role | null
   status: $Enums.UserStatus | null
   createdAt: Date | null
+  directoryManaged: boolean | null
+  directoryLastVerifiedAt: Date | null
 }
 
 export type UserCountAggregateOutputType = {
@@ -55,6 +59,8 @@ export type UserCountAggregateOutputType = {
   role: number
   status: number
   createdAt: number
+  directoryManaged: number
+  directoryLastVerifiedAt: number
   _all: number
 }
 
@@ -68,6 +74,8 @@ export type UserMinAggregateInputType = {
   role?: true
   status?: true
   createdAt?: true
+  directoryManaged?: true
+  directoryLastVerifiedAt?: true
 }
 
 export type UserMaxAggregateInputType = {
@@ -79,6 +87,8 @@ export type UserMaxAggregateInputType = {
   role?: true
   status?: true
   createdAt?: true
+  directoryManaged?: true
+  directoryLastVerifiedAt?: true
 }
 
 export type UserCountAggregateInputType = {
@@ -90,6 +100,8 @@ export type UserCountAggregateInputType = {
   role?: true
   status?: true
   createdAt?: true
+  directoryManaged?: true
+  directoryLastVerifiedAt?: true
   _all?: true
 }
 
@@ -174,6 +186,8 @@ export type UserGroupByOutputType = {
   role: $Enums.Role
   status: $Enums.UserStatus
   createdAt: Date
+  directoryManaged: boolean
+  directoryLastVerifiedAt: Date | null
   _count: UserCountAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
   _max: UserMaxAggregateOutputType | null
@@ -206,6 +220,8 @@ export type UserWhereInput = {
   role?: Prisma.EnumRoleFilter<"User"> | $Enums.Role
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  directoryManaged?: Prisma.BoolFilter<"User"> | boolean
+  directoryLastVerifiedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   passkeys?: Prisma.PasskeyListRelationFilter
   totp?: Prisma.XOR<Prisma.TotpSecretNullableScalarRelationFilter, Prisma.TotpSecretWhereInput> | null
   sessions?: Prisma.SessionListRelationFilter
@@ -224,6 +240,8 @@ export type UserOrderByWithRelationInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  directoryManaged?: Prisma.SortOrder
+  directoryLastVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   passkeys?: Prisma.PasskeyOrderByRelationAggregateInput
   totp?: Prisma.TotpSecretOrderByWithRelationInput
   sessions?: Prisma.SessionOrderByRelationAggregateInput
@@ -245,6 +263,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   role?: Prisma.EnumRoleFilter<"User"> | $Enums.Role
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  directoryManaged?: Prisma.BoolFilter<"User"> | boolean
+  directoryLastVerifiedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   passkeys?: Prisma.PasskeyListRelationFilter
   totp?: Prisma.XOR<Prisma.TotpSecretNullableScalarRelationFilter, Prisma.TotpSecretWhereInput> | null
   sessions?: Prisma.SessionListRelationFilter
@@ -263,6 +283,8 @@ export type UserOrderByWithAggregationInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  directoryManaged?: Prisma.SortOrder
+  directoryLastVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
   _min?: Prisma.UserMinOrderByAggregateInput
@@ -280,6 +302,8 @@ export type UserScalarWhereWithAggregatesInput = {
   role?: Prisma.EnumRoleWithAggregatesFilter<"User"> | $Enums.Role
   status?: Prisma.EnumUserStatusWithAggregatesFilter<"User"> | $Enums.UserStatus
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
+  directoryManaged?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  directoryLastVerifiedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
 }
 
 export type UserCreateInput = {
@@ -291,6 +315,8 @@ export type UserCreateInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
@@ -309,6 +335,8 @@ export type UserUncheckedCreateInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyUncheckedCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretUncheckedCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -327,6 +355,8 @@ export type UserUpdateInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
@@ -345,6 +375,8 @@ export type UserUncheckedUpdateInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUncheckedUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUncheckedUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -363,6 +395,8 @@ export type UserCreateManyInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
 }
 
 export type UserUpdateManyMutationInput = {
@@ -374,6 +408,8 @@ export type UserUpdateManyMutationInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type UserUncheckedUpdateManyInput = {
@@ -385,6 +421,8 @@ export type UserUncheckedUpdateManyInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type UserCountOrderByAggregateInput = {
@@ -396,6 +434,8 @@ export type UserCountOrderByAggregateInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  directoryManaged?: Prisma.SortOrder
+  directoryLastVerifiedAt?: Prisma.SortOrder
 }
 
 export type UserMaxOrderByAggregateInput = {
@@ -407,6 +447,8 @@ export type UserMaxOrderByAggregateInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  directoryManaged?: Prisma.SortOrder
+  directoryLastVerifiedAt?: Prisma.SortOrder
 }
 
 export type UserMinOrderByAggregateInput = {
@@ -418,6 +460,8 @@ export type UserMinOrderByAggregateInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  directoryManaged?: Prisma.SortOrder
+  directoryLastVerifiedAt?: Prisma.SortOrder
 }
 
 export type UserScalarRelationFilter = {
@@ -448,6 +492,14 @@ export type EnumUserStatusFieldUpdateOperationsInput = {
 
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type UserCreateNestedOneWithoutPasskeysInput = {
@@ -563,6 +615,8 @@ export type UserCreateWithoutPasskeysInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   totp?: Prisma.TotpSecretCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   invitesCreated?: Prisma.InviteCreateNestedManyWithoutCreatedByInput
@@ -580,6 +634,8 @@ export type UserUncheckedCreateWithoutPasskeysInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   totp?: Prisma.TotpSecretUncheckedCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   invitesCreated?: Prisma.InviteUncheckedCreateNestedManyWithoutCreatedByInput
@@ -613,6 +669,8 @@ export type UserUpdateWithoutPasskeysInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totp?: Prisma.TotpSecretUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   invitesCreated?: Prisma.InviteUpdateManyWithoutCreatedByNestedInput
@@ -630,6 +688,8 @@ export type UserUncheckedUpdateWithoutPasskeysInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totp?: Prisma.TotpSecretUncheckedUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   invitesCreated?: Prisma.InviteUncheckedUpdateManyWithoutCreatedByNestedInput
@@ -647,6 +707,8 @@ export type UserCreateWithoutTotpInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   invitesCreated?: Prisma.InviteCreateNestedManyWithoutCreatedByInput
@@ -664,6 +726,8 @@ export type UserUncheckedCreateWithoutTotpInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   invitesCreated?: Prisma.InviteUncheckedCreateNestedManyWithoutCreatedByInput
@@ -697,6 +761,8 @@ export type UserUpdateWithoutTotpInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   invitesCreated?: Prisma.InviteUpdateManyWithoutCreatedByNestedInput
@@ -714,6 +780,8 @@ export type UserUncheckedUpdateWithoutTotpInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   invitesCreated?: Prisma.InviteUncheckedUpdateManyWithoutCreatedByNestedInput
@@ -731,6 +799,8 @@ export type UserCreateWithoutInvitesCreatedInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
@@ -748,6 +818,8 @@ export type UserUncheckedCreateWithoutInvitesCreatedInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyUncheckedCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretUncheckedCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -781,6 +853,8 @@ export type UserUpdateWithoutInvitesCreatedInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
@@ -798,6 +872,8 @@ export type UserUncheckedUpdateWithoutInvitesCreatedInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUncheckedUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUncheckedUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -815,6 +891,8 @@ export type UserCreateWithoutSessionsInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretCreateNestedOneWithoutUserInput
   invitesCreated?: Prisma.InviteCreateNestedManyWithoutCreatedByInput
@@ -832,6 +910,8 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyUncheckedCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretUncheckedCreateNestedOneWithoutUserInput
   invitesCreated?: Prisma.InviteUncheckedCreateNestedManyWithoutCreatedByInput
@@ -865,6 +945,8 @@ export type UserUpdateWithoutSessionsInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUpdateOneWithoutUserNestedInput
   invitesCreated?: Prisma.InviteUpdateManyWithoutCreatedByNestedInput
@@ -882,6 +964,8 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUncheckedUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUncheckedUpdateOneWithoutUserNestedInput
   invitesCreated?: Prisma.InviteUncheckedUpdateManyWithoutCreatedByNestedInput
@@ -899,6 +983,8 @@ export type UserCreateWithoutGrantsSubjectInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
@@ -916,6 +1002,8 @@ export type UserUncheckedCreateWithoutGrantsSubjectInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyUncheckedCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretUncheckedCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -938,6 +1026,8 @@ export type UserCreateWithoutGrantsApprovedInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
@@ -955,6 +1045,8 @@ export type UserUncheckedCreateWithoutGrantsApprovedInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyUncheckedCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretUncheckedCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -977,6 +1069,8 @@ export type UserCreateWithoutGrantsCreatedInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
@@ -994,6 +1088,8 @@ export type UserUncheckedCreateWithoutGrantsCreatedInput = {
   role: $Enums.Role
   status?: $Enums.UserStatus
   createdAt?: Date | string
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: Date | string | null
   passkeys?: Prisma.PasskeyUncheckedCreateNestedManyWithoutUserInput
   totp?: Prisma.TotpSecretUncheckedCreateNestedOneWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -1027,6 +1123,8 @@ export type UserUpdateWithoutGrantsSubjectInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
@@ -1044,6 +1142,8 @@ export type UserUncheckedUpdateWithoutGrantsSubjectInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUncheckedUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUncheckedUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -1072,6 +1172,8 @@ export type UserUpdateWithoutGrantsApprovedInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
@@ -1089,6 +1191,8 @@ export type UserUncheckedUpdateWithoutGrantsApprovedInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUncheckedUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUncheckedUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -1117,6 +1221,8 @@ export type UserUpdateWithoutGrantsCreatedInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
@@ -1134,6 +1240,8 @@ export type UserUncheckedUpdateWithoutGrantsCreatedInput = {
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  directoryManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  directoryLastVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   passkeys?: Prisma.PasskeyUncheckedUpdateManyWithoutUserNestedInput
   totp?: Prisma.TotpSecretUncheckedUpdateOneWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -1227,6 +1335,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   role?: boolean
   status?: boolean
   createdAt?: boolean
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: boolean
   passkeys?: boolean | Prisma.User$passkeysArgs<ExtArgs>
   totp?: boolean | Prisma.User$totpArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
@@ -1246,6 +1356,8 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   role?: boolean
   status?: boolean
   createdAt?: boolean
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1257,6 +1369,8 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   role?: boolean
   status?: boolean
   createdAt?: boolean
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectScalar = {
@@ -1268,9 +1382,11 @@ export type UserSelectScalar = {
   role?: boolean
   status?: boolean
   createdAt?: boolean
+  directoryManaged?: boolean
+  directoryLastVerifiedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "phone" | "company" | "role" | "status" | "createdAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "phone" | "company" | "role" | "status" | "createdAt" | "directoryManaged" | "directoryLastVerifiedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   passkeys?: boolean | Prisma.User$passkeysArgs<ExtArgs>
   totp?: boolean | Prisma.User$totpArgs<ExtArgs>
@@ -1304,6 +1420,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     role: $Enums.Role
     status: $Enums.UserStatus
     createdAt: Date
+    directoryManaged: boolean
+    directoryLastVerifiedAt: Date | null
   }, ExtArgs["result"]["user"]>
   composites: {}
 }
@@ -1742,6 +1860,8 @@ export interface UserFieldRefs {
   readonly role: Prisma.FieldRef<"User", 'Role'>
   readonly status: Prisma.FieldRef<"User", 'UserStatus'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
+  readonly directoryManaged: Prisma.FieldRef<"User", 'Boolean'>
+  readonly directoryLastVerifiedAt: Prisma.FieldRef<"User", 'DateTime'>
 }
     
 

@@ -93,6 +93,11 @@ export type OidcConfig = Prisma.OidcConfigModel
  */
 export type DirectoryConfig = Prisma.DirectoryConfigModel
 /**
+ * Model GroupMapping
+ * 
+ */
+export type GroupMapping = Prisma.GroupMappingModel
+/**
  * Model UpdateCheckConfig
  * 
  */

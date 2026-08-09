@@ -66,6 +66,7 @@ export const ModelName = {
   Notification: 'Notification',
   OidcConfig: 'OidcConfig',
   DirectoryConfig: 'DirectoryConfig',
+  GroupMapping: 'GroupMapping',
   UpdateCheckConfig: 'UpdateCheckConfig',
   SessionRecording: 'SessionRecording',
   RecordingChunk: 'RecordingChunk'
@@ -95,7 +96,9 @@ export const UserScalarFieldEnum = {
   company: 'company',
   role: 'role',
   status: 'status',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  directoryManaged: 'directoryManaged',
+  directoryLastVerifiedAt: 'directoryLastVerifiedAt'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -221,7 +224,8 @@ export const AccessGrantScalarFieldEnum = {
   approvedById: 'approvedById',
   schedule: 'schedule',
   createdById: 'createdById',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  directoryManaged: 'directoryManaged'
 } as const
 
 export type AccessGrantScalarFieldEnum = (typeof AccessGrantScalarFieldEnum)[keyof typeof AccessGrantScalarFieldEnum]
@@ -332,6 +336,20 @@ export const DirectoryConfigScalarFieldEnum = {
 } as const
 
 export type DirectoryConfigScalarFieldEnum = (typeof DirectoryConfigScalarFieldEnum)[keyof typeof DirectoryConfigScalarFieldEnum]
+
+
+export const GroupMappingScalarFieldEnum = {
+  id: 'id',
+  groupDN: 'groupDN',
+  kind: 'kind',
+  role: 'role',
+  siteId: 'siteId',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type GroupMappingScalarFieldEnum = (typeof GroupMappingScalarFieldEnum)[keyof typeof GroupMappingScalarFieldEnum]
 
 
 export const UpdateCheckConfigScalarFieldEnum = {
