@@ -78,11 +78,12 @@ Now a vendor with a Captivo grant reaches Guacamole through Captivo — passkey 
 access, and every request in the Captivo audit log. (WebSocket passthrough — which Guacamole's tunnel needs —
 is already supported by the Captivo proxy.)
 
-## 4. Single sign-on (optional, off by default)
-Optionally, gateway Sites can auto-log the vendor into Guacamole — no second login. Captivo injects the
-vendor's **email** as a trusted header (`X-Captivo-User`); Guacamole's header-auth extension reads it and
-signs the vendor in automatically. **This is off by default** — enable it by uncommenting `HEADER_ENABLED`
-and `HTTP_AUTH_HEADER` in `docker-compose.gateway.yml`, then restarting Guacamole.
+## 4. Single sign-on (enabled by default)
+Gateway Sites auto-log the vendor into Guacamole — no second login. Captivo injects the vendor's **email**
+as a trusted header (`X-Captivo-User`); Guacamole's header-auth extension reads it and signs the vendor in
+automatically. **This is enabled by default** (`HEADER_ENABLED` / `HTTP_AUTH_HEADER` in
+`docker-compose.gateway.yml`). To turn it **off**, comment both lines and recreate the Guacamole container;
+vendors then use Guacamole's normal login (one extra login).
 
 - **Trade-off — decide before enabling.** Header-auth SSO **suppresses Guacamole's logout and trims
   in-session navigation** (logout is meaningless when Captivo re-authenticates every request), so a vendor

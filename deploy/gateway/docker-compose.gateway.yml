@@ -84,22 +84,20 @@ services:
       # it publishes cleanly as a Captivo Site: the vendor hits the bare hostname
       # and the Site's Internal address is just http://cap-guacamole:8080 (no path).
       WEBAPP_CONTEXT: ROOT
-      # Single sign-on (OPTIONAL, OFF by default) — uncomment BOTH lines below to
-      # enable it. When on, Guacamole trusts the X-Captivo-User header the Captivo
-      # data-plane injects (it strips any client-supplied copy) and auto-logs the
-      # vendor in, skipping Guacamole's own login. Keep POSTGRESQL_* either way —
-      # postgres holds the per-user connections. Both env vars are required: the
-      # image's start.sh only loads the header-auth extension when HEADER_ENABLED
-      # is true (HTTP_AUTH_HEADER alone is a no-op).
+      # Single sign-on (ENABLED) — Guacamole trusts the X-Captivo-User header the
+      # Captivo data-plane injects (it strips any client-supplied copy) and
+      # auto-logs the vendor in, skipping Guacamole's own login. POSTGRESQL_*
+      # stays either way — postgres holds the per-user connections. Both env vars
+      # are required: the image loads the header-auth extension only when
+      # HEADER_ENABLED is true (HTTP_AUTH_HEADER alone is a no-op).
       #
-      # TRADE-OFF — read before enabling: header-auth SSO suppresses Guacamole's
-      # logout and trims in-session navigation (logout is meaningless when Captivo
-      # re-authenticates every request), so a vendor tends to get "stuck" in one
-      # connection and can't easily switch or sign out. SSO fits fast single-target
-      # access; if vendors browse/switch between multiple connections, leave it OFF
-      # and let them use Guacamole's normal login (the small cost is a second login).
-      # HEADER_ENABLED: "true"
-      # HTTP_AUTH_HEADER: X-Captivo-User
+      # NOTE — header-auth SSO suppresses Guacamole's own logout and trims
+      # in-session navigation (logout is meaningless when Captivo re-authenticates
+      # every request). It fits fast single-target access. To turn SSO OFF, comment
+      # BOTH lines below and recreate the guacamole container; vendors then use
+      # Guacamole's normal login (one extra login).
+      HEADER_ENABLED: "true"
+      HTTP_AUTH_HEADER: X-Captivo-User
     # Bind to localhost only: Captivo (via the connector) reaches this over the
     # LAN; it is NOT exposed to the internet directly. Publish it through Captivo
     # as a Site instead. Change the left side if the connector reaches it by a
