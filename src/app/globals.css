@@ -209,9 +209,23 @@ a{color:inherit;}
 .notice.success{color:var(--ok);background:var(--ok-soft);border-color:transparent;}
 
 /* ---- auth screens ---- */
-.auth{min-height:100vh;display:grid;place-items:center;padding:2rem;}
-.auth-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
-  padding:2rem;width:min(92vw,26rem);box-shadow:var(--shadow);text-align:center;}
+.auth{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;}
+.auth-panel{padding:2.6rem 2.4rem;color:#fff;display:flex;flex-direction:column;gap:1.15rem;position:relative;overflow:hidden;background:linear-gradient(150deg,#2743b0,#3358d4);}
+.auth-panel::before{content:"";position:absolute;inset:0;opacity:.15;background-image:radial-gradient(#fff 1.1px,transparent 1.1px);background-size:20px 20px;}
+.auth-panel>*{position:relative;}
+.auth-panel-top{display:flex;align-items:center;gap:.6rem;}
+.auth-panel-mark{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.16);display:grid;place-items:center;flex:0 0 auto;}
+.auth-panel-word{font-weight:700;font-size:1.05rem;letter-spacing:-.01em;}
+.auth-panel-title{font-size:1.55rem;line-height:1.18;margin:.5rem 0 0;max-width:15ch;font-weight:700;}
+.auth-panel-lede{color:rgba(255,255,255,.85);font-size:.92rem;margin:0;max-width:34ch;}
+.auth-panel-list{list-style:none;margin:.3rem 0 0;padding:0;display:flex;flex-direction:column;gap:.55rem;}
+.auth-panel-list li{display:flex;align-items:center;gap:.55rem;font-size:.88rem;color:rgba(255,255,255,.92);}
+.auth-panel-list li::before{content:"\2713";font-weight:700;display:grid;place-items:center;width:1.15rem;height:1.15rem;border-radius:50%;background:rgba(255,255,255,.18);font-size:.7rem;flex:0 0 auto;}
+.auth-panel-foot{margin-top:auto;color:rgba(255,255,255,.7);font-size:.76rem;}
+.auth-main{display:grid;place-items:center;padding:2.6rem 2rem;background:var(--surface);}
+.auth-card{width:min(92vw,23rem);text-align:center;}
+.auth-mark{display:none;}
+@media(max-width:680px){.auth{grid-template-columns:1fr;}.auth-panel{display:none;}.auth-main{padding:2rem 1.4rem;}.auth-mark{display:block;}}
 .auth-card h1{font-size:1.35rem;margin-bottom:.4rem;}
 .auth-card p{color:var(--muted);margin:0 0 1.3rem;font-size:.9rem;}
 .auth-card .field{text-align:left;}
