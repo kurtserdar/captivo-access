@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { managerVersion } from "@/lib/version";
@@ -95,6 +96,7 @@ export default async function AdminConnectorsPage() {
                     <td>
                       {c.status !== "REVOKED" ? (
                         <div className="row-actions">
+                          <Link href={`/admin/connectors/${c.id}`} className="btn sm">Details</Link>
                           {isConnectorOutdated(c.version, mgr) && (
                             <UpdateConnectorButton command={updateCommand} managerUrlIsLocal={managerUrlIsLocal} />
                           )}
