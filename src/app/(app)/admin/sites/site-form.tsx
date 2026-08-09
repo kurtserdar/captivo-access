@@ -39,10 +39,12 @@ export function SiteForm({
   connectors,
   site,
   recordingEnabled = false,
+  onDone,
 }: {
   connectors: { id: string; name: string }[];
   site?: SiteInitial;
   recordingEnabled?: boolean;
+  onDone?: () => void;
 }) {
   const router = useRouter();
   const [connectorId, setConnectorId] = useState(site?.connectorId ?? connectors[0]?.id ?? "");
@@ -110,8 +112,13 @@ export function SiteForm({
         return;
       }
       if (site) {
-        router.push("/admin/sites");
-        router.refresh();
+        if (onDone) {
+          onDone();
+          router.refresh();
+        } else {
+          router.push("/admin/sites");
+          router.refresh();
+        }
       } else {
         window.location.reload();
       }
