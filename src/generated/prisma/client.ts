@@ -112,6 +112,11 @@ export type Notification = Prisma.NotificationModel
  */
 export type OidcConfig = Prisma.OidcConfigModel
 /**
+ * Model DirectoryConfig
+ * 
+ */
+export type DirectoryConfig = Prisma.DirectoryConfigModel
+/**
  * Model UpdateCheckConfig
  * 
  */

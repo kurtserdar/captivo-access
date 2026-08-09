@@ -49,6 +49,32 @@ export async function probeConnector(input: {
   return { ok: true, latencyMs: data.latencyMs };
 }
 
+// testDirectory asks the data-plane to reach the customer's LDAP/AD directory
+// through the connector's tunnel and run a bind + base-DN search — the
+// enabling round-trip for AD integration. bindPassword is sent cleartext over
+// the internal, secret-gated channel (the Manager decrypts it first).
+export async function testDirectory(input: {
+  connectorId: string;
+  host: string;
+  port: number;
+  security: "PLAIN" | "STARTTLS" | "LDAPS";
+  insecureSkipVerify: boolean;
+  baseDN: string;
+  bindDN: string;
+  bindPassword: string;
+}): Promise<{ ok: boolean; baseDnFound?: boolean; error?: string }> {
+  const base = process.env.DATAPLANE_URL || "http://access-dataplane:3102";
+  const secret = process.env.DATAPLANE_SECRET || "";
+  const res = await fetch(`${base}/ldap-test`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-dataplane-secret": secret },
+    body: JSON.stringify(input),
+  }).catch(() => null);
+  if (!res) return { ok: false, error: "The data-plane is unreachable." };
+  if (!res.ok) return { ok: false, error: "The directory test request failed." };
+  return res.json();
+}
+
 // kickConnector tells the data-plane to close a connector's live yamux
 // session immediately (used on revoke, so a currently-connected connector
 // doesn't stay proxyable until its next keepalive timeout). Best-effort:

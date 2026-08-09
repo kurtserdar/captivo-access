@@ -411,6 +411,7 @@ export const ModelName = {
   SmtpConfig: 'SmtpConfig',
   Notification: 'Notification',
   OidcConfig: 'OidcConfig',
+  DirectoryConfig: 'DirectoryConfig',
   UpdateCheckConfig: 'UpdateCheckConfig',
   SessionRecording: 'SessionRecording',
   RecordingChunk: 'RecordingChunk'
@@ -429,7 +430,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "accessGrant" | "auditEvent" | "auditChainState" | "smtpConfig" | "notification" | "oidcConfig" | "updateCheckConfig" | "sessionRecording" | "recordingChunk"
+    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "accessGrant" | "auditEvent" | "auditChainState" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "updateCheckConfig" | "sessionRecording" | "recordingChunk"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1469,6 +1470,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    DirectoryConfig: {
+      payload: Prisma.$DirectoryConfigPayload<ExtArgs>
+      fields: Prisma.DirectoryConfigFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DirectoryConfigFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DirectoryConfigPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DirectoryConfigFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DirectoryConfigPayload>
+        }
+        findFirst: {
+          args: Prisma.DirectoryConfigFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DirectoryConfigPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DirectoryConfigFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DirectoryConfigPayload>
+        }
+        findMany: {
+          args: Prisma.DirectoryConfigFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DirectoryConfigPayload>[]
+        }
+        create: {
+          args: Prisma.DirectoryConfigCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DirectoryConfigPayload>
+        }
+        createMany: {
+          args: Prisma.DirectoryConfigCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DirectoryConfigCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DirectoryConfigPayload>[]
+        }
+        delete: {
+          args: Prisma.DirectoryConfigDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DirectoryConfigPayload>
+        }
+        update: {
+          args: Prisma.DirectoryConfigUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DirectoryConfigPayload>
+        }
+        deleteMany: {
+          args: Prisma.DirectoryConfigDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DirectoryConfigUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DirectoryConfigUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DirectoryConfigPayload>[]
+        }
+        upsert: {
+          args: Prisma.DirectoryConfigUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DirectoryConfigPayload>
+        }
+        aggregate: {
+          args: Prisma.DirectoryConfigAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDirectoryConfig>
+        }
+        groupBy: {
+          args: Prisma.DirectoryConfigGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DirectoryConfigGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DirectoryConfigCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DirectoryConfigCountAggregateOutputType> | number
+        }
+      }
+    }
     UpdateCheckConfig: {
       payload: Prisma.$UpdateCheckConfigPayload<ExtArgs>
       fields: Prisma.UpdateCheckConfigFieldRefs
@@ -1956,6 +2031,27 @@ export const OidcConfigScalarFieldEnum = {
 export type OidcConfigScalarFieldEnum = (typeof OidcConfigScalarFieldEnum)[keyof typeof OidcConfigScalarFieldEnum]
 
 
+export const DirectoryConfigScalarFieldEnum = {
+  id: 'id',
+  enabled: 'enabled',
+  connectorId: 'connectorId',
+  host: 'host',
+  port: 'port',
+  security: 'security',
+  insecureSkipVerify: 'insecureSkipVerify',
+  baseDN: 'baseDN',
+  bindDN: 'bindDN',
+  bindPassword: 'bindPassword',
+  lastTestedAt: 'lastTestedAt',
+  lastTestOk: 'lastTestOk',
+  lastTestDetail: 'lastTestDetail',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DirectoryConfigScalarFieldEnum = (typeof DirectoryConfigScalarFieldEnum)[keyof typeof DirectoryConfigScalarFieldEnum]
+
+
 export const UpdateCheckConfigScalarFieldEnum = {
   id: 'id',
   enabled: 'enabled',
@@ -2395,6 +2491,7 @@ export type GlobalOmitConfig = {
   smtpConfig?: Prisma.SmtpConfigOmit
   notification?: Prisma.NotificationOmit
   oidcConfig?: Prisma.OidcConfigOmit
+  directoryConfig?: Prisma.DirectoryConfigOmit
   updateCheckConfig?: Prisma.UpdateCheckConfigOmit
   sessionRecording?: Prisma.SessionRecordingOmit
   recordingChunk?: Prisma.RecordingChunkOmit

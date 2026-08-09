@@ -65,6 +65,7 @@ export const ModelName = {
   SmtpConfig: 'SmtpConfig',
   Notification: 'Notification',
   OidcConfig: 'OidcConfig',
+  DirectoryConfig: 'DirectoryConfig',
   UpdateCheckConfig: 'UpdateCheckConfig',
   SessionRecording: 'SessionRecording',
   RecordingChunk: 'RecordingChunk'
@@ -310,6 +311,27 @@ export const OidcConfigScalarFieldEnum = {
 } as const
 
 export type OidcConfigScalarFieldEnum = (typeof OidcConfigScalarFieldEnum)[keyof typeof OidcConfigScalarFieldEnum]
+
+
+export const DirectoryConfigScalarFieldEnum = {
+  id: 'id',
+  enabled: 'enabled',
+  connectorId: 'connectorId',
+  host: 'host',
+  port: 'port',
+  security: 'security',
+  insecureSkipVerify: 'insecureSkipVerify',
+  baseDN: 'baseDN',
+  bindDN: 'bindDN',
+  bindPassword: 'bindPassword',
+  lastTestedAt: 'lastTestedAt',
+  lastTestOk: 'lastTestOk',
+  lastTestDetail: 'lastTestDetail',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DirectoryConfigScalarFieldEnum = (typeof DirectoryConfigScalarFieldEnum)[keyof typeof DirectoryConfigScalarFieldEnum]
 
 
 export const UpdateCheckConfigScalarFieldEnum = {

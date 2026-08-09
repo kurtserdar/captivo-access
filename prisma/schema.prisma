@@ -274,6 +274,24 @@ model OidcConfig {
 }
 
 // Singleton (id = "singleton") holding GitHub release check configuration.
+model DirectoryConfig {
+  id                 String    @id
+  enabled            Boolean   @default(false)
+  connectorId        String?
+  host               String    @default("")
+  port               Int       @default(389)
+  security           String    @default("STARTTLS") // PLAIN | STARTTLS | LDAPS
+  insecureSkipVerify Boolean   @default(false)
+  baseDN             String    @default("")
+  bindDN             String    @default("")
+  bindPassword       String    @default("") // encrypted at rest (lib/crypto)
+  lastTestedAt       DateTime?
+  lastTestOk         Boolean?
+  lastTestDetail     String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
 model UpdateCheckConfig {
   id            String    @id
   enabled       Boolean   @default(true)
