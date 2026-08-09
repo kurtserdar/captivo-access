@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/current-user";
 import { listUserGrants } from "@/lib/access/grants";
 import { classifyGrant } from "@/lib/access/evaluate";
+import { recordingEnabled } from "@/lib/recording/enabled";
 import { RequestAccessForm } from "./request-access-form";
 import { AccessView, type AccessRow } from "./access-view";
 
@@ -11,6 +12,7 @@ export default async function AccessPage() {
   const user = await requireUser();
   const grants = await listUserGrants(user.id);
   const now = new Date();
+  const recEnabled = recordingEnabled();
 
   const rows: AccessRow[] = [];
   for (const g of grants) {
@@ -31,6 +33,7 @@ export default async function AccessPage() {
       schedule: g.schedule,
       status,
       denyReason: g.denyReason ?? null,
+      recorded: recEnabled && g.site.recordSessions,
     });
   }
 

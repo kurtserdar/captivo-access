@@ -14,6 +14,16 @@ export interface AccessRow {
   schedule: unknown;
   status: "active" | "upcoming" | "off_hours" | "pending" | "denied";
   denyReason: string | null;
+  recorded: boolean;
+}
+
+function RecordedTag({ r }: { r: AccessRow }) {
+  if (!r.recorded) return null;
+  return (
+    <div className="cell-sub" title="Your activity in this app is recorded for security and compliance.">
+      <span style={{ color: "#ef4444" }}>●</span> Recorded
+    </div>
+  );
 }
 
 type View = "cards" | "list";
@@ -120,6 +130,7 @@ export function AccessView({ rows }: { rows: AccessRow[] }) {
                       <span className="cell-truncate" title={r.hostname}>{r.hostname}</span>
                     </div>
                     <div className="cell-sub"><Window r={r} /></div>
+                    <RecordedTag r={r} />
                     <div className="access-card-foot"><RowAction r={r} /></div>
                   </div>
                 ))}
@@ -145,6 +156,7 @@ export function AccessView({ rows }: { rows: AccessRow[] }) {
                         <td>
                           <StatusPill status={r.status} />
                           {r.status === "denied" && r.denyReason && <div className="cell-sub">{r.denyReason}</div>}
+                          <RecordedTag r={r} />
                         </td>
                         <td><RowAction r={r} /></td>
                       </tr>
