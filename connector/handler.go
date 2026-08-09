@@ -37,7 +37,7 @@ func resolveUpstreamTarget(upstreamURL, path string, allow *TargetMatcher) (targ
 	if err != nil || (base.Scheme != "http" && base.Scheme != "https") || base.Hostname() == "" {
 		return nil, nil, "bad upstream url"
 	}
-	if !allow.Allowed(base.Host) {
+	if !egressAllowed(allow, base.Host) {
 		denied()
 		return nil, nil, "target not allowed" // egress boundary — fail closed
 	}
@@ -87,10 +87,27 @@ func handleStream(st io.ReadWriteCloser, allow *TargetMatcher) {
 	}
 }
 
-// handleControl reports telemetry to the data-plane every 10s until the stream
-// dies. (The opening ControlHello was already read as the dispatch frame.)
+// handleControl runs the control stream both ways: it reads pushed policy frames
+// (applying them live) and writes telemetry every 10s, until the stream dies.
+// (The opening ControlHello was already read as the dispatch frame.)
 func handleControl(st io.ReadWriteCloser) {
 	defer st.Close()
+	done := make(chan struct{})
+	// reader: apply pushed policy frames
+	go func() {
+		defer close(done)
+		for {
+			b, err := tunnel.ReadFrame(st)
+			if err != nil {
+				return
+			}
+			var p tunnel.Policy
+			if json.Unmarshal(b, &p) == nil {
+				applyPolicy(p)
+			}
+		}
+	}()
+	// writer: telemetry every 10s
 	tick := time.NewTicker(10 * time.Second)
 	defer tick.Stop()
 	for {
@@ -100,7 +117,11 @@ func handleControl(st io.ReadWriteCloser) {
 				return
 			}
 		}
-		<-tick.C
+		select {
+		case <-done:
+			return
+		case <-tick.C:
+		}
 	}
 }
 
@@ -120,7 +141,7 @@ func handleLdap(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 		writeLdapErr(st, "bad target")
 		return
 	}
-	if !allow.Allowed(lr.Target) {
+	if !egressAllowed(allow, lr.Target) {
 		denied()
 		writeLdapErr(st, "target not allowed") // egress boundary — fail closed
 		return
@@ -405,7 +426,7 @@ func handleProbe(st io.Writer, allow *TargetMatcher, reqBytes []byte) {
 		writeProbe(st, tunnel.ProbeResponse{Ok: false, Error: "bad upstream url"})
 		return
 	}
-	if !allow.Allowed(baseURL.Host) {
+	if !egressAllowed(allow, baseURL.Host) {
 		writeProbe(st, tunnel.ProbeResponse{Ok: false, Error: "target not allowed"}) // egress boundary — fail closed
 		return
 	}
