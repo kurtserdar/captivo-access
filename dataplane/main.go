@@ -100,6 +100,21 @@ func main() {
 		reg.Remove(body.ConnectorID)
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	})
+	in.HandleFunc("/ldap-test", func(w http.ResponseWriter, r *http.Request) {
+		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		var body struct {
+			ConnectorID string `json:"connectorId"`
+			LdapConfig
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_body"})
+			return
+		}
+		writeJSON(w, http.StatusOK, TestLdap(reg.Get(body.ConnectorID), body.LdapConfig))
+	})
 	in.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok")) })
 	go func() { log.Fatal(http.ListenAndServe(env("INTERNAL_ADDR", ":3102"), in)) }()
 
