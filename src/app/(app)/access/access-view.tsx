@@ -23,7 +23,7 @@ function RecordedTag({ r }: { r: AccessRow }) {
   if (!r.recorded) return null;
   return (
     <div className="cell-sub" title="Your activity in this app is recorded for security and compliance.">
-      <span style={{ color: "#ef4444" }}>●</span> Recorded
+      <span style={{ color: "var(--danger)" }}>●</span> Recorded
     </div>
   );
 }
