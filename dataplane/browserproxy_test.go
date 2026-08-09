@@ -25,6 +25,7 @@ type fakeControl struct {
 	resolveErr error
 
 	siteID, connID, upstream string
+	clipboardMode            string
 	insecureSkipVerify       bool
 	recordSessions           bool
 	gateway                  bool
@@ -46,8 +47,8 @@ func (f *fakeControl) ResolveSession(string) (string, string, error) {
 	return f.userID, f.email, f.resolveErr
 }
 
-func (f *fakeControl) SiteByHost(string) (string, string, string, bool, bool, bool, error) {
-	return f.siteID, f.connID, f.upstream, f.insecureSkipVerify, f.recordSessions, f.gateway, f.siteErr
+func (f *fakeControl) SiteByHost(string) (string, string, string, string, bool, bool, bool, error) {
+	return f.siteID, f.connID, f.upstream, f.clipboardMode, f.insecureSkipVerify, f.recordSessions, f.gateway, f.siteErr
 }
 
 func (f *fakeControl) CheckAccess(string, string) (bool, string, error) {
@@ -1024,5 +1025,48 @@ func TestConsentPage(t *testing.T) {
 	}
 	if strings.Contains(body, "<script") {
 		t.Fatalf("consent page must contain no script")
+	}
+}
+
+func TestClipboardScriptModes(t *testing.T) {
+	cases := map[string]struct{ copy, cut, paste bool }{
+		"allow":    {false, false, false},
+		"no_copy":  {true, true, false},
+		"no_paste": {false, false, true},
+		"none":     {true, true, true},
+	}
+	for mode, want := range cases {
+		if got := clipboardRestricted(mode); got != (mode != "allow") {
+			t.Errorf("%s: clipboardRestricted=%v", mode, got)
+		}
+		s := clipboardScript(mode)
+		if has := strings.Contains(s, "'copy'"); has != want.copy {
+			t.Errorf("%s: copy listener=%v want %v", mode, has, want.copy)
+		}
+		if has := strings.Contains(s, "'cut'"); has != want.cut {
+			t.Errorf("%s: cut listener=%v want %v", mode, has, want.cut)
+		}
+		if has := strings.Contains(s, "'paste'"); has != want.paste {
+			t.Errorf("%s: paste listener=%v want %v", mode, has, want.paste)
+		}
+		// Capture-phase (true) is required so the page can't re-enable the action.
+		if want.copy || want.paste {
+			if !strings.Contains(s, ",true)") {
+				t.Errorf("%s: listeners must be capture-phase", mode)
+			}
+		}
+	}
+}
+
+func TestInjectBeforeBodyAnchors(t *testing.T) {
+	tag := []byte("<x>")
+	if got := string(injectBeforeBody([]byte("<html><head></head><body>hi</body></html>"), tag)); got != "<html><head><x></head><body>hi</body></html>" {
+		t.Errorf("head anchor: %s", got)
+	}
+	if got := string(injectBeforeBody([]byte("<body>hi</body>"), tag)); got != "<body>hi<x></body>" {
+		t.Errorf("body anchor: %s", got)
+	}
+	if got := string(injectBeforeBody([]byte("plain"), tag)); got != "<x>plain" {
+		t.Errorf("prepend: %s", got)
 	}
 }

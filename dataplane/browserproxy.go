@@ -239,7 +239,7 @@ func (p *BrowserProxy) consentPage(w http.ResponseWriter, r *http.Request) {
 // production use.
 type proxyControl interface {
 	ResolveSession(token string) (userID, email string, err error)
-	SiteByHost(host string) (siteID, connectorID, upstreamUrl string, insecureSkipVerify, recordSessions, gateway bool, err error)
+	SiteByHost(host string) (siteID, connectorID, upstreamUrl, clipboardMode string, insecureSkipVerify, recordSessions, gateway bool, err error)
 	CheckAccess(userID, siteID string) (allow bool, reason string, err error)
 	RecorderJS() ([]byte, error)
 	SendRecording(userID, siteID, host string, body []byte) error
@@ -269,7 +269,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Site by host.
-	siteID, connectorID, upstream, insecureSkipVerify, recordSessions, gateway, err := p.ctrl.SiteByHost(host)
+	siteID, connectorID, upstream, clipboardMode, insecureSkipVerify, recordSessions, gateway, err := p.ctrl.SiteByHost(host)
 	if err != nil {
 		if errors.Is(err, ErrNoSite) {
 			errorPage(w, http.StatusNotFound, "No application here", "There's no application published at this address.", "Check the link, or contact your administrator.")
@@ -393,7 +393,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	copyRespHeaders(w.Header(), resp.Header)
 	body := tunnel.NewBodyReader(st)
-	written := p.writeProxyResponse(w, resp, body, recordSessions)
+	written := p.writeProxyResponse(w, resp, body, recordSessions, clipboardMode)
 	accessLog(userID, siteID, host, r.Method, r.URL.Path, resp.Status, written)
 	p.audit.Enqueue(auditEvent("ALLOW", "", userID, siteID, host, r, resp.Status, written))
 }
@@ -407,12 +407,18 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // recomputes Content-Length. Every other response — non-recorded Sites,
 // non-HTML content types, and oversized HTML bodies — is streamed exactly
 // as it arrives, unmodified.
-func (p *BrowserProxy) writeProxyResponse(w http.ResponseWriter, resp tunnel.DialResponse, body io.Reader, recordSessions bool) int64 {
+func (p *BrowserProxy) writeProxyResponse(w http.ResponseWriter, resp tunnel.DialResponse, body io.Reader, recordSessions bool, clipboardMode string) int64 {
+	// Two independent reasons to buffer + rewrite an HTML body: session
+	// recording (inject the rrweb recorder) and clipboard restriction
+	// (inject the clipboard guard). Either one needs the same treatment —
+	// buffer, inject before </body>, strip CSP so the injected inline
+	// script runs. When neither applies, stream the body through untouched.
+	inject := recordSessions || clipboardRestricted(clipboardMode)
 	// isCompressed: an upstream that ignored the Accept-Encoding: identity
 	// sent toward it (Step 2) and returned compressed HTML anyway must not
 	// have its bytes mangled by injectRecorder, which only understands raw
 	// HTML — stream it through unchanged instead, same as the non-HTML path.
-	if !recordSessions || !isHTMLContentType(resp.Header) || isCompressed(resp.Header) {
+	if !inject || !isHTMLContentType(resp.Header) || isCompressed(resp.Header) {
 		w.WriteHeader(resp.Status)
 		written, _ := io.Copy(w, body)
 		return written
@@ -432,7 +438,13 @@ func (p *BrowserProxy) writeProxyResponse(w http.ResponseWriter, resp tunnel.Dia
 		return int64(n1) + n2
 	}
 
-	injected := injectRecorder(buf)
+	injected := buf
+	if recordSessions {
+		injected = injectRecorder(injected)
+	}
+	if clipboardRestricted(clipboardMode) {
+		injected = injectBeforeBody(injected, []byte(clipboardScript(clipboardMode)))
+	}
 	w.Header().Del("Content-Security-Policy")
 	w.Header().Del("Content-Security-Policy-Report-Only")
 	w.Header().Set("Content-Length", strconv.Itoa(len(injected)))
@@ -485,6 +497,30 @@ func isCompressed(header map[string][]string) bool {
 // page rendering.
 const recorderScriptTag = `<script src="/__captivo/rec.js" defer></script>`
 
+// clipboardRestricted reports whether a site's clipboardMode calls for
+// injecting the clipboard guard. "allow" (and any unknown value) means no
+// restriction; gateway sites always resolve to "allow" before reaching here.
+func clipboardRestricted(mode string) bool {
+	return mode == "no_copy" || mode == "no_paste" || mode == "none"
+}
+
+// clipboardScript builds an inline <script> that suppresses clipboard copy
+// (cut/copy) and/or paste inside the vendor's browser for a restricted site.
+// It's a deterrent, not a hard control — a determined vendor can disable
+// JavaScript; the hard controls live at the gateway (Guacamole). The
+// capture-phase (useCapture=true) listeners on document fire before the
+// page's own handlers, so the app can't re-enable the blocked action.
+func clipboardScript(mode string) string {
+	s := `<script>(function(){function b(e){e.preventDefault();e.stopImmediatePropagation();}`
+	if mode == "no_copy" || mode == "none" {
+		s += `document.addEventListener('copy',b,true);document.addEventListener('cut',b,true);`
+	}
+	if mode == "no_paste" || mode == "none" {
+		s += `document.addEventListener('paste',b,true);`
+	}
+	return s + `})();</script>`
+}
+
 // maxInjectableBodyBytes caps how large a recorded-Site HTML response body
 // may be for injectRecorder to run against a fully-buffered copy. Above
 // this, the response is streamed unchanged (no injection) rather than
@@ -507,14 +543,21 @@ const maxInjectableBodyBytes = 8 << 20 // 8 MiB
 // are themselves pure ASCII, so matching case-insensitively per byte against
 // the untouched original is both correct and simpler.
 func injectRecorder(body []byte) []byte {
+	return injectBeforeBody(body, []byte(recorderScriptTag))
+}
+
+// injectBeforeBody inserts tag into an HTML document at the same anchor as
+// injectRecorder (before </head>, else </body>, else prepended), exactly
+// once. Shared by the recorder and clipboard-guard injections. Pure — no I/O.
+func injectBeforeBody(body, tag []byte) []byte {
 	if i := indexFold(body, []byte("</head>")); i >= 0 {
-		return insertAt(body, []byte(recorderScriptTag), i)
+		return insertAt(body, tag, i)
 	}
 	if i := indexFold(body, []byte("</body>")); i >= 0 {
-		return insertAt(body, []byte(recorderScriptTag), i)
+		return insertAt(body, tag, i)
 	}
-	out := make([]byte, 0, len(body)+len(recorderScriptTag))
-	out = append(out, recorderScriptTag...)
+	out := make([]byte, 0, len(body)+len(tag))
+	out = append(out, tag...)
 	out = append(out, body...)
 	return out
 }
