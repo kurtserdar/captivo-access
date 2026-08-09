@@ -203,6 +203,7 @@ export const SiteScalarFieldEnum = {
   probeDetail: 'probeDetail',
   probeLatencyMs: 'probeLatencyMs',
   recordSessions: 'recordSessions',
+  clipboardMode: 'clipboardMode',
   accessMode: 'accessMode',
   logo: 'logo',
   logoType: 'logoType',
