@@ -10,14 +10,19 @@ It has **three listeners**:
 
 - a **public WSS endpoint** (`:3101`) each connector dials into, backed by a
   [yamux](https://github.com/hashicorp/yamux)-multiplexed session and tracked in
-  an in-memory registry of connected connectors;
+  an in-memory registry of connected connectors; a per-connector **control
+  stream** on that session carries connector telemetry (version, uptime,
+  connection counts, throughput, a recent-log tail) up to the Manager and
+  egress-policy updates down to the connector;
 - a **browser-facing identity-aware reverse proxy** (`:3103`) that serves vendor
   traffic per site — it checks the session cookie and the access grant on
   **every request** (fail-closed) before streaming it down the right connector's
   tunnel, and emits an audit event for each decision. It also relays
-  **WebSocket** upgrades transparently, and — for Sites with recording enabled —
-  injects an rrweb recorder into HTML responses and serves the reserved
-  `/__captivo/*` endpoints (never forwarded upstream);
+  **WebSocket** upgrades transparently, and — for Sites with recording enabled
+  or a clipboard restriction — injects an rrweb recorder and/or a clipboard
+  guard into HTML responses (stripping the upstream CSP on any injected
+  response so the inline script runs) and serves the reserved `/__captivo/*`
+  endpoints (never forwarded upstream);
 - an **internal API** (`:3102`) the Manager calls to round-trip an allowlisted
   HTTP request (`/proxy`) or run a reachability probe (`/probe`) through a
   specific connector.

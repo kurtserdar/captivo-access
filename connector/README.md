@@ -11,7 +11,10 @@ private VPC, home lab — anywhere that isn't internet-reachable). It:
   Manager sends for each request — that address is defined once, per app,
   as a **Site** in the Manager console, not on the connector itself,
 - relays **WebSocket** connections and answers **TCP reachability probes** for
-  the same targets — both bounded by the same `ALLOWED_TARGETS` check as HTTP.
+  the same targets — both bounded by the same `ALLOWED_TARGETS` check as HTTP,
+- reports live **telemetry** (version, uptime, connection counts, throughput, a
+  recent-log tail) to the Manager and applies an optional Manager-pushed
+  **egress policy** — both over a control stream on the same outbound tunnel.
 
 It shares wire-format and dial types with the data-plane via the
 [`tunnel`](../tunnel) module.
@@ -30,6 +33,13 @@ Upstream targets themselves aren't configured on the connector at all —
 each internal app is defined as a **Site** (with its internal address) in
 the Manager console, and the connector dials whatever address the Manager
 sends it for a given request, subject to `ALLOWED_TARGETS` if set.
+
+The Manager can also push a per-connector **egress policy** (set on the
+connector's detail page). It combines with `ALLOWED_TARGETS` as an
+**intersection**: a target must satisfy both to be dialed. `ALLOWED_TARGETS`
+(set on the container, on-host) is the hard ceiling — a Manager-pushed policy
+can only tighten it further, never widen it, so a compromised control plane
+can't make a connector reach something its local boundary forbids.
 
 ## Ports
 

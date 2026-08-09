@@ -19,6 +19,13 @@ the connector tunnel keeps carrying only HTTP + WebSocket (which it already does
 TCP" problem. The Guacamole web UI is just another internal web app that you publish through Captivo.
 
 ## 1. Get the pack + deploy — one command
+
+> **Easiest — from the console.** Admin console → **Connectors → Set up gateway**
+> gives you a single copy-paste line, `curl -fsSL <manager>/gateway/install.sh | sh`,
+> that fetches the compose and runs setup for you on the connector host. The
+> manual two-file steps below are the exact equivalent — use them if you'd
+> rather inspect the script first, or aren't logged into the console on that host.
+
 You don't need the whole repo — the gateway is self-contained. On the connector host, grab **two files**:
 
 ```bash

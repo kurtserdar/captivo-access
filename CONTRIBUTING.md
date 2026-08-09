@@ -10,8 +10,9 @@ on recent commits. It's a Node/Next.js control plane plus three Go services
 - **Node.js 20** (see `.nvmrc`)
 - **pnpm 9.14.2** (`corepack enable pnpm` or `corepack pnpm@9.14.2 <cmd>`)
 - **Docker** + Docker Compose (for the local Postgres instance)
-- **Go 1.23+** — only if you touch `connector/`, `dataplane/`, or `tunnel/`
-  (a `go.work` at the repo root spans all three modules)
+- **Go 1.25+** — only if you touch `connector/`, `dataplane/`, or `tunnel/`
+  (a `go.work` at the repo root spans all three modules; the `dataplane`
+  module targets Go 1.25, so a full `go build ./...` needs 1.25+)
 
 ## Setup
 

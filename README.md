@@ -130,6 +130,11 @@ Shipped and working today:
 - **SSO / OIDC login** — internal staff/admins can sign in with an identity
   provider (Entra, Google, Okta) alongside passkeys; accounts are
   invite-matched (no auto-provisioning). Vendors stay passkey-only.
+- **AD / LDAP directory + group mapping** — connect an LDAP/Active Directory
+  (reached through a connector, bind tested from the console), then map
+  directory groups by DN to a console **role** or a specific **Site** at
+  `/admin/directory`. Membership drives authorization, so revoking a user in
+  your directory removes their mapped access.
 - **Roles** — five fixed roles (`ADMIN`, `OPERATOR`, `AUDITOR`, `STAFF`,
   `VENDOR`) drive a capability layer across the console and APIs.
 - **Custom domains** — publish a Site on its own hostname with automatic TLS
@@ -151,6 +156,20 @@ Shipped and working today:
   migrations automatically on `up -d` (a one-shot `access-migrate` service), and
   the console shows in-app update notifications with a copyable one-command
   upgrade + per-connector update commands.
+- **Session policy** — optional console-wide session controls at `/admin/policy`:
+  an idle timeout, a maximum session duration, and a cap on concurrent sessions
+  per user (the oldest session is evicted past the cap).
+- **Per-site clipboard control** — a transparent Site can restrict the vendor's
+  clipboard (block copy-out, block paste-in, or both); the proxy injects a
+  capture-phase guard into the app's pages. A deterrent, not a hard control
+  (bypassable with JavaScript disabled); gateway Sites use Guacamole's own
+  clipboard settings instead.
+- **Connector observability + egress policy** — each connector's detail page
+  shows live telemetry (version, uptime, active/total connections, bytes
+  in/out, denied count) and a recent-log tail, streamed over the tunnel's
+  control channel. An optional per-connector **egress policy** narrows what a
+  connector may reach on top of its local `ALLOWED_TARGETS` — it can only
+  tighten that boundary, never widen it.
 - **User management** — disable/enable and **delete** non-admin users (deletion
   removes the account + credentials but preserves the audit trail).
 
@@ -315,6 +334,11 @@ instead, replicate that routing and forward those headers.
   expired, not yet started, revoked, pending approval, or a disabled
   account). Revoking a grant takes effect on the vendor's very next
   request — nothing is cached.
+- **Session lifetime policy.** Beyond the per-request grant check, an optional
+  console-wide policy (`/admin/policy`) bounds sessions themselves: an idle
+  timeout, a maximum absolute duration, and a cap on concurrent sessions per
+  user. These limit how long a stolen or forgotten session stays usable,
+  independent of grant state.
 - **Append-only audit log.** Every allowed request, and every denied
   request from an authenticated user, is written to an `AuditEvent` row —
   timestamp, user, site, host/method/path, response status, bytes out, the
