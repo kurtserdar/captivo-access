@@ -143,8 +143,10 @@ Shipped and working today:
   protocols (RDP/SSH/VNC), an optional **Guacamole gateway** pack
   ([`deploy/gateway/`](deploy/gateway/README.md)) is published as a Site and
   records natively, on-prem. Sites carry a `TRANSPARENT` vs `GATEWAY` label.
-- **Email (SMTP)** — configured from the console (`/admin/email`); invites can
-  be emailed directly, or copy the one-time link and send it yourself.
+- **Email (SMTP)** — configured from the console (`/admin/email`); sends invite
+  emails, access-request/approval emails, and site down/recovered alerts. (Invites
+  can also be copied as a one-time link and sent yourself; all of these events also
+  raise in-console notifications regardless of SMTP.)
 - **Automatic schema migration + guided upgrade** — the deploy stack runs
   migrations automatically on `up -d` (a one-shot `access-migrate` service), and
   the console shows in-app update notifications with a copyable one-command
@@ -350,12 +352,8 @@ Explicitly **not** built — don't assume these exist:
 - **RDP/SSH/VNC** — the core is an HTTP(S) + WebSocket proxy, not a
   general-purpose bastion. Recorded console access is available today via the
   opt-in **Guacamole gateway** pack ([`deploy/gateway/`](deploy/gateway/README.md)),
-  published as a Site — not by the proxy itself. Single-sign-on into the gateway
-  (header-auth, to drop the second login) is a fast-follow.
-- **Email notifications** — SMTP is configured in the console and invites can be
-  emailed; broader event emails (site down, approvals) are a fast-follow. (Those
-  events already raise in-console notifications, with an optional
-  `NOTIFICATION_WEBHOOK_URL`.)
+  published as a Site — not by the proxy itself. Single sign-on into the gateway
+  (header-auth) is built in and on by default, so vendors don't hit a second login.
 
 The console is intentionally **English-only** (Turkish localization is not
 planned for the console itself; the KVKK/5651 framing is about data behavior,
