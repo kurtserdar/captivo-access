@@ -67,6 +67,7 @@ export const ModelName = {
   OidcConfig: 'OidcConfig',
   DirectoryConfig: 'DirectoryConfig',
   GroupMapping: 'GroupMapping',
+  SessionPolicy: 'SessionPolicy',
   UpdateCheckConfig: 'UpdateCheckConfig',
   SessionRecording: 'SessionRecording',
   RecordingChunk: 'RecordingChunk'
@@ -351,6 +352,17 @@ export const GroupMappingScalarFieldEnum = {
 } as const
 
 export type GroupMappingScalarFieldEnum = (typeof GroupMappingScalarFieldEnum)[keyof typeof GroupMappingScalarFieldEnum]
+
+
+export const SessionPolicyScalarFieldEnum = {
+  id: 'id',
+  idleTimeoutMinutes: 'idleTimeoutMinutes',
+  maxSessionHours: 'maxSessionHours',
+  maxConcurrentPerUser: 'maxConcurrentPerUser',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SessionPolicyScalarFieldEnum = (typeof SessionPolicyScalarFieldEnum)[keyof typeof SessionPolicyScalarFieldEnum]
 
 
 export const UpdateCheckConfigScalarFieldEnum = {

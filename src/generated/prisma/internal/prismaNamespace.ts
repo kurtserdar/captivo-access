@@ -413,6 +413,7 @@ export const ModelName = {
   OidcConfig: 'OidcConfig',
   DirectoryConfig: 'DirectoryConfig',
   GroupMapping: 'GroupMapping',
+  SessionPolicy: 'SessionPolicy',
   UpdateCheckConfig: 'UpdateCheckConfig',
   SessionRecording: 'SessionRecording',
   RecordingChunk: 'RecordingChunk'
@@ -431,7 +432,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "accessGrant" | "auditEvent" | "auditChainState" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "groupMapping" | "updateCheckConfig" | "sessionRecording" | "recordingChunk"
+    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "accessGrant" | "auditEvent" | "auditChainState" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "groupMapping" | "sessionPolicy" | "updateCheckConfig" | "sessionRecording" | "recordingChunk"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1619,6 +1620,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SessionPolicy: {
+      payload: Prisma.$SessionPolicyPayload<ExtArgs>
+      fields: Prisma.SessionPolicyFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SessionPolicyFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SessionPolicyPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SessionPolicyFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SessionPolicyPayload>
+        }
+        findFirst: {
+          args: Prisma.SessionPolicyFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SessionPolicyPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SessionPolicyFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SessionPolicyPayload>
+        }
+        findMany: {
+          args: Prisma.SessionPolicyFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SessionPolicyPayload>[]
+        }
+        create: {
+          args: Prisma.SessionPolicyCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SessionPolicyPayload>
+        }
+        createMany: {
+          args: Prisma.SessionPolicyCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SessionPolicyCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SessionPolicyPayload>[]
+        }
+        delete: {
+          args: Prisma.SessionPolicyDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SessionPolicyPayload>
+        }
+        update: {
+          args: Prisma.SessionPolicyUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SessionPolicyPayload>
+        }
+        deleteMany: {
+          args: Prisma.SessionPolicyDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SessionPolicyUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SessionPolicyUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SessionPolicyPayload>[]
+        }
+        upsert: {
+          args: Prisma.SessionPolicyUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SessionPolicyPayload>
+        }
+        aggregate: {
+          args: Prisma.SessionPolicyAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSessionPolicy>
+        }
+        groupBy: {
+          args: Prisma.SessionPolicyGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SessionPolicyGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SessionPolicyCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SessionPolicyCountAggregateOutputType> | number
+        }
+      }
+    }
     UpdateCheckConfig: {
       payload: Prisma.$UpdateCheckConfigPayload<ExtArgs>
       fields: Prisma.UpdateCheckConfigFieldRefs
@@ -2145,6 +2220,17 @@ export const GroupMappingScalarFieldEnum = {
 export type GroupMappingScalarFieldEnum = (typeof GroupMappingScalarFieldEnum)[keyof typeof GroupMappingScalarFieldEnum]
 
 
+export const SessionPolicyScalarFieldEnum = {
+  id: 'id',
+  idleTimeoutMinutes: 'idleTimeoutMinutes',
+  maxSessionHours: 'maxSessionHours',
+  maxConcurrentPerUser: 'maxConcurrentPerUser',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SessionPolicyScalarFieldEnum = (typeof SessionPolicyScalarFieldEnum)[keyof typeof SessionPolicyScalarFieldEnum]
+
+
 export const UpdateCheckConfigScalarFieldEnum = {
   id: 'id',
   enabled: 'enabled',
@@ -2586,6 +2672,7 @@ export type GlobalOmitConfig = {
   oidcConfig?: Prisma.OidcConfigOmit
   directoryConfig?: Prisma.DirectoryConfigOmit
   groupMapping?: Prisma.GroupMappingOmit
+  sessionPolicy?: Prisma.SessionPolicyOmit
   updateCheckConfig?: Prisma.UpdateCheckConfigOmit
   sessionRecording?: Prisma.SessionRecordingOmit
   recordingChunk?: Prisma.RecordingChunkOmit

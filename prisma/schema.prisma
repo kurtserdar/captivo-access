@@ -313,6 +313,14 @@ model GroupMapping {
   @@index([groupDN])
 }
 
+model SessionPolicy {
+  id                   String   @id
+  idleTimeoutMinutes   Int?
+  maxSessionHours      Int?
+  maxConcurrentPerUser Int?
+  updatedAt            DateTime @updatedAt
+}
+
 model UpdateCheckConfig {
   id            String    @id
   enabled       Boolean   @default(true)

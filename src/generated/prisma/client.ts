@@ -122,6 +122,11 @@ export type DirectoryConfig = Prisma.DirectoryConfigModel
  */
 export type GroupMapping = Prisma.GroupMappingModel
 /**
+ * Model SessionPolicy
+ * 
+ */
+export type SessionPolicy = Prisma.SessionPolicyModel
+/**
  * Model UpdateCheckConfig
  * 
  */
