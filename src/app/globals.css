@@ -24,29 +24,6 @@
   --shadow:0 18px 40px -24px rgba(0,0,0,.6);
   color-scheme:dark;
 }
-:root[data-theme="resend"]{
-  /* Resend-inspired dark editorial theme — pure token remap. See
-     docs/captivo-access/resend-theme-design.md. Light/Dark are untouched. */
-  --bg:#000000; --surface:#0a0a0c; --surface-2:#06060a; --surface-hover:#101012;
-  --line:rgba(255,255,255,.14); --line-soft:rgba(255,255,255,.06);
-  --fg:#fcfdff; --muted:#a1a4a5; --faint:#888e90;
-  --accent:#3b9eff; --accent-2:#2b7fe0; --accent-fg:#000000; --accent-soft:rgba(59,158,255,.16);
-  --ok:#11ff99; --ok-soft:rgba(17,255,153,.14);
-  --warn:#ffc53d; --warn-soft:rgba(255,197,61,.14);
-  --danger:#ff2047; --danger-soft:rgba(255,32,71,.14);
-  --radius:8px; --radius-lg:12px; --shadow:none;
-  --display:var(--font-fraunces),Georgia,"Times New Roman",serif;
-  color-scheme:dark;
-}
-/* Resend signature: white primary button (the single brightest surface). */
-:root[data-theme="resend"] .btn.primary{ background:#fcfdff; border-color:#fcfdff; color:#000; }
-:root[data-theme="resend"] .btn.primary:hover{ background:#f1f7fe; border-color:#f1f7fe; color:#000; }
-/* Resend signature: one subtle atmospheric glow, login screen only. */
-:root[data-theme="resend"] .auth-panel{
-  background:
-    radial-gradient(120% 80% at 50% 0%, rgba(59,158,255,.20), transparent 60%),
-    #06060a;
-}
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:.9375rem;line-height:1.55;
@@ -281,10 +258,10 @@ a{color:inherit;}
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  width:1.75rem;
-  height:1.75rem;
-  border-radius:8px;
-  font-size:0.75rem;
+  width:2.1rem;
+  height:2.1rem;
+  border-radius:9px;
+  font-size:0.85rem;
   font-weight:700;
   letter-spacing:0.02em;
   flex:0 0 auto;
@@ -297,7 +274,7 @@ a{color:inherit;}
 .site-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1rem; }
 .site-card { display:flex; flex-direction:column; gap:0.9rem; padding-top:1.05rem; }
 .site-card-head { display:flex; align-items:center; gap:0.7rem; }
-.site-card-head > .site-avatar { width:2.4rem; height:2.4rem; border-radius:10px; font-size:0.95rem; }
+.site-card-head > .site-avatar { width:3rem; height:3rem; border-radius:11px; font-size:1.15rem; }
 .site-card-title { min-width:0; }
 .site-card-name { font-weight:650; font-size:1.02rem; display:flex; align-items:center; gap:0.45rem; }
 .site-card-host { display:flex; align-items:center; gap:0.4rem; color:var(--muted); font-size:0.84rem; min-width:0; }
