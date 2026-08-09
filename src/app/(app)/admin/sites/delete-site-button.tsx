@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
 export function DeleteSiteButton({ id, name, grantCount }: { id: string; name: string; grantCount: number }) {
@@ -8,6 +9,7 @@ export function DeleteSiteButton({ id, name, grantCount }: { id: string; name: s
   const { confirm, dialog } = useConfirm();
 
   async function handleClick() {
+  const router = useRouter();
     const grants = grantCount === 1 ? "1 access grant" : `${grantCount} access grants`;
     if (!(await confirm(`Delete site "${name}"? This also removes ${grants} and can't be undone.`, { danger: true }))) return;
     setError(null);
@@ -19,7 +21,7 @@ export function DeleteSiteButton({ id, name, grantCount }: { id: string; name: s
         setError("Couldn't delete the site, please try again.");
         return;
       }
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Couldn't delete the site, please try again.");
     } finally {

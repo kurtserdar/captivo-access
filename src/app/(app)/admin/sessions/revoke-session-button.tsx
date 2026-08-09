@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
 export function RevokeSessionButton({ id }: { id: string }) {
@@ -9,6 +10,7 @@ export function RevokeSessionButton({ id }: { id: string }) {
   const { confirm, dialog } = useConfirm();
 
   async function handleClick() {
+  const router = useRouter();
     if (!(await confirm("Are you sure you want to revoke this session?", { danger: true }))) return;
 
     setError(null);
@@ -20,7 +22,7 @@ export function RevokeSessionButton({ id }: { id: string }) {
         setError("Couldn't revoke the session, please try again.");
         return;
       }
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Couldn't revoke the session, please try again.");
     } finally {

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function MarkReadButton() {
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,7 +18,7 @@ export function MarkReadButton() {
         setError("Couldn't mark notifications as read, please try again.");
         return;
       }
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Couldn't mark notifications as read, please try again.");
     } finally {

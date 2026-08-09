@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { RevokeSessionButton } from "./revoke-session-button";
@@ -15,6 +16,7 @@ export type SessionRow = {
 };
 
 export function SessionsTable({ sessions, currentSessionId }: { sessions: SessionRow[]; currentSessionId: string | null }) {
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export function SessionsTable({ sessions, currentSessionId }: { sessions: Sessio
         setError("Couldn't revoke the selected sessions, please try again.");
         return;
       }
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Couldn't revoke the selected sessions, please try again.");
     } finally {

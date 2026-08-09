@@ -29,7 +29,7 @@ export default async function AdminUsersPage({
       directoryLastVerifiedAt: true,
       _count: { select: { passkeys: true } },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
   });
 
   const rows = users.map((u) => ({

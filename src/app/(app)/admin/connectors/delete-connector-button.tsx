@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
 const MESSAGES: Record<string, string> = {
@@ -13,6 +14,7 @@ export function DeleteConnectorButton({ id, name }: { id: string; name: string }
   const { confirm, dialog } = useConfirm();
 
   async function handleClick() {
+  const router = useRouter();
     if (!(await confirm(`Permanently delete connector "${name}"? This can't be undone.`, { danger: true }))) return;
     setError(null);
     setBusy(true);
@@ -23,7 +25,7 @@ export function DeleteConnectorButton({ id, name }: { id: string; name: string }
         setError((result?.error && MESSAGES[result.error]) || "Couldn't delete the connector, please try again.");
         return;
       }
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Couldn't delete the connector, please try again.");
     } finally {

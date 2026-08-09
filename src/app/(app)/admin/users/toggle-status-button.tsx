@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 function errorMessage(code: string | undefined): string {
   switch (code) {
@@ -23,6 +24,7 @@ export function ToggleStatusButton({ userId, status }: { userId: string; status:
   const label = status === "ACTIVE" ? "Disable" : "Activate";
 
   async function handleClick() {
+  const router = useRouter();
     setError(null);
     setBusy(true);
     try {
@@ -36,7 +38,7 @@ export function ToggleStatusButton({ userId, status }: { userId: string; status:
         setError(errorMessage(result?.error));
         return;
       }
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Action failed, please try again.");
     } finally {

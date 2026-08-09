@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
 export function DeleteRecordingButton({ id }: { id: string }) {
@@ -8,6 +9,7 @@ export function DeleteRecordingButton({ id }: { id: string }) {
   const { confirm, dialog } = useConfirm();
 
   async function handleClick() {
+  const router = useRouter();
     if (!(await confirm("Delete this recording? This can't be undone.", { danger: true }))) return;
     setError(null);
     setBusy(true);
@@ -18,7 +20,7 @@ export function DeleteRecordingButton({ id }: { id: string }) {
         setError("Couldn't delete the recording, please try again.");
         return;
       }
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Couldn't delete the recording, please try again.");
     } finally {

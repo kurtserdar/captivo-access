@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
 export function RevokeConnectorButton({ id }: { id: string }) {
@@ -9,6 +10,7 @@ export function RevokeConnectorButton({ id }: { id: string }) {
   const { confirm, dialog } = useConfirm();
 
   async function handleClick() {
+  const router = useRouter();
     if (!(await confirm("Are you sure you want to revoke this connector? It will lose access immediately.", { danger: true }))) {
       return;
     }
@@ -22,7 +24,7 @@ export function RevokeConnectorButton({ id }: { id: string }) {
         setError("Couldn't revoke the connector, please try again.");
         return;
       }
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Couldn't revoke the connector, please try again.");
     } finally {

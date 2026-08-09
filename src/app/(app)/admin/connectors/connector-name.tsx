@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function ConnectorName({ id, name }: { id: string; name: string }) {
   const [editing, setEditing] = useState(false);
@@ -9,6 +10,7 @@ export function ConnectorName({ id, name }: { id: string; name: string }) {
   const [error, setError] = useState<string | null>(null);
 
   async function save() {
+  const router = useRouter();
     const trimmed = value.trim();
     if (!trimmed) {
       setError("Name can't be empty.");
@@ -27,7 +29,7 @@ export function ConnectorName({ id, name }: { id: string; name: string }) {
         setError("Couldn't rename, please try again.");
         return;
       }
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Couldn't rename, please try again.");
     } finally {

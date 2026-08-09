@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 // ISO → value for <input type="datetime-local"> in the browser's local zone.
 function toLocalInput(iso: string | null): string {
@@ -33,6 +34,7 @@ export function EditGrantButton({ id, endsAt, note }: { id: string; endsAt: stri
   const [error, setError] = useState<string | null>(null);
 
   async function save() {
+  const router = useRouter();
     setError(null);
     setBusy(true);
     try {
@@ -56,7 +58,7 @@ export function EditGrantButton({ id, endsAt, note }: { id: string; endsAt: stri
         setError(saveError(result?.error));
         return;
       }
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Couldn't save, please try again.");
     } finally {
