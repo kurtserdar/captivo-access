@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useSyncExternalStore } from "react";
 
-export type ThemePref = "light" | "dark" | "system";
+export type ThemePref = "light" | "dark" | "resend" | "system";
 
 // Pure: the concrete theme to apply given the preference and the OS setting.
-export function resolveTheme(pref: ThemePref, systemPrefersDark: boolean): "light" | "dark" {
-  if (pref === "light" || pref === "dark") return pref;
+export function resolveTheme(pref: ThemePref, systemPrefersDark: boolean): "light" | "dark" | "resend" {
+  if (pref === "light" || pref === "dark" || pref === "resend") return pref;
   return systemPrefersDark ? "dark" : "light";
 }
 
@@ -16,7 +16,7 @@ function subscribe(l: () => void) {
 }
 function getSnapshot(): ThemePref {
   const v = localStorage.getItem("ca-theme");
-  return v === "light" || v === "dark" ? v : "system";
+  return v === "light" || v === "dark" || v === "resend" ? v : "system";
 }
 function getServerSnapshot(): ThemePref {
   return "system";
@@ -36,6 +36,7 @@ function setPref(pref: ThemePref) {
 const OPTIONS: { pref: ThemePref; label: string }[] = [
   { pref: "light", label: "Light" },
   { pref: "dark", label: "Dark" },
+  { pref: "resend", label: "Resend" },
   { pref: "system", label: "System" },
 ];
 
@@ -67,7 +68,7 @@ export function ThemeSwitcher() {
           title={o.label}
           onClick={() => setPref(o.pref)}
         >
-          {o.pref === "light" ? <SunIcon /> : o.pref === "dark" ? <MoonIcon /> : <MonitorIcon />}
+          {o.pref === "light" ? <SunIcon /> : o.pref === "dark" ? <MoonIcon /> : o.pref === "resend" ? <ResendIcon /> : <MonitorIcon />}
         </button>
       ))}
     </div>
@@ -86,6 +87,13 @@ function MoonIcon() {
   return (
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  );
+}
+function ResendIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <text x="12" y="17" textAnchor="middle" fontFamily="Georgia, 'Times New Roman', serif" fontSize="16" fontWeight="600" fill="currentColor">R</text>
     </svg>
   );
 }

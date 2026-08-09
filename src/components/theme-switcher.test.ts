@@ -10,4 +10,8 @@ describe("resolveTheme", () => {
     expect(resolveTheme("system", true)).toBe("dark");
     expect(resolveTheme("system", false)).toBe("light");
   });
+  it("returns resend as an explicit preference", () => {
+    expect(resolveTheme("resend", true)).toBe("resend");
+    expect(resolveTheme("resend", false)).toBe("resend");
+  });
 });
