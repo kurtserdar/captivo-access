@@ -1,4 +1,5 @@
-import { CopyButton } from "@/app/(app)/_shell/copy-button";
+import { CommandBlock } from "@/app/(app)/_shell/command-block";
+import { formatDockerRun } from "@/lib/format/docker-command";
 
 // The documented server-side upgrade command (manager + data-plane + auto
 // migration). Kept as a single copy-pasteable line.
@@ -46,10 +47,11 @@ export function UpgradeGuide({
         <p className="cell-sub">
           Upgrades the manager and data-plane and applies any schema change automatically.
         </p>
-        <code className="code">{SERVER_UPGRADE_COMMAND}</code>
-        <div className="row-actions">
-          <CopyButton value={SERVER_UPGRADE_COMMAND} label="Copy command" />
-        </div>
+        <CommandBlock
+          command={SERVER_UPGRADE_COMMAND}
+          display={SERVER_UPGRADE_COMMAND.replace(/ && /g, " && \\\n  ")}
+          title="server-upgrade"
+        />
       </div>
 
       {connectorCommand && (
@@ -60,10 +62,11 @@ export function UpgradeGuide({
             Connectors run on separate machines, so run this once on each connector&apos;s host — the token
             volume is kept, so no re-pairing.
           </p>
-          <code className="code">{connectorCommand}</code>
-          <div className="row-actions">
-            <CopyButton value={connectorCommand} label="Copy command" />
-          </div>
+          <CommandBlock
+            command={connectorCommand}
+            display={formatDockerRun(connectorCommand)}
+            title="connector-update"
+          />
           {hasGatewayHost && (
             <p className="cell-sub">
               If a connector also runs the Guacamole gateway, update it from{" "}
