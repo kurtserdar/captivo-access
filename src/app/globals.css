@@ -266,6 +266,13 @@ a{color:inherit;}
 .site-card-foot { display:flex; border-top:1px solid var(--line); padding-top:0.8rem; }
 .site-card-foot .row-actions { width:100%; }
 .site-card-foot .row-actions > :last-child { margin-left:auto; }
+.access-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(17rem,1fr)); gap:0.8rem; margin-top:0.5rem; }
+.access-card { display:flex; flex-direction:column; gap:0.55rem; padding:0.95rem 1.05rem; }
+.access-card-head { display:flex; align-items:center; gap:0.55rem; }
+.access-card-name { font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.access-card-head .pill { margin-left:auto; flex:0 0 auto; }
+.access-card-host { min-width:0; }
+.access-card-foot { display:flex; align-items:center; gap:0.5rem; margin-top:0.15rem; }
 
 /* ---- responsive ---- */
 @media (max-width:820px){
