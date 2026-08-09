@@ -61,8 +61,8 @@ func (s *Server) HandleTunnel(w http.ResponseWriter, r *http.Request) {
 
 	sess := &Session{mux: mux}
 	s.reg.Set(connectorID, sess)
-	go runControl(sess)
-	s.ctrl.ReportStatus(connectorID, "ONLINE", r.RemoteAddr, r.Header.Get("X-Connector-Version"))
+	policy := s.ctrl.ReportStatus(connectorID, "ONLINE", r.RemoteAddr, r.Header.Get("X-Connector-Version"))
+	go runControl(sess, policy)
 	defer func() {
 		if s.reg.RemoveIfSame(connectorID, sess) {
 			s.ctrl.ReportStatus(connectorID, "OFFLINE", r.RemoteAddr, "")

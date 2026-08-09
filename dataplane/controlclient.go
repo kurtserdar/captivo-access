@@ -44,9 +44,13 @@ func (c *ControlClient) AuthConnector(token string) (string, error) {
 // ReportStatus tells the control plane a connector went ONLINE/OFFLINE.
 // Best-effort: errors are swallowed since this must never block tunnel
 // teardown/setup.
-func (c *ControlClient) ReportStatus(connectorID, status, remoteAddr, version string) {
+func (c *ControlClient) ReportStatus(connectorID, status, remoteAddr, version string) string {
+	var out struct {
+		EgressPolicy string `json:"egressPolicy"`
+	}
 	_ = c.post("/api/internal/connector/status",
-		map[string]string{"connectorId": connectorID, "status": status, "remoteAddr": remoteAddr, "version": version}, nil)
+		map[string]string{"connectorId": connectorID, "status": status, "remoteAddr": remoteAddr, "version": version}, &out)
+	return out.EgressPolicy
 }
 
 // ResolveSession exchanges a browser session token for the userId/email it

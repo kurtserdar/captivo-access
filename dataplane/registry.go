@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
+	"io"
 	"sync"
 	"time"
 
@@ -8,13 +11,39 @@ import (
 	"github.com/kurtserdar/captivo-access/tunnel"
 )
 
+var errNoControl = errors.New("connector control stream not ready")
+
 // Session wraps a live yamux session for one connector, plus the latest
-// telemetry the connector reported over its control stream.
+// telemetry the connector reported and the write side of its control stream.
 type Session struct {
 	mux     *yamux.Session
 	mu      sync.Mutex
 	telem   *tunnel.Telemetry
 	telemAt time.Time
+
+	ctrlMu     sync.Mutex
+	ctrlStream io.Writer
+}
+
+func (s *Session) setControl(w io.Writer) {
+	s.ctrlMu.Lock()
+	s.ctrlStream = w
+	s.ctrlMu.Unlock()
+}
+
+// PushPolicy writes a policy frame to the connector's control stream. Returns an
+// error if the connector isn't connected / has no control stream yet.
+func (s *Session) PushPolicy(egressAllowedTargets string) error {
+	s.ctrlMu.Lock()
+	defer s.ctrlMu.Unlock()
+	if s.ctrlStream == nil {
+		return errNoControl
+	}
+	b, err := json.Marshal(tunnel.Policy{EgressAllowedTargets: egressAllowedTargets})
+	if err != nil {
+		return err
+	}
+	return tunnel.WriteFrame(s.ctrlStream, b)
 }
 
 func (s *Session) SetTelemetry(t *tunnel.Telemetry) {
