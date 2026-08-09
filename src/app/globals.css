@@ -327,3 +327,16 @@ a{color:inherit;}
   .content{padding:1.2rem;}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+
+/* Terminal command block (CommandBlock) — fixed dark palette in every theme. */
+.term{border:1px solid rgba(255,255,255,.10);border-radius:var(--radius-lg);overflow:hidden;background:#0b0d12;margin:.6rem 0;}
+.term-bar{display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;background:#15171d;border-bottom:1px solid rgba(255,255,255,.08);}
+.term-dots{display:inline-flex;gap:6px;}
+.term-dots i{width:11px;height:11px;border-radius:9999px;display:block;}
+.term-title{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;color:#8b94a3;}
+.term-copy{margin-left:auto;font-family:inherit;font-size:.75rem;background:transparent;border:1px solid rgba(255,255,255,.14);color:#8b94a3;border-radius:6px;padding:.2rem .55rem;cursor:pointer;transition:color .12s,border-color .12s;}
+.term-copy:hover{color:#e6e8ee;border-color:rgba(255,255,255,.28);}
+.term-body{font-family:var(--mono);font-size:.82rem;line-height:1.65;color:#e6e8ee;padding:.85rem 1rem;overflow-x:auto;}
+.term-line{white-space:pre;}
+.term-prompt{color:#3ddc97;user-select:none;}
+.term-comment{color:#6b7280;}
