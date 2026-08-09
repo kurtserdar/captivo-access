@@ -340,3 +340,14 @@ a{color:inherit;}
 .term-line{white-space:pre;}
 .term-prompt{color:#3ddc97;user-select:none;}
 .term-comment{color:#6b7280;}
+
+/* Modal dialog (Modal) — centered, size-variant, theme-token surface. */
+.modal-overlay{position:fixed;inset:0;z-index:60;background:rgba(4,7,12,.55);display:grid;place-items:center;padding:24px;overflow-y:auto;}
+.modal-box{width:min(94vw,560px);max-height:calc(100vh - 48px);overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:1.15rem 1.25rem;}
+.modal-box.sm{width:min(94vw,420px);}
+.modal-box.md{width:min(94vw,560px);}
+.modal-box.lg{width:min(94vw,760px);}
+.modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.9rem;}
+.modal-head h2{font-size:1.05rem;}
+.modal-close{font:inherit;line-height:1;background:transparent;border:none;color:var(--muted);cursor:pointer;padding:.15rem;border-radius:6px;font-size:1.15rem;}
+.modal-close:hover{color:var(--fg);background:var(--surface-hover);}
