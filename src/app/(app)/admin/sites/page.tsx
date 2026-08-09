@@ -24,6 +24,9 @@ export default async function AdminSitesPage() {
         probeDetail: true,
         probeLatencyMs: true,
         accessMode: true,
+        connectorId: true,
+        insecureSkipVerify: true,
+        recordSessions: true,
         logoType: true,
         connector: { select: { name: true, status: true } },
         _count: { select: { grants: true } },
@@ -45,6 +48,9 @@ export default async function AdminSitesPage() {
     description: s.description,
     accessMode: s.accessMode,
     hasLogo: s.logoType != null,
+    connectorId: s.connectorId,
+    insecureSkipVerify: s.insecureSkipVerify,
+    recordSessions: s.recordSessions,
     connectorName: s.connector.name,
     grantCount: s._count.grants,
     probeOk: s.probeOk,
@@ -80,7 +86,7 @@ export default async function AdminSitesPage() {
       {sites.length === 0 ? (
         <div className="empty">No sites yet.</div>
       ) : (
-        <SitesView sites={rows} />
+        <SitesView sites={rows} connectors={connectors} recordingEnabled={recordingEnabled()} />
       )}
     </main>
   );

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { EditSiteButton } from "./edit-site-button";
 import { SiteAvatar } from "@/app/(app)/_shell/site-avatar";
 import { TestConnectionButton } from "./test-connection-button";
 import { DeleteSiteButton } from "./delete-site-button";
@@ -14,6 +14,9 @@ export interface SiteRow {
   description: string | null;
   accessMode: "TRANSPARENT" | "GATEWAY";
   hasLogo: boolean;
+  connectorId: string;
+  insecureSkipVerify: boolean;
+  recordSessions: boolean;
   connectorName: string;
   grantCount: number;
   probeOk: boolean | null;
@@ -49,17 +52,33 @@ function HealthPill({ s }: { s: SiteRow }) {
   );
 }
 
-function Actions({ s }: { s: SiteRow }) {
+function Actions({
+  s,
+  connectors,
+  recordingEnabled,
+}: {
+  s: SiteRow;
+  connectors: { id: string; name: string }[];
+  recordingEnabled: boolean;
+}) {
   return (
     <div className="row-actions">
       <TestConnectionButton siteId={s.id} />
-      <Link href={`/admin/sites/${s.id}/edit`} className="btn sm">Edit</Link>
+      <EditSiteButton site={s} connectors={connectors} recordingEnabled={recordingEnabled} />
       <DeleteSiteButton id={s.id} name={s.name} grantCount={s.grantCount} />
     </div>
   );
 }
 
-export function SitesView({ sites }: { sites: SiteRow[] }) {
+export function SitesView({
+  sites,
+  connectors,
+  recordingEnabled,
+}: {
+  sites: SiteRow[];
+  connectors: { id: string; name: string }[];
+  recordingEnabled: boolean;
+}) {
   const [view, setView] = useState<View>("cards");
 
   useEffect(() => {
@@ -111,7 +130,7 @@ export function SitesView({ sites }: { sites: SiteRow[] }) {
                   <div className="site-card-mrow"><span className="site-card-k">Notes</span><span className="site-card-v">{s.description}</span></div>
                 )}
               </div>
-              <div className="site-card-foot"><Actions s={s} /></div>
+              <div className="site-card-foot"><Actions s={s} connectors={connectors} recordingEnabled={recordingEnabled} /></div>
             </div>
           ))}
         </div>
@@ -138,7 +157,7 @@ export function SitesView({ sites }: { sites: SiteRow[] }) {
                   </td>
                   <td className="cell-sub">{s.description ?? "—"}</td>
                   <td><HealthPill s={s} /></td>
-                  <td><Actions s={s} /></td>
+                  <td><Actions s={s} connectors={connectors} recordingEnabled={recordingEnabled} /></td>
                 </tr>
               ))}
             </tbody>
