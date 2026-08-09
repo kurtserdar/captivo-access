@@ -75,6 +75,34 @@ export async function testDirectory(input: {
   return res.json();
 }
 
+// resolveDirectoryUser asks the data-plane to look a user up in AD by email
+// (bind + subtree search) and return their DN + memberOf group DNs. Used by the
+// login-time sync engine. bindPassword is sent cleartext over the internal,
+// secret-gated channel (the Manager decrypts it first). A thrown/failed request
+// surfaces as { error } so the caller can fail open.
+export async function resolveDirectoryUser(input: {
+  connectorId: string;
+  host: string;
+  port: number;
+  security: "PLAIN" | "STARTTLS" | "LDAPS";
+  insecureSkipVerify: boolean;
+  baseDN: string;
+  bindDN: string;
+  bindPassword: string;
+  email: string;
+}): Promise<{ found: boolean; dn?: string; memberOf?: string[]; displayName?: string; error?: string }> {
+  const base = process.env.DATAPLANE_URL || "http://access-dataplane:3102";
+  const secret = process.env.DATAPLANE_SECRET || "";
+  const res = await fetch(`${base}/ldap-resolve`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-dataplane-secret": secret },
+    body: JSON.stringify(input),
+  }).catch(() => null);
+  if (!res) return { found: false, error: "The data-plane is unreachable." };
+  if (!res.ok) return { found: false, error: "The directory resolve request failed." };
+  return res.json();
+}
+
 // kickConnector tells the data-plane to close a connector's live yamux
 // session immediately (used on revoke, so a currently-connected connector
 // doesn't stay proxyable until its next keepalive timeout). Best-effort:
