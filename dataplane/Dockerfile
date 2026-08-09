@@ -1,5 +1,8 @@
 # ---- build ----
-FROM golang:1.23-alpine AS build
+# go 1.25: dataplane/go.mod requires >= 1.25.0 (the go-ldap dependency chain —
+# golang.org/x/crypto, golang.org/x/net — needs it). The connector/migrate
+# images stay on their own base since they don't pull that chain.
+FROM golang:1.25-alpine AS build
 WORKDIR /src
 
 # NOTE on the go.work workspace: the repo root has a go.work file that lists all
