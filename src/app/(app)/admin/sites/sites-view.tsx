@@ -90,29 +90,27 @@ export function SitesView({ sites }: { sites: SiteRow[] }) {
               <div className="site-card-head">
                 <SiteAvatar name={s.name} />
                 <div className="site-card-title">
-                  <div className="site-card-name">
-                    {s.name} <GatewayPill accessMode={s.accessMode} />
-                  </div>
-                  <div className="cell-sub site-card-host">
+                  <div className="site-card-name">{s.name} <GatewayPill accessMode={s.accessMode} /></div>
+                  <div className="site-card-host">
                     <span className="cell-truncate" title={s.hostname}>{s.hostname}</span>
                     <CopyButton value={s.hostname} label="Copy" />
                   </div>
                 </div>
               </div>
-
-              <dl className="site-card-meta">
-                <div><dt>Connector</dt><dd>{s.connectorName}</dd></div>
+              <div className="site-card-meta">
+                <div className="site-card-mrow"><span className="site-card-k">Connector</span><span className="site-card-v">{s.connectorName}</span></div>
                 {s.upstreamUrl && (
-                  <div>
-                    <dt>Internal</dt>
-                    <dd className="cell-inline"><span className="cell-truncate" title={s.upstreamUrl}>{s.upstreamUrl}</span><CopyButton value={s.upstreamUrl} label="Copy" /></dd>
+                  <div className="site-card-mrow">
+                    <span className="site-card-k">Internal</span>
+                    <span className="site-card-v cell-inline"><span className="cell-truncate" title={s.upstreamUrl}>{s.upstreamUrl}</span><CopyButton value={s.upstreamUrl} label="Copy" /></span>
                   </div>
                 )}
-                {s.description && <div><dt>Notes</dt><dd>{s.description}</dd></div>}
-                <div><dt>Health</dt><dd><HealthPill s={s} /></dd></div>
-              </dl>
-
-              <Actions s={s} />
+                <div className="site-card-mrow"><span className="site-card-k">Health</span><span className="site-card-v"><HealthPill s={s} /></span></div>
+                {s.description && (
+                  <div className="site-card-mrow"><span className="site-card-k">Notes</span><span className="site-card-v">{s.description}</span></div>
+                )}
+              </div>
+              <div className="site-card-foot"><Actions s={s} /></div>
             </div>
           ))}
         </div>
