@@ -68,21 +68,19 @@ func dialLdap(s *Session, target string) (net.Conn, error) {
 	return st, nil // yamux.Stream satisfies net.Conn
 }
 
-// TestLdap reaches the directory through the connector, negotiates TLS per the
-// security mode, binds, and runs a bounded base-scope search of baseDN to
-// confirm reachability + credentials. It never throws — every failure is a
-// human-readable message in the result.
-func TestLdap(s *Session, cfg LdapConfig) LdapTestResult {
+// connectAndBind reaches the directory through the connector, negotiates TLS
+// per the security mode, and binds. On success the caller must close BOTH the
+// returned *ldap.Conn and the raw net.Conn. Every failure returns a
+// human-readable error (never panics).
+func connectAndBind(s *Session, cfg LdapConfig) (*ldap.Conn, net.Conn, error) {
 	port := cfg.Port
 	if port == 0 {
 		port = 389
 	}
 	raw, err := dialLdap(s, net.JoinHostPort(cfg.Host, fmt.Sprintf("%d", port)))
 	if err != nil {
-		return LdapTestResult{Error: err.Error()}
+		return nil, nil, err
 	}
-	defer raw.Close()
-
 	tlsCfg := &tls.Config{ServerName: cfg.Host, InsecureSkipVerify: cfg.InsecureSkipVerify}
 
 	var conn *ldap.Conn
@@ -90,26 +88,42 @@ func TestLdap(s *Session, cfg LdapConfig) LdapTestResult {
 		_ = raw.SetDeadline(time.Now().Add(12 * time.Second))
 		tconn := tls.Client(raw, tlsCfg)
 		if err := tconn.Handshake(); err != nil {
-			return LdapTestResult{Error: "TLS handshake failed: " + err.Error()}
+			raw.Close()
+			return nil, nil, errors.New("TLS handshake failed: " + err.Error())
 		}
-		_ = raw.SetDeadline(time.Time{}) // go-ldap manages per-request deadlines below
+		_ = raw.SetDeadline(time.Time{})
 		conn = ldap.NewConn(tconn, true)
 	} else {
 		conn = ldap.NewConn(raw, false)
 	}
 	conn.Start()
-	defer conn.Close()
 	conn.SetTimeout(12 * time.Second)
 
 	if cfg.Security == "STARTTLS" {
 		if err := conn.StartTLS(tlsCfg); err != nil {
-			return LdapTestResult{Error: "StartTLS failed: " + err.Error()}
+			conn.Close()
+			raw.Close()
+			return nil, nil, errors.New("StartTLS failed: " + err.Error())
 		}
 	}
-
 	if err := conn.Bind(cfg.BindDN, cfg.BindPassword); err != nil {
-		return LdapTestResult{Error: "bind failed: " + err.Error()}
+		conn.Close()
+		raw.Close()
+		return nil, nil, errors.New("bind failed: " + err.Error())
 	}
+	return conn, raw, nil
+}
+
+// TestLdap reaches the directory through the connector, binds, and runs a
+// bounded base-scope search of baseDN to confirm reachability + credentials.
+// It never throws — every failure is a human-readable message in the result.
+func TestLdap(s *Session, cfg LdapConfig) LdapTestResult {
+	conn, raw, err := connectAndBind(s, cfg)
+	if err != nil {
+		return LdapTestResult{Error: err.Error()}
+	}
+	defer conn.Close()
+	defer raw.Close()
 
 	req := ldap.NewSearchRequest(
 		cfg.BaseDN, ldap.ScopeBaseObject, ldap.NeverDerefAliases, 1, 10, false,
@@ -120,4 +134,50 @@ func TestLdap(s *Session, cfg LdapConfig) LdapTestResult {
 		return LdapTestResult{Ok: true, Error: "bound OK, but the base DN search failed: " + err.Error()}
 	}
 	return LdapTestResult{Ok: true, BaseDnFound: len(res.Entries) > 0}
+}
+
+// LdapResolveResult reports a directory lookup by email. A non-empty Error means
+// the lookup could not be completed (transport/bind/query) — the caller MUST
+// treat that as "unknown" and fail open, never as "user absent".
+type LdapResolveResult struct {
+	Found       bool     `json:"found"`
+	DN          string   `json:"dn,omitempty"`
+	MemberOf    []string `json:"memberOf,omitempty"`
+	DisplayName string   `json:"displayName,omitempty"`
+	Error       string   `json:"error,omitempty"`
+}
+
+func entryToResolve(e *ldap.Entry) LdapResolveResult {
+	return LdapResolveResult{
+		Found:       true,
+		DN:          e.DN,
+		MemberOf:    e.GetAttributeValues("memberOf"),
+		DisplayName: e.GetAttributeValue("displayName"),
+	}
+}
+
+// ResolveUser binds, then subtree-searches baseDN for (mail=<email>) and returns
+// the entry's DN + memberOf group DNs. Zero matches → {Found:false}. Any
+// transport/bind/query failure → {Error:...} (caller fails open).
+func ResolveUser(s *Session, cfg LdapConfig, email string) LdapResolveResult {
+	conn, raw, err := connectAndBind(s, cfg)
+	if err != nil {
+		return LdapResolveResult{Error: err.Error()}
+	}
+	defer conn.Close()
+	defer raw.Close()
+
+	filter := fmt.Sprintf("(&(objectClass=user)(mail=%s))", ldap.EscapeFilter(email))
+	req := ldap.NewSearchRequest(
+		cfg.BaseDN, ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 2, 12, false,
+		filter, []string{"memberOf", "displayName", "distinguishedName"}, nil,
+	)
+	res, err := conn.Search(req)
+	if err != nil {
+		return LdapResolveResult{Error: "search failed: " + err.Error()}
+	}
+	if len(res.Entries) == 0 {
+		return LdapResolveResult{Found: false}
+	}
+	return entryToResolve(res.Entries[0])
 }
