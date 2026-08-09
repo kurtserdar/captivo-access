@@ -175,6 +175,29 @@ func writeLdapErr(st io.Writer, msg string) {
 	_ = tunnel.WriteFrame(st, b)
 }
 
+// upstreamTransport builds the HTTP transport used to dial an internal app.
+// Its phase timeouts bound a misconfigured upstream so it fails fast with a
+// clear error instead of hanging until the 30s client timeout. The motivating
+// case: a Site addressed as http:// pointing at a TLS-only port (e.g.
+// Proxmox's 8006) — the TCP connects, the plaintext request is written, and
+// the server waits forever for a TLS handshake, so no response header ever
+// arrives. ResponseHeaderTimeout turns that indefinite wait into a bounded
+// failure; the dial/handshake timeouts bound the connect phase similarly.
+func upstreamTransport(insecure bool) *http.Transport {
+	t := &http.Transport{
+		DialContext:           (&net.Dialer{Timeout: 8 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
+		TLSHandshakeTimeout:   8 * time.Second,
+		ResponseHeaderTimeout: 12 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+	}
+	if insecure {
+		t.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+	return t
+}
+
 // handleDial services a single proxied HTTP request. The first frame on the
 // stream is a tunnel.DialRequest carrying the full upstream URL to dial;
 // handleDial validates that URL (scheme must be http/https, host must be
@@ -200,11 +223,10 @@ func handleDial(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 		CheckRedirect: func(*http.Request, []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
-	}
-	if dr.InsecureSkipVerify {
-		// Per-Site opt-in: the operator has marked this upstream a trusted
-		// internal device with a self-signed/unverifiable certificate.
-		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+		// Per-Site opt-in on InsecureSkipVerify: the operator has marked this
+		// upstream a trusted internal device with a self-signed/unverifiable
+		// certificate.
+		Transport: upstreamTransport(dr.InsecureSkipVerify),
 	}
 	req, err := http.NewRequest(orGet(dr.Method), target.String(), tunnel.NewBodyReader(st))
 	if err != nil {

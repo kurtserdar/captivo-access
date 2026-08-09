@@ -212,6 +212,7 @@ a{color:inherit;}
 .notice{border-radius:var(--radius);padding:.6rem .8rem;font-size:.86rem;border:1px solid var(--line);background:var(--surface-2);margin:.6rem 0;}
 .notice.error{color:var(--danger);background:var(--danger-soft);border-color:transparent;}
 .notice.success{color:var(--ok);background:var(--ok-soft);border-color:transparent;}
+.notice.warn{color:var(--warn);background:var(--warn-soft);border-color:transparent;}
 
 /* ---- auth screens ---- */
 .auth{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;}

@@ -87,6 +87,24 @@ export function SiteForm({
   const showNewLogo = typeof logo === "string";
   const showExistingLogo = logo === undefined && (site?.hasLogo ?? false);
 
+  // Warn when an http:// address points at a port that almost always speaks
+  // TLS (e.g. Proxmox 8006). Dialing plain HTTP into a TLS port leaves the
+  // request hanging until it times out — a confusing failure to diagnose, so
+  // flag it here at config time. Soft warning only; some setups do serve
+  // plain HTTP on these ports, so it never blocks saving.
+  const tlsPortWarning = (() => {
+    try {
+      const u = new URL(upstreamUrl.trim());
+      const tlsPorts = new Set(["443", "8443", "9443", "10443", "8006", "8007"]);
+      if (u.protocol === "http:" && u.port && tlsPorts.has(u.port)) {
+        return `Port ${u.port} usually speaks HTTPS. A plain http:// address to a TLS port makes requests hang — did you mean https://${u.host}${u.pathname}?`;
+      }
+    } catch {
+      /* not a full URL yet — nothing to warn about */
+    }
+    return null;
+  })();
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -196,6 +214,9 @@ export function SiteForm({
           It&apos;s stored on your Manager and sent to the connector over the tunnel; the connector dials it
           inside your network. To cap what a connector may reach, set <code>ALLOWED_TARGETS</code> on it.
         </p>
+        {tlsPortWarning && (
+          <p className="notice warn" role="alert">{tlsPortWarning}</p>
+        )}
       </div>
       <div className="field">
         <label className="field-label" htmlFor="site-access-mode">
