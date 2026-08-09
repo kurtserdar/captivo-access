@@ -333,3 +333,7 @@ a{color:inherit;}
 .modal-head h2{font-size:1.05rem;}
 .modal-close{font:inherit;line-height:1;background:transparent;border:none;color:var(--muted);cursor:pointer;padding:.15rem;border-radius:6px;font-size:1.15rem;}
 .modal-close:hover{color:var(--fg);background:var(--surface-hover);}
+
+/* Guide steps (gateway setup modal, etc.) */
+.guide-steps{margin:.3rem 0 .6rem;padding-left:1.2rem;display:flex;flex-direction:column;gap:.5rem;font-size:.9rem;color:var(--fg);}
+.guide-steps li{line-height:1.5;}

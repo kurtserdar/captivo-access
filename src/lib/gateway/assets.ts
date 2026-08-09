@@ -1,0 +1,175 @@
+// Gateway installer assets served by the manager at /gateway/*.
+// GATEWAY_COMPOSE mirrors deploy/gateway/docker-compose.gateway.yml — regenerate
+// (scripts/gen-gateway-assets) if that file changes.
+
+export const GATEWAY_COMPOSE = `# Captivo Access — Pro session gateway (Apache Guacamole) · OPTIONAL, opt-in.
+#
+# Run this ALONGSIDE the connector, on the SAME on-prem host, when you want
+# isolated + RECORDED RDP / SSH / VNC sessions. guacd reaches the RDP/SSH/VNC
+# targets over the customer LAN; the Guacamole web UI (HTTP + WebSocket) is then
+# published as an ordinary Captivo Site, so it reuses Captivo's passkey identity,
+# time-boxed grants, and audit — while Guacamole records each session natively,
+# and the recording NEVER leaves the customer network (KVKK/5651).
+#
+# Default Captivo deployment stays connector-only — this file is separate weight
+# you turn on deliberately. Requires real compute (JVM + guacd + per-session
+# video); size the host accordingly.
+#
+# Setup: run \`./setup.sh\` (it generates the DB schema, writes a random
+# GUAC_DB_PASSWORD, ensures the shared \`captivo-gateway\` network, and brings the
+# stack up). See deploy/gateway/README.md for the full walkthrough. Then, in
+# Captivo, add a Site pointing at http://cap-guacamole:8080 (no path — the app is
+# served at ROOT), and in Guacamole create an RDP/SSH/VNC connection with
+# recording enabled.
+#
+# Validated locally 2026-08-08 (guacamole/guacd 1.5.5): stack boots, web UI +
+# guacadmin auth work, guacd listens on 4822. The record-init below fixes the
+# real gotcha found in validation: guacd runs as uid 1000 and cannot write a
+# root-owned recordings volume.
+name: captivo-access-gateway
+
+services:
+  guac-postgres:
+    image: postgres:16-alpine
+    container_name: cap-guac-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: guacamole
+      POSTGRES_USER: guacamole
+      POSTGRES_PASSWORD: \${GUAC_DB_PASSWORD:?required}
+    volumes:
+      - guac_pgdata:/var/lib/postgresql/data
+      # One-time schema (generated in setup step 1). Applied on first init only.
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guacamole -d guacamole"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  # guacd runs as uid 1000 and cannot write a root-owned named volume, so make
+  # the recordings volume writable by it before guacd starts (validation gotcha).
+  guac-record-init:
+    image: busybox
+    container_name: cap-guac-record-init
+    command: ["sh", "-c", "chown -R 1000:1000 /rec && chmod 0770 /rec"]
+    volumes:
+      - guac_recordings:/rec
+    restart: "no"
+
+  guacd:
+    image: guacamole/guacd:1.5.5
+    container_name: cap-guacd
+    restart: unless-stopped
+    depends_on:
+      guac-record-init:
+        condition: service_completed_successfully
+    volumes:
+      # guacd writes raw session recordings here; the Guacamole web UI plays them
+      # back natively (guacenc is only needed to export a standalone video file).
+      - guac_recordings:/var/lib/guacamole/recordings
+
+  guacamole:
+    image: guacamole/guacamole:1.5.5
+    container_name: cap-guacamole
+    restart: unless-stopped
+    depends_on:
+      guac-postgres:
+        condition: service_healthy
+      guacd:
+        condition: service_started
+    environment:
+      GUACD_HOSTNAME: guacd
+      POSTGRESQL_HOSTNAME: guac-postgres
+      POSTGRESQL_DATABASE: guacamole
+      POSTGRESQL_USER: guacamole
+      POSTGRESQL_PASSWORD: \${GUAC_DB_PASSWORD:?required}
+      # Serve the app at the ROOT path (/) instead of the default /guacamole/, so
+      # it publishes cleanly as a Captivo Site: the vendor hits the bare hostname
+      # and the Site's Internal address is just http://cap-guacamole:8080 (no path).
+      WEBAPP_CONTEXT: ROOT
+      # Single sign-on (ENABLED) — Guacamole trusts the X-Captivo-User header the
+      # Captivo data-plane injects (it strips any client-supplied copy) and
+      # auto-logs the vendor in, skipping Guacamole's own login. POSTGRESQL_*
+      # stays either way — postgres holds the per-user connections. Both env vars
+      # are required: the image loads the header-auth extension only when
+      # HEADER_ENABLED is true (HTTP_AUTH_HEADER alone is a no-op).
+      #
+      # NOTE — header-auth SSO suppresses Guacamole's own logout and trims
+      # in-session navigation (logout is meaningless when Captivo re-authenticates
+      # every request). It fits fast single-target access. To turn SSO OFF, comment
+      # BOTH lines below and recreate the guacamole container; vendors then use
+      # Guacamole's normal login (one extra login).
+      HEADER_ENABLED: "true"
+      HTTP_AUTH_HEADER: X-Captivo-User
+    # Bind to localhost only: Captivo (via the connector) reaches this over the
+    # LAN; it is NOT exposed to the internet directly. Publish it through Captivo
+    # as a Site instead. Change the left side if the connector reaches it by a
+    # different address.
+    ports:
+      # Host port for your local admin access only (change guacadmin's password).
+      # The connector reaches Guacamole by container name on the compose network
+      # (cap-guacamole:8080), not this port. Override GUAC_PORT if 8080 is taken
+      # on the host (e.g. another app already uses it).
+      - "127.0.0.1:\${GUAC_PORT:-8080}:8080"
+    # Also join the shared external network so a gateway-host connector (which
+    # joins captivo-gateway via its own console-generated command — durable
+    # across connector updates) can reach this container by name.
+    networks:
+      - default
+      - captivo-gateway
+
+networks:
+  captivo-gateway:
+    external: true
+
+volumes:
+  guac_pgdata: {}
+  guac_recordings: {}
+`;
+
+// A self-contained POSIX-sh installer: it fetches the compose from the manager,
+// generates a DB password + the Guac schema, ensures the shared network, and
+// brings the stack up. Run on a host that already runs a connector.
+export function gatewayInstallScript(managerUrl: string): string {
+  const base = managerUrl.replace(/\/+$/, "");
+  return `#!/usr/bin/env sh
+set -eu
+
+DIR=captivo-gateway
+[ -n "\${1:-}" ] && DIR="$1"
+mkdir -p "$DIR" && cd "$DIR"
+
+GUAC_IMAGE="guacamole/guacamole:1.5.5"
+NETWORK="captivo-gateway"
+
+echo "-> Fetching the gateway compose from the manager..."
+curl -fsSL "${base}/gateway/compose.yml" -o docker-compose.gateway.yml
+
+# DB password, generated once and kept in .env.
+touch .env
+grep -q "^GUAC_DB_PASSWORD=..*" .env 2>/dev/null || echo "GUAC_DB_PASSWORD=$(openssl rand -hex 32)" >> .env
+
+# Guacamole DB schema, generated once, version-matched to the image.
+if [ ! -f initdb/01-schema.sql ]; then
+  echo "-> Generating the Guacamole DB schema..."
+  mkdir -p initdb
+  docker run --rm "$GUAC_IMAGE" /opt/guacamole/bin/initdb.sh --postgresql > initdb/01-schema.sql
+fi
+
+# Shared network the gateway-host connector joins (via its own update command).
+docker network inspect "$NETWORK" >/dev/null 2>&1 || docker network create "$NETWORK"
+
+echo "-> Starting the gateway (guacd + guacamole + postgres)..."
+docker compose -f docker-compose.gateway.yml up -d
+
+cat <<'EOF'
+
+Gateway is up. Next steps (in order):
+  1. Open  http://127.0.0.1:8080/  -> log in guacadmin / guacadmin -> CHANGE that password.
+  2. Create an RDP/SSH/VNC connection with Screen Recording enabled.
+  3. In Captivo -> Sites -> Add site: Internal address http://cap-guacamole:8080, Access mode Gateway.
+  4. In Captivo -> Connectors -> enable gateway mode on this host's connector, then run its update command.
+EOF
+`;
+}

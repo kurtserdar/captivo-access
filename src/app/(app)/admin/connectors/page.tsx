@@ -6,6 +6,7 @@ import { buildConnectorUpdateCommand } from "@/lib/connector/repair";
 import { connectorTunnelUrl, isLocalManagerUrl } from "@/lib/url";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { AddConnectorButton } from "./add-connector-button";
+import { GatewayGuideButton } from "./gateway-guide-button";
 import { ConnectorName } from "./connector-name";
 import { DeleteConnectorButton } from "./delete-connector-button";
 import { RepairConnectorButton } from "./repair-connector-button";
@@ -52,7 +53,10 @@ export default async function AdminConnectorsPage() {
             sites to expose specific internal upstreams through it.
           </p>
         </div>
-        <AddConnectorButton />
+        <div className="row-actions">
+          <GatewayGuideButton managerUrl={managerUrl} />
+          <AddConnectorButton />
+        </div>
       </div>
 
       {connectors.length === 0 ? (
