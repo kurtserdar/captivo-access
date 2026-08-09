@@ -2,7 +2,8 @@ import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { getSmtpConfig } from "@/lib/email/mailer";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
-import { InviteForm } from "./invite-form";
+import { ROLE_LABELS } from "@/lib/auth/roles";
+import { AddInviteButton } from "./add-invite-button";
 import { ResendInviteButton } from "./resend-invite-button";
 import { CancelInviteButton } from "./cancel-invite-button";
 
@@ -36,13 +37,7 @@ export default async function AdminInvitesPage() {
           <h1>Invitations</h1>
           <p>Invite a new vendor or admin. The invite link is shown only once.</p>
         </div>
-      </div>
-
-      <div className="card">
-        <div className="card-head">
-          <h2>New invitation</h2>
-        </div>
-        <InviteForm smtpEnabled={smtpEnabled} />
+        <AddInviteButton smtpEnabled={smtpEnabled} />
       </div>
 
       <h2>Sent invites</h2>
@@ -73,7 +68,7 @@ export default async function AdminInvitesPage() {
                       <div>{inv.company ?? "—"}</div>
                       {inv.phone && <div className="cell-sub">{inv.phone}</div>}
                     </td>
-                    <td>{inv.role}</td>
+                    <td>{ROLE_LABELS[inv.role] ?? inv.role}</td>
                     <td>
                       <span className={`pill ${STATUS_PILL[status] ?? "neutral"}`}>{status}</span>
                     </td>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ScheduleBuilder } from "@/app/(app)/access/schedule-builder";
 import type { Schedule } from "@/lib/access/schedule";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -26,10 +27,13 @@ function errorMessage(code: string | undefined): string {
 export function GrantForm({
   users,
   sites,
+  onDone,
 }: {
+  onDone?: () => void;
   users: { id: string; name: string; email: string; role: Role }[];
   sites: { id: string; name: string }[];
 }) {
+  const router = useRouter();
   const [userId, setUserId] = useState(users[0]?.id ?? "");
   const [siteId, setSiteId] = useState(sites[0]?.id ?? "");
   const [startsAt, setStartsAt] = useState("");
@@ -61,7 +65,12 @@ export function GrantForm({
         setError(errorMessage(result?.error));
         return;
       }
-      window.location.reload();
+      if (onDone) {
+        onDone();
+        router.refresh();
+      } else {
+        window.location.reload();
+      }
     } catch {
       setError("Couldn't create the grant, please try again.");
     } finally {

@@ -5,7 +5,7 @@ import { listGrants, listPendingGrants } from "@/lib/access/grants";
 import { classifyGrant, type DecisionReason } from "@/lib/access/evaluate";
 import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
-import { GrantForm } from "./grant-form";
+import { AddGrantButton } from "./add-grant-button";
 import { RevokeGrantButton } from "./revoke-grant-button";
 import { EditGrantButton } from "./edit-grant-button";
 import { TestAccessWidget } from "./test-access-widget";
@@ -65,6 +65,7 @@ export default async function AdminGrantsPage() {
           <h1>Access grants</h1>
           <p>Grant a user time-boxed access to a site. Leave the end date empty for permanent access.</p>
         </div>
+        {canApprove && users.length > 0 && sites.length > 0 && <AddGrantButton users={users} sites={sites} />}
       </div>
 
       {pending.length > 0 && (
@@ -92,19 +93,6 @@ export default async function AdminGrantsPage() {
         </div>
       )}
 
-      {canApprove && (
-        <div className="card">
-          <div className="card-head">
-            <h2>New grant</h2>
-          </div>
-          {users.length === 0 || sites.length === 0 ? (
-            <p>Add a user and a site before creating a grant.</p>
-          ) : (
-            <GrantForm users={users} sites={sites} />
-          )}
-        </div>
-      )}
-
       <h2>Grants</h2>
       {grants.length === 0 ? (
         <div className="empty">No grants yet.</div>
@@ -128,7 +116,8 @@ export default async function AdminGrantsPage() {
                 return (
                   <tr key={g.id}>
                     <td>
-                      {g.user.name} ({g.user.email})
+                      {g.user.name}
+                      <div className="cell-sub">{g.user.email}</div>
                     </td>
                     <td>{g.site.name}</td>
                     <td className="cell-sub">

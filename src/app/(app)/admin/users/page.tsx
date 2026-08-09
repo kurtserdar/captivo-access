@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { UsersTable } from "./users-table";
@@ -52,6 +53,7 @@ export default async function AdminUsersPage({
           <h1>Users</h1>
           <p>Manage all registered users and their access status.</p>
         </div>
+        <Link href="/admin/invites" className="btn primary">Invite user</Link>
       </div>
 
       <UsersTable users={rows} initialQuery={q} />
