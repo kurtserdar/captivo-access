@@ -7,7 +7,7 @@ import type { Schedule } from "@/lib/access/schedule";
 
 type Site = { id: string; name: string };
 
-export function RequestAccessForm() {
+export function RequestAccessForm({ onDone }: { onDone?: () => void }) {
   const router = useRouter();
   const [sites, setSites] = useState<Site[]>([]);
   const [siteId, setSiteId] = useState("");
@@ -44,9 +44,10 @@ export function RequestAccessForm() {
       });
       if (res.status === 409) { setError("You already have a pending request for this app."); return; }
       if (!res.ok) { setError("Could not submit the request. Check the fields and try again."); return; }
-      setDone(true);
       setSiteId(""); setStartsAt(""); setEndsAt(""); setNote("");
       router.refresh();
+      if (onDone) onDone();
+      else setDone(true);
     } catch {
       setError("Could not submit the request.");
     } finally {
@@ -55,8 +56,8 @@ export function RequestAccessForm() {
   }
 
   return (
-    <form className="card" onSubmit={submit}>
-      <div className="card-head"><h2>Request access</h2></div>
+    <form className={onDone ? undefined : "card"} onSubmit={submit}>
+      {!onDone && <div className="card-head"><h2>Request access</h2></div>}
       {done && <p className="notice success">Access requested — waiting for an admin to approve.</p>}
       {error && <p className="notice error">{error}</p>}
       <div className="field">

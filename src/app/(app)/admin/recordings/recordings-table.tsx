@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { DeleteRecordingButton } from "./delete-recording-button";
+import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
 export interface RecordingRowJSON {
   id: string;
@@ -57,6 +58,9 @@ export function RecordingsTable({
   const [rows, setRows] = useState<RecordingRowJSON[]>(initialRows);
   const [total, setTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+  const { confirm, dialog } = useConfirm();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Bumped on every load() call; a response is applied only if it's still the
   // most recently issued request, so a slow stale response can't clobber
@@ -91,6 +95,37 @@ export function RecordingsTable({
   function updateFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
     const nextFilters = { ...filters, [key]: value };
     void load(nextFilters, 0);
+  }
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  const allOnPage = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  function toggleAll() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allOnPage) rows.forEach((r) => next.delete(r.id));
+      else rows.forEach((r) => next.add(r.id));
+      return next;
+    });
+  }
+  async function deleteSelected() {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (!(await confirm(`Delete ${ids.length} recording${ids.length === 1 ? "" : "s"}? This can't be undone.`, { danger: true, confirmLabel: "Delete" }))) return;
+    setDeleting(true);
+    try {
+      await Promise.all(ids.map((id) => fetch(`/api/admin/recordings/${id}`, { method: "DELETE" }).catch(() => null)));
+      setSelected(new Set());
+      await load(filters, 0);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   const start = total === 0 ? 0 : offset + 1;
@@ -147,6 +182,16 @@ export function RecordingsTable({
         </div>
       </div>
 
+      {dialog}
+      {selected.size > 0 && (
+        <div className="card-head" style={{ marginTop: "1rem" }}>
+          <span className="cell-sub">{selected.size} selected</span>
+          <button type="button" className="btn sm danger" onClick={deleteSelected} disabled={deleting}>
+            {deleting ? "Deleting…" : `Delete selected (${selected.size})`}
+          </button>
+        </div>
+      )}
+
       {rows.length === 0 ? (
         <div className="empty">{loading ? "Loading…" : "No recordings match these filters."}</div>
       ) : (
@@ -154,6 +199,7 @@ export function RecordingsTable({
           <table className="table">
             <thead>
               <tr>
+                <th><input type="checkbox" aria-label="Select all on page" checked={allOnPage} onChange={toggleAll} /></th>
                 <th>Started</th>
                 <th>User</th>
                 <th>Site</th>
@@ -166,6 +212,7 @@ export function RecordingsTable({
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
+                  <td><input type="checkbox" aria-label="Select recording" checked={selected.has(r.id)} onChange={() => toggle(r.id)} /></td>
                   <td className="cell-sub"><LocalTime iso={r.startedAt} /></td>
                   <td>
                     {r.userName ?? "—"}

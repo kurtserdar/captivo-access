@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/current-user";
 import { listUserGrants } from "@/lib/access/grants";
 import { classifyGrant } from "@/lib/access/evaluate";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { RequestAccessForm } from "./request-access-form";
+import { RequestAccessButton } from "./request-access-button";
 import { AccessView, type AccessRow } from "./access-view";
 
 export const dynamic = "force-dynamic";
@@ -46,9 +46,8 @@ export default async function AccessPage() {
           <h1>My access</h1>
           <p>Sites you have been granted access to, and when that access applies.</p>
         </div>
+        <RequestAccessButton />
       </div>
-
-      <RequestAccessForm />
 
       {rows.length === 0 ? (
         <div className="empty">You don&apos;t have any access right now.</div>

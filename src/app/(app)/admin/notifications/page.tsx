@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { requireCapability } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { timeAgo } from "@/lib/format";
 import { MarkReadButton } from "./mark-read-button";
-import { MarkOneReadButton } from "./mark-one-read-button";
+import { NotificationsView, type NotificationRow } from "./notifications-view";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Notifications" };
@@ -26,6 +25,15 @@ export default async function AdminNotificationsPage() {
 
   const unread = notifications.filter((n) => !n.readAt).length;
 
+  const rows: NotificationRow[] = notifications.map((n) => ({
+    id: n.id,
+    type: n.type,
+    siteName: n.siteName ?? "—",
+    detail: n.detail,
+    when: timeAgo(n.createdAt),
+    read: Boolean(n.readAt),
+  }));
+
   return (
     <main>
       <div className="page-head">
@@ -39,38 +47,7 @@ export default async function AdminNotificationsPage() {
       {notifications.length === 0 ? (
         <div className="empty">No notifications yet.</div>
       ) : (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Site</th>
-                <th>Detail</th>
-                <th>When</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {notifications.map((n) => (
-                <tr key={n.id} className={n.readAt ? undefined : "row-unread"}>
-                  <td>
-                    {n.type === "site_down" ? (
-                      <span className="pill danger">Down</span>
-                    ) : (
-                      <span className="pill ok">Recovered</span>
-                    )}
-                  </td>
-                  <td>
-                    <Link href="/admin/sites">{n.siteName}</Link>
-                  </td>
-                  <td className="cell-sub">{n.detail ?? "—"}</td>
-                  <td className="cell-sub">{timeAgo(n.createdAt)}</td>
-                  <td>{!n.readAt && <MarkOneReadButton id={n.id} />}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <NotificationsView rows={rows} />
       )}
     </main>
   );
