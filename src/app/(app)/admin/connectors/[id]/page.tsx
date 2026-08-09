@@ -129,6 +129,21 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       </div>
 
       <div className="card">
+        <div className="card-head"><h2>Recent logs</h2></div>
+        {t && t.recentLogs && t.recentLogs.length > 0 ? (
+          <div className="term">
+            <div className="term-body" style={{ maxHeight: "18rem" }}>
+              {t.recentLogs.map((line, i) => (
+                <div key={i} className="term-line">{line}</div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="cell-sub">No logs yet — the connector is offline or hasn&apos;t been updated to report logs.</p>
+        )}
+      </div>
+
+      <div className="card">
         <div className="card-head"><h2>Recent activity</h2></div>
         {activity.length === 0 ? (
           <div className="empty">No access activity yet.</div>

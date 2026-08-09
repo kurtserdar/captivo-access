@@ -2,11 +2,12 @@ package tunnel
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 )
 
 func TestTelemetryRoundTrip(t *testing.T) {
-	in := Telemetry{Version: "1.2.3", UptimeSec: 42, ActiveConnections: 3, TotalConnections: 10, DeniedCount: 2, BytesIn: 1000, BytesOut: 500}
+	in := Telemetry{Version: "1.2.3", UptimeSec: 42, ActiveConnections: 3, TotalConnections: 10, DeniedCount: 2, BytesIn: 1000, BytesOut: 500, RecentLogs: []string{"a", "b"}}
 	b, err := json.Marshal(in)
 	if err != nil {
 		t.Fatal(err)
@@ -15,7 +16,7 @@ func TestTelemetryRoundTrip(t *testing.T) {
 	if err := json.Unmarshal(b, &out); err != nil {
 		t.Fatal(err)
 	}
-	if out != in {
+	if !reflect.DeepEqual(out, in) {
 		t.Fatalf("round-trip mismatch: %+v != %+v", out, in)
 	}
 }

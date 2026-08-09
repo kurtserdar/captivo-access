@@ -6,6 +6,7 @@ export interface ConnectorTelemetry {
   deniedCount: number;
   bytesIn: number;
   bytesOut: number;
+  recentLogs?: string[];
 }
 
 // Reads a connector's live telemetry from the data-plane (in-memory, ephemeral).

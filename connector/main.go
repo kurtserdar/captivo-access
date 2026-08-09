@@ -6,12 +6,16 @@
 package main
 
 import (
+	"io"
 	"log"
 	"os"
 	"strings"
 )
 
 func main() {
+	// Keep stderr (docker logs) and also capture recent lines for the console tail.
+	log.SetOutput(io.MultiWriter(os.Stderr, logRingBuf))
+
 	managerURL := os.Getenv("MANAGER_URL")
 	dataplaneURL := os.Getenv("DATAPLANE_URL")
 	tokenFile := envOr("TOKEN_FILE", "/data/token")

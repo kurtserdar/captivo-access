@@ -31,6 +31,7 @@ func snapshot() tunnel.Telemetry {
 		DeniedCount:       atomic.LoadInt64(&statDenied),
 		BytesIn:           atomic.LoadInt64(&statBytesIn),
 		BytesOut:          atomic.LoadInt64(&statBytesOut),
+		RecentLogs:        logRingBuf.tail(80),
 	}
 }
 
