@@ -1960,6 +1960,7 @@ export const ConnectorScalarFieldEnum = {
   version: 'version',
   gatewayHost: 'gatewayHost',
   remoteAddr: 'remoteAddr',
+  egressPolicy: 'egressPolicy',
   createdAt: 'createdAt'
 } as const
 

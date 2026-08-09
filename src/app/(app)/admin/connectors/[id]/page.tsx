@@ -6,6 +6,7 @@ import { managerVersion } from "@/lib/version";
 import { isConnectorOutdated } from "@/lib/updates/semver";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { getConnectorTelemetry } from "@/lib/connector/telemetry";
+import { EgressPolicyForm } from "./egress-policy-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Connector" };
@@ -46,6 +47,7 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       lastSeenAt: true,
       remoteAddr: true,
       gatewayHost: true,
+      egressPolicy: true,
       sites: { select: { id: true, name: true, hostname: true, probeOk: true }, orderBy: { name: "asc" } },
     },
   });
@@ -88,6 +90,11 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
           <div className="site-card-mrow"><span className="site-card-k">Last seen</span><span className="site-card-v">{connector.lastSeenAt ? <LocalTime iso={connector.lastSeenAt.toISOString()} /> : "Never"}</span></div>
           <div className="site-card-mrow"><span className="site-card-k">Remote address</span><span className="site-card-v">{connector.remoteAddr ?? "—"}</span></div>
         </div>
+      </div>
+
+      <div className="card">
+        <div className="card-head"><h2>Egress policy</h2></div>
+        <EgressPolicyForm connectorId={connector.id} initial={connector.egressPolicy ?? ""} />
       </div>
 
       <div className="card">

@@ -119,6 +119,7 @@ model Connector {
   version    String?
   gatewayHost Boolean @default(false)
   remoteAddr String?
+  egressPolicy String?
   createdAt  DateTime        @default(now())
   sites      Site[]
   pairings   ConnectorPairing[]

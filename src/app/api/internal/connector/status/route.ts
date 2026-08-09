@@ -25,5 +25,6 @@ export async function POST(req: NextRequest) {
       ...(typeof body.version === "string" ? { version: body.version } : {}),
     },
   });
-  return NextResponse.json({ ok: true });
+  const c = await db.connector.findUnique({ where: { id: connectorId }, select: { egressPolicy: true } });
+  return NextResponse.json({ ok: true, egressPolicy: c?.egressPolicy ?? "" });
 }
