@@ -5,6 +5,7 @@ import { verifyAuthentication } from "@/lib/auth/webauthn";
 import { readChallenge, clearChallenge } from "@/lib/auth/challenge";
 import { db } from "@/lib/db";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
+import { syncUserAtLogin } from "@/lib/directory/sync";
 import { cookieSecure, cookieDomain } from "@/lib/auth/cookies";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getRpId, originMatchesRp, requestOrigin } from "@/lib/auth/rp";
@@ -68,6 +69,17 @@ export async function POST(req: NextRequest) {
     where: { id: passkey.id },
     data: { counter: BigInt(result.authenticationInfo.newCounter), lastUsedAt: new Date() },
   });
+
+  // AD group sync (JIT): reconcile role/grants; reject if deprovisioned. Fail-open inside.
+  const sync = await syncUserAtLogin({
+    id: passkey.user.id,
+    email: passkey.user.email,
+    role: passkey.user.role,
+    directoryManaged: passkey.user.directoryManaged,
+  });
+  if (sync.deprovisioned) {
+    return NextResponse.json({ error: "revoked" }, { status: 403 });
+  }
 
   const token = await createSession(passkey.userId, requestMeta(req));
   (await cookies()).set(SESSION_COOKIE, token, {

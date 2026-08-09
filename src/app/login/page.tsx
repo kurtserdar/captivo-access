@@ -30,6 +30,7 @@ export default async function LoginPage({
     errorCode === "disabled" ? "Your account is disabled — contact an administrator."
     : errorCode === "no_account" ? "No account for that identity — ask an administrator to invite you."
     : errorCode === "sso" ? "Sign-in with your identity provider failed. Please try again."
+    : errorCode === "revoked" ? "Your access has been revoked — you are no longer a member of an authorized directory group."
     : null;
 
   return (

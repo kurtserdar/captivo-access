@@ -39,7 +39,11 @@ export function LoginForm({
       });
       const result = await verifyRes.json().catch(() => ({}));
       if (!verifyRes.ok || !result?.ok) {
-        setError(GENERIC_ERROR);
+        setError(
+          result?.error === "revoked"
+            ? "Your access has been revoked — you are no longer a member of an authorized directory group."
+            : GENERIC_ERROR,
+        );
         return;
       }
 

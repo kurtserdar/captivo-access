@@ -5,6 +5,7 @@ import { getOidcConfig, getOidcSecret } from "@/lib/auth/oidc-config";
 import { discover, checkClaims, type IdClaims } from "@/lib/auth/oidc";
 import { readOidcState, clearOidcState } from "@/lib/auth/oidc-state";
 import { startSession } from "@/lib/auth/session";
+import { syncUserAtLogin } from "@/lib/directory/sync";
 import { safeReturnTo } from "@/lib/auth/return-to";
 import { managerBaseUrl } from "@/lib/url";
 
@@ -98,6 +99,13 @@ export async function GET(req: NextRequest) {
   const user = await db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
   if (user) {
     if (user.status !== "ACTIVE") return fail(req, "disabled");
+    const sync = await syncUserAtLogin({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      directoryManaged: user.directoryManaged,
+    });
+    if (sync.deprovisioned) return fail(req, "revoked");
     await startSession(user.id, req);
     return NextResponse.redirect(new URL(safeReturnTo(saved.returnTo), managerBaseUrl(req)));
   }
@@ -125,6 +133,13 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     return fail(req, "sso", `user_create_failed: ${e instanceof Error ? e.message : String(e)}`);
   }
+  const sync = await syncUserAtLogin({
+    id: created.id,
+    email: created.email,
+    role: created.role,
+    directoryManaged: created.directoryManaged,
+  });
+  if (sync.deprovisioned) return fail(req, "revoked");
   await startSession(created.id, req);
   return NextResponse.redirect(new URL(safeReturnTo(saved.returnTo), managerBaseUrl(req)));
 }
