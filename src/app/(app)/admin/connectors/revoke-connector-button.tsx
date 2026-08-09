@@ -8,9 +8,9 @@ export function RevokeConnectorButton({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { confirm, dialog } = useConfirm();
+  const router = useRouter();
 
   async function handleClick() {
-  const router = useRouter();
     if (!(await confirm("Are you sure you want to revoke this connector? It will lose access immediately.", { danger: true }))) {
       return;
     }

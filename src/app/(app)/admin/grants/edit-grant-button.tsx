@@ -32,9 +32,9 @@ export function EditGrantButton({ id, endsAt, note }: { id: string; endsAt: stri
   const [noteValue, setNoteValue] = useState(note ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   async function save() {
-  const router = useRouter();
     setError(null);
     setBusy(true);
     try {

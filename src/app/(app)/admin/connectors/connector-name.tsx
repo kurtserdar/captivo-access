@@ -8,9 +8,9 @@ export function ConnectorName({ id, name }: { id: string; name: string }) {
   const [value, setValue] = useState(name);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   async function save() {
-  const router = useRouter();
     const trimmed = value.trim();
     if (!trimmed) {
       setError("Name can't be empty.");

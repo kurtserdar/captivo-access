@@ -7,9 +7,9 @@ export function DeleteSiteButton({ id, name, grantCount }: { id: string; name: s
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { confirm, dialog } = useConfirm();
+  const router = useRouter();
 
   async function handleClick() {
-  const router = useRouter();
     const grants = grantCount === 1 ? "1 access grant" : `${grantCount} access grants`;
     if (!(await confirm(`Delete site "${name}"? This also removes ${grants} and can't be undone.`, { danger: true }))) return;
     setError(null);

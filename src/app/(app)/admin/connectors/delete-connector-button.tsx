@@ -12,9 +12,9 @@ export function DeleteConnectorButton({ id, name }: { id: string; name: string }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { confirm, dialog } = useConfirm();
+  const router = useRouter();
 
   async function handleClick() {
-  const router = useRouter();
     if (!(await confirm(`Permanently delete connector "${name}"? This can't be undone.`, { danger: true }))) return;
     setError(null);
     setBusy(true);

@@ -7,9 +7,9 @@ export function DeleteRecordingButton({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { confirm, dialog } = useConfirm();
+  const router = useRouter();
 
   async function handleClick() {
-  const router = useRouter();
     if (!(await confirm("Delete this recording? This can't be undone.", { danger: true }))) return;
     setError(null);
     setBusy(true);

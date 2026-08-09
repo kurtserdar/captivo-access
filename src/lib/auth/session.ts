@@ -6,10 +6,6 @@ import { cookieSecure, cookieDomain } from "./cookies";
 import { getSessionPolicy, sessionTtlMs, idleExpired, evictionIds } from "@/lib/policy/session-policy";
 
 export const SESSION_COOKIE = "ca_session";
-function ttlMs(): number {
-  const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
-  return (Number.isFinite(h) && h > 0 ? h : 12) * 3600_000;
-}
 
 export async function createSession(userId: string, meta?: { userAgent?: string; ip?: string }): Promise<string> {
   const token = generateToken();

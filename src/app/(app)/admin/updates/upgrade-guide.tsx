@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CommandBlock } from "@/app/(app)/_shell/command-block";
 import { formatDockerRun } from "@/lib/format/docker-command";
 
@@ -70,7 +71,7 @@ export function UpgradeGuide({
           {hasGatewayHost && (
             <p className="cell-sub">
               If a connector also runs the Guacamole gateway, update it from{" "}
-              <a href="/admin/connectors">Connectors</a> instead — that command keeps it on the gateway
+              <Link href="/admin/connectors">Connectors</Link> instead — that command keeps it on the gateway
               network.
             </p>
           )}

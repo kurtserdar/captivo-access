@@ -43,6 +43,6 @@ export function RecordingPlayer({ id }: { id: string }) {
   if (error) return <p className="notice error">{error}</p>;
   if (empty) return <p className="notice">This recording is too short to play.</p>;
   if (incomplete)
-    return <p className="notice">This recording is incomplete and can't be replayed (its opening snapshot was not captured).</p>;
+    return <p className="notice">This recording is incomplete and can&apos;t be replayed (its opening snapshot was not captured).</p>;
   return <div ref={ref} />;
 }

@@ -19,12 +19,12 @@ function errorMessage(code: string | undefined): string {
 export function ToggleStatusButton({ userId, status }: { userId: string; status: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const nextStatus = status === "ACTIVE" ? "DISABLED" : "ACTIVE";
   const label = status === "ACTIVE" ? "Disable" : "Activate";
 
   async function handleClick() {
-  const router = useRouter();
     setError(null);
     setBusy(true);
     try {
