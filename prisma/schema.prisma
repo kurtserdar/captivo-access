@@ -148,6 +148,8 @@ model Site {
   probeLatencyMs     Int?
   recordSessions     Boolean       @default(false)
   accessMode         SiteAccessMode @default(TRANSPARENT)
+  logo               Bytes?
+  logoType           String?
   createdAt          DateTime      @default(now())
   grants             AccessGrant[]
 }

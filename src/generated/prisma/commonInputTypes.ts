@@ -266,6 +266,13 @@ export type EnumSiteAccessModeFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumSiteAccessModeFilter<$PrismaModel> | $Enums.SiteAccessMode
 }
 
+export type BytesNullableFilter<$PrismaModel = never> = {
+  equals?: runtime.Bytes | Prisma.BytesFieldRefInput<$PrismaModel> | null
+  in?: runtime.Bytes[] | Prisma.ListBytesFieldRefInput<$PrismaModel> | null
+  notIn?: runtime.Bytes[] | Prisma.ListBytesFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedBytesNullableFilter<$PrismaModel> | runtime.Bytes | null
+}
+
 export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
   equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel> | null
   not?: Prisma.NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
@@ -298,6 +305,16 @@ export type EnumSiteAccessModeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumSiteAccessModeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumSiteAccessModeFilter<$PrismaModel>
+}
+
+export type BytesNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: runtime.Bytes | Prisma.BytesFieldRefInput<$PrismaModel> | null
+  in?: runtime.Bytes[] | Prisma.ListBytesFieldRefInput<$PrismaModel> | null
+  notIn?: runtime.Bytes[] | Prisma.ListBytesFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedBytesNullableWithAggregatesFilter<$PrismaModel> | runtime.Bytes | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedBytesNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedBytesNullableFilter<$PrismaModel>
 }
 
 export type EnumGrantStatusFilter<$PrismaModel = never> = {
@@ -677,6 +694,13 @@ export type NestedEnumSiteAccessModeFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumSiteAccessModeFilter<$PrismaModel> | $Enums.SiteAccessMode
 }
 
+export type NestedBytesNullableFilter<$PrismaModel = never> = {
+  equals?: runtime.Bytes | Prisma.BytesFieldRefInput<$PrismaModel> | null
+  in?: runtime.Bytes[] | Prisma.ListBytesFieldRefInput<$PrismaModel> | null
+  notIn?: runtime.Bytes[] | Prisma.ListBytesFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedBytesNullableFilter<$PrismaModel> | runtime.Bytes | null
+}
+
 export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
   equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel> | null
   not?: Prisma.NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
@@ -720,6 +744,16 @@ export type NestedEnumSiteAccessModeWithAggregatesFilter<$PrismaModel = never> =
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumSiteAccessModeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumSiteAccessModeFilter<$PrismaModel>
+}
+
+export type NestedBytesNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: runtime.Bytes | Prisma.BytesFieldRefInput<$PrismaModel> | null
+  in?: runtime.Bytes[] | Prisma.ListBytesFieldRefInput<$PrismaModel> | null
+  notIn?: runtime.Bytes[] | Prisma.ListBytesFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedBytesNullableWithAggregatesFilter<$PrismaModel> | runtime.Bytes | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedBytesNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedBytesNullableFilter<$PrismaModel>
 }
 
 export type NestedEnumGrantStatusFilter<$PrismaModel = never> = {

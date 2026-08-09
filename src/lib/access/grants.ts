@@ -63,7 +63,7 @@ export async function listUserGrants(userId: string) {
       approvedAt: true,
       schedule: true,
       denyReason: true,
-      site: { select: { name: true, hostname: true, recordSessions: true } },
+      site: { select: { id: true, name: true, hostname: true, recordSessions: true, logoType: true } },
     },
   });
 }

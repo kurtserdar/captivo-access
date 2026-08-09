@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { parseLogoUpload } from "@/lib/site/logo";
 
 export async function POST(req: NextRequest) {
   const admin = await getCurrentUser();
@@ -47,8 +48,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "connector_not_found" }, { status: 400 });
   }
 
+  const logoResult = parseLogoUpload(body.logo, body.logoType);
+  if (logoResult.action === "error") {
+    return NextResponse.json({ error: logoResult.error }, { status: 400 });
+  }
+
   const site = await db.site.create({
-    data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, accessMode },
+    data: {
+      connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, accessMode,
+      ...(logoResult.action === "set" ? { logo: logoResult.data, logoType: logoResult.type } : {}),
+    },
     select: { id: true },
   });
 

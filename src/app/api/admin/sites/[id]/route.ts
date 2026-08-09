@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { parseLogoUpload } from "@/lib/site/logo";
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
@@ -34,8 +35,15 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const existing = await db.site.findUnique({ where: { id }, select: { id: true } });
   if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
+  const logoResult = parseLogoUpload(body.logo, body.logoType);
+  if (logoResult.action === "error") return NextResponse.json({ error: logoResult.error }, { status: 400 });
+  const logoData =
+    logoResult.action === "set" ? { logo: logoResult.data, logoType: logoResult.type }
+    : logoResult.action === "clear" ? { logo: null, logoType: null }
+    : {};
+
   try {
-    await db.site.update({ where: { id }, data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, accessMode } });
+    await db.site.update({ where: { id }, data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, accessMode, ...logoData } });
   } catch (e) {
     // P2002 = the hostname unique constraint is taken by a different site.
     if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2002") {

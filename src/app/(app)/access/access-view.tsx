@@ -7,8 +7,10 @@ import { WithdrawRequestButton } from "./withdraw-request-button";
 
 export interface AccessRow {
   id: string;
+  siteId: string;
   siteName: string;
   hostname: string;
+  hasLogo: boolean;
   startsAtISO: string | null;
   endsAtISO: string | null;
   schedule: unknown;
@@ -122,7 +124,7 @@ export function AccessView({ rows }: { rows: AccessRow[] }) {
                 {group.map((r) => (
                   <div key={r.id} className="card access-card">
                     <div className="access-card-head">
-                      <SiteAvatar name={r.siteName} />
+                      <SiteAvatar name={r.siteName} siteId={r.siteId} hasLogo={r.hasLogo} />
                       <span className="access-card-name">{r.siteName}</span>
                       <StatusPill status={r.status} />
                     </div>
@@ -150,7 +152,7 @@ export function AccessView({ rows }: { rows: AccessRow[] }) {
                     {group.map((r) => (
                       <tr key={r.id}>
                         <td>
-                          <span className="cell-inline"><SiteAvatar name={r.siteName} /> {r.siteName}</span>
+                          <span className="cell-inline"><SiteAvatar name={r.siteName} siteId={r.siteId} hasLogo={r.hasLogo} /> {r.siteName}</span>
                         </td>
                         <td className="cell-sub"><Window r={r} /></td>
                         <td>

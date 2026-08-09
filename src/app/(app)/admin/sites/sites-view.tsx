@@ -13,6 +13,7 @@ export interface SiteRow {
   upstreamUrl: string | null;
   description: string | null;
   accessMode: "TRANSPARENT" | "GATEWAY";
+  hasLogo: boolean;
   connectorName: string;
   grantCount: number;
   probeOk: boolean | null;
@@ -88,7 +89,7 @@ export function SitesView({ sites }: { sites: SiteRow[] }) {
           {sites.map((s) => (
             <div key={s.id} className="card site-card">
               <div className="site-card-head">
-                <SiteAvatar name={s.name} />
+                <SiteAvatar name={s.name} siteId={s.id} hasLogo={s.hasLogo} />
                 <div className="site-card-title">
                   <div className="site-card-name">{s.name} <GatewayPill accessMode={s.accessMode} /></div>
                   <div className="site-card-host">
@@ -126,7 +127,7 @@ export function SitesView({ sites }: { sites: SiteRow[] }) {
               {sites.map((s) => (
                 <tr key={s.id}>
                   <td>
-                    <span className="cell-inline"><SiteAvatar name={s.name} /> {s.name} <GatewayPill accessMode={s.accessMode} /></span>
+                    <span className="cell-inline"><SiteAvatar name={s.name} siteId={s.id} hasLogo={s.hasLogo} /> {s.name} <GatewayPill accessMode={s.accessMode} /></span>
                   </td>
                   <td className="cell-sub">
                     <span className="cell-inline"><span className="cell-truncate" title={s.hostname}>{s.hostname}</span><CopyButton value={s.hostname} label="Copy" /></span>

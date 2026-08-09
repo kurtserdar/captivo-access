@@ -32,6 +32,7 @@ type SiteInitial = {
   insecureSkipVerify: boolean;
   recordSessions: boolean;
   accessMode: "TRANSPARENT" | "GATEWAY";
+  hasLogo?: boolean;
 };
 
 export function SiteForm({
@@ -52,8 +53,35 @@ export function SiteForm({
   const [insecureSkipVerify, setInsecureSkipVerify] = useState(site?.insecureSkipVerify ?? false);
   const [recordSessions, setRecordSessions] = useState(site?.recordSessions ?? false);
   const [accessMode, setAccessMode] = useState<"TRANSPARENT" | "GATEWAY">(site?.accessMode ?? "TRANSPARENT");
+  // logo: undefined = leave unchanged; null = remove; string = new base64 data URL.
+  const [logo, setLogo] = useState<string | null | undefined>(undefined);
+  const [logoType, setLogoType] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 200 * 1024) {
+      setError("The logo must be 200 KB or smaller.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setLogo(typeof reader.result === "string" ? reader.result : null);
+      setLogoType(file.type);
+      setError(null);
+    };
+    reader.readAsDataURL(file);
+  }
+  function removeLogo() {
+    setLogo(null);
+    setLogoType(undefined);
+  }
+  // Whether to show a logo preview: a freshly-picked one, or the existing one
+  // (unless the admin just removed it).
+  const showNewLogo = typeof logo === "string";
+  const showExistingLogo = logo === undefined && (site?.hasLogo ?? false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,6 +100,8 @@ export function SiteForm({
           insecureSkipVerify,
           recordSessions: accessMode === "GATEWAY" ? false : recordSessions,
           accessMode,
+          logo,
+          logoType,
         }),
       });
       const result = await res.json().catch(() => ({}));
@@ -215,6 +245,25 @@ export function SiteForm({
           </p>
         </div>
       )}
+      <div className="field">
+        <label className="field-label" htmlFor="site-logo">Logo (optional)</label>
+        <div className="logo-field">
+          {showNewLogo ? (
+            <img className="logo-preview" src={logo as string} alt="" />
+          ) : showExistingLogo && site ? (
+            <img className="logo-preview" src={`/api/sites/${site.id}/logo`} alt="" />
+          ) : (
+            <span className="logo-preview logo-preview-empty" aria-hidden="true">—</span>
+          )}
+          <div className="logo-actions">
+            <input id="site-logo" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={onLogoFile} />
+            {(showNewLogo || showExistingLogo) && (
+              <button type="button" className="btn sm" onClick={removeLogo}>Remove</button>
+            )}
+          </div>
+        </div>
+        <p className="hint">PNG, JPG, SVG or WebP, up to 200 KB. Sites without a logo show a colored initial.</p>
+      </div>
       <div className="field">
         <label className="field-label" htmlFor="site-description">
           Description (optional)

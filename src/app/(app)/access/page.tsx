@@ -26,8 +26,10 @@ export default async function AccessPage() {
     if (!status) continue; // expired/revoked grants are not shown here.
     rows.push({
       id: g.id,
+      siteId: g.site.id,
       siteName: g.site.name,
       hostname: g.site.hostname,
+      hasLogo: g.site.logoType != null,
       startsAtISO: g.startsAt ? g.startsAt.toISOString() : null,
       endsAtISO: g.endsAt ? g.endsAt.toISOString() : null,
       schedule: g.schedule,
