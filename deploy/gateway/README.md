@@ -78,12 +78,19 @@ Now a vendor with a Captivo grant reaches Guacamole through Captivo — passkey 
 access, and every request in the Captivo audit log. (WebSocket passthrough — which Guacamole's tunnel needs —
 is already supported by the Captivo proxy.)
 
-## 4. Single sign-on
-Gateway Sites auto-log the vendor into Guacamole — no second login. Captivo injects the vendor's **email**
-as a trusted header (`X-Captivo-User`); Guacamole's header-auth extension reads it and signs the vendor in
-automatically.
+## 4. Single sign-on (optional, off by default)
+Optionally, gateway Sites can auto-log the vendor into Guacamole — no second login. Captivo injects the
+vendor's **email** as a trusted header (`X-Captivo-User`); Guacamole's header-auth extension reads it and
+signs the vendor in automatically. **This is off by default** — enable it by uncommenting `HEADER_ENABLED`
+and `HTTP_AUTH_HEADER` in `docker-compose.gateway.yml`, then restarting Guacamole.
 
-- **Operator step (identity pass-through):** create a Guacamole user for each vendor **email**
+- **Trade-off — decide before enabling.** Header-auth SSO **suppresses Guacamole's logout and trims
+  in-session navigation** (logout is meaningless when Captivo re-authenticates every request), so a vendor
+  tends to get "stuck" in one connection and can't easily switch connections or sign out. It fits **fast,
+  single-target** access. If your vendors browse/switch between **multiple** connections, leave SSO **off** —
+  Guacamole's normal login gives them the full home/switch/logout UI (the only cost is a second login). You
+  can flip it anytime by (un)commenting the two env vars and restarting.
+- **Operator step when SSO is on (identity pass-through):** create a Guacamole user for each vendor **email**
   (Settings → Users → New user, username = the vendor's email exactly) and assign their connections. Until
   you do this, the vendor still logs in via the header, but sees an empty connection list.
 - **Trust boundary (important):** Guacamole trusts this header absolutely — anyone who can set it is
@@ -92,7 +99,7 @@ automatically.
   injecting its own. Keep it bound to localhost / the internal `captivo-gateway` network, exactly as this
   pack already sets it up — do not publish port 8080 directly or put another reverse proxy in front of it.
 - **After upgrading** this pack (new compose or new `guacamole/guacamole` image), re-pull the gateway
-  compose and restart Guacamole so header-auth is active:
+  compose and restart Guacamole so the new compose takes effect:
   ```bash
   curl -fsSLO https://raw.githubusercontent.com/kurtserdar/captivo-access/main/deploy/gateway/docker-compose.gateway.yml
   docker compose -f docker-compose.gateway.yml up -d
