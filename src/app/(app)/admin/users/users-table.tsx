@@ -16,6 +16,8 @@ export type UserRow = {
   role: string;
   status: string;
   passkeys: number;
+  directoryManaged: boolean;
+  directoryLastVerifiedAt: string | null;
   isSelf: boolean;
 };
 
@@ -89,6 +91,7 @@ export function UsersTable({ users, initialQuery }: { users: UserRow[]; initialQ
                 <th>Role</th>
                 <th>Status</th>
                 <th>Passkeys</th>
+                <th>Directory</th>
                 <th></th>
               </tr>
             </thead>
@@ -108,6 +111,13 @@ export function UsersTable({ users, initialQuery }: { users: UserRow[]; initialQ
                     </span>
                   </td>
                   <td className="cell-sub">{u.passkeys}</td>
+                  <td className="cell-sub">
+                    {u.directoryManaged
+                      ? u.directoryLastVerifiedAt
+                        ? `Verified ${new Date(u.directoryLastVerifiedAt).toLocaleDateString()}`
+                        : "Managed"
+                      : "—"}
+                  </td>
                   <td>
                     {u.isSelf ? (
                       <span className="cell-sub" title="You can't disable yourself">

@@ -24,6 +24,8 @@ export default async function AdminUsersPage({
       role: true,
       status: true,
       createdAt: true,
+      directoryManaged: true,
+      directoryLastVerifiedAt: true,
       _count: { select: { passkeys: true } },
     },
     orderBy: { createdAt: "asc" },
@@ -38,6 +40,8 @@ export default async function AdminUsersPage({
     role: u.role,
     status: u.status,
     passkeys: u._count.passkeys,
+    directoryManaged: u.directoryManaged,
+    directoryLastVerifiedAt: u.directoryLastVerifiedAt ? u.directoryLastVerifiedAt.toISOString() : null,
     isSelf: u.id === admin.id,
   }));
 
