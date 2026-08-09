@@ -131,6 +131,30 @@ func main() {
 		}
 		writeJSON(w, http.StatusOK, ResolveUser(reg.Get(body.ConnectorID), body.LdapConfig, body.Email))
 	})
+	in.HandleFunc("/connector-telemetry", func(w http.ResponseWriter, r *http.Request) {
+		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		var body struct {
+			ConnectorID string `json:"connectorId"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_body"})
+			return
+		}
+		sess := reg.Get(body.ConnectorID)
+		if sess == nil {
+			writeJSON(w, http.StatusOK, map[string]any{"online": false})
+			return
+		}
+		t, at := sess.Telemetry()
+		if t == nil {
+			writeJSON(w, http.StatusOK, map[string]any{"online": true, "telemetry": nil})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"online": true, "ageMs": time.Since(at).Milliseconds(), "telemetry": t})
+	})
 	in.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok")) })
 	go func() { log.Fatal(http.ListenAndServe(env("INTERNAL_ADDR", ":3102"), in)) }()
 
