@@ -38,6 +38,7 @@ func resolveUpstreamTarget(upstreamURL, path string, allow *TargetMatcher) (targ
 		return nil, nil, "bad upstream url"
 	}
 	if !allow.Allowed(base.Host) {
+		denied()
 		return nil, nil, "target not allowed" // egress boundary — fail closed
 	}
 	if !strings.HasPrefix(path, "/") {
@@ -66,19 +67,41 @@ func handleStream(st io.ReadWriteCloser, allow *TargetMatcher) {
 		Kind string `json:"kind"`
 	}
 	_ = json.Unmarshal(reqBytes, &peek)
-	if peek.Kind == "probe" {
-		handleProbe(st, allow, reqBytes)
+	if peek.Kind == "control" {
+		handleControl(st)
 		return
 	}
-	if peek.Kind == "ws" {
-		handleWS(st, allow, reqBytes)
-		return
+	// Relay stream: count it, and wrap st so bytes are tallied for every kind.
+	connOpen()
+	defer connClose()
+	cst := &countingStream{ReadWriteCloser: st}
+	switch peek.Kind {
+	case "probe":
+		handleProbe(cst, allow, reqBytes)
+	case "ws":
+		handleWS(cst, allow, reqBytes)
+	case "ldap":
+		handleLdap(cst, allow, reqBytes)
+	default:
+		handleDial(cst, allow, reqBytes)
 	}
-	if peek.Kind == "ldap" {
-		handleLdap(st, allow, reqBytes)
-		return
+}
+
+// handleControl reports telemetry to the data-plane every 10s until the stream
+// dies. (The opening ControlHello was already read as the dispatch frame.)
+func handleControl(st io.ReadWriteCloser) {
+	defer st.Close()
+	tick := time.NewTicker(10 * time.Second)
+	defer tick.Stop()
+	for {
+		b, err := json.Marshal(snapshot())
+		if err == nil {
+			if err := tunnel.WriteFrame(st, b); err != nil {
+				return
+			}
+		}
+		<-tick.C
 	}
-	handleDial(st, allow, reqBytes)
 }
 
 // handleLdap services a raw LDAP relay. The first frame is a
@@ -98,6 +121,7 @@ func handleLdap(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 		return
 	}
 	if !allow.Allowed(lr.Target) {
+		denied()
 		writeLdapErr(st, "target not allowed") // egress boundary — fail closed
 		return
 	}
