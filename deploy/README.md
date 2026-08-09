@@ -9,6 +9,21 @@ It's separate from the repo-root `docker-compose.yml`, which is the
 dev/build stack (it builds images locally). Don't use that one in
 production — use this directory instead.
 
+## Quick start (one command)
+
+Point DNS first — `manager.<domain>`, `connect.<domain>`, and `*.<domain>`
+(wildcard) at this host's public IP, with ports 80 + 443 open — then:
+
+```bash
+./setup.sh access.example.com
+```
+
+`setup.sh` generates `.env` (deriving `COOKIE_DOMAIN` / `MANAGER_PUBLIC_URL` /
+`WEBAUTHN_RP_ID` from the domain and creating all secrets once), pulls the
+published images, and runs `docker compose up -d`. It's idempotent — re-run any
+time. Then open `https://manager.<domain>/` and complete first-run admin setup.
+The rest of this document is the reference for what it sets up and how to tune it.
+
 ## Architecture recap
 
 - **`access-manager`** (Next.js, `:3100`) — the console: setup, auth,

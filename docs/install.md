@@ -9,6 +9,11 @@ production reference) — this file is the linear "do these things in order"
 version. If you just want a 5-minute local taste with no DNS, see
 [`docs/quickstart.md`](quickstart.md) instead.
 
+> **In a hurry?** Once DNS points `manager.<domain>`, `connect.<domain>`, and
+> `*.<domain>` at your host, the whole stack is one command:
+> `cd deploy && ./setup.sh <your-domain>` (it generates `.env` + secrets and runs
+> `docker compose up -d`). This walkthrough explains every piece that command sets up.
+
 > **The example used throughout.** Substitute your own values everywhere you see
 > these:
 >
