@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Modal } from "@/app/(app)/_shell/modal";
+import { CommandBlock } from "@/app/(app)/_shell/command-block";
+import { formatDockerRun } from "@/lib/format/docker-command";
 
 export function UpdateConnectorButton({
   command,
@@ -11,26 +13,15 @@ export function UpdateConnectorButton({
   managerUrlIsLocal: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(command);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  }
 
   return (
     <>
       <button type="button" className="btn sm" onClick={() => setOpen(true)}>Update</button>
-      <Modal open={open} onClose={() => { setOpen(false); setCopied(false); }} title="Update connector">
+      <Modal open={open} onClose={() => setOpen(false)} title="Update connector">
         <p className="cell-sub" style={{ marginTop: 0 }}>Run this on the connector&apos;s host. It keeps the connector&apos;s token, so no re-pairing.</p>
-        <code className="code secret">{command}</code>
+        <CommandBlock command={command} display={formatDockerRun(command)} title="connector-update" />
         <div className="row-actions">
-          <button type="button" className="btn sm primary" onClick={copy}>{copied ? "Copied" : "Copy command"}</button>
-          <button type="button" className="btn sm" onClick={() => { setOpen(false); setCopied(false); }}>Close</button>
+          <button type="button" className="btn sm" onClick={() => setOpen(false)}>Close</button>
         </div>
         {managerUrlIsLocal && (
           <p className="notice error" style={{ marginBottom: 0 }}>

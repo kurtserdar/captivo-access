@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { CommandBlock } from "@/app/(app)/_shell/command-block";
+import { formatDockerRun } from "@/lib/format/docker-command";
 
 function errorMessage(code: string | undefined): string {
   switch (code) {
@@ -19,13 +21,11 @@ export function ConnectorForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pairing, setPairing] = useState<{ code: string; installCommand: string; managerUrlIsLocal: boolean } | null>(null);
-  const [copied, setCopied] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setPairing(null);
-    setCopied(false);
     setBusy(true);
     try {
       const res = await fetch("/api/admin/connectors", {
@@ -51,15 +51,6 @@ export function ConnectorForm() {
     }
   }
 
-  async function handleCopy() {
-    if (!pairing) return;
-    try {
-      await navigator.clipboard.writeText(pairing.installCommand);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  }
 
   return (
     <div>
@@ -104,10 +95,11 @@ export function ConnectorForm() {
             This pairing code is shown only once — it&apos;s embedded in the command below. Run it on a
             host inside the customer&apos;s network to enroll the connector.
           </p>
-          <code className="code secret">{pairing.installCommand}</code>
-          <button type="button" className="btn sm ghost" onClick={handleCopy}>
-            {copied ? "Copied" : "Copy command"}
-          </button>
+          <CommandBlock
+            command={pairing.installCommand}
+            display={formatDockerRun(pairing.installCommand)}
+            title="connector-install"
+          />
           {pairing.managerUrlIsLocal && (
             <p className="notice error">
               <code>MANAGER_URL</code> points at <code>localhost</code> (you&apos;re viewing this over

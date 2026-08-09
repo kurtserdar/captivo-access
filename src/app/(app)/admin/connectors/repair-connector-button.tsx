@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Modal } from "@/app/(app)/_shell/modal";
+import { CommandBlock } from "@/app/(app)/_shell/command-block";
+import { formatDockerRun } from "@/lib/format/docker-command";
 
 type Repaired = { code: string; reconfigureCommand: string; managerUrlIsLocal: boolean };
 
@@ -11,7 +13,6 @@ export function RepairConnectorButton({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Repaired | null>(null);
-  const [copied, setCopied] = useState(false);
 
   async function generate() {
     setError(null);
@@ -35,22 +36,11 @@ export function RepairConnectorButton({ id }: { id: string }) {
     }
   }
 
-  async function copy() {
-    if (!result) return;
-    try {
-      await navigator.clipboard.writeText(result.reconfigureCommand);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  }
-
   function reset() {
     setOpen(false);
     setInvalidateNow(false);
     setError(null);
     setResult(null);
-    setCopied(false);
   }
 
   return (
@@ -63,8 +53,7 @@ export function RepairConnectorButton({ id }: { id: string }) {
               This re-pair code is shown only once — it&apos;s embedded in the command below. Run it on the
               connector&apos;s host to rotate its token; the connector keeps its identity and its sites.
             </p>
-            <code className="code secret">{result.reconfigureCommand}</code>
-            <button type="button" className="btn sm ghost" onClick={copy}>{copied ? "Copied" : "Copy command"}</button>
+            <CommandBlock command={result.reconfigureCommand} display={formatDockerRun(result.reconfigureCommand)} title="connector-repair" />
             {result.managerUrlIsLocal && (
               <p className="notice error">
                 <code>MANAGER_URL</code> points at <code>localhost</code> — replace it with the manager&apos;s
