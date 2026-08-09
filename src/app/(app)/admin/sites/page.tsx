@@ -2,7 +2,7 @@ import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { timeAgo } from "@/lib/format";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { SiteForm } from "./site-form";
+import { AddSiteButton } from "./add-site-button";
 import { SitesView, type SiteRow } from "./sites-view";
 
 export const dynamic = "force-dynamic";
@@ -70,21 +70,13 @@ export default async function AdminSitesPage() {
             tunnel.
           </p>
         </div>
+        {connectors.length > 0 && <AddSiteButton connectors={connectors} recordingEnabled={recordingEnabled()} />}
       </div>
 
-      <div className="card">
-        <div className="card-head">
-          <h2>Add site</h2>
-        </div>
-        {connectors.length === 0 ? (
-          <p>Add a connector first before creating a site.</p>
-        ) : (
-          <SiteForm connectors={connectors} recordingEnabled={recordingEnabled()} />
-        )}
-      </div>
-
-      {sites.length === 0 ? (
-        <div className="empty">No sites yet.</div>
+      {connectors.length === 0 ? (
+        <div className="empty">Add a connector first before creating a site.</div>
+      ) : sites.length === 0 ? (
+        <div className="empty">No sites yet — use &quot;Add site&quot; to publish an internal app.</div>
       ) : (
         <SitesView sites={rows} connectors={connectors} recordingEnabled={recordingEnabled()} />
       )}

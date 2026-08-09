@@ -111,14 +111,12 @@ export function SiteForm({
         setError(errorMessage(result?.error, !!site));
         return;
       }
-      if (site) {
-        if (onDone) {
-          onDone();
-          router.refresh();
-        } else {
-          router.push("/admin/sites");
-          router.refresh();
-        }
+      if (onDone) {
+        onDone();
+        router.refresh();
+      } else if (site) {
+        router.push("/admin/sites");
+        router.refresh();
       } else {
         window.location.reload();
       }

@@ -5,7 +5,7 @@ import { isConnectorOutdated } from "@/lib/updates/semver";
 import { buildConnectorUpdateCommand } from "@/lib/connector/repair";
 import { connectorTunnelUrl, isLocalManagerUrl } from "@/lib/url";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
-import { ConnectorForm } from "./connector-form";
+import { AddConnectorButton } from "./add-connector-button";
 import { ConnectorName } from "./connector-name";
 import { DeleteConnectorButton } from "./delete-connector-button";
 import { RepairConnectorButton } from "./repair-connector-button";
@@ -52,18 +52,11 @@ export default async function AdminConnectorsPage() {
             sites to expose specific internal upstreams through it.
           </p>
         </div>
+        <AddConnectorButton />
       </div>
 
-      <div className="card">
-        <div className="card-head">
-          <h2>Add connector</h2>
-        </div>
-        <ConnectorForm />
-      </div>
-
-      <h2>Registered connectors</h2>
       {connectors.length === 0 ? (
-        <div className="empty">No connectors yet — add one to reach an internal app.</div>
+        <div className="empty">No connectors yet — use &quot;Add connector&quot; to reach an internal app.</div>
       ) : (
         <div className="table-wrap">
           <table className="table">
