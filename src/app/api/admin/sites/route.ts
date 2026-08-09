@@ -25,6 +25,8 @@ export async function POST(req: NextRequest) {
   // Gateway sites are recorded by Guacamole, not rrweb — rrweb cannot capture a
   // gateway's canvas, so recording must never be persisted as enabled for them.
   const recordSessions = accessMode === "GATEWAY" ? false : recordingEnabled() && body.recordSessions === true;
+  const CLIP = ["allow", "no_copy", "no_paste", "none"];
+  const clipboardMode = accessMode === "GATEWAY" ? "allow" : (typeof body.clipboardMode === "string" && CLIP.includes(body.clipboardMode) ? body.clipboardMode : "allow");
 
   if (!connectorId || !name || !upstreamUrl) {
     return NextResponse.json({ error: "connector_name_upstream_required" }, { status: 400 });
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
 
   const site = await db.site.create({
     data: {
-      connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, accessMode,
+      connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, clipboardMode, accessMode,
       ...(logoResult.action === "set" ? { logo: logoResult.data, logoType: logoResult.type } : {}),
     },
     select: { id: true },

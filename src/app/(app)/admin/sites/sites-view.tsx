@@ -17,6 +17,7 @@ export interface SiteRow {
   connectorId: string;
   insecureSkipVerify: boolean;
   recordSessions: boolean;
+  clipboardMode: string;
   connectorName: string;
   grantCount: number;
   probeOk: boolean | null;

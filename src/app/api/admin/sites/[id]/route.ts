@@ -22,6 +22,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   // Gateway sites are recorded by Guacamole, not rrweb — rrweb cannot capture a
   // gateway's canvas, so recording must never be persisted as enabled for them.
   const recordSessions = accessMode === "GATEWAY" ? false : recordingEnabled() && body.recordSessions === true;
+  const CLIP = ["allow", "no_copy", "no_paste", "none"];
+  const clipboardMode = accessMode === "GATEWAY" ? "allow" : (typeof body.clipboardMode === "string" && CLIP.includes(body.clipboardMode) ? body.clipboardMode : "allow");
 
   if (!connectorId || !name || !upstreamUrl) return NextResponse.json({ error: "connector_name_upstream_required" }, { status: 400 });
   if (!hostname) return NextResponse.json({ error: "invalid_hostname" }, { status: 400 });
@@ -43,7 +45,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     : {};
 
   try {
-    await db.site.update({ where: { id }, data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, accessMode, ...logoData } });
+    await db.site.update({ where: { id }, data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, clipboardMode, accessMode, ...logoData } });
   } catch (e) {
     // P2002 = the hostname unique constraint is taken by a different site.
     if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2002") {

@@ -33,6 +33,7 @@ export function EditSiteButton({
             description: site.description ?? "",
             insecureSkipVerify: site.insecureSkipVerify,
             recordSessions: site.recordSessions,
+            clipboardMode: site.clipboardMode,
             accessMode: site.accessMode,
             hasLogo: site.hasLogo,
           }}

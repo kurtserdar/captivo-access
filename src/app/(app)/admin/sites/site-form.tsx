@@ -31,6 +31,7 @@ type SiteInitial = {
   description: string;
   insecureSkipVerify: boolean;
   recordSessions: boolean;
+  clipboardMode: string;
   accessMode: "TRANSPARENT" | "GATEWAY";
   hasLogo?: boolean;
 };
@@ -54,6 +55,7 @@ export function SiteForm({
   const [description, setDescription] = useState(site?.description ?? "");
   const [insecureSkipVerify, setInsecureSkipVerify] = useState(site?.insecureSkipVerify ?? false);
   const [recordSessions, setRecordSessions] = useState(site?.recordSessions ?? false);
+  const [clipboardMode, setClipboardMode] = useState(site?.clipboardMode ?? "allow");
   const [accessMode, setAccessMode] = useState<"TRANSPARENT" | "GATEWAY">(site?.accessMode ?? "TRANSPARENT");
   // logo: undefined = leave unchanged; null = remove; string = new base64 data URL.
   const [logo, setLogo] = useState<string | null | undefined>(undefined);
@@ -101,6 +103,7 @@ export function SiteForm({
           description: description.trim() || undefined,
           insecureSkipVerify,
           recordSessions: accessMode === "GATEWAY" ? false : recordSessions,
+          clipboardMode: accessMode === "GATEWAY" ? "allow" : clipboardMode,
           accessMode,
           logo,
           logoType,
@@ -239,6 +242,21 @@ export function SiteForm({
           </label>
           <span className="hint">
             Captures a replayable recording of vendor sessions on this site for audit purposes.
+          </span>
+        </div>
+      )}
+      {accessMode !== "GATEWAY" && (
+        <div className="field">
+          <label className="field-label" htmlFor="site-clipboard">Clipboard</label>
+          <select id="site-clipboard" className="select" value={clipboardMode} onChange={(e) => setClipboardMode(e.target.value)}>
+            <option value="allow">Allow copy &amp; paste</option>
+            <option value="no_copy">Block copy out (no exfil)</option>
+            <option value="no_paste">Block paste in</option>
+            <option value="none">Block both</option>
+          </select>
+          <span className="hint">
+            Restricts clipboard in the vendor&apos;s browser via injected script — a deterrent, not a hard
+            control (bypassable if JavaScript is disabled). Gateway sites use Guacamole&apos;s own settings.
           </span>
         </div>
       )}
