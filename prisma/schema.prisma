@@ -125,6 +125,7 @@ model ConnectorPairing {
   id          String     @id @default(cuid())
   codeHash    String
   name        String
+  gatewayHost Boolean    @default(false)
   connectorId String?
   connector   Connector? @relation(fields: [connectorId], references: [id], onDelete: Cascade)
   expiresAt   DateTime

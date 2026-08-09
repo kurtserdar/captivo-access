@@ -57,6 +57,15 @@ describe("createPairing", () => {
     expect(call.data.codeHash).not.toBe(result.code); // stored value is hashed, not raw
     expect(call.data.expiresAt).toBeInstanceOf(Date);
   });
+
+  it("stores the gatewayHost flag when set", async () => {
+    mockDb.connectorPairing.create.mockResolvedValueOnce({
+      id: "pair-gw", name: "GW", codeHash: "h", gatewayHost: true, expiresAt: new Date(), usedAt: null, createdAt: new Date(),
+    });
+    await createPairing("GW", { gatewayHost: true });
+    const call = mockDb.connectorPairing.create.mock.calls.at(-1)![0];
+    expect(call.data.gatewayHost).toBe(true);
+  });
 });
 
 describe("redeemPairing", () => {
@@ -67,6 +76,7 @@ describe("redeemPairing", () => {
       id: "pair-1",
       name: "Branch A",
       codeHash,
+      gatewayHost: false,
       expiresAt: new Date(Date.now() + 15 * 60_000),
       usedAt: null,
       createdAt: new Date(),
@@ -96,7 +106,7 @@ describe("redeemPairing", () => {
       data: { usedAt: expect.any(Date) },
     });
     expect(tx.connector.create).toHaveBeenCalledWith({
-      data: { name: "Branch A", tokenHash: expect.any(String), status: "PENDING", version: null },
+      data: { name: "Branch A", tokenHash: expect.any(String), status: "PENDING", version: null, gatewayHost: false },
     });
 
     // Second attempt with the same code: now consumed, so a real `findMany`

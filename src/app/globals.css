@@ -287,6 +287,8 @@ a{color:inherit;}
 .access-card-head .pill { margin-left:auto; flex:0 0 auto; }
 .access-card-host { min-width:0; }
 .access-card-foot { display:flex; align-items:center; gap:0.5rem; margin-top:0.15rem; }
+.form-check { display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:500; }
+.form-check input { margin:0; flex:0 0 auto; }
 
 /* ---- responsive ---- */
 @media (max-width:820px){

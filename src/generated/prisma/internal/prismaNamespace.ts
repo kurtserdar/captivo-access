@@ -1818,6 +1818,7 @@ export const ConnectorPairingScalarFieldEnum = {
   id: 'id',
   codeHash: 'codeHash',
   name: 'name',
+  gatewayHost: 'gatewayHost',
   connectorId: 'connectorId',
   expiresAt: 'expiresAt',
   usedAt: 'usedAt',

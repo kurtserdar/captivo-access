@@ -15,6 +15,7 @@ function errorMessage(code: string | undefined): string {
 
 export function ConnectorForm() {
   const [name, setName] = useState("");
+  const [gateway, setGateway] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pairing, setPairing] = useState<{ code: string; installCommand: string; managerUrlIsLocal: boolean } | null>(null);
@@ -30,7 +31,7 @@ export function ConnectorForm() {
       const res = await fetch("/api/admin/connectors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, gateway }),
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok || !result?.code) {
@@ -76,6 +77,16 @@ export function ConnectorForm() {
             required
             placeholder="e.g. Customer HQ"
           />
+        </div>
+        <div className="field">
+          <label className="form-check">
+            <input type="checkbox" checked={gateway} onChange={(e) => setGateway(e.target.checked)} />
+            <span>This host will also run the Guacamole gateway</span>
+          </label>
+          <p className="cell-sub">
+            Bakes <code>--network captivo-gateway</code> into the connector command so it can reach Guacamole
+            — no separate &quot;Enable gateway mode&quot; step. See <code>deploy/gateway/README.md</code>.
+          </p>
         </div>
         {error && (
           <p className="notice error" role="alert">
