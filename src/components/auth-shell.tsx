@@ -8,9 +8,11 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       <aside className="auth-panel">
         <div className="auth-panel-top">
           <span className="auth-panel-mark" aria-hidden="true">
-            <svg viewBox="0 0 48 48" width="22" height="22">
-              <path d="M16 14 L23 24 L16 34" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M32 14 L25 24 L32 34" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.65" />
+            <svg viewBox="0 0 48 48" width="24" height="24" fill="none">
+              <path d="M24 3 L42 13 V27 C42 37 34 43 24 46 C14 43 6 37 6 27 V13 Z" fill="#2ee6c9" opacity="0.22" />
+              <path d="M24 3 L42 13 V27 C42 37 34 43 24 46 C14 43 6 37 6 27 V13 Z" stroke="#2ee6c9" strokeWidth="2" />
+              <circle cx="24" cy="23" r="6.5" stroke="#2ee6c9" strokeWidth="2.4" />
+              <path d="M24 29.5 V37" stroke="#2ee6c9" strokeWidth="2.4" strokeLinecap="round" />
             </svg>
           </span>
           <span className="auth-panel-word">Captivo Access</span>

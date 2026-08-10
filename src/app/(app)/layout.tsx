@@ -52,6 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <BrandMark size={30} />
           <span className="wordmark"><b>Captivo</b> <span className="wm-sub">Access</span></span>
         </Link>
+        <nav className="nav-scroll">
         <span className="nav-group">Access</span>
         {showRead && (
           <NavLink href="/admin/grants">
@@ -139,6 +140,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <SettingsIcon />
           Settings
         </NavLink>
+        </nav>
         <div className="nav-foot">
           <div className="nav-ident">
             <span className="nav-av">
