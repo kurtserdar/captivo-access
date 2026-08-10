@@ -17,6 +17,10 @@ function errorMessage(code: string | undefined): string {
       return "Select a valid user.";
     case "invalid_site":
       return "Select a valid site.";
+    case "grant_requires_end":
+      return "Policy requires an end date — permanent grants aren't allowed here.";
+    case "grant_exceeds_max":
+      return "This grant is longer than the maximum duration allowed by policy.";
     case "forbidden":
       return "Admin privileges are required for this action.";
     default:

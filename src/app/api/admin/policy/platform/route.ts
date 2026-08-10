@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     inviteTtlHours: toIntMin(body.inviteTtlHours, 1),
     notificationWebhookUrl: webhook.value,
     vendorIpAllowlist: rawAllow.trim() || null,
+    maxGrantDays: toIntMin(body.maxGrantDays, 1),
   });
   return NextResponse.json({ ok: true });
 }

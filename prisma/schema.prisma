@@ -333,6 +333,7 @@ model PlatformSettings {
   inviteTtlHours         Int? // was INVITE_TTL_HOURS (default 48)
   notificationWebhookUrl String? // was NOTIFICATION_WEBHOOK_URL
   vendorIpAllowlist      String? // CIDRs/IPs; empty = no restriction. Gates vendor SITE access only.
+  maxGrantDays           Int? // cap on a grant's duration; 0/null = no cap (permanent grants allowed)
   updatedAt              DateTime @updatedAt
 }
 

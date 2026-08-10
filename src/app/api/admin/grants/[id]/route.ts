@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
-import { grantEndsAtError } from "@/lib/access/grant-edit";
+import { grantEndsAtError, grantCapError } from "@/lib/access/grant-edit";
+import { resolvedMaxGrantDays } from "@/lib/settings/platform";
 
 const NOTE_MAX = 500;
 
@@ -26,6 +27,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     const endsAt = new Date((body.endsAt as string).trim());
     const err = grantEndsAtError(endsAt, grant.startsAt, new Date());
     if (err) return NextResponse.json({ error: err }, { status: 400 });
+    const capErr = grantCapError(grant.startsAt, endsAt, new Date(), await resolvedMaxGrantDays());
+    if (capErr) return NextResponse.json({ error: capErr }, { status: 400 });
     data.endsAt = endsAt;
   }
   if (hasNote) {

@@ -17,6 +17,8 @@ function saveError(code: string | undefined): string {
     case "ends_at_in_past": return "The end date must be in the future.";
     case "ends_at_before_start": return "The end date must be after the start date.";
     case "invalid_ends_at": return "Enter a valid end date.";
+    case "grant_requires_end": return "Policy requires an end date — permanent grants aren't allowed here.";
+    case "grant_exceeds_max": return "This grant is longer than the maximum duration allowed by policy.";
     case "note_too_long": return "The note is too long (max 500 characters).";
     case "invalid_note": return "The note must be text.";
     case "not_active": return "This grant is no longer active and can't be edited.";

@@ -11,6 +11,7 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettings })
   const [invite, setInvite] = useState(str(initial.inviteTtlHours));
   const [webhook, setWebhook] = useState(initial.notificationWebhookUrl ?? "");
   const [ipAllow, setIpAllow] = useState(initial.vendorIpAllowlist ?? "");
+  const [maxGrant, setMaxGrant] = useState(str(initial.maxGrantDays));
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
@@ -25,6 +26,7 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettings })
         inviteTtlHours: invite,
         notificationWebhookUrl: webhook,
         vendorIpAllowlist: ipAllow,
+        maxGrantDays: maxGrant,
       }),
     });
     const body = await res.json().catch(() => ({}));
@@ -46,6 +48,11 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettings })
         <label className="field-label" htmlFor="ps-audit">Audit log retention (days)</label>
         <input id="ps-audit" type="number" min={0} className="input" value={audit} onChange={(e) => setAudit(e.target.value)} placeholder="Empty = default 730" />
         <span className="hint">Older audit rows are trimmed by the retention cron, preserving the tamper-evident chain. <code>0</code> keeps nothing beyond today; empty uses the default (730).</span>
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="ps-maxgrant">Maximum grant duration (days)</label>
+        <input id="ps-maxgrant" type="number" min={1} className="input" value={maxGrant} onChange={(e) => setMaxGrant(e.target.value)} placeholder="Empty = no cap (permanent grants allowed)" />
+        <span className="hint">When set, no grant or access request may last longer than this, and every grant must have an end date — enforcing time-boxed vendor access. Existing grants are unaffected until edited.</span>
       </div>
       <div className="field">
         <label className="field-label" htmlFor="ps-invite">Invitation link lifetime (hours)</label>

@@ -374,6 +374,7 @@ export const PlatformSettingsScalarFieldEnum = {
   inviteTtlHours: 'inviteTtlHours',
   notificationWebhookUrl: 'notificationWebhookUrl',
   vendorIpAllowlist: 'vendorIpAllowlist',
+  maxGrantDays: 'maxGrantDays',
   updatedAt: 'updatedAt'
 } as const
 

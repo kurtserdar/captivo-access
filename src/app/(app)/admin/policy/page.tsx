@@ -27,7 +27,7 @@ export default async function AdminPolicyPage() {
       </div>
 
       <div className="card">
-        <div className="card-head"><h2>Retention, invitations &amp; notifications</h2></div>
+        <div className="card-head"><h2>Grants, retention, network &amp; notifications</h2></div>
         <PlatformSettingsForm initial={platform} />
       </div>
     </main>

@@ -10,6 +10,7 @@ export interface PlatformSettings {
   inviteTtlHours: number | null;
   notificationWebhookUrl: string | null;
   vendorIpAllowlist: string | null;
+  maxGrantDays: number | null;
 }
 
 const ID = "singleton";
@@ -18,6 +19,7 @@ const EMPTY: PlatformSettings = {
   inviteTtlHours: null,
   notificationWebhookUrl: null,
   vendorIpAllowlist: null,
+  maxGrantDays: null,
 };
 
 let cache: { s: PlatformSettings; at: number } | null = null;
@@ -35,6 +37,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     inviteTtlHours: c?.inviteTtlHours ?? null,
     notificationWebhookUrl: c?.notificationWebhookUrl ?? null,
     vendorIpAllowlist: c?.vendorIpAllowlist ?? null,
+    maxGrantDays: c?.maxGrantDays ?? null,
   };
   cache = { s, at: Date.now() };
   return s;
@@ -79,4 +82,10 @@ export async function resolvedNotificationWebhookUrl(): Promise<string> {
 export async function resolvedVendorIpAllowlist(): Promise<string> {
   const s = await getPlatformSettings();
   return (s.vendorIpAllowlist ?? "").trim();
+}
+
+// Max grant duration in days; 0 = no cap. UI-only (no env).
+export async function resolvedMaxGrantDays(): Promise<number> {
+  const s = await getPlatformSettings();
+  return s.maxGrantDays && s.maxGrantDays > 0 ? s.maxGrantDays : 0;
 }

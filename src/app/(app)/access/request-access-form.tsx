@@ -43,7 +43,12 @@ export function RequestAccessForm({ onDone }: { onDone?: () => void }) {
         }),
       });
       if (res.status === 409) { setError("You already have a pending request for this app."); return; }
-      if (!res.ok) { setError("Could not submit the request. Check the fields and try again."); return; }
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        if (b.error === "grant_requires_end") { setError("Please set an end date — permanent access isn't allowed here."); return; }
+        if (b.error === "grant_exceeds_max") { setError("Your requested duration is longer than this deployment allows."); return; }
+        setError("Could not submit the request. Check the fields and try again."); return;
+      }
       setSiteId(""); setStartsAt(""); setEndsAt(""); setNote("");
       router.refresh();
       if (onDone) onDone();

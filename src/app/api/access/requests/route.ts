@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { createAccessRequest } from "@/lib/access/grants";
 import { validateSchedule, type Schedule } from "@/lib/access/schedule";
+import { grantCapError } from "@/lib/access/grant-edit";
+import { resolvedMaxGrantDays } from "@/lib/settings/platform";
 import { sendMail, getAdminEmails } from "@/lib/email/mailer";
 import { approvalRequestEmail } from "@/lib/email/templates";
 
@@ -31,6 +33,9 @@ export async function POST(req: NextRequest) {
   if (startsAt.value && endsAt.value && startsAt.value > endsAt.value) {
     return NextResponse.json({ error: "invalid_date" }, { status: 400 });
   }
+
+  const capErr = grantCapError(startsAt.value, endsAt.value, new Date(), await resolvedMaxGrantDays());
+  if (capErr) return NextResponse.json({ error: capErr }, { status: 400 });
 
   let schedule: Schedule | null = null;
   if (body.schedule !== undefined && body.schedule !== null) {
