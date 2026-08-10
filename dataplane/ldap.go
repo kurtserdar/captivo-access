@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/go-ldap/ldap/v3"
@@ -70,6 +71,30 @@ func dialLdap(s *Session, target string) (net.Conn, error) {
 	return st, nil // yamux.Stream satisfies net.Conn
 }
 
+// explainTLSFailure turns a low-level TLS/StartTLS failure into an operator-
+// friendly hint. The commonest cause on Active Directory is that LDAPS/StartTLS
+// simply is not enabled on the domain controller (no server certificate
+// installed): the DC resets the TLS handshake (EOF / connection reset) or
+// answers StartTLS with LDAP result 52 (unavailable). Certificate-trust
+// failures get a different, equally actionable hint pointing at the CA field.
+func explainTLSFailure(err error, mode string) string {
+	msg := err.Error()
+	low := strings.ToLower(msg)
+	switch {
+	case strings.Contains(low, "x509") || strings.Contains(low, "certificate"):
+		return "TLS certificate could not be verified — paste the CA that signed the directory's certificate (or the server certificate itself) into the CA certificate field. (" + msg + ")"
+	case ldap.IsErrorWithCode(err, ldap.LDAPResultUnavailable),
+		strings.Contains(low, "eof"),
+		strings.Contains(low, "reset"),
+		strings.Contains(low, "broken pipe"),
+		strings.Contains(low, "forcibly closed"),
+		strings.Contains(low, "unavailable"):
+		return "the directory did not complete a TLS handshake — " + mode + " is not enabled on it. This is a common default on Active Directory, which needs a server certificate installed before LDAPS works. Enable LDAPS/StartTLS on the domain controller, or use Plain (lab only) to test. (" + msg + ")"
+	default:
+		return mode + " failed: " + msg
+	}
+}
+
 // connectAndBind reaches the directory through the connector, negotiates TLS
 // per the security mode, and binds. On success the caller must close BOTH the
 // returned *ldap.Conn and the raw net.Conn. Every failure returns a
@@ -100,7 +125,7 @@ func connectAndBind(s *Session, cfg LdapConfig) (*ldap.Conn, net.Conn, error) {
 		tconn := tls.Client(raw, tlsCfg)
 		if err := tconn.Handshake(); err != nil {
 			raw.Close()
-			return nil, nil, errors.New("TLS handshake failed: " + err.Error())
+			return nil, nil, errors.New(explainTLSFailure(err, "LDAPS"))
 		}
 		_ = raw.SetDeadline(time.Time{})
 		conn = ldap.NewConn(tconn, true)
@@ -114,7 +139,7 @@ func connectAndBind(s *Session, cfg LdapConfig) (*ldap.Conn, net.Conn, error) {
 		if err := conn.StartTLS(tlsCfg); err != nil {
 			conn.Close()
 			raw.Close()
-			return nil, nil, errors.New("StartTLS failed: " + err.Error())
+			return nil, nil, errors.New(explainTLSFailure(err, "STARTTLS"))
 		}
 	}
 	if err := conn.Bind(cfg.BindDN, cfg.BindPassword); err != nil {
