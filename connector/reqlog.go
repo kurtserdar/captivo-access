@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/url"
 	"sync"
 	"time"
@@ -57,7 +56,7 @@ func hostOf(rawURL string) string {
 // ALLOWED_TARGETS). Throttled per target so a misconfigured Site doesn't flood.
 func logDenied(kind, target string) {
 	if reqThrottle.allow("deny:"+kind+":"+target, 30*time.Second) {
-		log.Printf("egress denied (%s): %s not in ALLOWED_TARGETS", kind, target)
+		logWarn("egress denied (%s): %s not in ALLOWED_TARGETS", kind, target)
 	}
 }
 
@@ -65,7 +64,7 @@ func logDenied(kind, target string) {
 // Throttled per target.
 func logReject(kind, target, reason string) {
 	if reqThrottle.allow("rej:"+kind+":"+target+":"+reason, 30*time.Second) {
-		log.Printf("rejected request (%s) to %s: %s", kind, target, reason)
+		logWarn("rejected request (%s) to %s: %s", kind, target, reason)
 	}
 }
 
@@ -73,7 +72,7 @@ func logReject(kind, target, reason string) {
 // target (10s) so a broken Site doesn't flood the ring.
 func logUpstreamErr(kind, host, reason string) {
 	if reqThrottle.allow("err:"+kind+":"+host, 10*time.Second) {
-		log.Printf("upstream error (%s) %s: %s", kind, host, reason)
+		logWarn("upstream error (%s) %s: %s", kind, host, reason)
 	}
 }
 
@@ -81,7 +80,7 @@ func logUpstreamErr(kind, host, reason string) {
 // header). Throttled per target.
 func logSlowUpstream(host string, d time.Duration) {
 	if reqThrottle.allow("slow:"+host, 10*time.Second) {
-		log.Printf("slow upstream %s: %s to first byte", host, d.Round(time.Millisecond))
+		logWarn("slow upstream %s: %s to first byte", host, d.Round(time.Millisecond))
 	}
 }
 

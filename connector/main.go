@@ -15,6 +15,8 @@ import (
 func main() {
 	// Keep stderr (docker logs) and also capture recent lines for the console tail.
 	log.SetOutput(io.MultiWriter(os.Stderr, logRingBuf))
+	// Initial threshold from env; the Manager can override it live via policy.
+	setLogLevel(envOr("LOG_LEVEL", "info"))
 
 	managerURL := os.Getenv("MANAGER_URL")
 	dataplaneURL := os.Getenv("DATAPLANE_URL")
@@ -22,23 +24,27 @@ func main() {
 
 	allow, err := ParseAllowedTargets(os.Getenv("ALLOWED_TARGETS"))
 	if err != nil {
-		log.Fatal(err)
+		logError("invalid ALLOWED_TARGETS: %v", err)
+		os.Exit(1)
 	}
 
 	token := readToken(tokenFile)
 	if token == "" {
 		pairCode := os.Getenv("PAIR_CODE")
 		if pairCode == "" {
-			log.Fatal("no stored token and no PAIR_CODE set")
+			logError("no stored token and no PAIR_CODE set")
+			os.Exit(1)
 		}
 		token, err = enroll(managerURL, pairCode, tokenFile)
 		if err != nil {
-			log.Fatal("enroll: ", err)
+			logError("enroll failed: %v", err)
+			os.Exit(1)
 		}
-		log.Print("connector: enrolled and stored token")
+		logInfo("enrolled and stored token")
 	}
 
-	log.Print("connector starting")
+	logInfo("connector starting (version %s)", Version)
+	go logHeartbeat()
 	runClient(dataplaneURL, token, allow)
 }
 

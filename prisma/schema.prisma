@@ -120,6 +120,7 @@ model Connector {
   gatewayHost Boolean @default(false)
   remoteAddr String?
   egressPolicy String?
+  logLevel   String?         @default("info") // debug | info | warn | error — pushed to the connector live
   createdAt  DateTime        @default(now())
   sites      Site[]
   pairings   ConnectorPairing[]

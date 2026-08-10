@@ -272,7 +272,9 @@ func handleDial(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 		return
 	}
 	defer resp.Body.Close()
-	if d := time.Since(start); d > slowUpstreamThreshold {
+	d := time.Since(start)
+	logDebug("http %d %s in %s", resp.StatusCode, target.Host, d.Round(time.Millisecond))
+	if d > slowUpstreamThreshold {
 		logSlowUpstream(target.Host, d)
 	}
 

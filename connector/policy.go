@@ -15,14 +15,16 @@ func init() {
 	policyMatcher.Store(m)
 }
 
-// applyPolicy parses a pushed policy into the narrowing matcher. On a parse error
-// it keeps the previous matcher (fail-safe: never loosen on bad input).
+// applyPolicy parses a pushed policy into the narrowing matcher and applies the
+// pushed log level. On a matcher parse error it keeps the previous matcher
+// (fail-safe: never loosen on bad input); the log level is orthogonal (no
+// security bearing) and applied independently.
 func applyPolicy(p tunnel.Policy) {
-	m, err := ParseAllowedTargets(p.EgressAllowedTargets)
-	if err != nil {
-		return
+	setLogLevel(p.LogLevel) // "" / invalid = no-op (keeps current level)
+	if m, err := ParseAllowedTargets(p.EgressAllowedTargets); err == nil {
+		policyMatcher.Store(m)
 	}
-	policyMatcher.Store(m)
+	logInfo("policy applied: egress=%q logLevel=%s", p.EgressAllowedTargets, p.LogLevel)
 }
 
 func policyAllowed(authority string) bool {

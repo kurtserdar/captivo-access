@@ -33,13 +33,13 @@ func (s *Session) setControl(w io.Writer) {
 
 // PushPolicy writes a policy frame to the connector's control stream. Returns an
 // error if the connector isn't connected / has no control stream yet.
-func (s *Session) PushPolicy(egressAllowedTargets string) error {
+func (s *Session) PushPolicy(egressAllowedTargets, logLevel string) error {
 	s.ctrlMu.Lock()
 	defer s.ctrlMu.Unlock()
 	if s.ctrlStream == nil {
 		return errNoControl
 	}
-	b, err := json.Marshal(tunnel.Policy{EgressAllowedTargets: egressAllowedTargets})
+	b, err := json.Marshal(tunnel.Policy{EgressAllowedTargets: egressAllowedTargets, LogLevel: logLevel})
 	if err != nil {
 		return err
 	}

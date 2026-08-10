@@ -321,6 +321,9 @@ a{color:inherit;}
 .term-copy:hover{color:#e6e8ee;border-color:rgba(255,255,255,.28);}
 .term-body{font-family:var(--mono);font-size:.82rem;line-height:1.65;color:#e6e8ee;padding:.85rem 1rem;overflow-x:auto;}
 .term-line{white-space:pre;}
+.term-line.lvl-error{color:var(--danger);}
+.term-line.lvl-warn{color:var(--warn);}
+.term-line.lvl-debug{color:var(--faint);}
 .term-prompt{color:#3ddc97;user-select:none;}
 .term-comment{color:#6b7280;}
 

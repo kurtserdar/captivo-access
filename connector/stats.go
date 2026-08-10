@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"sync/atomic"
 	"time"
@@ -32,6 +33,40 @@ func snapshot() tunnel.Telemetry {
 		BytesIn:           atomic.LoadInt64(&statBytesIn),
 		BytesOut:          atomic.LoadInt64(&statBytesOut),
 		RecentLogs:        logRingBuf.tail(80),
+	}
+}
+
+// logHeartbeat emits a periodic INFO activity summary so the recent-log tail
+// carries an operational pulse without per-request spam. It stays silent during
+// an idle window (no new requests since the last tick) to avoid noise on a calm
+// connector.
+func logHeartbeat() {
+	tick := time.NewTicker(5 * time.Minute)
+	defer tick.Stop()
+	var lastTotal int64
+	for range tick.C {
+		total := atomic.LoadInt64(&statTotal)
+		if total == lastTotal {
+			continue
+		}
+		logInfo("activity: %d requests total (+%d since last), %d active, %d denied, in %s out %s",
+			total, total-lastTotal,
+			atomic.LoadInt64(&statActive), atomic.LoadInt64(&statDenied),
+			humanBytes(atomic.LoadInt64(&statBytesIn)), humanBytes(atomic.LoadInt64(&statBytesOut)))
+		lastTotal = total
+	}
+}
+
+func humanBytes(b int64) string {
+	switch {
+	case b >= 1<<30:
+		return fmt.Sprintf("%.1fGB", float64(b)/(1<<30))
+	case b >= 1<<20:
+		return fmt.Sprintf("%.1fMB", float64(b)/(1<<20))
+	case b >= 1<<10:
+		return fmt.Sprintf("%.1fKB", float64(b)/(1<<10))
+	default:
+		return fmt.Sprintf("%dB", b)
 	}
 }
 

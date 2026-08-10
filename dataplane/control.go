@@ -10,7 +10,7 @@ import (
 // hello, and stores each telemetry frame the connector reports. Returns when the
 // stream (or session) dies. Safe against old connectors: they don't understand the
 // control kind, the stream errors out, and telemetry simply stays nil.
-func runControl(sess *Session, initialPolicy string) {
+func runControl(sess *Session, initialPolicy, initialLogLevel string) {
 	if sess == nil || sess.mux == nil {
 		return
 	}
@@ -25,7 +25,7 @@ func runControl(sess *Session, initialPolicy string) {
 		return
 	}
 	// Push the connector's saved policy on connect (guarded like later updates).
-	_ = sess.PushPolicy(initialPolicy)
+	_ = sess.PushPolicy(initialPolicy, initialLogLevel)
 	for {
 		b, err := tunnel.ReadFrame(st)
 		if err != nil {

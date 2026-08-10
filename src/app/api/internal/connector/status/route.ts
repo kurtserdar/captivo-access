@@ -25,6 +25,6 @@ export async function POST(req: NextRequest) {
       ...(typeof body.version === "string" ? { version: body.version } : {}),
     },
   });
-  const c = await db.connector.findUnique({ where: { id: connectorId }, select: { egressPolicy: true } });
-  return NextResponse.json({ ok: true, egressPolicy: c?.egressPolicy ?? "" });
+  const c = await db.connector.findUnique({ where: { id: connectorId }, select: { egressPolicy: true, logLevel: true } });
+  return NextResponse.json({ ok: true, egressPolicy: c?.egressPolicy ?? "", logLevel: c?.logLevel ?? "info" });
 }

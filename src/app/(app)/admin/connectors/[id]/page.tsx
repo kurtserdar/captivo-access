@@ -7,11 +7,22 @@ import { isConnectorOutdated } from "@/lib/updates/semver";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { getConnectorTelemetry } from "@/lib/connector/telemetry";
 import { EgressPolicyForm } from "./egress-policy-form";
+import { LogLevelForm } from "./log-level-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Connector" };
 
 const STATUS_PILL: Record<string, string> = { PENDING: "warn", ONLINE: "ok", OFFLINE: "neutral", REVOKED: "danger" };
+
+// Colour a recent-log line by the severity token the connector prefixes after
+// the timestamp (e.g. "2026/… ERROR upstream error …"). Unprefixed/older lines
+// fall through to the neutral default.
+function logLineClass(line: string): string {
+  if (/\bERROR\b/.test(line)) return "lvl-error";
+  if (/\bWARN\b/.test(line)) return "lvl-warn";
+  if (/\bDEBUG\b/.test(line)) return "lvl-debug";
+  return "";
+}
 
 function humanBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -48,6 +59,7 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       remoteAddr: true,
       gatewayHost: true,
       egressPolicy: true,
+      logLevel: true,
       sites: { select: { id: true, name: true, hostname: true, probeOk: true }, orderBy: { name: "asc" } },
     },
   });
@@ -98,6 +110,11 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       </div>
 
       <div className="card">
+        <div className="card-head"><h2>Logging</h2></div>
+        <LogLevelForm connectorId={connector.id} initial={connector.logLevel ?? "info"} />
+      </div>
+
+      <div className="card">
         <div className="card-head"><h2>Live telemetry</h2></div>
         {t ? (
           <div className="stat-grid">
@@ -141,7 +158,7 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
           <div className="term">
             <div className="term-body" style={{ maxHeight: "18rem" }}>
               {t.recentLogs.map((line, i) => (
-                <div key={i} className="term-line">{line}</div>
+                <div key={i} className={`term-line ${logLineClass(line)}`}>{line}</div>
               ))}
             </div>
           </div>

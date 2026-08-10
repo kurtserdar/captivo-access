@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"math"
 	"net/http"
 	"time"
@@ -37,9 +36,9 @@ func runClient(dataplaneURL, token string, allow *TargetMatcher) {
 
 		if err != nil || lasted < minSessionLife {
 			if err != nil {
-				log.Printf("connector: tunnel error: %v", err)
+				logWarn("tunnel error: %v", err)
 			} else {
-				log.Printf("connector: tunnel session lasted only %s, treating as failure", lasted)
+				logWarn("tunnel session lasted only %s, treating as failure", lasted)
 			}
 			if attempt < 6 {
 				attempt++
@@ -52,7 +51,7 @@ func runClient(dataplaneURL, token string, allow *TargetMatcher) {
 		if backoff < time.Second {
 			backoff = time.Second
 		}
-		log.Printf("connector: reconnecting in %s", backoff)
+		logInfo("reconnecting in %s", backoff)
 		time.Sleep(backoff)
 	}
 }
@@ -79,7 +78,7 @@ func connectOnce(dataplaneURL, token string, allow *TargetMatcher) error {
 		return err
 	}
 
-	log.Printf("connector: tunnel established to %s", dataplaneURL)
+	logInfo("tunnel established to %s", dataplaneURL)
 	serveStreams(mux, allow) // blocks until the session dies
 	return mux.Close()
 }

@@ -34,6 +34,7 @@ export type ConnectorMinAggregateOutputType = {
   gatewayHost: boolean | null
   remoteAddr: string | null
   egressPolicy: string | null
+  logLevel: string | null
   createdAt: Date | null
 }
 
@@ -47,6 +48,7 @@ export type ConnectorMaxAggregateOutputType = {
   gatewayHost: boolean | null
   remoteAddr: string | null
   egressPolicy: string | null
+  logLevel: string | null
   createdAt: Date | null
 }
 
@@ -60,6 +62,7 @@ export type ConnectorCountAggregateOutputType = {
   gatewayHost: number
   remoteAddr: number
   egressPolicy: number
+  logLevel: number
   createdAt: number
   _all: number
 }
@@ -75,6 +78,7 @@ export type ConnectorMinAggregateInputType = {
   gatewayHost?: true
   remoteAddr?: true
   egressPolicy?: true
+  logLevel?: true
   createdAt?: true
 }
 
@@ -88,6 +92,7 @@ export type ConnectorMaxAggregateInputType = {
   gatewayHost?: true
   remoteAddr?: true
   egressPolicy?: true
+  logLevel?: true
   createdAt?: true
 }
 
@@ -101,6 +106,7 @@ export type ConnectorCountAggregateInputType = {
   gatewayHost?: true
   remoteAddr?: true
   egressPolicy?: true
+  logLevel?: true
   createdAt?: true
   _all?: true
 }
@@ -187,6 +193,7 @@ export type ConnectorGroupByOutputType = {
   gatewayHost: boolean
   remoteAddr: string | null
   egressPolicy: string | null
+  logLevel: string | null
   createdAt: Date
   _count: ConnectorCountAggregateOutputType | null
   _min: ConnectorMinAggregateOutputType | null
@@ -221,6 +228,7 @@ export type ConnectorWhereInput = {
   gatewayHost?: Prisma.BoolFilter<"Connector"> | boolean
   remoteAddr?: Prisma.StringNullableFilter<"Connector"> | string | null
   egressPolicy?: Prisma.StringNullableFilter<"Connector"> | string | null
+  logLevel?: Prisma.StringNullableFilter<"Connector"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Connector"> | Date | string
   sites?: Prisma.SiteListRelationFilter
   pairings?: Prisma.ConnectorPairingListRelationFilter
@@ -236,6 +244,7 @@ export type ConnectorOrderByWithRelationInput = {
   gatewayHost?: Prisma.SortOrder
   remoteAddr?: Prisma.SortOrderInput | Prisma.SortOrder
   egressPolicy?: Prisma.SortOrderInput | Prisma.SortOrder
+  logLevel?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   sites?: Prisma.SiteOrderByRelationAggregateInput
   pairings?: Prisma.ConnectorPairingOrderByRelationAggregateInput
@@ -254,6 +263,7 @@ export type ConnectorWhereUniqueInput = Prisma.AtLeast<{
   gatewayHost?: Prisma.BoolFilter<"Connector"> | boolean
   remoteAddr?: Prisma.StringNullableFilter<"Connector"> | string | null
   egressPolicy?: Prisma.StringNullableFilter<"Connector"> | string | null
+  logLevel?: Prisma.StringNullableFilter<"Connector"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Connector"> | Date | string
   sites?: Prisma.SiteListRelationFilter
   pairings?: Prisma.ConnectorPairingListRelationFilter
@@ -269,6 +279,7 @@ export type ConnectorOrderByWithAggregationInput = {
   gatewayHost?: Prisma.SortOrder
   remoteAddr?: Prisma.SortOrderInput | Prisma.SortOrder
   egressPolicy?: Prisma.SortOrderInput | Prisma.SortOrder
+  logLevel?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.ConnectorCountOrderByAggregateInput
   _max?: Prisma.ConnectorMaxOrderByAggregateInput
@@ -288,6 +299,7 @@ export type ConnectorScalarWhereWithAggregatesInput = {
   gatewayHost?: Prisma.BoolWithAggregatesFilter<"Connector"> | boolean
   remoteAddr?: Prisma.StringNullableWithAggregatesFilter<"Connector"> | string | null
   egressPolicy?: Prisma.StringNullableWithAggregatesFilter<"Connector"> | string | null
+  logLevel?: Prisma.StringNullableWithAggregatesFilter<"Connector"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Connector"> | Date | string
 }
 
@@ -301,6 +313,7 @@ export type ConnectorCreateInput = {
   gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
+  logLevel?: string | null
   createdAt?: Date | string
   sites?: Prisma.SiteCreateNestedManyWithoutConnectorInput
   pairings?: Prisma.ConnectorPairingCreateNestedManyWithoutConnectorInput
@@ -316,6 +329,7 @@ export type ConnectorUncheckedCreateInput = {
   gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
+  logLevel?: string | null
   createdAt?: Date | string
   sites?: Prisma.SiteUncheckedCreateNestedManyWithoutConnectorInput
   pairings?: Prisma.ConnectorPairingUncheckedCreateNestedManyWithoutConnectorInput
@@ -331,6 +345,7 @@ export type ConnectorUpdateInput = {
   gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sites?: Prisma.SiteUpdateManyWithoutConnectorNestedInput
   pairings?: Prisma.ConnectorPairingUpdateManyWithoutConnectorNestedInput
@@ -346,6 +361,7 @@ export type ConnectorUncheckedUpdateInput = {
   gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sites?: Prisma.SiteUncheckedUpdateManyWithoutConnectorNestedInput
   pairings?: Prisma.ConnectorPairingUncheckedUpdateManyWithoutConnectorNestedInput
@@ -361,6 +377,7 @@ export type ConnectorCreateManyInput = {
   gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
+  logLevel?: string | null
   createdAt?: Date | string
 }
 
@@ -374,6 +391,7 @@ export type ConnectorUpdateManyMutationInput = {
   gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -387,6 +405,7 @@ export type ConnectorUncheckedUpdateManyInput = {
   gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -400,6 +419,7 @@ export type ConnectorCountOrderByAggregateInput = {
   gatewayHost?: Prisma.SortOrder
   remoteAddr?: Prisma.SortOrder
   egressPolicy?: Prisma.SortOrder
+  logLevel?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -413,6 +433,7 @@ export type ConnectorMaxOrderByAggregateInput = {
   gatewayHost?: Prisma.SortOrder
   remoteAddr?: Prisma.SortOrder
   egressPolicy?: Prisma.SortOrder
+  logLevel?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -426,6 +447,7 @@ export type ConnectorMinOrderByAggregateInput = {
   gatewayHost?: Prisma.SortOrder
   remoteAddr?: Prisma.SortOrder
   egressPolicy?: Prisma.SortOrder
+  logLevel?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -483,6 +505,7 @@ export type ConnectorCreateWithoutPairingsInput = {
   gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
+  logLevel?: string | null
   createdAt?: Date | string
   sites?: Prisma.SiteCreateNestedManyWithoutConnectorInput
 }
@@ -497,6 +520,7 @@ export type ConnectorUncheckedCreateWithoutPairingsInput = {
   gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
+  logLevel?: string | null
   createdAt?: Date | string
   sites?: Prisma.SiteUncheckedCreateNestedManyWithoutConnectorInput
 }
@@ -527,6 +551,7 @@ export type ConnectorUpdateWithoutPairingsInput = {
   gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sites?: Prisma.SiteUpdateManyWithoutConnectorNestedInput
 }
@@ -541,6 +566,7 @@ export type ConnectorUncheckedUpdateWithoutPairingsInput = {
   gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sites?: Prisma.SiteUncheckedUpdateManyWithoutConnectorNestedInput
 }
@@ -555,6 +581,7 @@ export type ConnectorCreateWithoutSitesInput = {
   gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
+  logLevel?: string | null
   createdAt?: Date | string
   pairings?: Prisma.ConnectorPairingCreateNestedManyWithoutConnectorInput
 }
@@ -569,6 +596,7 @@ export type ConnectorUncheckedCreateWithoutSitesInput = {
   gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
+  logLevel?: string | null
   createdAt?: Date | string
   pairings?: Prisma.ConnectorPairingUncheckedCreateNestedManyWithoutConnectorInput
 }
@@ -599,6 +627,7 @@ export type ConnectorUpdateWithoutSitesInput = {
   gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pairings?: Prisma.ConnectorPairingUpdateManyWithoutConnectorNestedInput
 }
@@ -613,6 +642,7 @@ export type ConnectorUncheckedUpdateWithoutSitesInput = {
   gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pairings?: Prisma.ConnectorPairingUncheckedUpdateManyWithoutConnectorNestedInput
 }
@@ -667,6 +697,7 @@ export type ConnectorSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   gatewayHost?: boolean
   remoteAddr?: boolean
   egressPolicy?: boolean
+  logLevel?: boolean
   createdAt?: boolean
   sites?: boolean | Prisma.Connector$sitesArgs<ExtArgs>
   pairings?: boolean | Prisma.Connector$pairingsArgs<ExtArgs>
@@ -683,6 +714,7 @@ export type ConnectorSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   gatewayHost?: boolean
   remoteAddr?: boolean
   egressPolicy?: boolean
+  logLevel?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["connector"]>
 
@@ -696,6 +728,7 @@ export type ConnectorSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   gatewayHost?: boolean
   remoteAddr?: boolean
   egressPolicy?: boolean
+  logLevel?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["connector"]>
 
@@ -709,10 +742,11 @@ export type ConnectorSelectScalar = {
   gatewayHost?: boolean
   remoteAddr?: boolean
   egressPolicy?: boolean
+  logLevel?: boolean
   createdAt?: boolean
 }
 
-export type ConnectorOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "tokenHash" | "status" | "lastSeenAt" | "version" | "gatewayHost" | "remoteAddr" | "egressPolicy" | "createdAt", ExtArgs["result"]["connector"]>
+export type ConnectorOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "tokenHash" | "status" | "lastSeenAt" | "version" | "gatewayHost" | "remoteAddr" | "egressPolicy" | "logLevel" | "createdAt", ExtArgs["result"]["connector"]>
 export type ConnectorInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sites?: boolean | Prisma.Connector$sitesArgs<ExtArgs>
   pairings?: boolean | Prisma.Connector$pairingsArgs<ExtArgs>
@@ -737,6 +771,7 @@ export type $ConnectorPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     gatewayHost: boolean
     remoteAddr: string | null
     egressPolicy: string | null
+    logLevel: string | null
     createdAt: Date
   }, ExtArgs["result"]["connector"]>
   composites: {}
@@ -1172,6 +1207,7 @@ export interface ConnectorFieldRefs {
   readonly gatewayHost: Prisma.FieldRef<"Connector", 'Boolean'>
   readonly remoteAddr: Prisma.FieldRef<"Connector", 'String'>
   readonly egressPolicy: Prisma.FieldRef<"Connector", 'String'>
+  readonly logLevel: Prisma.FieldRef<"Connector", 'String'>
   readonly createdAt: Prisma.FieldRef<"Connector", 'DateTime'>
 }
     

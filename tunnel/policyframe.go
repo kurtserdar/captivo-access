@@ -6,4 +6,5 @@ package tunnel
 // (direction determines type), so no discriminator is needed.
 type Policy struct {
 	EgressAllowedTargets string `json:"egressAllowedTargets"` // "" = no console narrowing
+	LogLevel             string `json:"logLevel"`             // debug|info|warn|error; "" = leave unchanged
 }

@@ -163,6 +163,7 @@ func main() {
 		var body struct {
 			ConnectorID          string `json:"connectorId"`
 			EgressAllowedTargets string `json:"egressAllowedTargets"`
+			LogLevel             string `json:"logLevel"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_body"})
@@ -173,7 +174,7 @@ func main() {
 			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "reason": "offline"})
 			return
 		}
-		if err := sess.PushPolicy(body.EgressAllowedTargets); err != nil {
+		if err := sess.PushPolicy(body.EgressAllowedTargets, body.LogLevel); err != nil {
 			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "reason": "not_ready"})
 			return
 		}
