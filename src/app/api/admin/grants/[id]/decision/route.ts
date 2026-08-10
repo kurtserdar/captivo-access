@@ -3,6 +3,10 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { decideGrant } from "@/lib/access/grants";
 import { normalizeDenyReason } from "@/lib/access/deny-reason";
+import { db } from "@/lib/db";
+import { sendMail } from "@/lib/email/mailer";
+import { accessDecisionEmail } from "@/lib/email/templates";
+import { notifyEmailEnabled } from "@/lib/notifications/events";
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
@@ -19,6 +23,25 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const reason = normalizeDenyReason(body.reason);
   const count = await decideGrant(id, decision, admin.id, reason);
   if (count === 0) return NextResponse.json({ error: "not_pending" }, { status: 409 });
+
+  if (await notifyEmailEnabled("access_decisions")) {
+    try {
+      const grant = await db.accessGrant.findUnique({
+        where: { id },
+        select: { user: { select: { email: true } }, site: { select: { name: true } } },
+      });
+      if (grant?.user?.email) {
+        const m = accessDecisionEmail({
+          decision: decision === "approve" ? "approved" : "denied",
+          siteName: grant.site.name,
+          consoleUrl: (process.env.MANAGER_PUBLIC_URL ?? "").replace(/\/$/, ""),
+        });
+        await sendMail({ to: grant.user.email, subject: m.subject, html: m.html, text: m.text });
+      }
+    } catch {
+      // Best-effort: emailing the vendor must never change the decision outcome.
+    }
+  }
 
   return NextResponse.json({ ok: true });
 }

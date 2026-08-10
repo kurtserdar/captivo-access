@@ -7,6 +7,7 @@ import { grantCapError } from "@/lib/access/grant-edit";
 import { resolvedMaxGrantDays } from "@/lib/settings/platform";
 import { sendMail, getAdminEmails } from "@/lib/email/mailer";
 import { approvalRequestEmail } from "@/lib/email/templates";
+import { notifyEmailEnabled } from "@/lib/notifications/events";
 
 function parseDate(value: unknown): { ok: true; value: Date | null } | { ok: false } {
   if (value === undefined || value === null || value === "") return { ok: true, value: null };
@@ -57,19 +58,21 @@ export async function POST(req: NextRequest) {
   });
   if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 409 });
 
-  try {
-    const admins = await getAdminEmails();
-    if (admins.length > 0) {
-      const m = approvalRequestEmail({
-        vendorName: user.name,
-        vendorEmail: user.email,
-        siteName: site.name,
-        consoleUrl: (process.env.MANAGER_PUBLIC_URL ?? "").replace(/\/$/, ""),
-      });
-      await sendMail({ to: admins, subject: m.subject, html: m.html, text: m.text });
+  if (await notifyEmailEnabled("access_requests")) {
+    try {
+      const admins = await getAdminEmails();
+      if (admins.length > 0) {
+        const m = approvalRequestEmail({
+          vendorName: user.name,
+          vendorEmail: user.email,
+          siteName: site.name,
+          consoleUrl: (process.env.MANAGER_PUBLIC_URL ?? "").replace(/\/$/, ""),
+        });
+        await sendMail({ to: admins, subject: m.subject, html: m.html, text: m.text });
+      }
+    } catch {
+      // Best-effort: notifying admins must never fail the request.
     }
-  } catch {
-    // Best-effort: notifying admins must never fail the request.
   }
 
   return NextResponse.json({ id: result.id }, { status: 201 });

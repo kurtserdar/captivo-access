@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { sendMail, getAdminEmails } from "@/lib/email/mailer";
 import { siteEventEmail } from "@/lib/email/templates";
 import { resolvedNotificationWebhookUrl } from "@/lib/settings/platform";
+import { notifyEmailEnabled } from "@/lib/notifications/events";
 
 export type NotificationType = "site_down" | "site_recovered";
 
@@ -32,19 +33,21 @@ export async function notifyTransition(input: {
     // Best-effort: a failed notification row insert must never break the cron.
   }
   await fireWebhook(input);
-  try {
-    const admins = await getAdminEmails();
-    if (admins.length > 0) {
-      const m = siteEventEmail({
-        type: input.type,
-        siteName: input.siteName,
-        detail: input.detail,
-        consoleUrl: (process.env.MANAGER_PUBLIC_URL ?? "").replace(/\/$/, ""),
-      });
-      await sendMail({ to: admins, subject: m.subject, html: m.html, text: m.text });
+  if (await notifyEmailEnabled("site_health")) {
+    try {
+      const admins = await getAdminEmails();
+      if (admins.length > 0) {
+        const m = siteEventEmail({
+          type: input.type,
+          siteName: input.siteName,
+          detail: input.detail,
+          consoleUrl: (process.env.MANAGER_PUBLIC_URL ?? "").replace(/\/$/, ""),
+        });
+        await sendMail({ to: admins, subject: m.subject, html: m.html, text: m.text });
+      }
+    } catch {
+      // Best-effort: email must never break the cron.
     }
-  } catch {
-    // Best-effort: email must never break the cron.
   }
 }
 
