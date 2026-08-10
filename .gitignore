@@ -23,3 +23,6 @@ docs/design/
 
 # Local dev compose override (e.g. host-port tweaks) — not committed
 docker-compose.override.yml
+
+# Local Claude Code tooling / third-party skills — not part of the project
+.claude/
