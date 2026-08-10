@@ -49,7 +49,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="app-shell">
       <aside className="sidebar">
         <Link href="/" className="brand">
-          <BrandMark size={22} />
+          <BrandMark size={30} />
           <span className="wordmark"><b>Captivo</b> <span className="wm-sub">Access</span></span>
         </Link>
         <span className="nav-group">Access</span>
