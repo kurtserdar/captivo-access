@@ -159,6 +159,34 @@ model Site {
   createdAt          DateTime      @default(now())
   grants             AccessGrant[]
   groupMappings      GroupMapping[]
+  vaultCredential    VaultCredential?
+}
+
+enum VaultProtocol {
+  RDP
+  SSH
+  VNC
+}
+
+enum VaultSecretKind {
+  PASSWORD
+  KEY
+}
+
+// VaultCredential holds a GATEWAY site's target credentials, encrypted at rest,
+// injected into the Guacamole session so the vendor never sees the password.
+model VaultCredential {
+  id         String          @id @default(cuid())
+  siteId     String          @unique
+  site       Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  protocol   VaultProtocol
+  targetHost String
+  targetPort Int
+  username   String
+  secret     String // AES-256-GCM ciphertext (password OR private key)
+  secretKind VaultSecretKind @default(PASSWORD)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
 }
 
 enum GrantStatus {
