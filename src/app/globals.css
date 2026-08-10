@@ -200,6 +200,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .pill.warn{color:var(--warn);background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 32%,transparent);}
 .pill.danger{color:var(--danger);background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 32%,transparent);}
 .pill.neutral{color:var(--muted);background:var(--surface-2);border-color:var(--line);}
+.verify-detail{margin-top:.4rem;color:var(--danger);font-size:.82rem;line-height:1.45;overflow-wrap:anywhere;}
 
 /* ---- card / panel ---- */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
