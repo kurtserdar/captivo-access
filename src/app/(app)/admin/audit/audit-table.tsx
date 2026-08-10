@@ -134,7 +134,8 @@ export function AuditTable({
   return (
     <section>
       <div className="card">
-        <div className="field">
+        <div className="filter-bar">
+        <div className="field field-search">
           <label className="field-label" htmlFor="audit-filter-q">Search</label>
           <input
             id="audit-filter-q"
@@ -224,6 +225,7 @@ export function AuditTable({
             value={filters.to}
             onChange={(e) => updateFilter("to", e.target.value)}
           />
+        </div>
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { SiteAvatar } from "@/app/(app)/_shell/site-avatar";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
@@ -30,6 +30,7 @@ function RecordedTag({ r }: { r: AccessRow }) {
 
 type View = "cards" | "list";
 const STORE_KEY = "captivo:access-view";
+const FAV_KEY = "captivo:access-favorites";
 
 const STATUS_PILL: Record<AccessRow["status"], { cls: string; label: string }> = {
   active: { cls: "ok", label: "Active" },
@@ -62,6 +63,23 @@ function StatusPill({ status }: { status: AccessRow["status"] }) {
   return <span className={`pill ${p.cls}`}>{p.label}</span>;
 }
 
+function FavStar({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className={`fav-star${on ? " on" : ""}`}
+      aria-pressed={on}
+      aria-label={on ? "Remove from favorites" : "Add to favorites"}
+      title={on ? "Remove from favorites" : "Add to favorites"}
+      onClick={onClick}
+    >
+      <svg viewBox="0 0 24 24" width="16" height="16" fill={on ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 3.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L12 17.77 6.8 20.51l.99-5.79-4.21-4.1 5.82-.85z" />
+      </svg>
+    </button>
+  );
+}
+
 function RowAction({ r }: { r: AccessRow }) {
   if (r.status === "active")
     return (
@@ -76,6 +94,8 @@ function RowAction({ r }: { r: AccessRow }) {
 
 export function AccessView({ rows }: { rows: AccessRow[] }) {
   const [view, setView] = useState<View>("cards");
+  const [favs, setFavs] = useState<Set<string>>(new Set());
+  const [favReady, setFavReady] = useState(false);
   useEffect(() => {
     try {
       const s = localStorage.getItem(STORE_KEY);
@@ -83,6 +103,16 @@ export function AccessView({ rows }: { rows: AccessRow[] }) {
     } catch {
       /* ignore */
     }
+    try {
+      const raw = localStorage.getItem(FAV_KEY);
+      if (raw) {
+        const arr: unknown = JSON.parse(raw);
+        if (Array.isArray(arr)) setFavs(new Set(arr.filter((x): x is string => typeof x === "string")));
+      }
+    } catch {
+      /* ignore */
+    }
+    setFavReady(true);
   }, []);
   function choose(v: View) {
     setView(v);
@@ -92,12 +122,87 @@ export function AccessView({ rows }: { rows: AccessRow[] }) {
       /* ignore */
     }
   }
+  function toggleFav(siteId: string) {
+    setFavs((prev) => {
+      const next = new Set(prev);
+      if (next.has(siteId)) next.delete(siteId);
+      else next.add(siteId);
+      try {
+        localStorage.setItem(FAV_KEY, JSON.stringify([...next]));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }
 
   // The "Requests" group covers both pending and denied rows.
   const rowsFor = (status: AccessRow["status"]) =>
     status === "pending"
       ? rows.filter((r) => r.status === "pending" || r.status === "denied")
       : rows.filter((r) => r.status === status);
+
+  const isFav = (r: AccessRow) => favReady && favs.has(r.siteId);
+  const favRows = favReady ? rows.filter((r) => favs.has(r.siteId)) : [];
+
+  function renderSection(key: string, heading: ReactNode, group: AccessRow[]) {
+    return (
+      <section key={key}>
+        <h3>{heading}</h3>
+        {view === "cards" ? (
+          <div className="access-grid">
+            {group.map((r) => (
+              <div key={r.id} className="card access-card">
+                <div className="access-card-head">
+                  <SiteAvatar name={r.siteName} siteId={r.siteId} hasLogo={r.hasLogo} />
+                  <span className="access-card-name">{r.siteName}</span>
+                  <StatusPill status={r.status} />
+                  <FavStar on={isFav(r)} onClick={() => toggleFav(r.siteId)} />
+                </div>
+                <div className="access-card-host cell-sub">
+                  <span className="cell-truncate" title={r.hostname}>{r.hostname}</span>
+                </div>
+                <div className="cell-sub"><Window r={r} /></div>
+                <RecordedTag r={r} />
+                <div className="access-card-foot"><RowAction r={r} /></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Site</th>
+                  <th>Window</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {group.map((r) => (
+                  <tr key={r.id}>
+                    <td>
+                      <span className="cell-inline"><SiteAvatar name={r.siteName} siteId={r.siteId} hasLogo={r.hasLogo} /> {r.siteName}</span>
+                    </td>
+                    <td className="cell-sub"><Window r={r} /></td>
+                    <td>
+                      <StatusPill status={r.status} />
+                      {r.status === "denied" && r.denyReason && <div className="cell-sub">{r.denyReason}</div>}
+                      <RecordedTag r={r} />
+                    </td>
+                    <td>
+                      <span className="row-actions"><FavStar on={isFav(r)} onClick={() => toggleFav(r.siteId)} /><RowAction r={r} /></span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <div>
@@ -113,62 +218,12 @@ export function AccessView({ rows }: { rows: AccessRow[] }) {
         </div>
       </div>
 
+      {favRows.length > 0 && renderSection("favorites", <><span className="fav-star-heading">★</span> Favorites</>, favRows)}
+
       {GROUPS.map(({ status, heading }) => {
-        const group = rowsFor(status);
+        const group = rowsFor(status).filter((r) => !isFav(r));
         if (group.length === 0) return null;
-        return (
-          <section key={status}>
-            <h3>{heading}</h3>
-            {view === "cards" ? (
-              <div className="access-grid">
-                {group.map((r) => (
-                  <div key={r.id} className="card access-card">
-                    <div className="access-card-head">
-                      <SiteAvatar name={r.siteName} siteId={r.siteId} hasLogo={r.hasLogo} />
-                      <span className="access-card-name">{r.siteName}</span>
-                      <StatusPill status={r.status} />
-                    </div>
-                    <div className="access-card-host cell-sub">
-                      <span className="cell-truncate" title={r.hostname}>{r.hostname}</span>
-                    </div>
-                    <div className="cell-sub"><Window r={r} /></div>
-                    <RecordedTag r={r} />
-                    <div className="access-card-foot"><RowAction r={r} /></div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="table-wrap">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Site</th>
-                      <th>Window</th>
-                      <th>Status</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.map((r) => (
-                      <tr key={r.id}>
-                        <td>
-                          <span className="cell-inline"><SiteAvatar name={r.siteName} siteId={r.siteId} hasLogo={r.hasLogo} /> {r.siteName}</span>
-                        </td>
-                        <td className="cell-sub"><Window r={r} /></td>
-                        <td>
-                          <StatusPill status={r.status} />
-                          {r.status === "denied" && r.denyReason && <div className="cell-sub">{r.denyReason}</div>}
-                          <RecordedTag r={r} />
-                        </td>
-                        <td><RowAction r={r} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        );
+        return renderSection(status, heading, group);
       })}
     </div>
   );

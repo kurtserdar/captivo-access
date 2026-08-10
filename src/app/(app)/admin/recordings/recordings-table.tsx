@@ -134,7 +134,8 @@ export function RecordingsTable({
   return (
     <div>
       <div className="card">
-        <div className="field">
+        <div className="filter-bar">
+        <div className="field field-search">
           <label className="field-label" htmlFor="rec-filter-q">Search</label>
           <input
             id="rec-filter-q"
@@ -179,6 +180,7 @@ export function RecordingsTable({
         <div className="field">
           <label className="field-label" htmlFor="rec-filter-to">To</label>
           <input id="rec-filter-to" type="date" className="input" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} />
+        </div>
         </div>
       </div>
 
