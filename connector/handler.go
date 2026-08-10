@@ -189,8 +189,14 @@ func upstreamTransport(insecure bool) *http.Transport {
 		TLSHandshakeTimeout:   8 * time.Second,
 		ResponseHeaderTimeout: 12 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
+		// A fresh transport is built per request (handleDial), so there is no
+		// cross-request connection reuse to preserve. Not pooling idle
+		// connections avoids the benign but noisy "Unsolicited response
+		// received on idle HTTP channel" log some upstreams (Proxmox pveproxy,
+		// embedded router UIs) trigger by trailing a chunk terminator onto a
+		// parked keep-alive connection, and closes each upstream connection
+		// cleanly after its response.
+		DisableKeepAlives: true,
 	}
 	if insecure {
 		t.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
