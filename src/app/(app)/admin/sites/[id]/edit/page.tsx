@@ -2,7 +2,10 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { vaultEnabled } from "@/lib/vault/enabled";
+import { hasVaultCredential } from "@/lib/vault/store";
 import { SiteForm } from "../../site-form";
+import { VaultCredentialForm } from "../../vault-credential-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Edit site" };
@@ -18,6 +21,9 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
     db.connector.findMany({ where: { status: { not: "REVOKED" } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
 
+  const showVault = !!site && vaultEnabled() && site.accessMode === "GATEWAY";
+  const vaultHasSecret = showVault && site ? await hasVaultCredential(site.id) : false;
+
   return (
     <main>
       <div className="page-head">
@@ -29,25 +35,28 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
       {!site ? (
         <div className="empty">Site not found.</div>
       ) : (
-        <div className="card">
-          <SiteForm
-            connectors={connectors}
-            recordingEnabled={recordingEnabled()}
-            site={{
-              id: site.id,
-              connectorId: site.connectorId,
-              name: site.name,
-              hostname: site.hostname,
-              upstreamUrl: site.upstreamUrl ?? "",
-              description: site.description ?? "",
-              insecureSkipVerify: site.insecureSkipVerify,
-              recordSessions: site.recordSessions,
-              clipboardMode: site.clipboardMode,
-              accessMode: site.accessMode,
-              hasLogo: site.logoType != null,
-            }}
-          />
-        </div>
+        <>
+          <div className="card">
+            <SiteForm
+              connectors={connectors}
+              recordingEnabled={recordingEnabled()}
+              site={{
+                id: site.id,
+                connectorId: site.connectorId,
+                name: site.name,
+                hostname: site.hostname,
+                upstreamUrl: site.upstreamUrl ?? "",
+                description: site.description ?? "",
+                insecureSkipVerify: site.insecureSkipVerify,
+                recordSessions: site.recordSessions,
+                clipboardMode: site.clipboardMode,
+                accessMode: site.accessMode,
+                hasLogo: site.logoType != null,
+              }}
+            />
+          </div>
+          {showVault && <VaultCredentialForm siteId={site.id} hasSecret={vaultHasSecret} />}
+        </>
       )}
     </main>
   );
