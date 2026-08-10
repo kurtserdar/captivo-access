@@ -63,6 +63,15 @@ export function SsoForm({ initial }: { initial: Initial }) {
 
   return (
     <form onSubmit={save}>
+      <div className="setting" style={{ marginBottom: "1.1rem" }}>
+        <div className="setting-main">
+          <div className="setting-label">Enable SSO on the login page</div>
+          <div className="setting-hint">Shows the sign-in button below for staff/admins to authenticate with your identity provider. Vendors always use passkeys.</div>
+        </div>
+        <div className="setting-ctl">
+          <label className="switch"><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /><span className="track" /></label>
+        </div>
+      </div>
       <div className="field">
         <label className="field-label" htmlFor="sso-issuer">Issuer URL</label>
         <input
@@ -95,11 +104,6 @@ export function SsoForm({ initial }: { initial: Initial }) {
       <div className="field">
         <label className="field-label" htmlFor="sso-button-label">Button label</label>
         <input id="sso-button-label" className="input" value={buttonLabel} onChange={(e) => setButtonLabel(e.target.value)} placeholder="Sign in with Microsoft" />
-      </div>
-      <div className="field">
-        <label className="field-label">
-          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /> Enable SSO on the login page
-        </label>
       </div>
       {notice && <p className={`notice ${notice.kind === "ok" ? "success" : "error"}`} role="alert">{notice.msg}</p>}
       <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>

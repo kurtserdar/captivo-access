@@ -62,12 +62,14 @@ export function UpdatesForm({
 
   return (
     <div>
-      <div className="field">
-        <label className="field-label" style={{ display: "flex", gap: ".5rem", alignItems: "center" }}>
-          <input type="checkbox" checked={enabled} disabled={busy} onChange={(e) => toggle(e.target.checked)} />
-          Check GitHub for new releases
-        </label>
-        <p className="cell-sub">Checks GitHub for the latest release. No information about your installation is sent.</p>
+      <div className="setting" style={{ marginBottom: "1rem" }}>
+        <div className="setting-main">
+          <div className="setting-label">Check GitHub for new releases</div>
+          <div className="setting-hint">Checks GitHub for the latest release. No information about your installation is sent.</div>
+        </div>
+        <div className="setting-ctl">
+          <label className="switch"><input type="checkbox" checked={enabled} disabled={busy} onChange={(e) => toggle(e.target.checked)} /><span className="track" /></label>
+        </div>
       </div>
 
       <p className="cell-sub">

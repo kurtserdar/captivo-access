@@ -84,8 +84,15 @@ export function EmailForm({ initial, adminEmail }: { initial: Initial; adminEmai
         <input id="smtp-fromname" className="input" value={fromName} onChange={(e) => setFromName(e.target.value)} /></div>
       <div className="field"><label className="field-label" htmlFor="smtp-fromemail">From email</label>
         <input id="smtp-fromemail" type="email" className="input" value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} required /></div>
-      <div className="field"><label className="field-label">
-        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /> Enabled — send email using these settings.</label></div>
+      <div className="setting" style={{ margin: ".4rem 0 1.1rem" }}>
+        <div className="setting-main">
+          <div className="setting-label">Send email using these settings</div>
+          <div className="setting-hint">When off, invites and alerts fall back to copyable links / the in-console bell only.</div>
+        </div>
+        <div className="setting-ctl">
+          <label className="switch"><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /><span className="track" /></label>
+        </div>
+      </div>
       <div className="field">
         <label className="field-label" htmlFor="smtp-testto">Send test to</label>
         <input id="smtp-testto" type="email" className="input" value={testTo} onChange={(e) => setTestTo(e.target.value)} />
