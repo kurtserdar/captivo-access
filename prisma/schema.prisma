@@ -237,6 +237,23 @@ model AuditChainState {
   updatedAt DateTime @updatedAt
 }
 
+// AuditAnchor stores one RFC 3161 timestamp per successful external anchor of
+// the audit chain head. Each row is a verifiable proof that the head was
+// (anchoredSeq, anchoredHash) at the TSA's genTime — pinning history against a
+// later full-DB rewrite. Only successful anchors are stored.
+model AuditAnchor {
+  id           String   @id @default(cuid())
+  anchoredSeq  BigInt
+  anchoredHash String
+  tsaUrl       String
+  token        Bytes
+  genTime      DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([anchoredSeq])
+  @@index([createdAt])
+}
+
 // Singleton (id = "singleton") holding the outbound SMTP relay configuration.
 model SmtpConfig {
   id        String   @id
@@ -346,6 +363,9 @@ model PlatformSettings {
   recordingConsentRequired Boolean? // was RECORDING_CONSENT_REQUIRED; null = env fallback → false
   recordingRetentionDays Int? // auto-delete recordings older than N days; 0/null = keep forever
   defaultConnectorLogLevel String? // fleet default log level for connectors set to "use default"; null → info
+  externalAnchorEnabled Boolean? // opt-in; null/false = anchoring off
+  anchorTsaUrl          String? // RFC 3161 TSA endpoint; empty = unset (no bundled default)
+  anchorTsaAuth         String? // optional "user:pass" for a TSA behind HTTP Basic; empty = none
   updatedAt              DateTime @updatedAt
 }
 
