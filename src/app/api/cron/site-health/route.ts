@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { probeSite } from "@/lib/connector/health";
 import { classifyTransition, notifyTransition } from "@/lib/notifications";
+import { recordCronRun } from "@/lib/cron/heartbeat";
 
 function cronAuthorized(req: NextRequest): boolean {
   const s = process.env.CRON_SECRET;
@@ -12,6 +13,7 @@ const POOL = 8;
 
 export async function POST(req: NextRequest) {
   if (!cronAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  await recordCronRun("site-health");
 
   const sites = await db.site.findMany({ select: { id: true, connectorId: true, upstreamUrl: true, name: true, probeOk: true } });
   // Sites with no internal address aren't misconfigured probes — they're just

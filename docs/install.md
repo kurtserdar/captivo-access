@@ -265,7 +265,12 @@ external access at a glance.
 
 ## Step 12 — Schedule the maintenance jobs (cron)
 
-The Manager has no built-in scheduler; two endpoints are triggered by the host's
+> **If you used `./setup.sh`, this is already done** — it installs these cron
+> jobs for you (idempotently) and the console warns on the Policy page if a job
+> stops running. The manual steps below are for a hand-rolled
+> `docker-compose.prod.yml` deploy.
+
+The Manager has no built-in scheduler; the endpoints are triggered by the host's
 cron with the `CRON_SECRET` bearer token. On the server's crontab:
 
 ```cron

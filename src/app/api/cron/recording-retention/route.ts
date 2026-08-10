@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { resolvedRecordingRetentionDays } from "@/lib/settings/platform";
 import { appendAuditEvents } from "@/lib/audit/append";
+import { recordCronRun } from "@/lib/cron/heartbeat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ function cronAuthorized(req: NextRequest): boolean {
 // valid CRON_SECRET. Intended to run daily.
 export async function POST(req: NextRequest) {
   if (!cronAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  await recordCronRun("recording-retention");
 
   const days = await resolvedRecordingRetentionDays();
   if (days <= 0) return NextResponse.json({ deleted: 0, note: "retention_disabled" });

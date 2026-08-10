@@ -127,6 +127,11 @@ export type GroupMapping = Prisma.GroupMappingModel
  */
 export type SessionPolicy = Prisma.SessionPolicyModel
 /**
+ * Model CronRun
+ * 
+ */
+export type CronRun = Prisma.CronRunModel
+/**
  * Model PlatformSettings
  * 
  */

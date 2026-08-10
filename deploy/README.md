@@ -257,8 +257,10 @@ configuration; the only thing you can set on it is an optional
 ## Scheduled jobs (cron)
 
 The Manager doesn't run its own scheduler — cron endpoints are triggered from
-outside via HTTP POST with the `CRON_SECRET` Bearer token (see `.env`). Add
-these to the host's crontab:
+outside via HTTP POST with the `CRON_SECRET` Bearer token (see `.env`).
+**`./setup.sh` installs these for you** (idempotently), and the console warns on
+the Policy page if a job stops running. If you deploy by hand instead, add these
+to the host's crontab:
 
 ```cron
 # Probe each Site's reachability through its connector every 5 minutes:

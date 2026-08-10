@@ -68,6 +68,7 @@ export const ModelName = {
   DirectoryConfig: 'DirectoryConfig',
   GroupMapping: 'GroupMapping',
   SessionPolicy: 'SessionPolicy',
+  CronRun: 'CronRun',
   PlatformSettings: 'PlatformSettings',
   UpdateCheckConfig: 'UpdateCheckConfig',
   SessionRecording: 'SessionRecording',
@@ -366,6 +367,14 @@ export const SessionPolicyScalarFieldEnum = {
 } as const
 
 export type SessionPolicyScalarFieldEnum = (typeof SessionPolicyScalarFieldEnum)[keyof typeof SessionPolicyScalarFieldEnum]
+
+
+export const CronRunScalarFieldEnum = {
+  job: 'job',
+  ranAt: 'ranAt'
+} as const
+
+export type CronRunScalarFieldEnum = (typeof CronRunScalarFieldEnum)[keyof typeof CronRunScalarFieldEnum]
 
 
 export const PlatformSettingsScalarFieldEnum = {

@@ -18,6 +18,38 @@ cd "$(dirname "$0")"
 COMPOSE="docker-compose.prod.yml"
 ACCESS_DOMAIN="${1:-${ACCESS_DOMAIN:-}}"
 
+CRON_MARKER="# captivo-access cron (managed by setup.sh — do not edit this block)"
+
+print_cron_lines() {
+  _d="$1"; _s="$2"
+  # site-health every 5 min; audit + recording retention daily (staggered).
+  printf '%s\n' "*/5 * * * * curl -sS -X POST -H \"Authorization: Bearer ${_s}\" https://manager.${_d}/api/cron/site-health >/dev/null 2>&1"
+  printf '%s\n' "23 3 * * * curl -sS -X POST -H \"Authorization: Bearer ${_s}\" https://manager.${_d}/api/cron/audit-retention >/dev/null 2>&1"
+  printf '%s\n' "35 3 * * * curl -sS -X POST -H \"Authorization: Bearer ${_s}\" https://manager.${_d}/api/cron/recording-retention >/dev/null 2>&1"
+}
+
+# install_cron schedules the manager's background jobs so retention/health
+# actually run — the #1 thing a self-hoster otherwise forgets, silently leaving
+# a "delete old recordings" policy that never fires. Idempotent + self-healing:
+# it strips any prior managed block (even with an old secret/domain) and re-adds
+# a fresh one. If crontab is unavailable it prints the lines to add by hand.
+install_cron() {
+  _s="$(grep -E '^CRON_SECRET=' .env 2>/dev/null | cut -d= -f2-)"
+  _d="$(grep -E '^ACCESS_DOMAIN=' .env 2>/dev/null | cut -d= -f2-)"
+  if [ -z "$_s" ] || [ -z "$_d" ]; then
+    echo "→ Skipping cron install (CRON_SECRET/ACCESS_DOMAIN not found in .env)."
+    return
+  fi
+  if ! command -v crontab >/dev/null 2>&1; then
+    echo "→ 'crontab' not available — add these scheduled jobs yourself (see docs):"
+    print_cron_lines "$_d" "$_s"
+    return
+  fi
+  _existing="$(crontab -l 2>/dev/null | grep -vF "$CRON_MARKER" | grep -vE '/api/cron/(site-health|audit-retention|recording-retention)' || true)"
+  { [ -n "$_existing" ] && printf '%s\n' "$_existing"; printf '%s\n' "$CRON_MARKER"; print_cron_lines "$_d" "$_s"; } | crontab -
+  echo "→ Scheduled background jobs (site-health every 5 min; audit + recording retention daily)."
+}
+
 if [ ! -f .env ]; then
   if [ -z "$ACCESS_DOMAIN" ]; then
     printf "Access domain (e.g. access.example.com): "
@@ -47,6 +79,8 @@ fi
 echo "→ Pulling images + starting the stack (manager + data-plane + postgres + Caddy)..."
 docker compose -f "$COMPOSE" pull
 docker compose -f "$COMPOSE" up -d
+
+install_cron
 
 cat <<EOF
 

@@ -327,6 +327,14 @@ model SessionPolicy {
 // operational settings that were previously env-only. Each field is optional;
 // an unset field falls back to its former env var, then a hard default, so an
 // existing deployment keeps working and the env var becomes optional.
+// CronRun records the last time each external cron endpoint was hit, so the
+// console can warn when a scheduled job (retention / health) isn't actually
+// running — the classic "policy set but nobody scheduled the cron" gap.
+model CronRun {
+  job   String   @id
+  ranAt DateTime
+}
+
 model PlatformSettings {
   id                     String   @id
   auditRetentionDays     Int? // was AUDIT_RETENTION_DAYS (default 730)

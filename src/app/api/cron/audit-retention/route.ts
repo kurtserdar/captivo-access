@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { resolvedAuditRetentionDays } from "@/lib/settings/platform";
+import { recordCronRun } from "@/lib/cron/heartbeat";
 
 function cronAuthorized(req: NextRequest): boolean {
   const s = process.env.CRON_SECRET;
@@ -9,6 +10,7 @@ function cronAuthorized(req: NextRequest): boolean {
 
 export async function POST(req: NextRequest) {
   if (!cronAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  await recordCronRun("audit-retention");
   // Retention days come from PlatformSettings (UI), falling back to the
   // AUDIT_RETENTION_DAYS env then 730. resolvedAuditRetentionDays already
   // guards against the empty/NaN footgun (which would purge everything).
