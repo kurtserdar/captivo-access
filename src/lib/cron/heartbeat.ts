@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { getPlatformSettings } from "@/lib/settings/platform";
 
-export type CronJob = "site-health" | "audit-retention" | "recording-retention";
+export type CronJob = "site-health" | "audit-retention" | "recording-retention" | "audit-anchor";
 
 // recordCronRun stamps a heartbeat for a cron endpoint. Called on every
 // authorized hit (even a no-op run) so "the cron is scheduled" is provable.
@@ -25,12 +25,15 @@ export async function cronHealth(): Promise<CronHealth> {
   let runs: { job: string; ranAt: Date }[] = [];
   let siteCount = 0;
   let recRetention = 0;
+  let anchorOn = false;
   try {
     [runs, siteCount] = await Promise.all([
       db.cronRun.findMany({ select: { job: true, ranAt: true } }),
       db.site.count(),
     ]);
-    recRetention = (await getPlatformSettings()).recordingRetentionDays ?? 0;
+    const settings = await getPlatformSettings();
+    recRetention = settings.recordingRetentionDays ?? 0;
+    anchorOn = settings.externalAnchorEnabled === true;
   } catch {
     return { anyRun: true, stale: [] }; // table missing / DB hiccup: don't alarm
   }
@@ -57,6 +60,10 @@ export async function cronHealth(): Promise<CronHealth> {
     if (a && agedOut(a, 26 * 3600_000)) stale.push({ job: "audit-retention", lastRunAt: a });
     const r = last("recording-retention");
     if (recRetention > 0 && r && agedOut(r, 26 * 3600_000)) stale.push({ job: "recording-retention", lastRunAt: r });
+    // audit-anchor is opt-in: only warn when the feature is enabled, so a disabled
+    // feature never raises a stale-job banner.
+    const an = last("audit-anchor");
+    if (anchorOn && an && agedOut(an, 26 * 3600_000)) stale.push({ job: "audit-anchor", lastRunAt: an });
   }
 
   return { anyRun: runs.length > 0, stale };

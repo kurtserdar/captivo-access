@@ -12,6 +12,7 @@ const JOB_LABEL: Record<CronJob, string> = {
   "site-health": "Site health",
   "audit-retention": "Audit log retention",
   "recording-retention": "Recording retention",
+  "audit-anchor": "External anchor",
 };
 
 export default async function AdminPolicyPage() {
