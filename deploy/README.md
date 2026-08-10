@@ -272,6 +272,10 @@ to the host's crontab:
 # Delete session recordings past their retention window, once a day (no-op
 # unless Policy → Session recording retention is set):
 23 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/recording-retention >/dev/null
+
+# Timestamp the audit-log chain head with the configured TSA, once a day (no-op
+# unless Policy → External anchor is enabled):
+36 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/audit-anchor >/dev/null
 ```
 
 `POST /api/cron/site-health` opens a **TCP connection** to each configured
@@ -285,6 +289,12 @@ internal address set yet are skipped, not reported unreachable.
 `POST /api/cron/audit-retention` deletes audit-log rows older than
 `AUDIT_RETENTION_DAYS` (default 730) by sequence prefix, preserving the
 tamper-evident hash chain. Leave it unscheduled to keep audit history forever.
+
+`POST /api/cron/audit-anchor` timestamps the audit-log chain head with the RFC
+3161 Time-Stamp Authority configured under **Policy → External anchor**, storing
+the signed token so history can't be back-dated even by someone with full
+database access. It is a no-op unless the feature is enabled and a TSA URL is
+set; failures are logged and retried on the next run.
 
 Like the other cron endpoints, both fail closed — with `CRON_SECRET` unset or a
 missing/wrong Bearer header they return `401` and do nothing.

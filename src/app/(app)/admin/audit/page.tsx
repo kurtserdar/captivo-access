@@ -2,6 +2,7 @@ import { requireCapability } from "@/lib/current-user";
 import { AuditIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { listAuditEvents } from "@/lib/audit/query";
+import { resolvedExternalAnchorEnabled } from "@/lib/settings/platform";
 import { AuditTable, type AuditRowJSON } from "./audit-table";
 import { IntegrityPanel } from "./integrity-panel";
 
@@ -21,6 +22,22 @@ export default async function AdminAuditPage() {
     db.site.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     listAuditEvents({ limit: INITIAL_LIMIT, offset: 0 }),
   ]);
+
+  const [anchorEnabled, anchorCount, lastAnchor] = await Promise.all([
+    resolvedExternalAnchorEnabled(),
+    db.auditAnchor.count(),
+    db.auditAnchor.findFirst({
+      orderBy: { anchoredSeq: "desc" },
+      select: { anchoredSeq: true, genTime: true, tsaUrl: true },
+    }),
+  ]);
+  const anchor = {
+    enabled: anchorEnabled,
+    count: anchorCount,
+    last: lastAnchor
+      ? { anchoredSeq: lastAnchor.anchoredSeq.toString(), genTime: lastAnchor.genTime.toISOString(), tsaUrl: lastAnchor.tsaUrl }
+      : null,
+  };
 
   const initialRows: AuditRowJSON[] = rows.map((r) => ({
     id: r.id,
@@ -50,7 +67,7 @@ export default async function AdminAuditPage() {
         </div>
       </div>
 
-      <IntegrityPanel />
+      <IntegrityPanel anchor={anchor} />
 
       <AuditTable users={users} sites={sites} initialRows={initialRows} initialTotal={total} />
     </main>

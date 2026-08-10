@@ -22,10 +22,12 @@ CRON_MARKER="# captivo-access cron (managed by setup.sh — do not edit this blo
 
 print_cron_lines() {
   _d="$1"; _s="$2"
-  # site-health every 5 min; audit + recording retention daily (staggered).
+  # site-health every 5 min; audit + recording retention daily (staggered);
+  # audit-anchor daily (no-op unless External anchor is enabled in Policy).
   printf '%s\n' "*/5 * * * * curl -sS -X POST -H \"Authorization: Bearer ${_s}\" https://manager.${_d}/api/cron/site-health >/dev/null 2>&1"
   printf '%s\n' "23 3 * * * curl -sS -X POST -H \"Authorization: Bearer ${_s}\" https://manager.${_d}/api/cron/audit-retention >/dev/null 2>&1"
   printf '%s\n' "35 3 * * * curl -sS -X POST -H \"Authorization: Bearer ${_s}\" https://manager.${_d}/api/cron/recording-retention >/dev/null 2>&1"
+  printf '%s\n' "36 3 * * * curl -sS -X POST -H \"Authorization: Bearer ${_s}\" https://manager.${_d}/api/cron/audit-anchor >/dev/null 2>&1"
 }
 
 # install_cron schedules the manager's background jobs so retention/health

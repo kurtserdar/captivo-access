@@ -291,6 +291,10 @@ cron with the `CRON_SECRET` bearer token. On the server's crontab:
 # Delete session recordings past their retention window, once a day (no-op
 # unless Policy → Session recording retention is set):
 23 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.access.acme.com/api/cron/recording-retention >/dev/null
+
+# Timestamp the audit-log chain head with the configured TSA, once a day (no-op
+# unless Policy → External anchor is enabled):
+36 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.access.acme.com/api/cron/audit-anchor >/dev/null
 ```
 
 Site-health records reachability and raises an in-console notification (and an
