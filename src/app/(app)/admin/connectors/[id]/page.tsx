@@ -98,34 +98,34 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       </div>
 
       <div className="card">
-        <div className="card-head"><h2>Overview</h2></div>
-        <div className="site-card-meta">
-          <div className="site-card-mrow"><span className="site-card-k">Version</span><span className="site-card-v">{connector.version ?? "—"}{outdated && <span className="pill warn" style={{ marginLeft: ".4rem" }}>Outdated</span>}</span></div>
-          <div className="site-card-mrow"><span className="site-card-k">Last seen</span><span className="site-card-v">{connector.lastSeenAt ? <LocalTime iso={connector.lastSeenAt.toISOString()} /> : "Never"}</span></div>
-          <div className="site-card-mrow"><span className="site-card-k">Remote address</span><span className="site-card-v">{connector.remoteAddr ?? "—"}</span></div>
+        <div className="card-head"><div className="ch-title"><h2>Overview</h2><span className="sub">Identity &amp; status</span></div></div>
+        <div className="defrows">
+          <div className="defrow"><span className="dk">Version</span><span className="dv">{connector.version ?? "—"}{outdated && <span className="pill warn" style={{ marginLeft: ".4rem" }}>Outdated</span>}</span></div>
+          <div className="defrow"><span className="dk">Last seen</span><span className="dv">{connector.lastSeenAt ? <LocalTime iso={connector.lastSeenAt.toISOString()} /> : "Never"}</span></div>
+          <div className="defrow"><span className="dk">Remote address</span><span className="dv">{connector.remoteAddr ?? "—"}</span></div>
         </div>
       </div>
 
       <div className="card">
-        <div className="card-head"><h2>Egress policy</h2></div>
+        <div className="card-head"><div className="ch-title"><h2>Egress policy</h2><span className="sub">Narrows what this connector may reach</span></div></div>
         <EgressPolicyForm connectorId={connector.id} initial={connector.egressPolicy ?? ""} />
       </div>
 
       <div className="card">
-        <div className="card-head"><h2>Logging</h2></div>
+        <div className="card-head"><div className="ch-title"><h2>Logging</h2><span className="sub">Verbosity, pushed live over the tunnel</span></div></div>
         <LogLevelForm connectorId={connector.id} initial={connector.logLevel} globalDefault={defaultLogLevel} />
       </div>
 
       <div className="card">
-        <div className="card-head"><h2>Live telemetry</h2></div>
+        <div className="card-head"><div className="ch-title"><h2>Live telemetry</h2><span className="sub">Reported every 10s while connected</span></div></div>
         {t ? (
           <div className="stat-grid">
-            <div className="stat-card neutral"><span className="k">Active connections</span><span className="v">{t.activeConnections}</span></div>
-            <div className="stat-card neutral"><span className="k">Total handled</span><span className="v">{t.totalConnections}</span></div>
-            <div className="stat-card neutral"><span className="k">Uptime</span><span className="v">{humanDuration(t.uptimeSec)}</span></div>
+            <div className="stat-card"><span className="k">Active connections</span><span className="v">{t.activeConnections}</span></div>
+            <div className="stat-card"><span className="k">Total handled</span><span className="v">{t.totalConnections}</span></div>
+            <div className="stat-card"><span className="k">Uptime</span><span className="v">{humanDuration(t.uptimeSec)}</span></div>
             <div className={`stat-card ${t.deniedCount > 0 ? "warn" : "neutral"}`}><span className="k">Denied attempts</span><span className="v">{t.deniedCount}</span></div>
-            <div className="stat-card neutral"><span className="k">Bytes in</span><span className="v">{humanBytes(t.bytesIn)}</span></div>
-            <div className="stat-card neutral"><span className="k">Bytes out</span><span className="v">{humanBytes(t.bytesOut)}</span></div>
+            <div className="stat-card"><span className="k">Bytes in</span><span className="v">{humanBytes(t.bytesIn)}</span></div>
+            <div className="stat-card"><span className="k">Bytes out</span><span className="v">{humanBytes(t.bytesOut)}</span></div>
           </div>
         ) : (
           <p className="cell-sub">No live data — the connector is offline or hasn&apos;t been updated to report telemetry yet.</p>
@@ -133,7 +133,7 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       </div>
 
       <div className="card">
-        <div className="card-head"><h2>Sites on this connector</h2></div>
+        <div className="card-head"><div className="ch-title"><h2>Sites on this connector</h2><span className="sub">Apps routed through it</span></div></div>
         {connector.sites.length === 0 ? (
           <div className="empty">No sites yet.</div>
         ) : (
@@ -155,7 +155,7 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       </div>
 
       <div className="card">
-        <div className="card-head"><h2>Recent logs</h2></div>
+        <div className="card-head"><div className="ch-title"><h2>Recent logs</h2><span className="sub">Last lines from the connector</span></div></div>
         {t && t.recentLogs && t.recentLogs.length > 0 ? (
           <div className="term">
             <div className="term-body" style={{ maxHeight: "18rem" }}>
@@ -170,7 +170,7 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       </div>
 
       <div className="card">
-        <div className="card-head"><h2>Recent activity</h2></div>
+        <div className="card-head"><div className="ch-title"><h2>Recent activity</h2><span className="sub">Latest access decisions on its sites</span></div></div>
         {activity.length === 0 ? (
           <div className="empty">No access activity yet.</div>
         ) : (

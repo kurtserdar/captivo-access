@@ -185,6 +185,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.1rem;padding-bottom:.85rem;border-bottom:1px solid var(--line-soft);}
 .card-head h2,.card-head h3{font-size:1rem;font-weight:640;letter-spacing:-.01em;}
 .card-head .sub{color:var(--muted);font-size:.82rem;font-weight:400;}
+.ch-title{display:flex;flex-direction:column;gap:.1rem;min-width:0;}
+.ch-title h2,.ch-title h3{line-height:1.2;}
 /* When the header is only a title (no divider desired), authors can add .bare. */
 .card-head.bare{border-bottom:none;padding-bottom:0;margin-bottom:.9rem;}
 
@@ -334,7 +336,9 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .section-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .view-toggle { display: inline-flex; gap: 0.4rem; }
 .site-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1rem; }
-.site-card { display:flex; flex-direction:column; gap:0.9rem; padding-top:1.05rem; }
+.site-card { display:flex; flex-direction:column; gap:0.9rem; padding-top:1.05rem; transition:border-color .12s,box-shadow .12s,transform .12s; }
+.site-card:hover { border-color:color-mix(in srgb,var(--accent) 32%,var(--line)); box-shadow:var(--shadow); transform:translateY(-2px); }
+.site-card-name { font-weight:660; }
 .site-card-head { display:flex; align-items:center; gap:0.7rem; }
 .site-card-head > .site-avatar { width:3.75rem; height:3.75rem; border-radius:13px; font-size:1.5rem; }
 .site-card-title { min-width:0; }
