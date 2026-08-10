@@ -120,6 +120,12 @@ Step by step:
 > in the console is governed by five roles (`ADMIN`, `OPERATOR`, `AUDITOR`,
 > `STAFF`, `VENDOR`).
 
+> **Extra policy gates (optional).** Gate 2 can carry more than the grant: a
+> **source-IP allowlist** rejects access from networks you didn't approve, a
+> **maximum grant duration** stops anyone handing out never-expiring access, and
+> **session limits** (idle / max-lifetime / concurrency) bound the login itself.
+> All of these live on the console's **Policy** page and apply live.
+
 ---
 
 See also: [`deploy/README.md`](../deploy/README.md) for the full production

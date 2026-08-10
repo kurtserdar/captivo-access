@@ -156,9 +156,16 @@ Shipped and working today:
   migrations automatically on `up -d` (a one-shot `access-migrate` service), and
   the console shows in-app update notifications with a copyable one-command
   upgrade + per-connector update commands.
-- **Session policy** — optional console-wide session controls at `/admin/policy`:
-  an idle timeout, a maximum session duration, and a cap on concurrent sessions
-  per user (the oldest session is evicted past the cap).
+- **Policy page** — console-wide controls at `/admin/policy`, all live-editable
+  (no redeploy): **session** limits (idle timeout, max lifetime, concurrent-session
+  cap), a **maximum grant duration** (every grant must expire — time-boxed vendor
+  access), **retention** for the audit log and session recordings, a **recording
+  consent** gate, the notification webhook, and the invitation-link lifetime.
+  Settings that used to be environment variables now live here (the UI value wins).
+- **Zero-Trust source-IP allowlist** — restrict vendor access to published Sites
+  to specific networks (IPv4/IPv6 CIDRs). Checked live on every request against
+  the real client IP (from the front proxy — not spoofable via `X-Forwarded-For`);
+  the console itself is never gated, so a bad list can't lock an admin out.
 - **Per-site clipboard control** — a transparent Site can restrict the vendor's
   clipboard (block copy-out, block paste-in, or both); the proxy injects a
   capture-phase guard into the app's pages. A deterrent, not a hard control
@@ -169,7 +176,10 @@ Shipped and working today:
   in/out, denied count) and a recent-log tail, streamed over the tunnel's
   control channel. An optional per-connector **egress policy** narrows what a
   connector may reach on top of its local `ALLOWED_TARGETS` — it can only
-  tighten that boundary, never widen it.
+  tighten that boundary, never widen it. A connector's **log level** (and a
+  fleet-wide default) is set from the console and pushed live — turn on
+  per-request debug logging for troubleshooting, then back off, without a
+  redeploy.
 - **User management** — disable/enable and **delete** non-admin users (deletion
   removes the account + credentials but preserves the audit trail).
 
@@ -339,6 +349,15 @@ instead, replicate that routing and forward those headers.
   timeout, a maximum absolute duration, and a cap on concurrent sessions per
   user. These limit how long a stolen or forgotten session stays usable,
   independent of grant state.
+- **Source-IP allowlist (Zero-Trust network gate).** An optional allowlist
+  (`/admin/policy`) restricts which networks may reach published Sites — a
+  granted user from a non-allowlisted IP is denied (`ip_not_allowed`, audited)
+  before any request reaches a connector. The IP evaluated is the one the
+  trusted front proxy records (the rightmost `X-Forwarded-For` hop), so a client
+  can't bypass it by forging that header. The admin console is never gated.
+- **Time-boxed access.** An optional maximum-grant-duration policy forces every
+  grant to carry an end date and caps how long it can last — no standing,
+  never-expiring vendor access.
 - **Append-only audit log.** Every allowed request, and every denied
   request from an authenticated user, is written to an `AuditEvent` row —
   timestamp, user, site, host/method/path, response status, bytes out, the

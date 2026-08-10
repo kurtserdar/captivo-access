@@ -131,13 +131,21 @@ Now edit `.env`. Every variable, with an example value:
 | `ENCRYPTION_KEY` | `<openssl rand -hex 32>` | Encrypts TOTP recovery secrets (AES-256-GCM). |
 | `DATAPLANE_SECRET` | `<openssl rand -hex 32>` | Shared secret between Manager and data-plane. |
 | `CRON_SECRET` | `<openssl rand -hex 32>` | Authorizes the cron endpoints (Step 11). |
-| `AUDIT_RETENTION_DAYS` | `730` | How long audit logs are kept before the retention cron trims them. Set per your legal obligations. |
+| `AUDIT_RETENTION_DAYS` | `730` | Initial audit-log retention (days). Also editable later on the **Policy** page. |
+
+> **Most operational settings are now managed from the console** (Policy page),
+> not the environment: audit-log retention, session-recording retention, the
+> recording-consent gate, the notification webhook, invitation-link lifetime,
+> the source-IP allowlist, the maximum grant duration, and session limits. The
+> matching env vars (`AUDIT_RETENTION_DAYS`, `INVITE_TTL_HOURS`,
+> `NOTIFICATION_WEBHOOK_URL`, `RECORDING_CONSENT_REQUIRED`, `SESSION_TTL_HOURS`)
+> still work as the initial default, but the value set in the UI always wins —
+> so you don't need to set them here.
 
 Leave the optional/commented ones (`DNS_API_TOKEN`, `CADDY_DNS_MODULE`,
-`NOTIFICATION_WEBHOOK_URL`, `RECORDING_ENABLED` (Pro session recording — gates the
-per-Site "Record sessions" toggle), `CONNECTOR_TUNNEL_URL` (overrides the default
-`wss://connect.<ACCESS_DOMAIN>` endpoint), the TTL overrides) alone unless you
-know you need them. `DNS_API_TOKEN` is **only** for the large-scale wildcard-certificate escape
+`RECORDING_ENABLED` (Pro session recording — gates the per-Site "Record
+sessions" toggle), `CONNECTOR_TUNNEL_URL` (overrides the default
+`wss://connect.<ACCESS_DOMAIN>` endpoint)) alone unless you know you need them. `DNS_API_TOKEN` is **only** for the large-scale wildcard-certificate escape
 hatch — you do not need it for a normal install.
 
 **Never commit `.env`.** It holds every secret.
