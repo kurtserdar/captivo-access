@@ -140,10 +140,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           Settings
         </NavLink>
         <div className="nav-foot">
-          <span className="nav-user">
-            {user.name} · {ROLE_LABELS[user.role] ?? user.role}
-          </span>
-          <LogoutButton />
+          <div className="nav-ident">
+            <span className="nav-av">
+              {(user.name.split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join("") || "?").toUpperCase()}
+            </span>
+            <span className="nav-id-text">
+              <b>{user.name}</b>
+              <span>{ROLE_LABELS[user.role] ?? user.role}</span>
+            </span>
+            <LogoutButton />
+          </div>
         </div>
       </aside>
       <div className="main-col">
