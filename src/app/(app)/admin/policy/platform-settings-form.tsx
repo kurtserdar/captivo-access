@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { PlatformSettings } from "@/lib/settings/platform";
+import { NOTIF_EVENTS, type NotifKey } from "@/lib/notifications/events";
 
 function str(n: number | null): string {
   return n == null ? "" : String(n);
@@ -18,6 +19,11 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
   const [anchorOn, setAnchorOn] = useState(initial.externalAnchorEnabled === true);
   const [anchorUrl, setAnchorUrl] = useState(initial.anchorTsaUrl ?? "");
   const [anchorAuth, setAnchorAuth] = useState(initial.anchorTsaAuth ?? "");
+  const [notif, setNotif] = useState<Record<NotifKey, boolean>>({
+    site_health: initial.notifySiteHealth !== false,
+    access_requests: initial.notifyAccessRequests !== false,
+    access_decisions: initial.notifyAccessDecisions !== false,
+  });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
@@ -52,6 +58,9 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
         externalAnchorEnabled: anchorOn,
         anchorTsaUrl: anchorUrl,
         anchorTsaAuth: anchorAuth,
+        notifySiteHealth: notif.site_health,
+        notifyAccessRequests: notif.access_requests,
+        notifyAccessDecisions: notif.access_decisions,
       }),
     });
     const body = await res.json().catch(() => ({}));
@@ -193,6 +202,25 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
             <input type="text" className="input" style={{ width: "100%", marginTop: ".4rem" }} value={anchorAuth} onChange={(e) => setAnchorAuth(e.target.value)} placeholder="user:pass (optional)" aria-label="TSA basic auth" />
           </div>
         </div>
+
+        {NOTIF_EVENTS.map((ev) => (
+          <div className="setting" key={ev.key}>
+            <div className="setting-main">
+              <div className="setting-label">Email: {ev.label}</div>
+              <div className="setting-hint">{ev.hint}</div>
+            </div>
+            <div className="setting-ctl">
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={notif[ev.key]}
+                  onChange={(e) => setNotif((n) => ({ ...n, [ev.key]: e.target.checked }))}
+                />
+                <span className="track" />
+              </label>
+            </div>
+          </div>
+        ))}
       </div>
 
       {notice && <p className={`notice ${notice.kind === "ok" ? "success" : "error"}`} role="alert" style={{ marginTop: "1rem" }}>{notice.msg}</p>}
