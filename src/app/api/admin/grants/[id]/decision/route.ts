@@ -6,7 +6,7 @@ import { normalizeDenyReason } from "@/lib/access/deny-reason";
 import { db } from "@/lib/db";
 import { sendMail } from "@/lib/email/mailer";
 import { accessDecisionEmail } from "@/lib/email/templates";
-import { notifyEmailEnabled } from "@/lib/notifications/events";
+import { notifyEmailEnabled } from "@/lib/notifications/gate";
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();

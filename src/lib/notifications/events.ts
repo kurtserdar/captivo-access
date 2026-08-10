@@ -1,8 +1,8 @@
-import { getPlatformSettings } from "@/lib/settings/platform";
-
 // Canonical notification event keys, with UI metadata so the Policy form and the
 // send sites agree on one list. Toggles govern EMAIL only — the in-console bell
-// and the webhook are unaffected.
+// and the webhook are unaffected. This module is PURE (no DB import) so the
+// client-side Policy form can import the registry; the server-only gate lives in
+// ./gate.
 export type NotifKey = "site_health" | "access_requests" | "access_decisions";
 
 export const NOTIF_EVENTS: { key: NotifKey; label: string; hint: string }[] = [
@@ -14,14 +14,4 @@ export const NOTIF_EVENTS: { key: NotifKey; label: string; hint: string }[] = [
 // Default-on rule: email is enabled unless the stored value is explicitly false.
 export function emailEnabledFromValue(v: boolean | null | undefined): boolean {
   return v !== false;
-}
-
-export async function notifyEmailEnabled(key: NotifKey): Promise<boolean> {
-  const s = await getPlatformSettings();
-  const map: Record<NotifKey, boolean | null> = {
-    site_health: s.notifySiteHealth,
-    access_requests: s.notifyAccessRequests,
-    access_decisions: s.notifyAccessDecisions,
-  };
-  return emailEnabledFromValue(map[key]);
 }

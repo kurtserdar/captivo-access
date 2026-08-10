@@ -7,7 +7,7 @@ import { grantCapError } from "@/lib/access/grant-edit";
 import { resolvedMaxGrantDays } from "@/lib/settings/platform";
 import { sendMail, getAdminEmails } from "@/lib/email/mailer";
 import { approvalRequestEmail } from "@/lib/email/templates";
-import { notifyEmailEnabled } from "@/lib/notifications/events";
+import { notifyEmailEnabled } from "@/lib/notifications/gate";
 
 function parseDate(value: unknown): { ok: true; value: Date | null } | { ok: false } {
   if (value === undefined || value === null || value === "") return { ok: true, value: null };

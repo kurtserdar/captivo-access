@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { sendMail, getAdminEmails } from "@/lib/email/mailer";
 import { siteEventEmail } from "@/lib/email/templates";
 import { resolvedNotificationWebhookUrl } from "@/lib/settings/platform";
-import { notifyEmailEnabled } from "@/lib/notifications/events";
+import { notifyEmailEnabled } from "@/lib/notifications/gate";
 
 export type NotificationType = "site_down" | "site_recovered";
 
