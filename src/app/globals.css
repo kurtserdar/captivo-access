@@ -404,7 +404,13 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
   .card-head{flex-wrap:wrap;}
   .dash-cols{grid-template-columns:1fr;}
   .btn{min-height:40px;}
+  /* Compact search to an icon button (⌘K is meaningless on touch) so the top
+     bar never overflows. */
+  .topbar > *{min-width:0;}
+  .cmd-trigger{width:40px;height:40px;min-width:0;padding:0;justify-content:center;flex:0 0 auto;}
+  .cmd-trigger-text,.cmd-trigger kbd{display:none;}
 }
+@media (max-width:380px){ .mobile-brand b{display:none;} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
 
 /* Terminal command block (CommandBlock) — fixed dark palette in every theme. */
