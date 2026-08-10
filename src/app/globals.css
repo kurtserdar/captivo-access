@@ -94,10 +94,11 @@ a{color:inherit;}
 .link-button:disabled{color:var(--faint);cursor:not-allowed;text-decoration:none;}
 
 /* ---- forms ---- */
-.field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.9rem;}
-.field-label{font-size:.8rem;color:var(--muted);font-weight:500;}
+.field{display:flex;flex-direction:column;gap:.42rem;margin-bottom:1.05rem;}
+.field-label{font-size:.85rem;color:var(--fg);font-weight:600;}
 .input,.select,.textarea{font:inherit;font-size:.9rem;background:var(--surface);color:var(--fg);
-  border:1px solid var(--line);border-radius:var(--radius);padding:.5rem .65rem;width:100%;}
+  border:1px solid var(--line);border-radius:var(--radius);padding:.55rem .7rem;width:100%;transition:border-color .12s,box-shadow .12s;}
+.input::placeholder,.textarea::placeholder{color:var(--faint);}
 .input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
 input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;height:16px;}
 
@@ -138,7 +139,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .defrow:last-child{border-bottom:none;}
 .defrow .dk{color:var(--muted);font-size:.85rem;}
 .defrow .dv{text-align:right;min-width:0;font-variant-numeric:tabular-nums;}
-.hint{font-size:.78rem;color:var(--faint);}
+.hint{font-size:.8rem;color:var(--muted);line-height:1.45;}
 .error{font-size:.82rem;color:var(--danger);}
 .schedule-builder{display:flex;flex-direction:column;gap:12px;margin-top:8px;}
 .day-toggles{display:flex;flex-wrap:wrap;gap:6px;}
@@ -266,7 +267,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .code.secret{margin:.5rem 0;}
 
 /* ---- empty state & notices ---- */
-.empty{text-align:center;color:var(--muted);padding:2.5rem 1rem;border:1px dashed var(--line);border-radius:var(--radius-lg);}
+.empty{text-align:center;color:var(--muted);padding:2.75rem 1rem;border:1px dashed var(--line);border-radius:var(--radius-lg);background:var(--surface-2);}
 .empty svg{width:26px;height:26px;opacity:.5;margin-bottom:.6rem;}
 .notice{border-radius:var(--radius);padding:.6rem .8rem;font-size:.86rem;border:1px solid var(--line);background:var(--surface-2);margin:.6rem 0;}
 .notice.error{color:var(--danger);background:var(--danger-soft);border-color:transparent;}
