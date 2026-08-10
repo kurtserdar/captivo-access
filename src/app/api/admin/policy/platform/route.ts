@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
     notificationWebhookUrl: webhook.value,
     vendorIpAllowlist: rawAllow.trim() || null,
     maxGrantDays: toIntMin(body.maxGrantDays, 1),
+    recordingConsentRequired: body.recordingConsentRequired === true,
   });
   return NextResponse.json({ ok: true });
 }

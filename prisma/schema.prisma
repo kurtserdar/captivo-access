@@ -334,6 +334,7 @@ model PlatformSettings {
   notificationWebhookUrl String? // was NOTIFICATION_WEBHOOK_URL
   vendorIpAllowlist      String? // CIDRs/IPs; empty = no restriction. Gates vendor SITE access only.
   maxGrantDays           Int? // cap on a grant's duration; 0/null = no cap (permanent grants allowed)
+  recordingConsentRequired Boolean? // was RECORDING_CONSENT_REQUIRED; null = env fallback → false
   updatedAt              DateTime @updatedAt
 }
 

@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -142,18 +141,6 @@ func setGatewayIdentity(h map[string][]string, gateway bool, email string) {
 const consentCookieName = "ca_rec_consent"
 const consentPath = "/__captivo/consent"
 
-// recordingConsentRequired reports whether recorded Sites must show a one-time
-// per-session consent gate before serving app content. Opt-in: off unless
-// RECORDING_CONSENT_REQUIRED is set (1/true/on). The recording banner + the
-// /access "Recorded" label remain the default; this adds explicit acknowledgement.
-func recordingConsentRequired() bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("RECORDING_CONSENT_REQUIRED"))) {
-	case "1", "true", "on", "yes":
-		return true
-	}
-	return false
-}
-
 // setConsentCookie marks that the vendor acknowledged recording. Session-scoped
 // (no expiry -> cleared on browser close -> fresh consent each session) and
 // host-only (-> per recorded Site).
@@ -240,7 +227,7 @@ func (p *BrowserProxy) consentPage(w http.ResponseWriter, r *http.Request) {
 // production use.
 type proxyControl interface {
 	ResolveSession(token string) (userID, email string, err error)
-	SiteByHost(host string) (siteID, connectorID, upstreamUrl, clipboardMode string, insecureSkipVerify, recordSessions, gateway bool, err error)
+	SiteByHost(host string) (siteID, connectorID, upstreamUrl, clipboardMode string, insecureSkipVerify, recordSessions, gateway, consentRequired bool, err error)
 	CheckAccess(userID, siteID, clientIP string) (allow bool, reason string, err error)
 	RecorderJS() ([]byte, error)
 	SendRecording(userID, siteID, host string, body []byte) error
@@ -270,7 +257,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Site by host.
-	siteID, connectorID, upstream, clipboardMode, insecureSkipVerify, recordSessions, gateway, err := p.ctrl.SiteByHost(host)
+	siteID, connectorID, upstream, clipboardMode, insecureSkipVerify, recordSessions, gateway, consentRequired, err := p.ctrl.SiteByHost(host)
 	if err != nil {
 		if errors.Is(err, ErrNoSite) {
 			errorPage(w, http.StatusNotFound, "No application here", "There's no application published at this address.", "Check the link, or contact your administrator.")
@@ -298,7 +285,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// audited. recordSessions is already false unless recording is active
 	// (RECORDING_ENABLED + the per-Site toggle). Reserved /__captivo/* paths
 	// are exempt (recorder infra).
-	if recordSessions && recordingConsentRequired() {
+	if recordSessions && consentRequired {
 		if r.URL.Path == consentPath {
 			setConsentCookie(w)
 			p.audit.Enqueue(auditEvent("ALLOW", "recording_consent", userID, siteID, host, r, http.StatusFound, 0))

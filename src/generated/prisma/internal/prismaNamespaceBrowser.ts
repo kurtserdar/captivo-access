@@ -375,6 +375,7 @@ export const PlatformSettingsScalarFieldEnum = {
   notificationWebhookUrl: 'notificationWebhookUrl',
   vendorIpAllowlist: 'vendorIpAllowlist',
   maxGrantDays: 'maxGrantDays',
+  recordingConsentRequired: 'recordingConsentRequired',
   updatedAt: 'updatedAt'
 } as const
 

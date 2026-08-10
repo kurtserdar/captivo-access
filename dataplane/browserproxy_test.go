@@ -29,6 +29,7 @@ type fakeControl struct {
 	insecureSkipVerify       bool
 	recordSessions           bool
 	gateway                  bool
+	consentRequired          bool
 	siteErr                  error
 
 	allow     bool
@@ -47,8 +48,8 @@ func (f *fakeControl) ResolveSession(string) (string, string, error) {
 	return f.userID, f.email, f.resolveErr
 }
 
-func (f *fakeControl) SiteByHost(string) (string, string, string, string, bool, bool, bool, error) {
-	return f.siteID, f.connID, f.upstream, f.clipboardMode, f.insecureSkipVerify, f.recordSessions, f.gateway, f.siteErr
+func (f *fakeControl) SiteByHost(string) (string, string, string, string, bool, bool, bool, bool, error) {
+	return f.siteID, f.connID, f.upstream, f.clipboardMode, f.insecureSkipVerify, f.recordSessions, f.gateway, f.consentRequired, f.siteErr
 }
 
 func (f *fakeControl) CheckAccess(string, string, string) (bool, string, error) {
@@ -980,23 +981,6 @@ func TestConsentReturnTo(t *testing.T) {
 		if got := consentReturnTo(r); got != want {
 			t.Fatalf("consentReturnTo(%q) = %q, want %q", in, got, want)
 		}
-	}
-}
-
-func TestRecordingConsentRequired(t *testing.T) {
-	t.Setenv("RECORDING_CONSENT_REQUIRED", "")
-	if recordingConsentRequired() {
-		t.Fatal("empty env should be off")
-	}
-	for _, v := range []string{"1", "true", "on", "YES"} {
-		t.Setenv("RECORDING_CONSENT_REQUIRED", v)
-		if !recordingConsentRequired() {
-			t.Fatalf("%q should enable the consent gate", v)
-		}
-	}
-	t.Setenv("RECORDING_CONSENT_REQUIRED", "off")
-	if recordingConsentRequired() {
-		t.Fatal("\"off\" should be off")
 	}
 }
 

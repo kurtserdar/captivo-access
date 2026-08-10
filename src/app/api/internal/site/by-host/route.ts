@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { resolvedRecordingConsentRequired } from "@/lib/settings/platform";
 
 function dataplaneAuthorized(req: NextRequest): boolean {
   const s = process.env.DATAPLANE_SECRET;
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest) {
       })
     : null;
   if (!site) return NextResponse.json({ error: "no_site" }, { status: 404 });
+  const recordSessions = site.recordSessions && recordingEnabled();
   return NextResponse.json({
     siteId: site.id,
     connectorId: site.connectorId,
@@ -27,10 +29,13 @@ export async function POST(req: NextRequest) {
     // turned off after a Site was configured to record, the dataplane must
     // stop injecting the recorder script and stripping CSP immediately,
     // without needing every recording Site to be individually re-toggled.
-    recordSessions: site.recordSessions && recordingEnabled(),
+    recordSessions,
     // Clipboard control is web-injection based (transparent only); gateway sites
     // manage clipboard in Guacamole, so never inject for them.
     clipboardMode: site.accessMode === "GATEWAY" ? "allow" : site.clipboardMode,
     accessMode: site.accessMode,
+    // Global consent-gate policy (was RECORDING_CONSENT_REQUIRED env). Only
+    // meaningful when this site actually records; resolved once, cached.
+    recordingConsentRequired: recordSessions ? await resolvedRecordingConsentRequired() : false,
   });
 }

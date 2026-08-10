@@ -1,6 +1,6 @@
 import { requireCapability } from "@/lib/current-user";
 import { getSessionPolicy } from "@/lib/policy/session-policy";
-import { getPlatformSettings } from "@/lib/settings/platform";
+import { getPlatformSettings, resolvedRecordingConsentRequired } from "@/lib/settings/platform";
 import { SessionPolicyForm } from "./session-policy-form";
 import { PlatformSettingsForm } from "./platform-settings-form";
 
@@ -9,7 +9,11 @@ export const metadata = { title: "Policy" };
 
 export default async function AdminPolicyPage() {
   await requireCapability("configure");
-  const [policy, platform] = await Promise.all([getSessionPolicy(), getPlatformSettings()]);
+  const [policy, platform, consentEffective] = await Promise.all([
+    getSessionPolicy(),
+    getPlatformSettings(),
+    resolvedRecordingConsentRequired(),
+  ]);
 
   return (
     <main>
@@ -28,7 +32,7 @@ export default async function AdminPolicyPage() {
 
       <div className="card">
         <div className="card-head"><h2>Grants, retention, network &amp; notifications</h2></div>
-        <PlatformSettingsForm initial={platform} />
+        <PlatformSettingsForm initial={platform} consentEffective={consentEffective} />
       </div>
     </main>
   );

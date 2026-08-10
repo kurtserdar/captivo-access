@@ -6,12 +6,13 @@ function str(n: number | null): string {
   return n == null ? "" : String(n);
 }
 
-export function PlatformSettingsForm({ initial }: { initial: PlatformSettings }) {
+export function PlatformSettingsForm({ initial, consentEffective }: { initial: PlatformSettings; consentEffective: boolean }) {
   const [audit, setAudit] = useState(str(initial.auditRetentionDays));
   const [invite, setInvite] = useState(str(initial.inviteTtlHours));
   const [webhook, setWebhook] = useState(initial.notificationWebhookUrl ?? "");
   const [ipAllow, setIpAllow] = useState(initial.vendorIpAllowlist ?? "");
   const [maxGrant, setMaxGrant] = useState(str(initial.maxGrantDays));
+  const [consent, setConsent] = useState(consentEffective);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
@@ -27,6 +28,7 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettings })
         notificationWebhookUrl: webhook,
         vendorIpAllowlist: ipAllow,
         maxGrantDays: maxGrant,
+        recordingConsentRequired: consent,
       }),
     });
     const body = await res.json().catch(() => ({}));
@@ -63,6 +65,13 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettings })
         <label className="field-label" htmlFor="ps-webhook">Notification webhook URL</label>
         <input id="ps-webhook" type="url" className="input" value={webhook} onChange={(e) => setWebhook(e.target.value)} placeholder="https://hooks.slack.com/… (empty = disabled)" />
         <span className="hint">Site up/down events POST here (Slack/Teams-friendly JSON), in addition to the in-console bell. Leave empty to disable.</span>
+      </div>
+      <div className="field">
+        <label className="field-label">
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />{" "}
+          Require recording consent
+        </label>
+        <span className="hint">On recorded sites, show the vendor a one-time &quot;this session is recorded&quot; acknowledgement (once per browser session) before any app content loads. Off by default — the recording banner and the &quot;Recorded&quot; label are always shown regardless.</span>
       </div>
       <div className="field">
         <label className="field-label" htmlFor="ps-ipallow">Vendor source-IP allowlist</label>

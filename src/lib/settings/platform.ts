@@ -11,6 +11,7 @@ export interface PlatformSettings {
   notificationWebhookUrl: string | null;
   vendorIpAllowlist: string | null;
   maxGrantDays: number | null;
+  recordingConsentRequired: boolean | null;
 }
 
 const ID = "singleton";
@@ -20,6 +21,7 @@ const EMPTY: PlatformSettings = {
   notificationWebhookUrl: null,
   vendorIpAllowlist: null,
   maxGrantDays: null,
+  recordingConsentRequired: null,
 };
 
 let cache: { s: PlatformSettings; at: number } | null = null;
@@ -38,6 +40,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     notificationWebhookUrl: c?.notificationWebhookUrl ?? null,
     vendorIpAllowlist: c?.vendorIpAllowlist ?? null,
     maxGrantDays: c?.maxGrantDays ?? null,
+    recordingConsentRequired: c?.recordingConsentRequired ?? null,
   };
   cache = { s, at: Date.now() };
   return s;
@@ -88,4 +91,13 @@ export async function resolvedVendorIpAllowlist(): Promise<string> {
 export async function resolvedMaxGrantDays(): Promise<number> {
   const s = await getPlatformSettings();
   return s.maxGrantDays && s.maxGrantDays > 0 ? s.maxGrantDays : 0;
+}
+
+// Recording consent gate: DB value first, else the RECORDING_CONSENT_REQUIRED
+// env (1/true/on/yes), else false.
+export async function resolvedRecordingConsentRequired(): Promise<boolean> {
+  const s = await getPlatformSettings();
+  if (s.recordingConsentRequired !== null) return s.recordingConsentRequired;
+  const v = process.env.RECORDING_CONSENT_REQUIRED?.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "on" || v === "yes";
 }
