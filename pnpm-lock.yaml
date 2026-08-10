@@ -29,6 +29,9 @@ importers:
       '@simplewebauthn/server':
         specifier: ^13
         version: 13.3.2
+      asn1js:
+        specifier: ^3.0.10
+        version: 3.0.10
       jose:
         specifier: ^6
         version: 6.2.4
