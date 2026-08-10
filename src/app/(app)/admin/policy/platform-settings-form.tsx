@@ -14,8 +14,22 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
   const [maxGrant, setMaxGrant] = useState(str(initial.maxGrantDays));
   const [consent, setConsent] = useState(consentEffective);
   const [recRetention, setRecRetention] = useState(str(initial.recordingRetentionDays));
+  const [connLog, setConnLog] = useState(initial.defaultConnectorLogLevel ?? "info");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
+
+  async function resetAllConnectors() {
+    setBusy(true);
+    setNotice(null);
+    const res = await fetch("/api/admin/policy/connector-log-level/reset-all", { method: "POST" });
+    const body = await res.json().catch(() => ({}));
+    setBusy(false);
+    setNotice(
+      res.ok && body.ok
+        ? { kind: "ok", msg: `Reset ${body.count ?? 0} connector(s) to the default (save the default first if you just changed it).` }
+        : { kind: "err", msg: "Could not reset connectors." },
+    );
+  }
 
   async function save() {
     setBusy(true);
@@ -31,6 +45,7 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
         maxGrantDays: maxGrant,
         recordingConsentRequired: consent,
         recordingRetentionDays: recRetention,
+        defaultConnectorLogLevel: connLog,
       }),
     });
     const body = await res.json().catch(() => ({}));
@@ -57,6 +72,23 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
         <label className="field-label" htmlFor="ps-recret">Session recording retention (days)</label>
         <input id="ps-recret" type="number" min={1} className="input" value={recRetention} onChange={(e) => setRecRetention(e.target.value)} placeholder="Empty = keep forever" />
         <span className="hint">Recorded vendor sessions older than this are deleted by the recording-retention cron (the deletion is audited). Empty = kept indefinitely. Requires the <code>/api/cron/recording-retention</code> job to be scheduled.</span>
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="ps-connlog">Default connector log level</label>
+        <select id="ps-connlog" className="select" value={connLog} onChange={(e) => setConnLog(e.target.value)}>
+          <option value="error">Error</option>
+          <option value="warn">Warn</option>
+          <option value="info">Info</option>
+          <option value="debug">Debug</option>
+        </select>
+        <span className="hint">
+          The level for connectors set to &quot;Use default&quot; on their detail page. A connector with its own explicit
+          level overrides this. Saved with the form below; use <b>Reset all</b> to switch every connector back to this
+          default at once (pushed live to online ones).
+        </span>
+        <div className="row-actions" style={{ marginTop: ".4rem" }}>
+          <button type="button" className="btn sm" disabled={busy} onClick={resetAllConnectors}>Reset all connectors to default</button>
+        </div>
       </div>
       <div className="field">
         <label className="field-label" htmlFor="ps-maxgrant">Maximum grant duration (days)</label>

@@ -120,7 +120,7 @@ model Connector {
   gatewayHost Boolean @default(false)
   remoteAddr String?
   egressPolicy String?
-  logLevel   String?         @default("info") // debug | info | warn | error — pushed to the connector live
+  logLevel   String?         // debug | info | warn | error; null = inherit the policy default — pushed to the connector live
   createdAt  DateTime        @default(now())
   sites      Site[]
   pairings   ConnectorPairing[]
@@ -336,6 +336,7 @@ model PlatformSettings {
   maxGrantDays           Int? // cap on a grant's duration; 0/null = no cap (permanent grants allowed)
   recordingConsentRequired Boolean? // was RECORDING_CONSENT_REQUIRED; null = env fallback → false
   recordingRetentionDays Int? // auto-delete recordings older than N days; 0/null = keep forever
+  defaultConnectorLogLevel String? // fleet default log level for connectors set to "use default"; null → info
   updatedAt              DateTime @updatedAt
 }
 

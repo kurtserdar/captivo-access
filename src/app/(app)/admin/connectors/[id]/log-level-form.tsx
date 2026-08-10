@@ -8,8 +8,8 @@ const LEVELS = [
   { value: "debug", label: "Debug — per-request detail (verbose; troubleshooting only)" },
 ];
 
-export function LogLevelForm({ connectorId, initial }: { connectorId: string; initial: string }) {
-  const [value, setValue] = useState(initial);
+export function LogLevelForm({ connectorId, initial, globalDefault }: { connectorId: string; initial: string | null; globalDefault: string }) {
+  const [value, setValue] = useState(initial ?? ""); // "" = use fleet default
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
@@ -36,11 +36,12 @@ export function LogLevelForm({ connectorId, initial }: { connectorId: string; in
   return (
     <div>
       <p className="cell-sub" style={{ marginTop: 0 }}>
-        How much the connector logs (shown under <b>Recent logs</b> below). Pushed to the connector live over the
-        control stream — no redeploy. <b>Debug</b> logs every request and is meant for short troubleshooting; leave it
-        on <b>Info</b> for normal running so the log stays readable and doesn&apos;t grow the container&apos;s disk.
+        How much this connector logs (shown under <b>Recent logs</b> below). Pushed live over the control stream — no
+        redeploy. <b>Use default</b> follows the fleet default set on the <b>Policy</b> page; any explicit level here
+        overrides it for this connector. <b>Debug</b> logs every request (verbose, short troubleshooting only).
       </p>
       <select className="select" value={value} onChange={(e) => setValue(e.target.value)}>
+        <option value="">Use default ({globalDefault})</option>
         {LEVELS.map((l) => (
           <option key={l.value} value={l.value}>{l.label}</option>
         ))}

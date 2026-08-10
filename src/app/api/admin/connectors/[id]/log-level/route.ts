@@ -15,7 +15,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
-  const level = typeof body.logLevel === "string" && LEVELS.includes(body.logLevel) ? body.logLevel : "info";
+  // "" / "default" / "inherit" -> null = use the fleet default (Policy page).
+  const raw = typeof body.logLevel === "string" ? body.logLevel : "";
+  const level = LEVELS.includes(raw) ? raw : null;
 
   const updated = await db.connector.updateMany({ where: { id }, data: { logLevel: level } });
   if (updated.count === 0) return NextResponse.json({ error: "not_found" }, { status: 404 });

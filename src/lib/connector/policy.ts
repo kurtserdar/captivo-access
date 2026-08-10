@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { resolvedConnectorLogLevel } from "@/lib/settings/platform";
 
 // Pushes a connector's full policy (egress narrowing + log level) to its live
 // control stream via the data-plane. Reads the current saved values from the DB
@@ -20,7 +21,7 @@ export async function pushConnectorPolicy(
     body: JSON.stringify({
       connectorId,
       egressAllowedTargets: c?.egressPolicy ?? "",
-      logLevel: c?.logLevel ?? "info",
+      logLevel: await resolvedConnectorLogLevel(c?.logLevel ?? null),
     }),
   }).catch(() => null);
   if (!res || !res.ok) return { ok: false, reason: "unreachable" };

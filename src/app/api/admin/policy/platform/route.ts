@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
     maxGrantDays: toIntMin(body.maxGrantDays, 1),
     recordingConsentRequired: body.recordingConsentRequired === true,
     recordingRetentionDays: toIntMin(body.recordingRetentionDays, 1),
+    defaultConnectorLogLevel: ["debug", "info", "warn", "error"].includes(body.defaultConnectorLogLevel)
+      ? (body.defaultConnectorLogLevel as string)
+      : "info",
   });
   return NextResponse.json({ ok: true });
 }

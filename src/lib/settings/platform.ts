@@ -13,6 +13,7 @@ export interface PlatformSettings {
   maxGrantDays: number | null;
   recordingConsentRequired: boolean | null;
   recordingRetentionDays: number | null;
+  defaultConnectorLogLevel: string | null;
 }
 
 const ID = "singleton";
@@ -24,6 +25,7 @@ const EMPTY: PlatformSettings = {
   maxGrantDays: null,
   recordingConsentRequired: null,
   recordingRetentionDays: null,
+  defaultConnectorLogLevel: null,
 };
 
 let cache: { s: PlatformSettings; at: number } | null = null;
@@ -44,6 +46,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     maxGrantDays: c?.maxGrantDays ?? null,
     recordingConsentRequired: c?.recordingConsentRequired ?? null,
     recordingRetentionDays: c?.recordingRetentionDays ?? null,
+    defaultConnectorLogLevel: c?.defaultConnectorLogLevel ?? null,
   };
   cache = { s, at: Date.now() };
   return s;
@@ -109,4 +112,21 @@ export async function resolvedRecordingConsentRequired(): Promise<boolean> {
 export async function resolvedRecordingRetentionDays(): Promise<number> {
   const s = await getPlatformSettings();
   return s.recordingRetentionDays && s.recordingRetentionDays > 0 ? s.recordingRetentionDays : 0;
+}
+
+const LOG_LEVELS = ["debug", "info", "warn", "error"];
+
+// Fleet default connector log level — applied to connectors whose own level is
+// null ("use default"). Falls back to info.
+export async function resolvedDefaultConnectorLogLevel(): Promise<string> {
+  const s = await getPlatformSettings();
+  const v = s.defaultConnectorLogLevel;
+  return v && LOG_LEVELS.includes(v) ? v : "info";
+}
+
+// The level actually pushed to a connector: its own explicit level, else the
+// fleet default. Central so the status route and live push agree.
+export async function resolvedConnectorLogLevel(own: string | null): Promise<string> {
+  if (own && LOG_LEVELS.includes(own)) return own;
+  return resolvedDefaultConnectorLogLevel();
 }

@@ -6,6 +6,7 @@ import { managerVersion } from "@/lib/version";
 import { isConnectorOutdated } from "@/lib/updates/semver";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { getConnectorTelemetry } from "@/lib/connector/telemetry";
+import { resolvedDefaultConnectorLogLevel } from "@/lib/settings/platform";
 import { EgressPolicyForm } from "./egress-policy-form";
 import { LogLevelForm } from "./log-level-form";
 
@@ -78,6 +79,7 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       : Promise.resolve([]),
   ]);
 
+  const defaultLogLevel = await resolvedDefaultConnectorLogLevel();
   const mgr = managerVersion();
   const outdated = isConnectorOutdated(connector.version, mgr);
   const t = tele.online ? tele.telemetry : null;
@@ -111,7 +113,7 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
 
       <div className="card">
         <div className="card-head"><h2>Logging</h2></div>
-        <LogLevelForm connectorId={connector.id} initial={connector.logLevel ?? "info"} />
+        <LogLevelForm connectorId={connector.id} initial={connector.logLevel} globalDefault={defaultLogLevel} />
       </div>
 
       <div className="card">

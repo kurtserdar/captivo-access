@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { resolvedConnectorLogLevel } from "@/lib/settings/platform";
 
 function dataplaneAuthorized(req: NextRequest): boolean {
   const s = process.env.DATAPLANE_SECRET;
@@ -26,5 +27,9 @@ export async function POST(req: NextRequest) {
     },
   });
   const c = await db.connector.findUnique({ where: { id: connectorId }, select: { egressPolicy: true, logLevel: true } });
-  return NextResponse.json({ ok: true, egressPolicy: c?.egressPolicy ?? "", logLevel: c?.logLevel ?? "info" });
+  return NextResponse.json({
+    ok: true,
+    egressPolicy: c?.egressPolicy ?? "",
+    logLevel: await resolvedConnectorLogLevel(c?.logLevel ?? null),
+  });
 }

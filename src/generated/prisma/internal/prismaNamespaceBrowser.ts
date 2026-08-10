@@ -377,6 +377,7 @@ export const PlatformSettingsScalarFieldEnum = {
   maxGrantDays: 'maxGrantDays',
   recordingConsentRequired: 'recordingConsentRequired',
   recordingRetentionDays: 'recordingRetentionDays',
+  defaultConnectorLogLevel: 'defaultConnectorLogLevel',
   updatedAt: 'updatedAt'
 } as const
 
