@@ -32,6 +32,24 @@ export function approvalRequestEmail(input: {
   return { subject, html, text };
 }
 
+export function accessDecisionEmail(input: {
+  decision: "approved" | "denied";
+  siteName: string;
+  consoleUrl: string;
+}): { subject: string; html: string; text: string } {
+  const approved = input.decision === "approved";
+  const subject = approved ? `Access approved: ${input.siteName}` : `Access request declined: ${input.siteName}`;
+  const line = approved
+    ? `Your request to access ${escapeHtml(input.siteName)} was approved. It's ready in your access list.`
+    : `Your request to access ${escapeHtml(input.siteName)} was declined.`;
+  const { html, text } = renderEmail({
+    heading: escapeHtml(subject),
+    bodyLines: [line],
+    button: input.consoleUrl ? { label: "Open My access", url: `${input.consoleUrl}/access` } : undefined,
+  });
+  return { subject, html, text };
+}
+
 export function siteEventEmail(input: {
   type: "site_down" | "site_recovered";
   siteName: string;

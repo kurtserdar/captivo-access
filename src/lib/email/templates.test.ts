@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { inviteEmail, approvalRequestEmail, siteEventEmail } from "./templates";
+import { inviteEmail, approvalRequestEmail, siteEventEmail, accessDecisionEmail } from "./templates";
 
 describe("email templates", () => {
   it("inviteEmail embeds the link in html and text", () => {
@@ -20,5 +20,17 @@ describe("email templates", () => {
   it("escapes html in user-supplied values", () => {
     const m = inviteEmail({ name: "<script>x</script>", link: "https://x.test/i" });
     expect(m.html).not.toContain("<script>x</script>");
+  });
+  it("accessDecisionEmail (approved) names the site and links to My access", () => {
+    const m = accessDecisionEmail({ decision: "approved", siteName: "Grafana", consoleUrl: "https://c.test" });
+    expect(m.subject).toContain("approved");
+    expect(m.subject).toContain("Grafana");
+    expect(m.text).toContain("Grafana");
+    expect(m.html).toContain("https://c.test/access");
+  });
+  it("accessDecisionEmail (denied) reads as a decline and omits the button with no url", () => {
+    const m = accessDecisionEmail({ decision: "denied", siteName: "Grafana", consoleUrl: "" });
+    expect(m.subject.toLowerCase()).toContain("declined");
+    expect(m.html).not.toContain("href=\"/access\"");
   });
 });
