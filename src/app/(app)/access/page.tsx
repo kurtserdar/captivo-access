@@ -29,6 +29,7 @@ export default async function AccessPage() {
       siteId: g.site.id,
       siteName: g.site.name,
       hostname: g.site.hostname,
+      accessMode: g.site.accessMode,
       hasLogo: g.site.logoType != null,
       startsAtISO: g.startsAt ? g.startsAt.toISOString() : null,
       endsAtISO: g.endsAt ? g.endsAt.toISOString() : null,

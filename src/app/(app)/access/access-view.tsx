@@ -10,6 +10,7 @@ export interface AccessRow {
   siteId: string;
   siteName: string;
   hostname: string;
+  accessMode: string;
   hasLogo: boolean;
   startsAtISO: string | null;
   endsAtISO: string | null;
@@ -81,12 +82,17 @@ function FavStar({ on, onClick }: { on: boolean; onClick: () => void }) {
 }
 
 function RowAction({ r }: { r: AccessRow }) {
-  if (r.status === "active")
+  if (r.status === "active") {
+    // GATEWAY sites go through the launch endpoint, which injects the vaulted
+    // credential and drops the vendor straight into the session (no gateway
+    // login, no password). Other sites open directly.
+    const href = r.accessMode === "GATEWAY" ? `/api/access/gateway/${r.siteId}/launch` : `https://${r.hostname}`;
     return (
-      <a className="btn sm" href={`https://${r.hostname}`} target="_blank" rel="noopener noreferrer">
+      <a className="btn sm" href={href} target="_blank" rel="noopener noreferrer">
         Open ↗
       </a>
     );
+  }
   if (r.status === "pending") return <WithdrawRequestButton id={r.id} />;
   if (r.status === "denied" && r.denyReason) return <span className="cell-sub">{r.denyReason}</span>;
   return null;

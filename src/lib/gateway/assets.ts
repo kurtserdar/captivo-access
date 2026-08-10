@@ -88,6 +88,13 @@ services:
       # it publishes cleanly as a Captivo Site: the vendor hits the bare hostname
       # and the Site's Internal address is just http://cap-guacamole:8080 (no path).
       WEBAPP_CONTEXT: ROOT
+      # Credential vault injection (Pro) — the Captivo manager signs a
+      # guacamole-auth-json blob with THIS key and hands the vendor a ready
+      # session (connection + target credentials inside the blob), so they never
+      # see the password. The official image auto-loads the "Encrypted JSON
+      # Authentication" extension when JSON_SECRET_KEY is set. The SAME value must
+      # be set on the Captivo manager as GUAC_JSON_SECRET_KEY.
+      JSON_SECRET_KEY: \${GUAC_JSON_SECRET_KEY:?required}
       # Single sign-on (ENABLED) — Guacamole trusts the X-Captivo-User header the
       # Captivo data-plane injects (it strips any client-supplied copy) and
       # auto-logs the vendor in, skipping Guacamole's own login. POSTGRESQL_*

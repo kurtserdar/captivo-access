@@ -37,6 +37,14 @@ if ! grep -q '^GUAC_DB_PASSWORD=..*' .env; then
   echo "GUAC_DB_PASSWORD=$(openssl rand -hex 32)" >> .env
 fi
 
+# Vault injection key (128-bit) — shared with the Captivo manager as
+# GUAC_JSON_SECRET_KEY so it can sign guacamole-auth-json blobs this gateway trusts.
+if ! grep -q '^GUAC_JSON_SECRET_KEY=..*' .env; then
+  echo "→ Generating a random vault injection key into .env ..."
+  echo "GUAC_JSON_SECRET_KEY=$(openssl rand -hex 16)" >> .env
+fi
+KEY_FOR_MANAGER="$( . ./.env 2>/dev/null || true; echo "${GUAC_JSON_SECRET_KEY:-}" )"
+
 # 3. Shared network the gateway-host connector joins (via its own
 # console-generated command) so it can reach cap-guacamole by name — durable
 # across connector updates.
@@ -98,6 +106,14 @@ Next steps:
 4. In Guacamole → Settings → Connections → New connection:
      pick RDP / SSH / VNC, set the target host + credentials, and enable
      Screen Recording (path: /var/lib/guacamole/recordings).
+
+5. Credential vault (Pro, optional): to let vendors connect with NO login and
+   NO password, set this on the Captivo manager and enable VAULT_ENABLED=1:
+
+     GUAC_JSON_SECRET_KEY=${KEY_FOR_MANAGER}
+
+   Then in Captivo → the GATEWAY Site → "Vault credential", store the target
+   credential. The vendor's Open drops them straight into the recorded session.
 
 Recordings are written on THIS host and replayed in Guacamole → Settings → History.
 See README.md for detail.

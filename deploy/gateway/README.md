@@ -139,3 +139,29 @@ recording file separately; not required just to watch.)
   them up per your retention policy.
 - **Security:** don't expose port 8080 to the internet — reach it only through Captivo (identity/grant/audit).
   Change the `guacadmin` password.
+
+## Credential vault (Pro) — injected sessions
+
+With the vault, a vendor opens a GATEWAY site and lands directly in the RDP/SSH/VNC
+session — **no Guacamole login, no password**. The target credential is stored
+encrypted in Captivo and injected per session via a signed `guacamole-auth-json`
+blob (the official Guacamole image auto-loads that extension when `JSON_SECRET_KEY`
+is set).
+
+Setup:
+
+1. `./setup.sh` generates `GUAC_JSON_SECRET_KEY` in `.env` and prints it.
+2. On the Captivo manager, set the **same** value as `GUAC_JSON_SECRET_KEY`, and
+   set `VAULT_ENABLED=1`.
+3. In Captivo → the GATEWAY Site → **Vault credential**, store the target
+   protocol/host/port/username/secret. The vendor's **Open** now injects it.
+
+Without a vault credential (or with `VAULT_ENABLED` off), Open falls back to the
+plain gateway URL and the vendor logs in manually — nothing breaks.
+
+> **Note (validate at first use):** this gateway pack also ships header-auth SSO
+> (the `X-Captivo-User` header). The vault's json-auth path and header-auth are
+> both loaded; the injected `data` blob carries the connection + credentials.
+> Confirm the injected-session flow end to end against your first real target —
+> if the two auth paths interfere, disable header-auth (comment out
+> `HTTP_AUTH_HEADER` / `HEADER_ENABLED`) for vault-injected gateways.
