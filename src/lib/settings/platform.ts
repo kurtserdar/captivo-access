@@ -12,6 +12,7 @@ export interface PlatformSettings {
   vendorIpAllowlist: string | null;
   maxGrantDays: number | null;
   recordingConsentRequired: boolean | null;
+  recordingRetentionDays: number | null;
 }
 
 const ID = "singleton";
@@ -22,6 +23,7 @@ const EMPTY: PlatformSettings = {
   vendorIpAllowlist: null,
   maxGrantDays: null,
   recordingConsentRequired: null,
+  recordingRetentionDays: null,
 };
 
 let cache: { s: PlatformSettings; at: number } | null = null;
@@ -41,6 +43,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     vendorIpAllowlist: c?.vendorIpAllowlist ?? null,
     maxGrantDays: c?.maxGrantDays ?? null,
     recordingConsentRequired: c?.recordingConsentRequired ?? null,
+    recordingRetentionDays: c?.recordingRetentionDays ?? null,
   };
   cache = { s, at: Date.now() };
   return s;
@@ -100,4 +103,10 @@ export async function resolvedRecordingConsentRequired(): Promise<boolean> {
   if (s.recordingConsentRequired !== null) return s.recordingConsentRequired;
   const v = process.env.RECORDING_CONSENT_REQUIRED?.trim().toLowerCase();
   return v === "1" || v === "true" || v === "on" || v === "yes";
+}
+
+// Recording retention in days; 0 = keep forever. UI-only (no env).
+export async function resolvedRecordingRetentionDays(): Promise<number> {
+  const s = await getPlatformSettings();
+  return s.recordingRetentionDays && s.recordingRetentionDays > 0 ? s.recordingRetentionDays : 0;
 }

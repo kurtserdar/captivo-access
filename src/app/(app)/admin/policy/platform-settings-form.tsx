@@ -13,6 +13,7 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
   const [ipAllow, setIpAllow] = useState(initial.vendorIpAllowlist ?? "");
   const [maxGrant, setMaxGrant] = useState(str(initial.maxGrantDays));
   const [consent, setConsent] = useState(consentEffective);
+  const [recRetention, setRecRetention] = useState(str(initial.recordingRetentionDays));
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
@@ -29,6 +30,7 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
         vendorIpAllowlist: ipAllow,
         maxGrantDays: maxGrant,
         recordingConsentRequired: consent,
+        recordingRetentionDays: recRetention,
       }),
     });
     const body = await res.json().catch(() => ({}));
@@ -50,6 +52,11 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
         <label className="field-label" htmlFor="ps-audit">Audit log retention (days)</label>
         <input id="ps-audit" type="number" min={0} className="input" value={audit} onChange={(e) => setAudit(e.target.value)} placeholder="Empty = default 730" />
         <span className="hint">Older audit rows are trimmed by the retention cron, preserving the tamper-evident chain. <code>0</code> keeps nothing beyond today; empty uses the default (730).</span>
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="ps-recret">Session recording retention (days)</label>
+        <input id="ps-recret" type="number" min={1} className="input" value={recRetention} onChange={(e) => setRecRetention(e.target.value)} placeholder="Empty = keep forever" />
+        <span className="hint">Recorded vendor sessions older than this are deleted by the recording-retention cron (the deletion is audited). Empty = kept indefinitely. Requires the <code>/api/cron/recording-retention</code> job to be scheduled.</span>
       </div>
       <div className="field">
         <label className="field-label" htmlFor="ps-maxgrant">Maximum grant duration (days)</label>

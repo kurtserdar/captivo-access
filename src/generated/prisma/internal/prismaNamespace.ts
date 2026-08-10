@@ -2316,6 +2316,7 @@ export const PlatformSettingsScalarFieldEnum = {
   vendorIpAllowlist: 'vendorIpAllowlist',
   maxGrantDays: 'maxGrantDays',
   recordingConsentRequired: 'recordingConsentRequired',
+  recordingRetentionDays: 'recordingRetentionDays',
   updatedAt: 'updatedAt'
 } as const
 

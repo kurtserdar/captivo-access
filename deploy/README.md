@@ -266,6 +266,10 @@ these to the host's crontab:
 
 # Trim the audit log past its retention window, once a day:
 17 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/audit-retention >/dev/null
+
+# Delete session recordings past their retention window, once a day (no-op
+# unless Policy → Session recording retention is set):
+23 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/recording-retention >/dev/null
 ```
 
 `POST /api/cron/site-health` opens a **TCP connection** to each configured

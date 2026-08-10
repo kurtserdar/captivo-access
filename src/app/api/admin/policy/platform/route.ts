@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     vendorIpAllowlist: rawAllow.trim() || null,
     maxGrantDays: toIntMin(body.maxGrantDays, 1),
     recordingConsentRequired: body.recordingConsentRequired === true,
+    recordingRetentionDays: toIntMin(body.recordingRetentionDays, 1),
   });
   return NextResponse.json({ ok: true });
 }
