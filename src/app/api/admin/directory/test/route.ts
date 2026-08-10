@@ -29,6 +29,7 @@ export async function POST() {
     port: cfg.port,
     security: cfg.security,
     insecureSkipVerify: cfg.insecureSkipVerify,
+    caCertPem: cfg.caCertPem,
     baseDN: cfg.baseDN,
     bindDN: cfg.bindDN,
     bindPassword,

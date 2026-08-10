@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,6 +24,7 @@ type LdapConfig struct {
 	BaseDN             string `json:"baseDN"`
 	BindDN             string `json:"bindDN"`
 	BindPassword       string `json:"bindPassword"`
+	CACertPem          string `json:"caCertPem"` // PEM CA(s) to verify LDAPS/StartTLS against; "" = system roots
 }
 
 type LdapTestResult struct {
@@ -82,6 +84,15 @@ func connectAndBind(s *Session, cfg LdapConfig) (*ldap.Conn, net.Conn, error) {
 		return nil, nil, err
 	}
 	tlsCfg := &tls.Config{ServerName: cfg.Host, InsecureSkipVerify: cfg.InsecureSkipVerify}
+	// A pasted CA (internal CA or the server's self-signed cert) lets LDAPS be
+	// verified securely without turning verification off. InsecureSkipVerify, if
+	// also set, still wins in crypto/tls — the CA is the secure alternative to it.
+	if cfg.CACertPem != "" {
+		pool := x509.NewCertPool()
+		if pool.AppendCertsFromPEM([]byte(cfg.CACertPem)) {
+			tlsCfg.RootCAs = pool
+		}
+	}
 
 	var conn *ldap.Conn
 	if cfg.Security == "LDAPS" {

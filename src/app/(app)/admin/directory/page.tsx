@@ -30,6 +30,7 @@ export default async function AdminDirectoryPage() {
     port: cfg?.port ?? 389,
     security: cfg?.security ?? ("STARTTLS" as const),
     insecureSkipVerify: cfg?.insecureSkipVerify ?? false,
+    caCertPem: cfg?.caCertPem ?? "",
     baseDN: cfg?.baseDN ?? "",
     bindDN: cfg?.bindDN ?? "",
     hasBindPassword: cfg?.hasBindPassword ?? false,

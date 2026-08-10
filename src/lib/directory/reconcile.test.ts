@@ -63,3 +63,27 @@ describe("planGrantChanges", () => {
     expect(planGrantChanges(["a"], ["a"])).toEqual({ toCreateSiteIds: [], toRevokeSiteIds: [] });
   });
 });
+
+describe("computeReconcile — bare group name (CN) matching", () => {
+  const adminsDN = "CN=Captivo-Admins,OU=Groups,DC=corp,DC=local";
+
+  it("matches a bare group name against the CN of a full memberOf DN", () => {
+    const d = computeReconcile([adminsDN], [roleMap("Captivo-Admins", "ADMIN")], { directoryManaged: true });
+    expect(d.role).toBe("ADMIN");
+  });
+
+  it("bare-name match is case-insensitive", () => {
+    const d = computeReconcile([adminsDN], [roleMap("captivo-admins", "OPERATOR")], { directoryManaged: true });
+    expect(d.role).toBe("OPERATOR");
+  });
+
+  it("a full DN still matches exactly (not treated as a bare name)", () => {
+    const d = computeReconcile([adminsDN], [roleMap(adminsDN, "AUDITOR")], { directoryManaged: true });
+    expect(d.role).toBe("AUDITOR");
+  });
+
+  it("a bare name that isn't the CN does not match", () => {
+    const d = computeReconcile([adminsDN], [roleMap("Some-Other-Group", "ADMIN")], { directoryManaged: true });
+    expect(d.role).toBeNull();
+  });
+})

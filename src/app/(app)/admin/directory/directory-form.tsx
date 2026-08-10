@@ -9,6 +9,7 @@ type Initial = {
   port: number;
   security: Security;
   insecureSkipVerify: boolean;
+  caCertPem: string;
   baseDN: string;
   bindDN: string;
   hasBindPassword: boolean;
@@ -21,6 +22,7 @@ export function DirectoryForm({ initial, connectors }: { initial: Initial; conne
   const [port, setPort] = useState(String(initial.port));
   const [security, setSecurity] = useState<Security>(initial.security);
   const [insecureSkipVerify, setInsecureSkipVerify] = useState(initial.insecureSkipVerify);
+  const [caCertPem, setCaCertPem] = useState(initial.caCertPem);
   const [baseDN, setBaseDN] = useState(initial.baseDN);
   const [bindDN, setBindDN] = useState(initial.bindDN);
   const [bindPassword, setBindPassword] = useState("");
@@ -36,7 +38,8 @@ export function DirectoryForm({ initial, connectors }: { initial: Initial; conne
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          enabled, connectorId, host, port: Number(port) || 389, security, insecureSkipVerify, baseDN, bindDN,
+          enabled, connectorId, host, port: Number(port) || 389, security, insecureSkipVerify,
+          caCertPem: security === "PLAIN" ? "" : caCertPem, baseDN, bindDN,
           bindPassword: bindPassword || undefined,
         }),
       });
@@ -104,19 +107,39 @@ export function DirectoryForm({ initial, connectors }: { initial: Initial; conne
           <option value="PLAIN">Plain (no TLS — lab only)</option>
         </select>
       </div>
-      <div className="field">
-        <label className="form-check">
-          <input type="checkbox" checked={insecureSkipVerify} onChange={(e) => setInsecureSkipVerify(e.target.checked)} />
-          <span>Skip TLS certificate verification (self-signed AD cert)</span>
-        </label>
-      </div>
+      {security !== "PLAIN" && (
+        <div className="field">
+          <label className="field-label" htmlFor="dir-cacert">CA certificate (PEM)</label>
+          <textarea
+            id="dir-cacert"
+            className="textarea"
+            rows={4}
+            value={caCertPem}
+            onChange={(e) => setCaCertPem(e.target.value)}
+            placeholder={"-----BEGIN CERTIFICATE-----\n…your internal CA or the server's self-signed cert…\n-----END CERTIFICATE-----"}
+            spellCheck={false}
+            style={{ fontFamily: "var(--mono)", fontSize: ".8rem" }}
+          />
+          <span className="hint">Paste your internal CA (or the directory&apos;s self-signed certificate) to verify the TLS connection <b>securely</b>. Leave empty to verify against the system trust store. This is the safe alternative to skipping verification below.</span>
+        </div>
+      )}
+      {security !== "PLAIN" && (
+        <div className="field">
+          <label className="form-check">
+            <input type="checkbox" checked={insecureSkipVerify} onChange={(e) => setInsecureSkipVerify(e.target.checked)} />
+            <span>Skip TLS certificate verification</span>
+          </label>
+          <span className="hint">Insecure — accepts any certificate (vulnerable to interception). Prefer pasting the CA above. If both are set, verification is skipped.</span>
+        </div>
+      )}
       <div className="field">
         <label className="field-label" htmlFor="dir-basedn">Base DN</label>
         <input id="dir-basedn" type="text" className="input" value={baseDN} onChange={(e) => setBaseDN(e.target.value)} placeholder="DC=corp,DC=example,DC=com" />
       </div>
       <div className="field">
-        <label className="field-label" htmlFor="dir-binddn">Bind DN (service account)</label>
-        <input id="dir-binddn" type="text" className="input" value={bindDN} onChange={(e) => setBindDN(e.target.value)} placeholder="CN=captivo,OU=Service,DC=corp,DC=example,DC=com" />
+        <label className="field-label" htmlFor="dir-binddn">Bind user (service account)</label>
+        <input id="dir-binddn" type="text" className="input" value={bindDN} onChange={(e) => setBindDN(e.target.value)} placeholder="captivo@corp.example.com" />
+        <span className="hint">For Active Directory, a UPN (<code>user@domain</code>) or <code>DOMAIN\user</code> works and is simpler than a full DN. OpenLDAP needs the full bind DN (<code>CN=…,DC=…</code>).</span>
       </div>
       <div className="field">
         <label className="field-label" htmlFor="dir-bindpw">Bind password</label>

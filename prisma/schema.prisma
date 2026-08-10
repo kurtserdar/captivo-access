@@ -291,6 +291,7 @@ model DirectoryConfig {
   port               Int       @default(389)
   security           String    @default("STARTTLS") // PLAIN | STARTTLS | LDAPS
   insecureSkipVerify Boolean   @default(false)
+  caCertPem          String    @default("") // PEM CA(s) to verify LDAPS/StartTLS against; "" = system roots
   baseDN             String    @default("")
   bindDN             String    @default("")
   bindPassword       String    @default("") // encrypted at rest (lib/crypto)

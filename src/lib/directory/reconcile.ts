@@ -22,13 +22,34 @@ export function normalizeDN(dn: string): string {
     .toLowerCase();
 }
 
+// cnOf returns the value of a DN's first RDN (typically CN=<name>), lowercased —
+// so a full memberOf DN can be matched against a bare group name an admin typed.
+// "CN=Captivo-Admins,OU=Groups,DC=corp,DC=local" -> "captivo-admins".
+export function cnOf(dn: string): string {
+  const first = dn.split(",")[0].trim();
+  const eq = first.indexOf("=");
+  return (eq >= 0 ? first.slice(eq + 1) : first).trim().toLowerCase();
+}
+
+// isBareName reports whether an admin typed a plain group name rather than a
+// full DN (no "=" and no ","), in which case it's matched against each group's CN.
+function isBareName(v: string): boolean {
+  return v.length > 0 && !v.includes("=") && !v.includes(",");
+}
+
 export function computeReconcile(
   resolvedGroups: string[],
   mappings: MappingLite[],
   user: { directoryManaged: boolean },
 ): ReconcileDecision {
   const groupSet = new Set(resolvedGroups.map(normalizeDN));
-  const matched = mappings.filter((m) => m.enabled && groupSet.has(normalizeDN(m.groupDN)));
+  const cnSet = new Set(resolvedGroups.map(cnOf));
+  const matched = mappings.filter((m) => {
+    if (!m.enabled) return false;
+    const g = m.groupDN.trim();
+    // A bare name matches by CN; a full DN matches the memberOf DN exactly.
+    return isBareName(g) ? cnSet.has(g.toLowerCase()) : groupSet.has(normalizeDN(g));
+  });
 
   if (matched.length === 0) {
     return { deprovision: user.directoryManaged, role: null, grantSiteIds: [] };

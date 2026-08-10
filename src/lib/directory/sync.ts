@@ -30,6 +30,7 @@ export async function syncUserAtLogin(user: DirectoryUser): Promise<{ deprovisio
       port: cfg.port,
       security: cfg.security,
       insecureSkipVerify: cfg.insecureSkipVerify,
+      caCertPem: cfg.caCertPem,
       baseDN: cfg.baseDN,
       bindDN: cfg.bindDN,
       bindPassword,

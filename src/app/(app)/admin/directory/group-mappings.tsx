@@ -91,14 +91,14 @@ export function GroupMappings({ mappings, sites }: { mappings: GroupMappingRow[]
 
       <form onSubmit={add}>
         <div className="field">
-          <label className="field-label" htmlFor="gm-dn">Group DN</label>
+          <label className="field-label" htmlFor="gm-dn">Group name or DN</label>
           <input
             id="gm-dn"
             type="text"
             className="input"
             value={groupDN}
             onChange={(e) => setGroupDN(e.target.value)}
-            placeholder="CN=Captivo-Admins,OU=Groups,DC=corp,DC=local"
+            placeholder="Captivo-Admins  (or full DN: CN=Captivo-Admins,OU=Groups,DC=corp,DC=local)"
             required
           />
         </div>

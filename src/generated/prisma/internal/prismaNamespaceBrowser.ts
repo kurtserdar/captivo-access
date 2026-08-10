@@ -331,6 +331,7 @@ export const DirectoryConfigScalarFieldEnum = {
   port: 'port',
   security: 'security',
   insecureSkipVerify: 'insecureSkipVerify',
+  caCertPem: 'caCertPem',
   baseDN: 'baseDN',
   bindDN: 'bindDN',
   bindPassword: 'bindPassword',

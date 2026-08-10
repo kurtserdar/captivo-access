@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
     port: typeof body.port === "number" ? body.port : Number(body.port) || 389,
     security: asSecurity(body.security),
     insecureSkipVerify: body.insecureSkipVerify === true,
+    caCertPem: typeof body.caCertPem === "string" ? body.caCertPem : "",
     baseDN: typeof body.baseDN === "string" ? body.baseDN : "",
     bindDN: typeof body.bindDN === "string" ? body.bindDN : "",
     bindPassword: typeof body.bindPassword === "string" ? body.bindPassword : undefined,

@@ -59,6 +59,7 @@ export async function testDirectory(input: {
   port: number;
   security: "PLAIN" | "STARTTLS" | "LDAPS";
   insecureSkipVerify: boolean;
+  caCertPem: string;
   baseDN: string;
   bindDN: string;
   bindPassword: string;
@@ -86,6 +87,7 @@ export async function resolveDirectoryUser(input: {
   port: number;
   security: "PLAIN" | "STARTTLS" | "LDAPS";
   insecureSkipVerify: boolean;
+  caCertPem: string;
   baseDN: string;
   bindDN: string;
   bindPassword: string;

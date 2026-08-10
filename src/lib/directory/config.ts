@@ -12,6 +12,7 @@ export type DirectoryConfigView = {
   port: number;
   security: DirectorySecurity;
   insecureSkipVerify: boolean;
+  caCertPem: string;
   baseDN: string;
   bindDN: string;
   hasBindPassword: boolean;
@@ -40,6 +41,7 @@ export async function getDirectoryConfig(): Promise<DirectoryConfigView | null> 
     port: c.port,
     security: asSecurity(c.security),
     insecureSkipVerify: c.insecureSkipVerify,
+    caCertPem: c.caCertPem ?? "",
     baseDN: c.baseDN,
     bindDN: c.bindDN,
     hasBindPassword: c.bindPassword.length > 0,
@@ -64,6 +66,7 @@ export async function saveDirectoryConfig(input: {
   port: number;
   security: DirectorySecurity;
   insecureSkipVerify: boolean;
+  caCertPem?: string;
   baseDN: string;
   bindDN: string;
   bindPassword?: string; // omitted/blank => keep the existing one
@@ -71,6 +74,7 @@ export async function saveDirectoryConfig(input: {
   const host = input.host.trim();
   const baseDN = input.baseDN.trim();
   const bindDN = input.bindDN.trim();
+  const caCertPem = (input.caCertPem ?? "").trim();
   const port = Number.isFinite(input.port) && input.port > 0 ? Math.floor(input.port) : 389;
   const security = asSecurity(input.security);
   const connectorId = input.connectorId?.trim() || null;
@@ -81,11 +85,11 @@ export async function saveDirectoryConfig(input: {
     where: { id: ID },
     create: {
       id: ID, enabled: input.enabled, connectorId, host, port, security,
-      insecureSkipVerify: input.insecureSkipVerify, baseDN, bindDN, bindPassword: encSecret ?? "",
+      insecureSkipVerify: input.insecureSkipVerify, caCertPem, baseDN, bindDN, bindPassword: encSecret ?? "",
     },
     update: {
       enabled: input.enabled, connectorId, host, port, security,
-      insecureSkipVerify: input.insecureSkipVerify, baseDN, bindDN,
+      insecureSkipVerify: input.insecureSkipVerify, caCertPem, baseDN, bindDN,
       ...(encSecret !== undefined ? { bindPassword: encSecret } : {}),
     },
   });
