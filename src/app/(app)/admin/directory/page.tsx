@@ -40,7 +40,7 @@ export default async function AdminDirectoryPage() {
     <main>
       <div className="page-head">
         <div>
-          <h1>Directory (LDAP / Active Directory)</h1>
+          <div className="page-title-row"><span className="page-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span><h1>Directory (LDAP / Active Directory)</h1></div>
           <p>
             Reach the customer&apos;s internal directory through a connector, then map AD groups to console
             roles or site access. At login a user&apos;s role and grants are reconciled to their group

@@ -30,7 +30,7 @@ export default async function AdminSsoPage() {
     <main>
       <div className="page-head">
         <div>
-          <h1>Single sign-on (OIDC)</h1>
+          <div className="page-title-row"><span className="page-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.5 12.5 21 2"/><path d="M16 7l3 3"/></svg></span><h1>Single sign-on (OIDC)</h1></div>
           <p>Let internal users sign in with your identity provider (Microsoft Entra, Google Workspace, Okta). Vendors continue to use passkeys.</p>
         </div>
       </div>

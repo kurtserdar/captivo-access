@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/current-user";
+import { RecordingsIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { listRecordings } from "@/lib/recording/query";
 import { RecordingsTable, type RecordingRowJSON } from "./recordings-table";
@@ -35,7 +36,7 @@ export default async function AdminRecordingsPage() {
     <main>
       <div className="page-head">
         <div>
-          <h1>Recordings</h1>
+          <div className="page-title-row"><span className="page-icon"><RecordingsIcon /></span><h1>Recordings</h1></div>
           <p>Replay captured vendor sessions on recorded sites.</p>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { requireCapability } from "@/lib/current-user";
+import { UpdatesIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { getUpdateCheckConfig } from "@/lib/updates/update-check-config";
 import { isUpdateAvailable, isConnectorOutdated } from "@/lib/updates/semver";
@@ -40,7 +41,7 @@ export default async function AdminUpdatesPage() {
     <main>
       <div className="page-head">
         <div>
-          <h1>Updates</h1>
+          <div className="page-title-row"><span className="page-icon"><UpdatesIcon /></span><h1>Updates</h1></div>
           <p>See when a newer version of Captivo Access is available. Connectors older than the manager are flagged under Connectors.</p>
         </div>
       </div>

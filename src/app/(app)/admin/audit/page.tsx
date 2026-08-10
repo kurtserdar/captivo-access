@@ -1,4 +1,5 @@
 import { requireCapability } from "@/lib/current-user";
+import { AuditIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { listAuditEvents } from "@/lib/audit/query";
 import { AuditTable, type AuditRowJSON } from "./audit-table";
@@ -44,7 +45,7 @@ export default async function AdminAuditPage() {
     <main>
       <div className="page-head">
         <div>
-          <h1>Audit log</h1>
+          <div className="page-title-row"><span className="page-icon"><AuditIcon /></span><h1>Audit log</h1></div>
           <p>Every proxied request through a connector, with the access decision that was applied.</p>
         </div>
       </div>

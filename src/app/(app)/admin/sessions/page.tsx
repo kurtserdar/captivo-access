@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/current-user";
+import { SessionsIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { currentSessionId } from "@/lib/auth/session";
 import { SessionsTable, type SessionRow } from "./sessions-table";
@@ -37,7 +38,7 @@ export default async function AdminSessionsPage() {
     <main>
       <div className="page-head">
         <div>
-          <h1>Sessions</h1>
+          <div className="page-title-row"><span className="page-icon"><SessionsIcon /></span><h1>Sessions</h1></div>
           <p>All currently active (non-expired) sessions.</p>
         </div>
       </div>

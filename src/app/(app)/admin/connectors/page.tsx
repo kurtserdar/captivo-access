@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ConnectorsIcon } from "@/components/icons";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { managerVersion } from "@/lib/version";
@@ -48,7 +49,7 @@ export default async function AdminConnectorsPage() {
     <main>
       <div className="page-head">
         <div>
-          <h1>Connectors</h1>
+          <div className="page-title-row"><span className="page-icon"><ConnectorsIcon /></span><h1>Connectors</h1></div>
           <p>
             A connector is a small agent you run inside a customer&apos;s network. Pair one here, then add
             sites to expose specific internal upstreams through it.

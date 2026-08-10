@@ -27,7 +27,7 @@ export default async function AdminPolicyPage() {
     <main>
       <div className="page-head">
         <div>
-          <h1>Policy</h1>
+          <div className="page-title-row"><span className="page-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg></span><h1>Policy</h1></div>
           <p>Organization-wide controls. Applied everywhere — the console and vendor sessions. These settings live in
             the database and can also be set from the environment; the value here always wins.</p>
         </div>

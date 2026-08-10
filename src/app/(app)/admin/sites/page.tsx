@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/current-user";
+import { SitesIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { timeAgo } from "@/lib/format";
 import { recordingEnabled } from "@/lib/recording/enabled";
@@ -65,7 +66,7 @@ export default async function AdminSitesPage() {
     <main>
       <div className="page-head">
         <div>
-          <h1>Sites</h1>
+          <div className="page-title-row"><span className="page-icon"><SitesIcon /></span><h1>Sites</h1></div>
           <p>
             A site is an internal upstream reachable through a connector, addressed by its real internal
             URL. Use &quot;Test connection&quot; to verify a live round trip through the connector&apos;s

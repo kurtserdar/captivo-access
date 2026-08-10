@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { UsersIcon } from "@/components/icons";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { UsersTable } from "./users-table";
@@ -50,7 +51,7 @@ export default async function AdminUsersPage({
     <main>
       <div className="page-head">
         <div>
-          <h1>Users</h1>
+          <div className="page-title-row"><span className="page-icon"><UsersIcon /></span><h1>Users</h1></div>
           <p>Manage all registered users and their access status.</p>
         </div>
         <Link href="/admin/invites" className="btn primary">Invite user</Link>

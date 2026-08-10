@@ -1,4 +1,5 @@
 import { requireCapability } from "@/lib/current-user";
+import { GrantsIcon } from "@/components/icons";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { listGrants, listPendingGrants } from "@/lib/access/grants";
@@ -62,7 +63,7 @@ export default async function AdminGrantsPage() {
     <main>
       <div className="page-head">
         <div>
-          <h1>Access grants</h1>
+          <div className="page-title-row"><span className="page-icon"><GrantsIcon /></span><h1>Access grants</h1></div>
           <p>Grant a user time-boxed access to a site. Leave the end date empty for permanent access.</p>
         </div>
         {canApprove && users.length > 0 && sites.length > 0 && <AddGrantButton users={users} sites={sites} />}

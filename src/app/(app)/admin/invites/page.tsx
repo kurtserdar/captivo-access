@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/current-user";
+import { InviteIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { getSmtpConfig } from "@/lib/email/mailer";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
@@ -34,7 +35,7 @@ export default async function AdminInvitesPage() {
     <main>
       <div className="page-head">
         <div>
-          <h1>Invitations</h1>
+          <div className="page-title-row"><span className="page-icon"><InviteIcon /></span><h1>Invitations</h1></div>
           <p>Invite a new vendor or admin. The invite link is shown only once.</p>
         </div>
         <AddInviteButton smtpEnabled={smtpEnabled} />
