@@ -366,6 +366,9 @@ model PlatformSettings {
   externalAnchorEnabled Boolean? // opt-in; null/false = anchoring off
   anchorTsaUrl          String? // RFC 3161 TSA endpoint; empty = unset (no bundled default)
   anchorTsaAuth         String? // optional "user:pass" for a TSA behind HTTP Basic; empty = none
+  notifySiteHealth      Boolean? // email admins on site up/down; null = default on
+  notifyAccessRequests  Boolean? // email admins on new access requests; null = default on
+  notifyAccessDecisions Boolean? // email the vendor on approve/deny; null = default on
   updatedAt              DateTime @updatedAt
 }
 

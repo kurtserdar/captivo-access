@@ -17,6 +17,9 @@ export interface PlatformSettings {
   externalAnchorEnabled: boolean | null;
   anchorTsaUrl: string | null;
   anchorTsaAuth: string | null;
+  notifySiteHealth: boolean | null;
+  notifyAccessRequests: boolean | null;
+  notifyAccessDecisions: boolean | null;
 }
 
 const ID = "singleton";
@@ -32,6 +35,9 @@ const EMPTY: PlatformSettings = {
   externalAnchorEnabled: null,
   anchorTsaUrl: null,
   anchorTsaAuth: null,
+  notifySiteHealth: null,
+  notifyAccessRequests: null,
+  notifyAccessDecisions: null,
 };
 
 let cache: { s: PlatformSettings; at: number } | null = null;
@@ -56,6 +62,9 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     externalAnchorEnabled: c?.externalAnchorEnabled ?? null,
     anchorTsaUrl: c?.anchorTsaUrl ?? null,
     anchorTsaAuth: c?.anchorTsaAuth ?? null,
+    notifySiteHealth: c?.notifySiteHealth ?? null,
+    notifyAccessRequests: c?.notifyAccessRequests ?? null,
+    notifyAccessDecisions: c?.notifyAccessDecisions ?? null,
   };
   cache = { s, at: Date.now() };
   return s;

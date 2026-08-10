@@ -65,6 +65,10 @@ export async function POST(req: NextRequest) {
     externalAnchorEnabled: anchorEnabled,
     anchorTsaUrl: anchorTsaUrl || null,
     anchorTsaAuth: anchorTsaAuth || null,
+    // Default-on coercion: anything not explicitly false persists as true.
+    notifySiteHealth: body.notifySiteHealth !== false,
+    notifyAccessRequests: body.notifyAccessRequests !== false,
+    notifyAccessDecisions: body.notifyAccessDecisions !== false,
   });
   return NextResponse.json({ ok: true });
 }
