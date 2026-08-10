@@ -34,7 +34,7 @@ export function SessionPolicyForm({ initial }: { initial: SessionPolicy }) {
       </div>
       <div className="field">
         <label className="field-label" htmlFor="sp-hours">Max session lifetime (hours)</label>
-        <input id="sp-hours" type="number" min={1} className="input" value={maxHours} onChange={(e) => setMaxHours(e.target.value)} placeholder="Empty = server default (SESSION_TTL_HOURS)" />
+        <input id="sp-hours" type="number" min={1} className="input" value={maxHours} onChange={(e) => setMaxHours(e.target.value)} placeholder="Empty = 12h default" />
       </div>
       <div className="field">
         <label className="field-label" htmlFor="sp-conc">Max concurrent sessions per user</label>

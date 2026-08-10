@@ -7,11 +7,18 @@ import { getSessionPolicy, sessionTtlMs, idleExpired, evictionIds } from "@/lib/
 
 export const SESSION_COOKIE = "ca_session";
 
+// envTtlHours is the fallback session lifetime (hours) when no policy
+// max-session-lifetime is set: the SESSION_TTL_HOURS env, else 12. The policy
+// value (SessionPolicy.maxSessionHours, editable at /admin/policy) always wins.
+function envTtlHours(): number {
+  const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
+  return Number.isFinite(h) && h > 0 ? h : 12;
+}
+
 export async function createSession(userId: string, meta?: { userAgent?: string; ip?: string }): Promise<string> {
   const token = generateToken();
   const policy = await getSessionPolicy();
-  const envHours = Number(process.env.SESSION_TTL_HOURS ?? "12");
-  const ttl = sessionTtlMs(policy.maxSessionHours, Number.isFinite(envHours) && envHours > 0 ? envHours : 12);
+  const ttl = sessionTtlMs(policy.maxSessionHours, envTtlHours());
 
   // Concurrent-session cap: evict the user's oldest live sessions to make room.
   if (policy.maxConcurrentPerUser && policy.maxConcurrentPerUser > 0) {
@@ -60,12 +67,14 @@ export async function revokeSession(sessionId: string): Promise<void> {
   await db.session.delete({ where: { id: sessionId } }).catch(() => {});
 }
 
-// Session cookie max-age (hours) — mirrors the value used by the passkey auth
-// route. Kept here so non-passkey logins (OIDC) set an identical cookie without
-// modifying the passkey flow.
-function sessionMaxAgeSeconds(): number {
-  const h = Number(process.env.SESSION_TTL_HOURS);
-  return (Number.isFinite(h) && h > 0 ? h : 12) * 3600;
+// sessionCookieMaxAgeSeconds is the ca_session cookie's max-age, kept in lockstep
+// with the session record's TTL: the policy max-session-lifetime governs, else
+// the env fallback. Shared by every login path (passkey verify + OIDC) so the
+// cookie never outlives the DB session (a policy of "1h" no longer left a 12h
+// cookie behind).
+export async function sessionCookieMaxAgeSeconds(): Promise<number> {
+  const policy = await getSessionPolicy();
+  return sessionTtlMs(policy.maxSessionHours, envTtlHours()) / 1000;
 }
 
 /** Create a DB-backed session for `userId` and set the `ca_session` cookie,
@@ -81,7 +90,7 @@ export async function startSession(userId: string, req: NextRequest): Promise<vo
     secure: await cookieSecure(),
     sameSite: "lax",
     path: "/",
-    maxAge: sessionMaxAgeSeconds(),
+    maxAge: await sessionCookieMaxAgeSeconds(),
     domain: cookieDomain(),
   });
 }

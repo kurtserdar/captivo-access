@@ -4,16 +4,11 @@ import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { verifyAuthentication } from "@/lib/auth/webauthn";
 import { readChallenge, clearChallenge } from "@/lib/auth/challenge";
 import { db } from "@/lib/db";
-import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
+import { createSession, sessionCookieMaxAgeSeconds, SESSION_COOKIE } from "@/lib/auth/session";
 import { syncUserAtLogin } from "@/lib/directory/sync";
 import { cookieSecure, cookieDomain } from "@/lib/auth/cookies";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getRpId, originMatchesRp, requestOrigin } from "@/lib/auth/rp";
-
-function sessionMaxAgeSeconds(): number {
-  const h = Number(process.env.SESSION_TTL_HOURS ?? "12");
-  return (Number.isFinite(h) && h > 0 ? h : 12) * 3600;
-}
 
 function requestMeta(req: NextRequest) {
   return {
@@ -87,7 +82,7 @@ export async function POST(req: NextRequest) {
     secure: await cookieSecure(),
     sameSite: "lax",
     path: "/",
-    maxAge: sessionMaxAgeSeconds(),
+    maxAge: await sessionCookieMaxAgeSeconds(),
     domain: cookieDomain(),
   });
   await clearChallenge();
