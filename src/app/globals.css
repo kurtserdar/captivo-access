@@ -106,8 +106,9 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .setting-ctl{flex:0 0 auto;display:flex;align-items:center;gap:.5rem;}
 .setting-ctl .input,.setting-ctl .select{width:auto;min-width:5.5rem;}
 .setting-ctl .unit{color:var(--muted);font-size:.85rem;}
-.setting-stack{align-items:flex-start;}
-.setting-stack .setting-ctl{width:100%;flex-direction:column;align-items:stretch;padding-top:.6rem;}
+.setting-stack{flex-direction:column;align-items:stretch;gap:.65rem;}
+.setting-stack .setting-ctl{width:100%;}
+.setting-stack .setting-ctl .input,.setting-stack .setting-ctl .select,.setting-stack .setting-ctl .textarea{width:100%;}
 
 /* ---- toggle switch ---- */
 .switch{position:relative;display:inline-flex;align-items:center;cursor:pointer;gap:.55rem;}
