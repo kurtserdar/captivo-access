@@ -62,6 +62,7 @@ var denyReasonText = map[string]string{
 	"user_disabled":    "Your account is disabled.",
 	"off_schedule":     "Your access isn't available at this time.",
 	"denied":           "Your access request was declined.",
+	"ip_not_allowed":   "Access from your network isn't allowed.",
 }
 
 // errPageTmpl renders the browser-facing proxy error page: a neutral,
@@ -240,7 +241,7 @@ func (p *BrowserProxy) consentPage(w http.ResponseWriter, r *http.Request) {
 type proxyControl interface {
 	ResolveSession(token string) (userID, email string, err error)
 	SiteByHost(host string) (siteID, connectorID, upstreamUrl, clipboardMode string, insecureSkipVerify, recordSessions, gateway bool, err error)
-	CheckAccess(userID, siteID string) (allow bool, reason string, err error)
+	CheckAccess(userID, siteID, clientIP string) (allow bool, reason string, err error)
 	RecorderJS() ([]byte, error)
 	SendRecording(userID, siteID, host string, body []byte) error
 }
@@ -280,7 +281,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. Access decision.
-	allow, reason, err := p.ctrl.CheckAccess(userID, siteID)
+	allow, reason, err := p.ctrl.CheckAccess(userID, siteID, trustedClientIP(r))
 	if err != nil {
 		errorPage(w, http.StatusBadGateway, "Application unavailable", "The application didn't respond.", "Try again shortly.")
 		return
@@ -725,6 +726,24 @@ func remoteIP(r *http.Request) string {
 		return r.RemoteAddr
 	}
 	return host
+}
+
+// trustedClientIP returns the real client IP as recorded by the trusted front
+// proxy: the RIGHTMOST entry of X-Forwarded-For — the hop the immediate proxy
+// appended (nginx proxy_add_x_forwarded_for / Caddy) — which a client cannot
+// forge by sending its own X-Forwarded-For (any client-supplied value stays to
+// the left). Falls back to the socket peer when no XFF is present (no front
+// proxy). This assumes a single trusted reverse proxy in front of the
+// data-plane, which the shipped deploy provides; it is the value the source-IP
+// allowlist is evaluated against, so it must be the un-spoofable one.
+func trustedClientIP(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		if i := strings.LastIndexByte(xff, ','); i >= 0 {
+			return strings.TrimSpace(xff[i+1:])
+		}
+		return strings.TrimSpace(xff)
+	}
+	return remoteIP(r)
 }
 
 // copyRespHeaders copies the upstream response headers into dst, stripping

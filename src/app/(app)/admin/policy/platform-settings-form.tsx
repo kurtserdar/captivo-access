@@ -10,6 +10,7 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettings })
   const [audit, setAudit] = useState(str(initial.auditRetentionDays));
   const [invite, setInvite] = useState(str(initial.inviteTtlHours));
   const [webhook, setWebhook] = useState(initial.notificationWebhookUrl ?? "");
+  const [ipAllow, setIpAllow] = useState(initial.vendorIpAllowlist ?? "");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
@@ -19,11 +20,24 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettings })
     const res = await fetch("/api/admin/policy/platform", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ auditRetentionDays: audit, inviteTtlHours: invite, notificationWebhookUrl: webhook }),
+      body: JSON.stringify({
+        auditRetentionDays: audit,
+        inviteTtlHours: invite,
+        notificationWebhookUrl: webhook,
+        vendorIpAllowlist: ipAllow,
+      }),
     });
     const body = await res.json().catch(() => ({}));
     setBusy(false);
-    setNotice(res.ok && body.ok ? { kind: "ok", msg: "Saved." } : { kind: "err", msg: "Could not save." });
+    if (res.ok && body.ok) {
+      setNotice({ kind: "ok", msg: "Saved." });
+    } else if (body.error === "invalid_cidr") {
+      setNotice({ kind: "err", msg: `Invalid IP/CIDR entries: ${(body.invalid ?? []).join(", ")}` });
+    } else if (body.error === "invalid_webhook_url") {
+      setNotice({ kind: "err", msg: "The webhook URL must be a valid http(s) URL." });
+    } else {
+      setNotice({ kind: "err", msg: "Could not save." });
+    }
   }
 
   return (
@@ -42,6 +56,17 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettings })
         <label className="field-label" htmlFor="ps-webhook">Notification webhook URL</label>
         <input id="ps-webhook" type="url" className="input" value={webhook} onChange={(e) => setWebhook(e.target.value)} placeholder="https://hooks.slack.com/… (empty = disabled)" />
         <span className="hint">Site up/down events POST here (Slack/Teams-friendly JSON), in addition to the in-console bell. Leave empty to disable.</span>
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="ps-ipallow">Vendor source-IP allowlist</label>
+        <textarea id="ps-ipallow" className="textarea" rows={3} value={ipAllow} onChange={(e) => setIpAllow(e.target.value)} placeholder="e.g. 203.0.113.0/24, 198.51.100.10, 2001:db8::/32" />
+        <span className="hint">
+          Comma / space / newline-separated <code>CIDR</code> or IP. When set, vendors can reach published
+          <b> sites</b> only from these networks (checked live on every request; the console itself is not
+          restricted, so you can&apos;t lock yourself out of admin). <b>Empty = no restriction.</b>{" "}
+          <b>Include your own network</b> or you&apos;ll be blocked from opening sites too. The source IP is the one
+          your front proxy records — spoofing an <code>X-Forwarded-For</code> won&apos;t bypass it.
+        </span>
       </div>
       {notice && <p className={`notice ${notice.kind === "ok" ? "success" : "error"}`} role="alert">{notice.msg}</p>}
       <div className="row-actions">

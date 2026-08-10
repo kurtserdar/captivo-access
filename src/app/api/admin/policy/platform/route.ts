@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { savePlatformSettings } from "@/lib/settings/platform";
+import { validateAllowlist } from "@/lib/net/cidr";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,10 +32,15 @@ export async function POST(req: NextRequest) {
   const webhook = toWebhook(body.notificationWebhookUrl);
   if (!webhook.ok) return NextResponse.json({ error: "invalid_webhook_url" }, { status: 400 });
 
+  const rawAllow = typeof body.vendorIpAllowlist === "string" ? body.vendorIpAllowlist : "";
+  const badCidrs = validateAllowlist(rawAllow);
+  if (badCidrs.length) return NextResponse.json({ error: "invalid_cidr", invalid: badCidrs }, { status: 400 });
+
   await savePlatformSettings({
     auditRetentionDays: toIntMin(body.auditRetentionDays, 0),
     inviteTtlHours: toIntMin(body.inviteTtlHours, 1),
     notificationWebhookUrl: webhook.value,
+    vendorIpAllowlist: rawAllow.trim() || null,
   });
   return NextResponse.json({ ok: true });
 }

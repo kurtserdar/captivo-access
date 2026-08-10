@@ -9,6 +9,7 @@ export interface PlatformSettings {
   auditRetentionDays: number | null;
   inviteTtlHours: number | null;
   notificationWebhookUrl: string | null;
+  vendorIpAllowlist: string | null;
 }
 
 const ID = "singleton";
@@ -16,6 +17,7 @@ const EMPTY: PlatformSettings = {
   auditRetentionDays: null,
   inviteTtlHours: null,
   notificationWebhookUrl: null,
+  vendorIpAllowlist: null,
 };
 
 let cache: { s: PlatformSettings; at: number } | null = null;
@@ -32,6 +34,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     auditRetentionDays: c?.auditRetentionDays ?? null,
     inviteTtlHours: c?.inviteTtlHours ?? null,
     notificationWebhookUrl: c?.notificationWebhookUrl ?? null,
+    vendorIpAllowlist: c?.vendorIpAllowlist ?? null,
   };
   cache = { s, at: Date.now() };
   return s;
@@ -69,4 +72,11 @@ export async function resolvedInviteTtlHours(): Promise<number> {
 export async function resolvedNotificationWebhookUrl(): Promise<string> {
   const s = await getPlatformSettings();
   return (s.notificationWebhookUrl ?? process.env.NOTIFICATION_WEBHOOK_URL ?? "").trim();
+}
+
+// Raw vendor source-IP allowlist (CIDRs/IPs). Empty = no restriction. No env
+// fallback — this is a new, UI-only control.
+export async function resolvedVendorIpAllowlist(): Promise<string> {
+  const s = await getPlatformSettings();
+  return (s.vendorIpAllowlist ?? "").trim();
 }

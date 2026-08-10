@@ -51,7 +51,7 @@ func (f *fakeControl) SiteByHost(string) (string, string, string, string, bool, 
 	return f.siteID, f.connID, f.upstream, f.clipboardMode, f.insecureSkipVerify, f.recordSessions, f.gateway, f.siteErr
 }
 
-func (f *fakeControl) CheckAccess(string, string) (bool, string, error) {
+func (f *fakeControl) CheckAccess(string, string, string) (bool, string, error) {
 	return f.allow, f.reason, f.accessErr
 }
 
@@ -1068,5 +1068,28 @@ func TestInjectBeforeBodyAnchors(t *testing.T) {
 	}
 	if got := string(injectBeforeBody([]byte("plain"), tag)); got != "<x>plain" {
 		t.Errorf("prepend: %s", got)
+	}
+}
+
+func TestTrustedClientIP(t *testing.T) {
+	// No XFF -> socket peer.
+	r := httptest.NewRequest(http.MethodGet, "http://app/", nil)
+	r.RemoteAddr = "203.0.113.7:5555"
+	if got := trustedClientIP(r); got != "203.0.113.7" {
+		t.Fatalf("no-XFF: got %q, want 203.0.113.7", got)
+	}
+	// Client-spoofed XFF entry stays LEFT; the trusted proxy appends the real
+	// client on the RIGHT, which is what we must use.
+	r2 := httptest.NewRequest(http.MethodGet, "http://app/", nil)
+	r2.RemoteAddr = "10.0.0.2:5555" // nginx
+	r2.Header.Set("X-Forwarded-For", "1.2.3.4, 198.51.100.9") // "1.2.3.4" is the spoof
+	if got := trustedClientIP(r2); got != "198.51.100.9" {
+		t.Fatalf("spoofed-XFF: got %q, want 198.51.100.9 (rightmost)", got)
+	}
+	// Single XFF entry (proxy replaced) -> that entry.
+	r3 := httptest.NewRequest(http.MethodGet, "http://app/", nil)
+	r3.Header.Set("X-Forwarded-For", "198.51.100.9")
+	if got := trustedClientIP(r3); got != "198.51.100.9" {
+		t.Fatalf("single-XFF: got %q, want 198.51.100.9", got)
 	}
 }

@@ -154,12 +154,12 @@ func (c *ControlClient) SendRecording(userID, siteID, host string, body []byte) 
 
 // CheckAccess evaluates whether userId is allowed to reach siteId right
 // now, returning a human-mappable deny reason when allow is false.
-func (c *ControlClient) CheckAccess(userID, siteID string) (allow bool, reason string, err error) {
+func (c *ControlClient) CheckAccess(userID, siteID, clientIP string) (allow bool, reason string, err error) {
 	var out struct {
 		Allow  bool   `json:"allow"`
 		Reason string `json:"reason"`
 	}
-	if err := c.post("/api/internal/access/check", map[string]string{"userId": userID, "siteId": siteID}, &out); err != nil {
+	if err := c.post("/api/internal/access/check", map[string]string{"userId": userID, "siteId": siteID, "clientIp": clientIP}, &out); err != nil {
 		return false, "", err
 	}
 	return out.Allow, out.Reason, nil

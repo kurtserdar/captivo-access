@@ -2313,6 +2313,7 @@ export const PlatformSettingsScalarFieldEnum = {
   auditRetentionDays: 'auditRetentionDays',
   inviteTtlHours: 'inviteTtlHours',
   notificationWebhookUrl: 'notificationWebhookUrl',
+  vendorIpAllowlist: 'vendorIpAllowlist',
   updatedAt: 'updatedAt'
 } as const
 
