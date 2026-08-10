@@ -78,7 +78,9 @@ export async function runAnchor(): Promise<AnchorRunResult> {
 
     const { token, genTime } = parseTimeStampResponse(der);
     await db.auditAnchor.create({
-      data: { anchoredSeq: head.lastSeq, anchoredHash: head.lastHash, tsaUrl, token, genTime },
+      // Prisma's Bytes wants a Uint8Array over a plain ArrayBuffer; a Node Buffer's
+      // backing buffer is ArrayBufferLike, so copy into a fresh Uint8Array.
+      data: { anchoredSeq: head.lastSeq, anchoredHash: head.lastHash, tsaUrl, token: new Uint8Array(token), genTime },
     });
     return { status: "anchored", anchoredSeq: head.lastSeq.toString(), genTime: genTime.toISOString() };
   } catch (e) {
