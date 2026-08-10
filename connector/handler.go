@@ -143,11 +143,13 @@ func handleLdap(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 	}
 	if !egressAllowed(allow, lr.Target) {
 		denied()
+		logDenied("ldap", lr.Target)
 		writeLdapErr(st, "target not allowed") // egress boundary — fail closed
 		return
 	}
 	upstream, err := net.DialTimeout("tcp", lr.Target, 10*time.Second)
 	if err != nil {
+		logUpstreamErr("ldap", lr.Target, err.Error())
 		writeLdapErr(st, "directory unreachable")
 		return
 	}
@@ -220,6 +222,11 @@ func handleDial(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 
 	target, _, errMsg := resolveUpstreamTarget(dr.UpstreamUrl, dr.Path, allow)
 	if errMsg != "" {
+		if errMsg == "target not allowed" {
+			logDenied("http", hostOf(dr.UpstreamUrl))
+		} else {
+			logReject("http", hostOf(dr.UpstreamUrl), errMsg)
+		}
 		writeErr(st, errMsg)
 		return
 	}
@@ -257,12 +264,17 @@ func handleDial(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 		}
 		req.Header.Del("Content-Length") // Go emits Content-Length from req.ContentLength
 	}
+	start := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
+		logUpstreamErr("http", target.Host, err.Error())
 		writeErr(st, "upstream unreachable")
 		return
 	}
 	defer resp.Body.Close()
+	if d := time.Since(start); d > slowUpstreamThreshold {
+		logSlowUpstream(target.Host, d)
+	}
 
 	respMeta, err := json.Marshal(tunnel.DialResponse{Status: resp.StatusCode, Header: resp.Header})
 	if err != nil {
@@ -296,6 +308,11 @@ func handleWS(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 	}
 	target, base, errMsg := resolveUpstreamTarget(wr.UpstreamUrl, wr.Path, allow)
 	if errMsg != "" {
+		if errMsg == "target not allowed" {
+			logDenied("ws", hostOf(wr.UpstreamUrl))
+		} else {
+			logReject("ws", hostOf(wr.UpstreamUrl), errMsg)
+		}
 		writeWsErr(st, errMsg)
 		return
 	}
@@ -332,6 +349,7 @@ func handleWS(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 		upstream, err = net.DialTimeout("tcp", hostPort, 10*time.Second)
 	}
 	if err != nil {
+		logUpstreamErr("ws", hostPort, err.Error())
 		writeWsErr(st, "upstream unreachable")
 		return
 	}
