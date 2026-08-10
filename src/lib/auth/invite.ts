@@ -1,11 +1,11 @@
 import { db } from "@/lib/db";
 import { generateToken, hashToken, verifyTokenHash } from "./tokens";
 import { normalizeEmail } from "./email";
+import { resolvedInviteTtlHours } from "@/lib/settings/platform";
 import type { Role } from "@/generated/prisma/enums";
 
-function ttlMs() {
-  const h = Number(process.env.INVITE_TTL_HOURS ?? "48");
-  return (Number.isFinite(h) && h > 0 ? h : 48) * 3600_000;
+async function ttlMs() {
+  return (await resolvedInviteTtlHours()) * 3600_000;
 }
 
 export async function createInvite(input: {
@@ -25,7 +25,7 @@ export async function createInvite(input: {
       phone: input.phone ?? null,
       company: input.company ?? null,
       tokenHash: await hashToken(token),
-      expiresAt: new Date(Date.now() + ttlMs()),
+      expiresAt: new Date(Date.now() + (await ttlMs())),
       createdById: input.createdById,
     },
   });

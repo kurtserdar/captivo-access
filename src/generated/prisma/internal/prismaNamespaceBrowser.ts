@@ -68,6 +68,7 @@ export const ModelName = {
   DirectoryConfig: 'DirectoryConfig',
   GroupMapping: 'GroupMapping',
   SessionPolicy: 'SessionPolicy',
+  PlatformSettings: 'PlatformSettings',
   UpdateCheckConfig: 'UpdateCheckConfig',
   SessionRecording: 'SessionRecording',
   RecordingChunk: 'RecordingChunk'
@@ -365,6 +366,17 @@ export const SessionPolicyScalarFieldEnum = {
 } as const
 
 export type SessionPolicyScalarFieldEnum = (typeof SessionPolicyScalarFieldEnum)[keyof typeof SessionPolicyScalarFieldEnum]
+
+
+export const PlatformSettingsScalarFieldEnum = {
+  id: 'id',
+  auditRetentionDays: 'auditRetentionDays',
+  inviteTtlHours: 'inviteTtlHours',
+  notificationWebhookUrl: 'notificationWebhookUrl',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlatformSettingsScalarFieldEnum = (typeof PlatformSettingsScalarFieldEnum)[keyof typeof PlatformSettingsScalarFieldEnum]
 
 
 export const UpdateCheckConfigScalarFieldEnum = {

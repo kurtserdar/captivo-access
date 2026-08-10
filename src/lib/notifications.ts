@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { sendMail, getAdminEmails } from "@/lib/email/mailer";
 import { siteEventEmail } from "@/lib/email/templates";
+import { resolvedNotificationWebhookUrl } from "@/lib/settings/platform";
 
 export type NotificationType = "site_down" | "site_recovered";
 
@@ -52,7 +53,7 @@ async function fireWebhook(input: {
   siteName: string;
   detail: string | null;
 }): Promise<void> {
-  const url = process.env.NOTIFICATION_WEBHOOK_URL?.trim();
+  const url = await resolvedNotificationWebhookUrl();
   if (!url) return;
   const text =
     input.type === "site_down"

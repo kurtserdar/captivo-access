@@ -103,6 +103,11 @@ export type GroupMapping = Prisma.GroupMappingModel
  */
 export type SessionPolicy = Prisma.SessionPolicyModel
 /**
+ * Model PlatformSettings
+ * 
+ */
+export type PlatformSettings = Prisma.PlatformSettingsModel
+/**
  * Model UpdateCheckConfig
  * 
  */

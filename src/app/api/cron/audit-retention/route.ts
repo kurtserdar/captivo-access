@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { resolvedAuditRetentionDays } from "@/lib/settings/platform";
 
 function cronAuthorized(req: NextRequest): boolean {
   const s = process.env.CRON_SECRET;
@@ -8,11 +9,10 @@ function cronAuthorized(req: NextRequest): boolean {
 
 export async function POST(req: NextRequest) {
   if (!cronAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  // Treat an unset OR empty/whitespace value as the default: Number("") is 0,
-  // which would purge ALL audit events — a footgun for a hand-rolled empty env.
-  const raw = process.env.AUDIT_RETENTION_DAYS?.trim();
-  const days = raw ? Number(raw) : 730;
-  const retentionDays = Number.isFinite(days) && days >= 0 ? days : 730;
+  // Retention days come from PlatformSettings (UI), falling back to the
+  // AUDIT_RETENTION_DAYS env then 730. resolvedAuditRetentionDays already
+  // guards against the empty/NaN footgun (which would purge everything).
+  const retentionDays = await resolvedAuditRetentionDays();
   const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
   // Delete a seq-contiguous PREFIX, not a raw timestamp slice: seq (ingest order)
   // and timestamp (event time) can diverge for delayed batches, and deleting an

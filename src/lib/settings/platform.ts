@@ -1,0 +1,72 @@
+import { db } from "@/lib/db";
+
+// Tenant-wide operational settings, editable from /admin/policy. Each was
+// previously env-only; the resolvers below read the DB value first, fall back
+// to the old env var, then a hard default — so a set env var still works but is
+// no longer required, and the UI value wins when present.
+
+export interface PlatformSettings {
+  auditRetentionDays: number | null;
+  inviteTtlHours: number | null;
+  notificationWebhookUrl: string | null;
+}
+
+const ID = "singleton";
+const EMPTY: PlatformSettings = {
+  auditRetentionDays: null,
+  inviteTtlHours: null,
+  notificationWebhookUrl: null,
+};
+
+let cache: { s: PlatformSettings; at: number } | null = null;
+
+export async function getPlatformSettings(): Promise<PlatformSettings> {
+  if (cache && Date.now() - cache.at < 30_000) return cache.s;
+  let c;
+  try {
+    c = await db.platformSettings.findUnique({ where: { id: ID } });
+  } catch {
+    return EMPTY; // table missing / DB down -> resolvers fall back to env/default
+  }
+  const s: PlatformSettings = {
+    auditRetentionDays: c?.auditRetentionDays ?? null,
+    inviteTtlHours: c?.inviteTtlHours ?? null,
+    notificationWebhookUrl: c?.notificationWebhookUrl ?? null,
+  };
+  cache = { s, at: Date.now() };
+  return s;
+}
+
+export async function savePlatformSettings(input: PlatformSettings): Promise<void> {
+  await db.platformSettings.upsert({
+    where: { id: ID },
+    create: { id: ID, ...input },
+    update: { ...input },
+  });
+  cache = null;
+}
+
+function envInt(name: string): number | null {
+  const raw = process.env[name]?.trim();
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+// Resolved values: DB → env → default.
+export async function resolvedAuditRetentionDays(): Promise<number> {
+  const s = await getPlatformSettings();
+  const v = s.auditRetentionDays ?? envInt("AUDIT_RETENTION_DAYS");
+  return v !== null && v >= 0 ? v : 730;
+}
+
+export async function resolvedInviteTtlHours(): Promise<number> {
+  const s = await getPlatformSettings();
+  const v = s.inviteTtlHours ?? envInt("INVITE_TTL_HOURS");
+  return v !== null && v > 0 ? v : 48;
+}
+
+export async function resolvedNotificationWebhookUrl(): Promise<string> {
+  const s = await getPlatformSettings();
+  return (s.notificationWebhookUrl ?? process.env.NOTIFICATION_WEBHOOK_URL ?? "").trim();
+}

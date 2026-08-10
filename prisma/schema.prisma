@@ -323,6 +323,18 @@ model SessionPolicy {
   updatedAt            DateTime @updatedAt
 }
 
+// PlatformSettings is a singleton (id = "singleton") holding tenant-wide
+// operational settings that were previously env-only. Each field is optional;
+// an unset field falls back to its former env var, then a hard default, so an
+// existing deployment keeps working and the env var becomes optional.
+model PlatformSettings {
+  id                     String   @id
+  auditRetentionDays     Int? // was AUDIT_RETENTION_DAYS (default 730)
+  inviteTtlHours         Int? // was INVITE_TTL_HOURS (default 48)
+  notificationWebhookUrl String? // was NOTIFICATION_WEBHOOK_URL
+  updatedAt              DateTime @updatedAt
+}
+
 model UpdateCheckConfig {
   id            String    @id
   enabled       Boolean   @default(true)
