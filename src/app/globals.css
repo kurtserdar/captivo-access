@@ -93,6 +93,44 @@ a{color:inherit;}
 .input,.select,.textarea{font:inherit;font-size:.9rem;background:var(--surface);color:var(--fg);
   border:1px solid var(--line);border-radius:var(--radius);padding:.5rem .65rem;width:100%;}
 .input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;height:16px;}
+
+/* ---- modern setting list (label · hint · inline control rows) ---- */
+.settings{display:flex;flex-direction:column;}
+.setting{display:flex;align-items:center;gap:1.4rem;padding:.95rem 0;border-bottom:1px solid var(--line-soft);}
+.setting:first-child{padding-top:.15rem;}
+.setting:last-child{border-bottom:none;padding-bottom:.15rem;}
+.setting-main{flex:1;min-width:0;}
+.setting-main .setting-label,.setting-main>label{font-size:.9rem;font-weight:600;color:var(--fg);display:block;}
+.setting-hint{font-size:.8rem;color:var(--muted);margin-top:.2rem;max-width:62ch;line-height:1.45;}
+.setting-ctl{flex:0 0 auto;display:flex;align-items:center;gap:.5rem;}
+.setting-ctl .input,.setting-ctl .select{width:auto;min-width:5.5rem;}
+.setting-ctl .unit{color:var(--muted);font-size:.85rem;}
+.setting-stack{align-items:flex-start;}
+.setting-stack .setting-ctl{width:100%;flex-direction:column;align-items:stretch;padding-top:.6rem;}
+
+/* ---- toggle switch ---- */
+.switch{position:relative;display:inline-flex;align-items:center;cursor:pointer;gap:.55rem;}
+.switch input{position:absolute;opacity:0;width:0;height:0;}
+.switch .track{width:40px;height:23px;border-radius:99px;background:var(--line);transition:background .15s;position:relative;flex:0 0 auto;}
+.switch .track::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s;}
+.switch input:checked + .track{background:var(--accent);}
+.switch input:checked + .track::after{transform:translateX(17px);}
+.switch input:focus-visible + .track{box-shadow:0 0 0 3px var(--accent-soft);}
+.switch .switch-label{font-size:.85rem;color:var(--muted);}
+
+/* ---- chips / tag list ---- */
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;}
+.chip{font-family:var(--mono);font-size:.76rem;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:.22rem .55rem;display:inline-flex;align-items:center;gap:.4rem;line-height:1.2;}
+.chip.neutral{color:var(--muted);background:var(--surface-2);border:1px solid var(--line);}
+.chip .x{cursor:pointer;opacity:.55;font-size:.9em;line-height:1;} .chip .x:hover{opacity:1;}
+
+/* ---- definition rows (read-only key/value) ---- */
+.defrows{display:flex;flex-direction:column;}
+.defrow{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding:.6rem 0;border-bottom:1px solid var(--line-soft);}
+.defrow:last-child{border-bottom:none;}
+.defrow .dk{color:var(--muted);font-size:.85rem;}
+.defrow .dv{text-align:right;min-width:0;font-variant-numeric:tabular-nums;}
 .hint{font-size:.78rem;color:var(--faint);}
 .error{font-size:.82rem;color:var(--danger);}
 .schedule-builder{display:flex;flex-direction:column;gap:12px;margin-top:8px;}
@@ -135,9 +173,12 @@ a{color:inherit;}
 
 /* ---- card / panel ---- */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
-  padding:1.35rem 1.4rem;margin-bottom:1.35rem;box-shadow:0 1px 2px rgba(20,30,55,.04);}
-.card-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.9rem;}
-.card-head h2{font-size:1.05rem;}
+  padding:1.35rem 1.4rem;margin-bottom:1.35rem;box-shadow:var(--shadow);}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.1rem;padding-bottom:.85rem;border-bottom:1px solid var(--line-soft);}
+.card-head h2,.card-head h3{font-size:1rem;font-weight:640;letter-spacing:-.01em;}
+.card-head .sub{color:var(--muted);font-size:.82rem;font-weight:400;}
+/* When the header is only a title (no divider desired), authors can add .bare. */
+.card-head.bare{border-bottom:none;padding-bottom:0;margin-bottom:.9rem;}
 
 /* ---- getting-started checklist ---- */
 .checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }

@@ -61,71 +61,112 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
     }
   }
 
+  const allowEntries = ipAllow.split(/[\s,]+/).filter(Boolean);
+
   return (
     <div>
-      <div className="field">
-        <label className="field-label" htmlFor="ps-audit">Audit log retention (days)</label>
-        <input id="ps-audit" type="number" min={0} className="input" value={audit} onChange={(e) => setAudit(e.target.value)} placeholder="Empty = default 730" />
-        <span className="hint">Older audit rows are trimmed by the retention cron, preserving the tamper-evident chain. <code>0</code> keeps nothing beyond today; empty uses the default (730).</span>
-      </div>
-      <div className="field">
-        <label className="field-label" htmlFor="ps-recret">Session recording retention (days)</label>
-        <input id="ps-recret" type="number" min={1} className="input" value={recRetention} onChange={(e) => setRecRetention(e.target.value)} placeholder="Empty = keep forever" />
-        <span className="hint">Recorded vendor sessions older than this are deleted by the recording-retention cron (the deletion is audited). Empty = kept indefinitely. Requires the <code>/api/cron/recording-retention</code> job to be scheduled.</span>
-      </div>
-      <div className="field">
-        <label className="field-label" htmlFor="ps-connlog">Default connector log level</label>
-        <select id="ps-connlog" className="select" value={connLog} onChange={(e) => setConnLog(e.target.value)}>
-          <option value="error">Error</option>
-          <option value="warn">Warn</option>
-          <option value="info">Info</option>
-          <option value="debug">Debug</option>
-        </select>
-        <span className="hint">
-          The level for connectors set to &quot;Use default&quot; on their detail page. A connector with its own explicit
-          level overrides this. Saved with the form below; use <b>Reset all</b> to switch every connector back to this
-          default at once (pushed live to online ones).
-        </span>
-        <div className="row-actions" style={{ marginTop: ".4rem" }}>
-          <button type="button" className="btn sm" disabled={busy} onClick={resetAllConnectors}>Reset all connectors to default</button>
+      <div className="settings">
+        <div className="setting">
+          <div className="setting-main">
+            <div className="setting-label">Maximum grant duration</div>
+            <div className="setting-hint">Every grant must expire and can&apos;t exceed this — time-boxed vendor access, no standing grants. Empty = no cap. Existing grants are unaffected until edited.</div>
+          </div>
+          <div className="setting-ctl">
+            <input type="number" min={1} className="input" style={{ width: "5rem" }} value={maxGrant} onChange={(e) => setMaxGrant(e.target.value)} placeholder="—" aria-label="Maximum grant duration in days" />
+            <span className="unit">days</span>
+          </div>
+        </div>
+
+        <div className="setting">
+          <div className="setting-main">
+            <div className="setting-label">Require recording consent</div>
+            <div className="setting-hint">On recorded sites, show the vendor a one-time &quot;this session is recorded&quot; acknowledgement before any app content loads. The banner and &quot;Recorded&quot; label are always shown regardless.</div>
+          </div>
+          <div className="setting-ctl">
+            <label className="switch"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span className="track" /></label>
+          </div>
+        </div>
+
+        <div className="setting">
+          <div className="setting-main">
+            <div className="setting-label">Audit log retention</div>
+            <div className="setting-hint">Older audit rows are trimmed by the retention cron, preserving the tamper-evident chain. <code>0</code> keeps nothing beyond today; empty uses the default (730).</div>
+          </div>
+          <div className="setting-ctl">
+            <input type="number" min={0} className="input" style={{ width: "5rem" }} value={audit} onChange={(e) => setAudit(e.target.value)} placeholder="730" aria-label="Audit retention days" />
+            <span className="unit">days</span>
+          </div>
+        </div>
+
+        <div className="setting">
+          <div className="setting-main">
+            <div className="setting-label">Session recording retention</div>
+            <div className="setting-hint">Recorded sessions older than this are deleted by the recording-retention cron (audited). Empty = kept indefinitely. Needs the <code>/api/cron/recording-retention</code> job scheduled.</div>
+          </div>
+          <div className="setting-ctl">
+            <input type="number" min={1} className="input" style={{ width: "5rem" }} value={recRetention} onChange={(e) => setRecRetention(e.target.value)} placeholder="—" aria-label="Recording retention days" />
+            <span className="unit">days</span>
+          </div>
+        </div>
+
+        <div className="setting">
+          <div className="setting-main">
+            <div className="setting-label">Invitation link lifetime</div>
+            <div className="setting-hint">How long a new invite link stays valid before it expires.</div>
+          </div>
+          <div className="setting-ctl">
+            <input type="number" min={1} className="input" style={{ width: "5rem" }} value={invite} onChange={(e) => setInvite(e.target.value)} placeholder="48" aria-label="Invite lifetime hours" />
+            <span className="unit">hours</span>
+          </div>
+        </div>
+
+        <div className="setting">
+          <div className="setting-main">
+            <div className="setting-label">Default connector log level</div>
+            <div className="setting-hint">For connectors set to &quot;Use default&quot; on their detail page — a connector&apos;s own level overrides it. Save first, then <b>Reset all</b> switches every connector back to this default (pushed live to online ones).</div>
+          </div>
+          <div className="setting-ctl">
+            <select className="select" value={connLog} onChange={(e) => setConnLog(e.target.value)} aria-label="Default connector log level">
+              <option value="error">Error</option>
+              <option value="warn">Warn</option>
+              <option value="info">Info</option>
+              <option value="debug">Debug</option>
+            </select>
+            <button type="button" className="btn sm ghost" disabled={busy} onClick={resetAllConnectors}>Reset all</button>
+          </div>
+        </div>
+
+        <div className="setting setting-stack">
+          <div className="setting-main">
+            <div className="setting-label">Notification webhook URL</div>
+            <div className="setting-hint">Site up/down events POST here (Slack/Teams-friendly JSON), in addition to the in-console bell. Empty = disabled.</div>
+          </div>
+          <div className="setting-ctl">
+            <input type="url" className="input" style={{ width: "100%" }} value={webhook} onChange={(e) => setWebhook(e.target.value)} placeholder="https://hooks.slack.com/…" />
+          </div>
+        </div>
+
+        <div className="setting setting-stack">
+          <div className="setting-main">
+            <div className="setting-label">Vendor source-IP allowlist</div>
+            <div className="setting-hint">
+              When set, vendors can reach published <b>sites</b> only from these networks (checked live; the console is never gated, so you can&apos;t lock yourself out). <b>Empty = no restriction.</b> <b>Include your own network.</b> The evaluated IP is the one your front proxy records — a forged <code>X-Forwarded-For</code> won&apos;t bypass it.
+            </div>
+            {allowEntries.length > 0 && (
+              <div className="chips" style={{ marginTop: ".55rem" }}>
+                {allowEntries.map((e, i) => <span key={i} className="chip">{e}</span>)}
+              </div>
+            )}
+          </div>
+          <div className="setting-ctl">
+            <textarea className="textarea" rows={2} value={ipAllow} onChange={(e) => setIpAllow(e.target.value)} placeholder="203.0.113.0/24, 198.51.100.10, 2001:db8::/32" />
+          </div>
         </div>
       </div>
-      <div className="field">
-        <label className="field-label" htmlFor="ps-maxgrant">Maximum grant duration (days)</label>
-        <input id="ps-maxgrant" type="number" min={1} className="input" value={maxGrant} onChange={(e) => setMaxGrant(e.target.value)} placeholder="Empty = no cap (permanent grants allowed)" />
-        <span className="hint">When set, no grant or access request may last longer than this, and every grant must have an end date — enforcing time-boxed vendor access. Existing grants are unaffected until edited.</span>
-      </div>
-      <div className="field">
-        <label className="field-label" htmlFor="ps-invite">Invitation link lifetime (hours)</label>
-        <input id="ps-invite" type="number" min={1} className="input" value={invite} onChange={(e) => setInvite(e.target.value)} placeholder="Empty = default 48" />
-        <span className="hint">How long a new invite link stays valid before it expires.</span>
-      </div>
-      <div className="field">
-        <label className="field-label" htmlFor="ps-webhook">Notification webhook URL</label>
-        <input id="ps-webhook" type="url" className="input" value={webhook} onChange={(e) => setWebhook(e.target.value)} placeholder="https://hooks.slack.com/… (empty = disabled)" />
-        <span className="hint">Site up/down events POST here (Slack/Teams-friendly JSON), in addition to the in-console bell. Leave empty to disable.</span>
-      </div>
-      <div className="field">
-        <label className="field-label">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />{" "}
-          Require recording consent
-        </label>
-        <span className="hint">On recorded sites, show the vendor a one-time &quot;this session is recorded&quot; acknowledgement (once per browser session) before any app content loads. Off by default — the recording banner and the &quot;Recorded&quot; label are always shown regardless.</span>
-      </div>
-      <div className="field">
-        <label className="field-label" htmlFor="ps-ipallow">Vendor source-IP allowlist</label>
-        <textarea id="ps-ipallow" className="textarea" rows={3} value={ipAllow} onChange={(e) => setIpAllow(e.target.value)} placeholder="e.g. 203.0.113.0/24, 198.51.100.10, 2001:db8::/32" />
-        <span className="hint">
-          Comma / space / newline-separated <code>CIDR</code> or IP. When set, vendors can reach published
-          <b> sites</b> only from these networks (checked live on every request; the console itself is not
-          restricted, so you can&apos;t lock yourself out of admin). <b>Empty = no restriction.</b>{" "}
-          <b>Include your own network</b> or you&apos;ll be blocked from opening sites too. The source IP is the one
-          your front proxy records — spoofing an <code>X-Forwarded-For</code> won&apos;t bypass it.
-        </span>
-      </div>
-      {notice && <p className={`notice ${notice.kind === "ok" ? "success" : "error"}`} role="alert">{notice.msg}</p>}
-      <div className="row-actions">
-        <button type="button" className="btn primary" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save"}</button>
+
+      {notice && <p className={`notice ${notice.kind === "ok" ? "success" : "error"}`} role="alert" style={{ marginTop: "1rem" }}>{notice.msg}</p>}
+      <div className="row-actions" style={{ marginTop: "1.1rem" }}>
+        <button type="button" className="btn primary" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save changes"}</button>
       </div>
     </div>
   );
