@@ -36,6 +36,21 @@ export async function POST(req: NextRequest) {
   const badCidrs = validateAllowlist(rawAllow);
   if (badCidrs.length) return NextResponse.json({ error: "invalid_cidr", invalid: badCidrs }, { status: 400 });
 
+  const anchorEnabled = body.externalAnchorEnabled === true;
+  const anchorTsaUrl = typeof body.anchorTsaUrl === "string" ? body.anchorTsaUrl.trim() : "";
+  const anchorTsaAuth = typeof body.anchorTsaAuth === "string" ? body.anchorTsaAuth.trim() : "";
+  if (anchorEnabled && anchorTsaUrl === "") {
+    return NextResponse.json({ error: "anchor_tsa_required" }, { status: 400 });
+  }
+  if (anchorTsaUrl !== "") {
+    try {
+      const u = new URL(anchorTsaUrl);
+      if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("scheme");
+    } catch {
+      return NextResponse.json({ error: "anchor_tsa_invalid" }, { status: 400 });
+    }
+  }
+
   await savePlatformSettings({
     auditRetentionDays: toIntMin(body.auditRetentionDays, 0),
     inviteTtlHours: toIntMin(body.inviteTtlHours, 1),
@@ -47,6 +62,9 @@ export async function POST(req: NextRequest) {
     defaultConnectorLogLevel: ["debug", "info", "warn", "error"].includes(body.defaultConnectorLogLevel)
       ? (body.defaultConnectorLogLevel as string)
       : "info",
+    externalAnchorEnabled: anchorEnabled,
+    anchorTsaUrl: anchorTsaUrl || null,
+    anchorTsaAuth: anchorTsaAuth || null,
   });
   return NextResponse.json({ ok: true });
 }

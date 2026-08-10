@@ -14,6 +14,9 @@ export interface PlatformSettings {
   recordingConsentRequired: boolean | null;
   recordingRetentionDays: number | null;
   defaultConnectorLogLevel: string | null;
+  externalAnchorEnabled: boolean | null;
+  anchorTsaUrl: string | null;
+  anchorTsaAuth: string | null;
 }
 
 const ID = "singleton";
@@ -26,6 +29,9 @@ const EMPTY: PlatformSettings = {
   recordingConsentRequired: null,
   recordingRetentionDays: null,
   defaultConnectorLogLevel: null,
+  externalAnchorEnabled: null,
+  anchorTsaUrl: null,
+  anchorTsaAuth: null,
 };
 
 let cache: { s: PlatformSettings; at: number } | null = null;
@@ -47,6 +53,9 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     recordingConsentRequired: c?.recordingConsentRequired ?? null,
     recordingRetentionDays: c?.recordingRetentionDays ?? null,
     defaultConnectorLogLevel: c?.defaultConnectorLogLevel ?? null,
+    externalAnchorEnabled: c?.externalAnchorEnabled ?? null,
+    anchorTsaUrl: c?.anchorTsaUrl ?? null,
+    anchorTsaAuth: c?.anchorTsaAuth ?? null,
   };
   cache = { s, at: Date.now() };
   return s;
@@ -129,4 +138,20 @@ export async function resolvedDefaultConnectorLogLevel(): Promise<string> {
 export async function resolvedConnectorLogLevel(own: string | null): Promise<string> {
   if (own && LOG_LEVELS.includes(own)) return own;
   return resolvedDefaultConnectorLogLevel();
+}
+
+// External anchor (RFC 3161). Opt-in, off by default; no env fallback, no bundled TSA.
+export async function resolvedExternalAnchorEnabled(): Promise<boolean> {
+  const s = await getPlatformSettings();
+  return s.externalAnchorEnabled === true;
+}
+
+export async function resolvedAnchorTsaUrl(): Promise<string> {
+  const s = await getPlatformSettings();
+  return (s.anchorTsaUrl ?? "").trim();
+}
+
+export async function resolvedAnchorTsaAuth(): Promise<string> {
+  const s = await getPlatformSettings();
+  return (s.anchorTsaAuth ?? "").trim();
 }

@@ -15,6 +15,9 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
   const [consent, setConsent] = useState(consentEffective);
   const [recRetention, setRecRetention] = useState(str(initial.recordingRetentionDays));
   const [connLog, setConnLog] = useState(initial.defaultConnectorLogLevel ?? "info");
+  const [anchorOn, setAnchorOn] = useState(initial.externalAnchorEnabled === true);
+  const [anchorUrl, setAnchorUrl] = useState(initial.anchorTsaUrl ?? "");
+  const [anchorAuth, setAnchorAuth] = useState(initial.anchorTsaAuth ?? "");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
@@ -46,6 +49,9 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
         recordingConsentRequired: consent,
         recordingRetentionDays: recRetention,
         defaultConnectorLogLevel: connLog,
+        externalAnchorEnabled: anchorOn,
+        anchorTsaUrl: anchorUrl,
+        anchorTsaAuth: anchorAuth,
       }),
     });
     const body = await res.json().catch(() => ({}));
@@ -56,6 +62,10 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
       setNotice({ kind: "err", msg: `Invalid IP/CIDR entries: ${(body.invalid ?? []).join(", ")}` });
     } else if (body.error === "invalid_webhook_url") {
       setNotice({ kind: "err", msg: "The webhook URL must be a valid http(s) URL." });
+    } else if (body.error === "anchor_tsa_required") {
+      setNotice({ kind: "err", msg: "Enter a TSA URL to enable external anchoring." });
+    } else if (body.error === "anchor_tsa_invalid") {
+      setNotice({ kind: "err", msg: "The TSA URL must be a valid http(s) URL." });
     } else {
       setNotice({ kind: "err", msg: "Could not save." });
     }
@@ -160,6 +170,27 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
           </div>
           <div className="setting-ctl">
             <textarea className="textarea" rows={2} value={ipAllow} onChange={(e) => setIpAllow(e.target.value)} placeholder="203.0.113.0/24, 198.51.100.10, 2001:db8::/32" />
+          </div>
+        </div>
+
+        <div className="setting">
+          <div className="setting-main">
+            <div className="setting-label">External anchor (RFC 3161)</div>
+            <div className="setting-hint">Daily, timestamp the audit-log chain head with a Time-Stamp Authority so history can&apos;t be back-dated even by someone with full database access. Needs the <code>/api/cron/audit-anchor</code> job scheduled. Off by default.</div>
+          </div>
+          <div className="setting-ctl">
+            <label className="switch"><input type="checkbox" checked={anchorOn} onChange={(e) => setAnchorOn(e.target.checked)} /><span className="track" /></label>
+          </div>
+        </div>
+
+        <div className="setting setting-stack">
+          <div className="setting-main">
+            <div className="setting-label">Time-Stamp Authority URL</div>
+            <div className="setting-hint">Any RFC 3161 TSA — a public one (e.g. <code>https://freetsa.org/tsr</code>), a commercial one, or your own. Optional <code>user:pass</code> if it needs HTTP Basic auth.</div>
+          </div>
+          <div className="setting-ctl">
+            <input type="url" className="input" style={{ width: "100%" }} value={anchorUrl} onChange={(e) => setAnchorUrl(e.target.value)} placeholder="https://freetsa.org/tsr" />
+            <input type="text" className="input" style={{ width: "100%", marginTop: ".4rem" }} value={anchorAuth} onChange={(e) => setAnchorAuth(e.target.value)} placeholder="user:pass (optional)" aria-label="TSA basic auth" />
           </div>
         </div>
       </div>
