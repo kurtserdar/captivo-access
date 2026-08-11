@@ -52,6 +52,17 @@
 
 - [ ] **Step 5: Tear down** `docker rm -f spike-guacd` and any target container. No commit.
 
+**SPIKE RESULT (run 2026-08-11, headless, guacd 1.5.5 + linuxserver/openssh-server):** the
+handshake works end to end. `select ssh` → guacd returned **39 args**, first
+`VERSION_1_5_0` (must be **echoed** back in `connect`), then `hostname, host-key,
+port, username, password, …, recording-*, disable-copy, disable-paste, …`. Sending
+`size/audio/video/image` then `connect` with creds filled by arg name → guacd replied
+**`ready` `$<id>`**, i.e. it authenticated to the real SSH target with the injected
+credential. This confirms Task 3's `buildConnect` (fill-by-name + echo VERSION) and
+the whole server-side injection model. Still to confirm at Gate A: the **browser
+render** (guacamole-common-js) and the per-protocol arg sets for **rdp**/**vnc** (same
+mechanism, different arg names — read them the same way from guacd's `args`).
+
 ---
 
 ### Task 2: Tunnel frame + connector guacd relay
@@ -197,8 +208,8 @@ func TestBuildConnectFillsCreds(t *testing.T) {
 	names := []string{"VERSION_1_5_0", "hostname", "port", "username", "password"}
 	c := GuacConn{Hostname: "10.0.0.5", Port: "3389", Username: "adm", Secret: "pw", SecretKind: "PASSWORD"}
 	out := string(buildConnect(names, c))
-	// connect echoes a value per name in order; VERSION is blank, creds filled.
-	if want := "7.connect,0.,8.10.0.0.5,4.3389,3.adm,2.pw;"; out != want {
+	// connect echoes a value per name in order; VERSION is echoed back, creds filled.
+	if want := "7.connect,13.VERSION_1_5_0,8.10.0.0.5,4.3389,3.adm,2.pw;"; out != want {
 		t.Fatalf("got %q want %q", out, want)
 	}
 }
@@ -260,13 +271,15 @@ type GuacConn struct {
 func buildConnect(argNames []string, c GuacConn) []byte {
 	elems := []string{"connect"}
 	for _, name := range argNames {
-		switch name {
-		case "hostname": elems = append(elems, c.Hostname)
-		case "port": elems = append(elems, c.Port)
-		case "username": elems = append(elems, c.Username)
-		case "password":
+		switch {
+		case strings.HasPrefix(name, "VERSION"):
+			elems = append(elems, name) // SPIKE-CONFIRMED: echo guacd's version back
+		case name == "hostname": elems = append(elems, c.Hostname)
+		case name == "port": elems = append(elems, c.Port)
+		case name == "username": elems = append(elems, c.Username)
+		case name == "password":
 			if c.SecretKind == "PASSWORD" { elems = append(elems, c.Secret) } else { elems = append(elems, "") }
-		case "private-key":
+		case name == "private-key":
 			if c.SecretKind == "KEY" { elems = append(elems, c.Secret) } else { elems = append(elems, "") }
 		default: elems = append(elems, "")
 		}
