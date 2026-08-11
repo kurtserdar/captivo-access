@@ -7,12 +7,16 @@ import (
 
 func TestHubRegisterListRemove(t *testing.T) {
 	h := NewSessionHub()
-	ls := h.Register("s1", "site1", "vendor1", "rdp", "10.0.0.5", time.Unix(0, 0), nil)
+	ls := h.Register("s1", "site1", "vendor1", "rdp", "10.0.0.5", time.Unix(0, 0), "$conn1", "connA", "cap-guacd:4822")
 	if ls == nil || h.Get("s1") == nil {
 		t.Fatal("expected session registered")
 	}
+	cid, connector, addr := ls.shareInfo()
+	if cid != "$conn1" || connector != "connA" || addr != "cap-guacd:4822" {
+		t.Fatalf("shareInfo = %q %q %q", cid, connector, addr)
+	}
 	list := h.List()
-	if len(list) != 1 || list[0].SessionID != "s1" || list[0].Protocol != "rdp" {
+	if len(list) != 1 || list[0].SessionID != "s1" || list[0].ViewerCount != 0 {
 		t.Fatalf("unexpected list: %+v", list)
 	}
 	h.Remove("s1")
@@ -21,47 +25,23 @@ func TestHubRegisterListRemove(t *testing.T) {
 	}
 }
 
-func TestHubBroadcastToViewers(t *testing.T) {
+func TestHubViewerCount(t *testing.T) {
 	h := NewSessionHub()
-	ls := h.Register("s1", "site1", "v1", "rdp", "h", time.Unix(0, 0), nil)
-	_, chA := ls.addViewer()
-	_, chB := ls.addViewer()
-	ls.broadcast([]byte("4.sync,1.0;"))
-	for _, ch := range []chan []byte{chA, chB} {
-		select {
-		case got := <-ch:
-			if string(got) != "4.sync,1.0;" {
-				t.Fatalf("bad frame: %q", got)
-			}
-		case <-time.After(time.Second):
-			t.Fatal("viewer did not receive broadcast")
-		}
+	ls := h.Register("s1", "site1", "v1", "rdp", "h", time.Unix(0, 0), "$c", "conn", "g:4822")
+	ls.addViewer()
+	ls.addViewer()
+	if h.List()[0].ViewerCount != 2 {
+		t.Fatalf("viewer count = %d", h.List()[0].ViewerCount)
 	}
-}
-
-func TestHubBroadcastNonBlocking(t *testing.T) {
-	h := NewSessionHub()
-	ls := h.Register("s1", "site1", "v1", "rdp", "h", time.Unix(0, 0), nil)
-	id, _ := ls.addViewer() // never drained
-	// Flood well past the channel buffer; broadcast must not block.
-	done := make(chan struct{})
-	go func() {
-		for i := 0; i < 100000; i++ {
-			ls.broadcast([]byte("1.x;"))
-		}
-		close(done)
-	}()
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("broadcast blocked on a full viewer channel")
+	ls.removeViewer()
+	if h.List()[0].ViewerCount != 1 {
+		t.Fatalf("viewer count after remove = %d", h.List()[0].ViewerCount)
 	}
-	ls.removeViewer(id)
 }
 
 func TestHubControlGating(t *testing.T) {
 	h := NewSessionHub()
-	ls := h.Register("s1", "site1", "v1", "rdp", "h", time.Unix(0, 0), nil)
+	ls := h.Register("s1", "site1", "v1", "rdp", "h", time.Unix(0, 0), "$c", "conn", "g:4822")
 	if !ls.vendorInputAllowed() {
 		t.Fatal("vendor input should be allowed with no controller")
 	}
@@ -85,14 +65,14 @@ func TestHubControlGating(t *testing.T) {
 
 func TestHubWatchStatus(t *testing.T) {
 	h := NewSessionHub()
-	ls := h.Register("s1", "site1", "vendor1", "rdp", "h", time.Unix(0, 0), nil)
+	ls := h.Register("s1", "site1", "vendor1", "rdp", "h", time.Unix(0, 0), "$c", "conn", "g:4822")
 	if w, c := h.WatchStatus("vendor1", "site1"); w || c {
-		t.Fatal("no viewers, no control → false/false")
+		t.Fatal("no viewers, no control -> false/false")
 	}
 	ls.addViewer()
 	_ = h.SetControl("s1", "adminA")
 	if w, c := h.WatchStatus("vendor1", "site1"); !w || !c {
-		t.Fatal("viewer + control → true/true")
+		t.Fatal("viewer + control -> true/true")
 	}
 	if w, _ := h.WatchStatus("other", "site1"); w {
 		t.Fatal("watch-status must match the vendor's own session")

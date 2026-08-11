@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"log"
 	"net/http"
@@ -8,11 +9,12 @@ import (
 	"github.com/coder/websocket"
 )
 
-// serveGuacView attaches a read-only viewer to an active gateway session. The
-// viewer receives the live guac stream from attach time (no history). A viewer
-// that holds control (set via the manager control endpoint) has its input
-// injected into the session's guacd conn; otherwise its input is dropped.
-func serveGuacView(hub *SessionHub, ctrl *ControlClient, w http.ResponseWriter, r *http.Request) {
+// serveGuacView attaches a viewer to an active gateway session by JOINING guacd's
+// shared connection (select <connID>). guacd sends the joining user the current
+// display keyframe, then live updates — so an idle screen is shown immediately.
+// The viewer is read-only unless it holds control, in which case its input is
+// forwarded to guacd (which routes it to the target, shared with the vendor).
+func serveGuacView(hub *SessionHub, ctrl *ControlClient, reg *Registry, w http.ResponseWriter, r *http.Request) {
 	sessionID := r.URL.Query().Get("session")
 	if sessionID == "" {
 		http.Error(w, "missing session", http.StatusBadRequest)
@@ -38,8 +40,55 @@ func serveGuacView(hub *SessionHub, ctrl *ControlClient, w http.ResponseWriter, 
 		http.Error(w, "session not found", http.StatusNotFound)
 		return
 	}
-	viewerID, ch := ls.addViewer()
-	defer ls.removeViewer(viewerID)
+	connID, connectorID, guacdAddr := ls.shareInfo()
+	if connID == "" {
+		http.Error(w, "session not ready", http.StatusConflict)
+		return
+	}
+	sess := reg.Get(connectorID)
+	if sess == nil {
+		http.Error(w, "connector offline", http.StatusBadGateway)
+		return
+	}
+	guac, err := dialGuacd(sess, guacdAddr)
+	if err != nil {
+		log.Printf("guac-view session=%s: dialGuacd(%s) failed err=%v", sessionID, guacdAddr, err)
+		http.Error(w, "guacd unreachable", http.StatusBadGateway)
+		return
+	}
+	defer guac.Close()
+
+	// Join the existing connection by its ID. guacd replies with args, we echo the
+	// handshake, and on `ready` guacd streams the current keyframe + live updates.
+	br := bufio.NewReader(guac)
+	if _, err := guac.Write(encodeInstruction("select", connID)); err != nil {
+		http.Error(w, "handshake", http.StatusBadGateway)
+		return
+	}
+	op, argNames, err := parseInstruction(br)
+	if err != nil || op != "args" {
+		log.Printf("guac-view session=%s: expected args got op=%q err=%v", sessionID, op, err)
+		http.Error(w, "handshake args", http.StatusBadGateway)
+		return
+	}
+	_, _ = guac.Write(encodeInstruction("size", qInt(r, "w", 1280, 640, 5120), qInt(r, "h", 800, 480, 2880), qInt(r, "dpi", 96, 72, 240)))
+	_, _ = guac.Write(encodeInstruction("audio"))
+	_, _ = guac.Write(encodeInstruction("video"))
+	_, _ = guac.Write(encodeInstruction("image"))
+	if _, err := guac.Write(buildConnect(argNames, GuacConn{})); err != nil {
+		http.Error(w, "connect", http.StatusBadGateway)
+		return
+	}
+	op, readyArgs, err := parseInstruction(br)
+	if err != nil || op != "ready" {
+		log.Printf("guac-view session=%s: expected ready got op=%q err=%v", sessionID, op, err)
+		http.Error(w, "not ready", http.StatusBadGateway)
+		return
+	}
+	log.Printf("guac-view session=%s viewer=%s: joined connID=%s", sessionID, viewerUserID, connID)
+
+	ls.addViewer()
+	defer ls.removeViewer()
 
 	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: true,
@@ -52,32 +101,27 @@ func serveGuacView(hub *SessionHub, ctrl *ControlClient, w http.ResponseWriter, 
 	c.SetReadLimit(-1)
 	defer c.CloseNow()
 	ctx := context.Background()
-	log.Printf("guac-view session=%s viewer=%s: attached", sessionID, viewerUserID)
 
-	// Bootstrap the viewer's guac client: it joined mid-stream, so send `ready`
-	// (so the client starts) and the screen size (so its display is sized).
-	// Without these the client renders nothing — a black screen.
-	if err := c.Write(ctx, websocket.MessageText, encodeInstruction("ready", sessionID)); err != nil {
+	if err := c.Write(ctx, websocket.MessageText, encodeInstruction(append([]string{"ready"}, readyArgs...)...)); err != nil {
 		return
-	}
-	if sz := ls.bootstrap(); sz != nil {
-		if err := c.Write(ctx, websocket.MessageText, sz); err != nil {
-			return
-		}
 	}
 
 	errc := make(chan error, 2)
-	// hub -> viewer browser
+	// guacd -> viewer browser (keyframe first, then live).
 	go func() {
-		for inst := range ch {
+		for {
+			inst, rerr := readRawInstruction(br)
+			if rerr != nil {
+				errc <- rerr
+				return
+			}
 			if werr := c.Write(ctx, websocket.MessageText, inst); werr != nil {
 				errc <- werr
 				return
 			}
 		}
-		errc <- nil // channel closed: session ended or viewer detached
 	}()
-	// viewer browser -> guacd (only while this viewer holds control)
+	// viewer browser -> guacd (only while this viewer holds control).
 	go func() {
 		for {
 			_, data, rerr := c.Read(ctx)
@@ -88,7 +132,7 @@ func serveGuacView(hub *SessionHub, ctrl *ControlClient, w http.ResponseWriter, 
 			if !ls.viewerInputAllowed(viewerUserID) {
 				continue
 			}
-			if werr := ls.writeToGuac(data); werr != nil {
+			if _, werr := guac.Write(data); werr != nil {
 				errc <- werr
 				return
 			}
