@@ -527,3 +527,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 @media (max-width: 700px) { .att { grid-template-columns: 1fr; } }
 .att .ak { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
 .att-row { font-size: .78rem; margin: 4px 0; display: flex; align-items: center; gap: 6px; }
+
+/* KPI sparkline hover */
+.spark-wrap { position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; }
+.spark-wrap .kpi-spark { position: static; }
+.spark-tip { font-size: .62rem; font-variant-numeric: tabular-nums; color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; line-height: 1.3; }

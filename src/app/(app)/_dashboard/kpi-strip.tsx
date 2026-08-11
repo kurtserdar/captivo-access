@@ -1,19 +1,12 @@
 import type { DashboardStats } from "@/lib/dashboard/stats";
 import type { Insights } from "@/lib/dashboard/insights";
+import { Sparkline } from "./charts/sparkline";
 
 function sinceLabel(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
   const m = Math.max(0, Math.floor(ms / 60000));
   if (m < 60) return `${m}m`;
   return `${Math.floor(m / 60)}h ${m % 60}m`;
-}
-
-function Sparkline({ points, color }: { points: number[]; color: string }) {
-  const max = Math.max(1, ...points);
-  const w = 60, h = 18;
-  const step = points.length > 1 ? w / (points.length - 1) : w;
-  const pts = points.map((p, i) => `${(i * step).toFixed(1)},${(h - (p / max) * h).toFixed(1)}`).join(" ");
-  return <svg className="kpi-spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none"><polyline points={pts} fill="none" stroke={color} strokeWidth={1.5} /></svg>;
 }
 
 export function KpiStrip({ stats, insights }: { stats: DashboardStats; insights: Insights }) {
