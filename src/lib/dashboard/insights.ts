@@ -1,0 +1,100 @@
+export interface TrendDay { date: string; allow: number; deny: number }
+export interface Labeled { label: string; count: number }
+export interface IpFlag { userEmail: string; ipCount: number }
+
+export interface AuditRow {
+  timestamp: Date;
+  decision: "ALLOW" | "DENY";
+  siteName: string | null;
+  userEmail: string | null;
+  clientIp: string | null;
+  reason: string | null;
+}
+
+export const IP_FLAG_THRESHOLD = 3;
+
+function dayKey(d: Date): string {
+  return d.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+}
+
+// 30 zero-filled UTC days, oldest→newest, allow/deny counted per day.
+export function buildTrend(rows: AuditRow[], now: Date, days = 30): TrendDay[] {
+  const keys: string[] = [];
+  const counts = new Map<string, { allow: number; deny: number }>();
+  const base = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(base);
+    d.setUTCDate(base.getUTCDate() - i);
+    const k = dayKey(d);
+    keys.push(k);
+    counts.set(k, { allow: 0, deny: 0 });
+  }
+  for (const r of rows) {
+    const c = counts.get(dayKey(r.timestamp));
+    if (!c) continue;
+    if (r.decision === "ALLOW") c.allow++;
+    else c.deny++;
+  }
+  return keys.map((k) => ({ date: k, allow: counts.get(k)!.allow, deny: counts.get(k)!.deny }));
+}
+
+// 7×24 counts by UTC weekday (0=Sun) × hour, plus the busiest cell.
+export function buildHeatmap(rows: AuditRow[]): { grid: number[][]; max: number } {
+  const grid: number[][] = Array.from({ length: 7 }, () => new Array<number>(24).fill(0));
+  let max = 0;
+  for (const r of rows) {
+    const v = ++grid[r.timestamp.getUTCDay()][r.timestamp.getUTCHours()];
+    if (v > max) max = v;
+  }
+  return { grid, max };
+}
+
+// ALLOW-only counts by a label field, nulls skipped, desc, top `limit`.
+export function topBy(rows: AuditRow[], field: "siteName" | "userEmail", limit: number): Labeled[] {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    if (r.decision !== "ALLOW") continue;
+    const label = r[field];
+    if (!label) continue;
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
+// DENY-only reason breakdown (null → "unspecified"), total + top `limit`.
+export function denyReasons(rows: AuditRow[], limit: number): { total: number; reasons: Labeled[] } {
+  const counts = new Map<string, number>();
+  let total = 0;
+  for (const r of rows) {
+    if (r.decision !== "DENY") continue;
+    total++;
+    const reason = r.reason ?? "unspecified";
+    counts.set(reason, (counts.get(reason) ?? 0) + 1);
+  }
+  const reasons = [...counts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+  return { total, reasons };
+}
+
+// Vendors seen from >= `threshold` distinct client IPs, desc by IP count.
+export function ipFlags(rows: AuditRow[], threshold: number): IpFlag[] {
+  const byUser = new Map<string, Set<string>>();
+  for (const r of rows) {
+    if (!r.userEmail || !r.clientIp) continue;
+    let set = byUser.get(r.userEmail);
+    if (!set) {
+      set = new Set();
+      byUser.set(r.userEmail, set);
+    }
+    set.add(r.clientIp);
+  }
+  return [...byUser.entries()]
+    .map(([userEmail, ips]) => ({ userEmail, ipCount: ips.size }))
+    .filter((f) => f.ipCount >= threshold)
+    .sort((a, b) => b.ipCount - a.ipCount);
+}
