@@ -25,6 +25,7 @@ export type SiteValidation =
       targetPort: number;
       username: string;
       secret: string | null;
+      recordSessions: boolean;
     }
   | { ok: false; error: string };
 
@@ -66,6 +67,7 @@ export function validateSiteInput(
       targetPort,
       username,
       secret: secret || null,
+      recordSessions: opts.recordingEnabled && body.recordSessions === true,
     };
   }
 

@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   const encSecret = encrypt(v.secret as string);
   const id = await db.$transaction(async (tx) => {
     const site = await tx.site.create({
-      data: { connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: null, description: v.description, accessMode: "GATEWAY", ...logoData },
+      data: { connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: null, description: v.description, recordSessions: v.recordSessions, accessMode: "GATEWAY", ...logoData },
       select: { id: true },
     });
     await tx.vaultCredential.create({

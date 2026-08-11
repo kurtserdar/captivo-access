@@ -142,7 +142,7 @@ export function SiteForm({
           upstreamUrl,
           description: description.trim() || undefined,
           insecureSkipVerify,
-          recordSessions: accessMode === "GATEWAY" ? false : recordSessions,
+          recordSessions,
           clipboardMode: accessMode === "GATEWAY" ? "allow" : clipboardMode,
           ...(accessMode === "GATEWAY"
             ? { protocol, targetHost, targetPort: Number(targetPort), username, secret }
@@ -310,7 +310,7 @@ export function SiteForm({
           </span>
         </div>
       )}
-      {recordingEnabled && accessMode !== "GATEWAY" && (
+      {recordingEnabled && (
         <div className="field">
           <label className="field-label">
             <input
@@ -318,10 +318,13 @@ export function SiteForm({
               checked={recordSessions}
               onChange={(e) => setRecordSessions(e.target.checked)}
             />{" "}
-            Record sessions (rrweb)
+            Record sessions
           </label>
           <span className="hint">
             Captures a replayable recording of vendor sessions on this site for audit purposes.
+            {accessMode === "GATEWAY"
+              ? " The remote-desktop screen is recorded and replayed in the console."
+              : " Web sessions are captured with an in-page recorder."}
           </span>
         </div>
       )}

@@ -24,6 +24,12 @@ describe("validateSiteInput", () => {
     const r = validateSiteInput({ accessMode: "GATEWAY", connectorId: "c", name: "n", protocol: "rdp", targetHost: "10.0.0.5", targetPort: 3389, username: "adm", secret: "pw" }, base);
     expect(r).toMatchObject({ ok: true, mode: "GATEWAY", protocol: "RDP", targetHost: "10.0.0.5", targetPort: 3389, username: "adm", secret: "pw" });
   });
+  it("remote desktop carries recordSessions (native gateway recording)", () => {
+    const on = validateSiteInput({ accessMode: "GATEWAY", connectorId: "c", name: "n", protocol: "RDP", targetHost: "h", targetPort: 3389, username: "u", secret: "s", recordSessions: true }, base);
+    expect(on).toMatchObject({ ok: true, mode: "GATEWAY", recordSessions: true });
+    const off = validateSiteInput({ accessMode: "GATEWAY", connectorId: "c", name: "n", protocol: "RDP", targetHost: "h", targetPort: 3389, username: "u", secret: "s", recordSessions: true }, { ...base, recordingEnabled: false });
+    expect(off).toMatchObject({ ok: true, mode: "GATEWAY", recordSessions: false });
+  });
   it("remote desktop rejected when native gateway is off", () => {
     const r = validateSiteInput({ accessMode: "GATEWAY", connectorId: "c", name: "n", protocol: "RDP", targetHost: "h", targetPort: 3389, username: "u", secret: "s" }, { ...base, nativeGateway: false });
     expect(r).toMatchObject({ ok: false, error: "native_gateway_disabled" });
