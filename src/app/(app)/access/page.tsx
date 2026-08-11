@@ -2,7 +2,6 @@ import { requireUser } from "@/lib/current-user";
 import { listUserGrants } from "@/lib/access/grants";
 import { classifyGrant } from "@/lib/access/evaluate";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { nativeGatewayEnabled } from "@/lib/gateway/native";
 import { RequestAccessButton } from "./request-access-button";
 import { AccessView, type AccessRow } from "./access-view";
 
@@ -54,7 +53,7 @@ export default async function AccessPage() {
       {rows.length === 0 ? (
         <div className="empty">You don&apos;t have any access right now.</div>
       ) : (
-        <AccessView rows={rows} nativeGateway={nativeGatewayEnabled()} />
+        <AccessView rows={rows} />
       )}
     </main>
   );

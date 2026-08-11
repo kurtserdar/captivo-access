@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     username: cred.username,
     secret: cred.secret,
     secretKind: cred.secretKind,
-    guacdAddress: (process.env.GUACD_ADDR ?? "guacd:4822").trim(),
+    guacdAddress: (process.env.GUACD_ADDR ?? "captivo-guacd:4822").trim(),
     connectorId: site.connectorId,
   });
 }

@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
@@ -13,8 +13,10 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
   await requireUser();
   const { siteId } = await params;
   const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true } });
+  // Native is the only gateway now — a non-native / disabled / non-gateway site
+  // has no session here.
   if (!nativeGatewayEnabled() || !site || site.accessMode !== "GATEWAY") {
-    redirect(`/api/access/gateway/${siteId}/launch`);
+    notFound();
   }
   return <GatewaySession siteId={siteId} />;
 }
