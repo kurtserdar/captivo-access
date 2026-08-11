@@ -2,10 +2,22 @@ package main
 
 import (
 	"bufio"
+	"context"
+	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/coder/websocket"
 )
+
+// qInt reads an integer query param, clamped to [lo,hi], defaulting to def.
+func qInt(r *http.Request, key string, def, lo, hi int) string {
+	n, err := strconv.Atoi(r.URL.Query().Get(key))
+	if err != nil || n < lo || n > hi {
+		n = def
+	}
+	return strconv.Itoa(n)
+}
 
 // serveGuacTunnel bridges a browser WebSocket (guacamole-common-js) to guacd
 // through the connector. It authenticates the Captivo session, resolves the
@@ -22,27 +34,33 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 	}
 	ck, err := r.Cookie("ca_session")
 	if err != nil || ck.Value == "" {
+		log.Printf("guac-tunnel site=%s: no session cookie", siteID)
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 	userID, _, err := ctrl.ResolveSession(ck.Value)
 	if err != nil || userID == "" {
+		log.Printf("guac-tunnel site=%s: session resolve failed err=%v", siteID, err)
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	conn, guacdAddr, connectorID, err := ctrl.GatewayDescriptor(userID, siteID)
 	if err != nil {
+		log.Printf("guac-tunnel site=%s user=%s: descriptor failed err=%v", siteID, userID, err)
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
+	log.Printf("guac-tunnel site=%s user=%s: descriptor ok protocol=%s target=%s:%s guacd=%s connector=%s", siteID, userID, conn.Protocol, conn.Hostname, conn.Port, guacdAddr, connectorID)
 	sess := reg.Get(connectorID)
 	if sess == nil {
+		log.Printf("guac-tunnel site=%s: connector %s offline", siteID, connectorID)
 		http.Error(w, "connector offline", http.StatusBadGateway)
 		return
 	}
 	guac, err := dialGuacd(sess, guacdAddr)
 	if err != nil {
+		log.Printf("guac-tunnel site=%s: dialGuacd(%s) failed err=%v", siteID, guacdAddr, err)
 		http.Error(w, "guacd unreachable", http.StatusBadGateway)
 		return
 	}
@@ -51,37 +69,50 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 	// Server-side handshake (spike-proven sequence).
 	br := bufio.NewReader(guac)
 	if _, err := guac.Write(encodeInstruction("select", conn.Protocol)); err != nil {
+		log.Printf("guac-tunnel site=%s: write select failed err=%v", siteID, err)
 		http.Error(w, "handshake", http.StatusBadGateway)
 		return
 	}
 	op, argNames, err := parseInstruction(br)
 	if err != nil || op != "args" {
+		log.Printf("guac-tunnel site=%s: expected args got op=%q err=%v", siteID, op, err)
 		http.Error(w, "handshake args", http.StatusBadGateway)
 		return
 	}
-	_, _ = guac.Write(encodeInstruction("size", "1024", "768", "96"))
+	_, _ = guac.Write(encodeInstruction("size", qInt(r, "w", 1280, 640, 5120), qInt(r, "h", 800, 480, 2880), qInt(r, "dpi", 96, 72, 240)))
 	_, _ = guac.Write(encodeInstruction("audio"))
 	_, _ = guac.Write(encodeInstruction("video"))
 	_, _ = guac.Write(encodeInstruction("image"))
 	if _, err := guac.Write(buildConnect(argNames, conn)); err != nil {
+		log.Printf("guac-tunnel site=%s: write connect failed err=%v", siteID, err)
 		http.Error(w, "connect", http.StatusBadGateway)
 		return
 	}
 	op, readyArgs, err := parseInstruction(br)
 	if err != nil || op != "ready" {
+		log.Printf("guac-tunnel site=%s: expected ready got op=%q args=%v err=%v", siteID, op, readyArgs, err)
 		http.Error(w, "not ready", http.StatusBadGateway)
 		return
 	}
+	log.Printf("guac-tunnel site=%s: READY, bridging", siteID)
 
 	// Upgrade the browser WebSocket and bridge. The browser is same-origin behind
 	// the front nginx; skip strict origin checks (the session cookie already
 	// authenticated the request).
-	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{InsecureSkipVerify: true})
+	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+		InsecureSkipVerify: true,
+		Subprotocols:       []string{"guacamole"}, // guacamole-common-js requires this
+	})
 	if err != nil {
+		log.Printf("guac-tunnel site=%s: ws accept failed err=%v", siteID, err)
 		return
 	}
+	c.SetReadLimit(-1) // guac instructions can be large (image blobs)
+	log.Printf("guac-tunnel site=%s: ws accepted subproto=%q", siteID, c.Subprotocol())
 	defer c.CloseNow()
-	ctx := r.Context()
+	// A background context (not the request's) keeps the long-lived session alive
+	// regardless of the HTTP request lifecycle.
+	ctx := context.Background()
 
 	// Send `ready` to the browser so guacamole-common-js starts the session.
 	if err := c.Write(ctx, websocket.MessageText, encodeInstruction(append([]string{"ready"}, readyArgs...)...)); err != nil {
@@ -89,19 +120,17 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 	}
 
 	errc := make(chan error, 2)
-	// guacd -> browser (starting with anything already buffered after `ready`)
+	// guacd -> browser: one WHOLE guac instruction per WS message (never split a
+	// large instruction across frames, or the client can't reassemble it).
 	go func() {
-		buf := make([]byte, 16384)
 		for {
-			n, rerr := br.Read(buf)
-			if n > 0 {
-				if werr := c.Write(ctx, websocket.MessageText, buf[:n]); werr != nil {
-					errc <- werr
-					return
-				}
-			}
+			inst, rerr := readRawInstruction(br)
 			if rerr != nil {
 				errc <- rerr
+				return
+			}
+			if werr := c.Write(ctx, websocket.MessageText, inst); werr != nil {
+				errc <- werr
 				return
 			}
 		}

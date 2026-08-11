@@ -7,12 +7,12 @@ import { GatewaySession } from "./session-client";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Session" };
 
+// Top-level route (outside the (app) shell) so the session is the ONLY thing on
+// screen — no header, no sidebar, full viewport.
 export default async function GatewaySessionPage({ params }: { params: Promise<{ siteId: string }> }) {
   await requireUser();
   const { siteId } = await params;
   const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true } });
-  // When native gateway is off or the site isn't a gateway, fall back to the
-  // json-auth launch (the previous behaviour) — never a dead page.
   if (!nativeGatewayEnabled() || !site || site.accessMode !== "GATEWAY") {
     redirect(`/api/access/gateway/${siteId}/launch`);
   }

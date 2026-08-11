@@ -89,7 +89,7 @@ function RowAction({ r, nativeGateway }: { r: AccessRow; nativeGateway: boolean 
     const href =
       r.accessMode === "GATEWAY"
         ? nativeGateway
-          ? `/access/gateway/${r.siteId}/session`
+          ? `/gateway/${r.siteId}/session`
           : `/api/access/gateway/${r.siteId}/launch`
         : `https://${r.hostname}`;
     return (
