@@ -169,6 +169,23 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
         )}
       </div>
 
+      {connector.gatewayHost && (
+        <div className="card">
+          <div className="card-head"><div className="ch-title"><h2>Gateway logs</h2><span className="sub">Last lines from guacd (remote-desktop engine)</span></div></div>
+          {t && t.guacdLogs && t.guacdLogs.length > 0 ? (
+            <div className="term">
+              <div className="term-body" style={{ maxHeight: "18rem" }}>
+                {t.guacdLogs.map((line, i) => (
+                  <div key={i} className={`term-line ${logLineClass(line)}`}>{line}</div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="cell-sub">No guacd logs yet — the connector is offline, or hasn&apos;t been updated to report gateway logs (re-run its command).</p>
+          )}
+        </div>
+      )}
+
       <div className="card">
         <div className="card-head"><div className="ch-title"><h2>Recent activity</h2><span className="sub">Latest access decisions on its sites</span></div></div>
         {activity.length === 0 ? (
