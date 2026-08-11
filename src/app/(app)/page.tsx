@@ -6,8 +6,7 @@ import { isConnectorOutdated } from "@/lib/updates/semver";
 import { getSetupStatus, getDashboardStats, getSiteHealth, getRecentActivity } from "@/lib/dashboard/stats";
 import { isConsoleUser, ROLE_LABELS } from "@/lib/auth/roles";
 import { getInsights } from "@/lib/dashboard/insights";
-import { StatCards } from "./_dashboard/stat-cards";
-import { InsightsPanel } from "./_dashboard/insights-panel";
+import { DashboardInsights } from "./_dashboard/dashboard-insights";
 import { SiteHealthPanel } from "./_dashboard/site-health-panel";
 import { RecentActivityPanel } from "./_dashboard/recent-activity-panel";
 
@@ -98,8 +97,7 @@ export default async function DashboardPage() {
           <Link href="/admin/connectors">Review →</Link>
         </div>
       )}
-      <StatCards s={stats} />
-      <InsightsPanel data={insights} />
+      <DashboardInsights stats={stats} insights={insights} />
       <div className="dash-cols">
         <SiteHealthPanel sites={siteHealth} />
         <RecentActivityPanel events={activity} />
