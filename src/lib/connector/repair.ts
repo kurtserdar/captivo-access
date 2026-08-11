@@ -18,7 +18,7 @@ export const GATEWAY_NETWORK = "captivo-gateway";
 function runCommand(managerUrl: string, tunnelUrl: string, code?: string, gatewayHost = false, pull = true): string {
   const guacd = gatewayHost
     ? `docker network inspect ${GATEWAY_NETWORK} >/dev/null 2>&1 || docker network create ${GATEWAY_NETWORK} && ` +
-      `docker run --rm -v captivo_guacd_recordings:/rec busybox chown -R 1000:1000 /rec && ` +
+      `docker run --rm -v captivo_guacd_recordings:/rec -v captivo_guacd_logs:/log busybox chown -R 1000:1000 /rec /log && ` +
       `docker rm -f captivo-guacd >/dev/null 2>&1; ` +
       `docker run -d --name captivo-guacd --restart unless-stopped --network ${GATEWAY_NETWORK} ` +
       `-v captivo_guacd_recordings:/recordings -v captivo_guacd_logs:/guaclog ` +

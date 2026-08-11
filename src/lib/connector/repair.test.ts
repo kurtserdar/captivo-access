@@ -120,6 +120,8 @@ describe("gateway-host bundles guacd", () => {
     expect(cmd).toContain("-v captivo_guacd_logs:/guaclog ");
     expect(cmd).toContain("tee /guaclog/guacd.log");
     expect(cmd).toContain("-v captivo_guacd_logs:/guaclog:ro");
+    // guacd runs as uid 1000; the fresh log volume must be chowned or tee gets EACCES.
+    expect(cmd).toContain("-v captivo_guacd_logs:/log busybox chown -R 1000:1000 /rec /log");
   });
   it("non-gateway install has no guacd log volume", () => {
     const cmd = buildInstallCommand("CODE123", m, t, false);
