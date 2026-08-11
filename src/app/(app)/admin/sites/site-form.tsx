@@ -206,6 +206,25 @@ export function SiteForm({
           placeholder="e.g. Internal wiki"
         />
       </div>
+      <div className="field">
+        <label className="field-label" htmlFor="site-access-mode">
+          Type
+        </label>
+        <select
+          id="site-access-mode"
+          className="select"
+          value={accessMode}
+          onChange={(e) => setAccessMode(e.target.value === "GATEWAY" ? "GATEWAY" : "TRANSPARENT")}
+        >
+          <option value="TRANSPARENT">Web app</option>
+          {nativeGateway && <option value="GATEWAY">Remote desktop (RDP / SSH / VNC)</option>}
+        </select>
+        <p className="hint">
+          {accessMode === "GATEWAY"
+            ? "A native RDP/SSH/VNC session, rendered inside Captivo. The vendor never sees the target password."
+            : "Proxy an internal web app; the vendor opens it in their browser."}
+        </p>
+      </div>
       {accessMode === "TRANSPARENT" && (
       <>
       <div className="field">
@@ -246,25 +265,6 @@ export function SiteForm({
       </div>
       </>
       )}
-      <div className="field">
-        <label className="field-label" htmlFor="site-access-mode">
-          Type
-        </label>
-        <select
-          id="site-access-mode"
-          className="select"
-          value={accessMode}
-          onChange={(e) => setAccessMode(e.target.value === "GATEWAY" ? "GATEWAY" : "TRANSPARENT")}
-        >
-          <option value="TRANSPARENT">Web app</option>
-          {nativeGateway && <option value="GATEWAY">Remote desktop (RDP / SSH / VNC)</option>}
-        </select>
-        <p className="hint">
-          {accessMode === "GATEWAY"
-            ? "A native RDP/SSH/VNC session, rendered inside Captivo. The vendor never sees the target password."
-            : "Proxy an internal web app; the vendor opens it in their browser."}
-        </p>
-      </div>
       {accessMode === "GATEWAY" && (
         <>
           <div className="field">
