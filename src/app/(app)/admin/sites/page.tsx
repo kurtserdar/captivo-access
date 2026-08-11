@@ -77,11 +77,16 @@ export default async function AdminSitesPage() {
         {connectors.length > 0 && <AddSiteButton connectors={connectors} recordingEnabled={recordingEnabled()} nativeGateway={nativeGatewayEnabled()} />}
       </div>
 
-      {connectors.length === 0 ? (
-        <div className="empty">Add a connector first before creating a site.</div>
-      ) : sites.length === 0 ? (
-        <div className="empty">No sites yet — use &quot;Add site&quot; to publish an internal app.</div>
+      {sites.length === 0 ? (
+        <div className="empty">
+          {connectors.length === 0
+            ? "Add a connector first before creating a site."
+            : "No sites yet — use \"Add site\" to publish an internal app."}
+        </div>
       ) : (
+        // Existing sites always render (with edit/delete), even when the only
+        // connector is revoked — otherwise a revoked connector's sites become
+        // invisible and neither the sites nor the connector can be removed.
         <SitesView sites={rows} connectors={connectors} recordingEnabled={recordingEnabled()} />
       )}
     </main>
