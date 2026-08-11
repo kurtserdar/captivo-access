@@ -143,7 +143,7 @@ model Site {
   connectorId        String
   connector          Connector     @relation(fields: [connectorId], references: [id], onDelete: Cascade)
   name               String
-  hostname           String        @unique
+  hostname           String?       @unique // null for GATEWAY (remote-desktop) sites; required for web apps
   upstreamUrl        String?
   insecureSkipVerify Boolean       @default(false)
   description        String?

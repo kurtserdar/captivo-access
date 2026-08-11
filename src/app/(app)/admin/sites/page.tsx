@@ -45,7 +45,7 @@ export default async function AdminSitesPage() {
   const rows: SiteRow[] = sites.map((s) => ({
     id: s.id,
     name: s.name,
-    hostname: s.hostname,
+    hostname: s.hostname ?? "",
     upstreamUrl: s.upstreamUrl,
     description: s.description,
     accessMode: s.accessMode,

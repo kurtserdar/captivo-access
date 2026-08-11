@@ -44,7 +44,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
                 id: site.id,
                 connectorId: site.connectorId,
                 name: site.name,
-                hostname: site.hostname,
+                hostname: site.hostname ?? "",
                 upstreamUrl: site.upstreamUrl ?? "",
                 description: site.description ?? "",
                 insecureSkipVerify: site.insecureSkipVerify,
