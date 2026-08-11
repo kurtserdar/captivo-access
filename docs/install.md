@@ -143,7 +143,7 @@ Now edit `.env`. Every variable, with an example value:
 > so you don't need to set them here.
 
 Leave the optional/commented ones (`DNS_API_TOKEN`, `CADDY_DNS_MODULE`,
-`RECORDING_ENABLED` (Pro session recording — gates the per-Site "Record
+`RECORDING_ENABLED` (Pro session recording — gates the per-Resource "Record
 sessions" toggle), `CONNECTOR_TUNNEL_URL` (overrides the default
 `wss://connect.<ACCESS_DOMAIN>` endpoint)) alone unless you know you need them. `DNS_API_TOKEN` is **only** for the large-scale wildcard-certificate escape
 hatch — you do not need it for a normal install.
@@ -191,7 +191,7 @@ and retry; DNS can take a few minutes.)
 
 There's nothing to configure for per-app TLS: the shipped Caddy uses **On-Demand
 TLS** — the first time a browser hits `wiki.access.acme.com`, Caddy asks the
-Manager "is this a real Site?" and, if yes, issues that app's certificate over
+Manager "is this a real Resource?" and, if yes, issues that app's certificate over
 HTTP-01 and caches it. No token, no per-app setup.
 
 ## Step 9 — Enroll a connector (inside your network)
@@ -229,9 +229,9 @@ internal app. It only dials outward — no inbound port.
    > [remote-desktop gateway](../deploy/README.md#recorded-rdpsshvnc-native-remote-desktop-gateway).
 3. Back in the console, the connector flips to **Online** within a few seconds.
 
-## Step 10 — Publish your first app as a Site
+## Step 10 — Publish your first app as a Resource
 
-In the console: **Sites → Add site**.
+In the console: **Resources → Add resource**.
 
 - **Name:** `Internal Wiki`
 - **Hostname:** `wiki.access.acme.com` (a subdomain under your wildcard — no new
@@ -250,7 +250,7 @@ edit. The first visit to `wiki.access.acme.com` self-provisions its TLS cert.
    access, different label; see [Roles](#roles)). If SMTP is configured
    (**Email** page), Dana gets the invite by mail; otherwise copy the one-time
    invite link and send it yourself.
-2. **Grant access.** Grants → New grant → user Dana, site `Internal Wiki`.
+2. **Grant access.** Grants → New grant → user Dana, resource `Internal Wiki`.
    Optionally time-box it (start/end), require approval, or attach a weekly
    schedule. Leave the window empty for permanent access.
 3. **Dana enrolls + connects.** Dana opens the invite link, registers a passkey,
@@ -269,9 +269,9 @@ including Admin, connects only where it's been granted).
 
 | Role | Can do | Typical use |
 |---|---|---|
-| **Admin** | Everything: connectors, sites, users, invites, email, sessions, grants, audit | The operator(s) running the deployment |
+| **Admin** | Everything: connectors, resources, users, invites, email, sessions, grants, audit | The operator(s) running the deployment |
 | **Operator** | Approve/deny/revoke/create grants + view the console | Day-to-day access approvers, help desk |
-| **Auditor** | Read-only console: audit log (+ CSV), sites, grants — no changes | Compliance / security reviewers |
+| **Auditor** | Read-only console: audit log (+ CSV), resources, grants — no changes | Compliance / security reviewers |
 | **Staff** | Connect-only (like Vendor), internal identity | Your own employees needing app access |
 | **Vendor** | Connect-only | External suppliers |
 
@@ -290,7 +290,7 @@ The Manager has no built-in scheduler; the endpoints are triggered by the host's
 cron with the `CRON_SECRET` bearer token. On the server's crontab:
 
 ```cron
-# Probe each Site's reachability through its connector every 5 minutes:
+# Probe each Resource's reachability through its connector every 5 minutes:
 */5 * * * * curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.access.acme.com/api/cron/site-health >/dev/null
 
 # Trim the audit log past its retention window, once a day:
@@ -305,8 +305,8 @@ cron with the `CRON_SECRET` bearer token. On the server's crontab:
 36 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.access.acme.com/api/cron/audit-anchor >/dev/null
 ```
 
-Site-health records reachability and raises an in-console notification (and an
-optional `NOTIFICATION_WEBHOOK_URL` alert) when a Site goes up or down.
+Resource-health records reachability and raises an in-console notification (and an
+optional `NOTIFICATION_WEBHOOK_URL` alert) when a Resource goes up or down.
 Audit-retention deletes rows older than `AUDIT_RETENTION_DAYS` while preserving
 the tamper-evident hash chain. Both fail closed without a valid `CRON_SECRET`.
 
@@ -330,9 +330,9 @@ shows the exact commands when an update is available.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Passkey setup/login fails ("Something went wrong") at `/setup` | `WEBAUTHN_RP_ID` doesn't match the host in the browser | Set `WEBAUTHN_RP_ID=access.acme.com` (the bare access domain), restart the manager, retry. It must be equal to, or a parent of, the host you actually open. |
-| An app hostname shows a TLS/certificate error | Wildcard `*.access` A record missing, or the hostname isn't a configured Site | Run **Custom domain → Verify DNS** in the console. Confirm the Site exists (Caddy only issues certs for real Sites). Fresh DNS can take a few minutes. |
+| An app hostname shows a TLS/certificate error | Wildcard `*.access` A record missing, or the hostname isn't a configured Resource | Run **Custom domain → Verify DNS** in the console. Confirm the Resource exists (Caddy only issues certs for real Resources). Fresh DNS can take a few minutes. |
 | New connector stays **Offline** | Wrong `DATAPLANE_URL` (must be `wss://connect.…`, not `ws://`), or the machine can't reach the internet outbound | Re-copy the exact command from the console; verify the connector host can reach `connect.access.acme.com:443` outbound; check `docker logs access-connector`. |
-| Opening an app returns **502** | Connector can't reach the Site's internal address, or `ALLOWED_TARGETS` blocks it | Check the internal address is what the *connector* can reach (`http://10.0.5.20:8080`); if `ALLOWED_TARGETS` is set, ensure the target is inside it; confirm the app is up from the connector's host. |
+| Opening an app returns **502** | Connector can't reach the Resource's internal address, or `ALLOWED_TARGETS` blocks it | Check the internal address is what the *connector* can reach (`http://10.0.5.20:8080`); if `ALLOWED_TARGETS` is set, ensure the target is inside it; confirm the app is up from the connector's host. |
 | Vendor logs in but the app bounces back to login | `COOKIE_DOMAIN` wrong | It must be the **leading-dot** form `.access.acme.com`, restart the manager. |
 | Invite emails don't arrive | SMTP not configured/enabled | Configure it on the **Email** page (and tick *Enabled*). Until then, copy the one-time invite link from the Invites screen and send it manually. |
 | `access-migrate` fails / Manager won't start | Wrong `POSTGRES_PASSWORD`, Postgres unhealthy, or a destructive schema change | Check `docker compose -f docker-compose.prod.yml logs access-migrate`; ensure `access-postgres` is healthy and `POSTGRES_PASSWORD` matches `.env`. A refused destructive change is intentional (no data loss). |

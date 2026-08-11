@@ -25,7 +25,7 @@ Setting it up:
 
 1. **Prepare a server and a subdomain.** A cloud server, and a subdomain
    pointing at it (`access.yourdomain.com`). Set up DNS the safe way — if it's a
-   subdomain of a domain you already use for a site or email, delegate *just*
+   subdomain of a domain you already use for a resource or email, delegate *just*
    that subdomain (see [`deploy/README.md`](../deploy/README.md)); never move the
    parent domain's nameservers.
 2. **Install Captivo Access.** One `docker compose … up -d` on the server brings
@@ -36,13 +36,13 @@ Setting it up:
 4. **Install a connector inside your network.** In the admin console you create a
    connector and get a ready-to-run `docker run` command. Run it on a machine
    inside your network; it dials out and shows up as online.
-5. **Define two things: the app, and who.** A **Site** = which internal app
+5. **Define two things: the app, and who.** A **Resource** = which internal app
    (e.g. `jira.access.yourdomain.com` → the app's real internal address, set
-   directly on the Site — the connector itself needs no per-app config; it
-   just dials whatever address the Site sends it, optionally bounded by
+   directly on the Resource — the connector itself needs no per-app config; it
+   just dials whatever address the Resource sends it, optionally bounded by
    `ALLOWED_TARGETS` on the connector's container).
    An **access grant** = invite the user (they register a passkey) and grant them
-   that Site — optionally time-boxed, approval-gated, or on a recurring schedule
+   that Resource — optionally time-boxed, approval-gated, or on a recurring schedule
    ("weekdays 09:00–18:00").
 6. **Done.** The user signs in from their browser and reaches only the apps
    they're allowed to.
@@ -61,11 +61,11 @@ flowchart TD
     B --> C["Identity-aware proxy :3103"]
     C --> G1{"Gate 1<br/>Signed in?"}
     G1 -->|no| L["Redirect to login<br/>(passkey)"]
-    G1 -->|yes| M{"Which Site?<br/>match by hostname"}
+    G1 -->|yes| M{"Which Resource?<br/>match by hostname"}
     M -->|no match| E404["404"]
     M -->|matched| G2{"Gate 2 — allowed?<br/>grant · approval · schedule"}
     G2 -->|no| E403["403<br/>no grant / pending / off-hours / denied / expired"]
-    G2 -->|yes| T["Outbound tunnel to connector<br/>carries the Site's internal address"]
+    G2 -->|yes| T["Outbound tunnel to connector<br/>carries the Resource's internal address"]
     T --> G3{"Gate 3<br/>within ALLOWED_TARGETS?<br/>(optional boundary)"}
     G3 -->|no| E502["502"]
     G3 -->|yes| APP["Internal app<br/>http://10.0.5.20:8080"]
@@ -88,18 +88,18 @@ Step by step:
 4. **Gate 1 — Signed in?** The proxy looks for a valid session cookie (has the
    user signed in with their passkey?). **If not → redirect to login**; after the
    passkey ceremony the user returns to where they were.
-5. **Which Site?** The proxy matches the request's hostname to a defined **Site**.
-   **No matching Site → 404.** An address you never defined leads nowhere.
+5. **Which Resource?** The proxy matches the request's hostname to a defined **Resource**.
+   **No matching Resource → 404.** An address you never defined leads nowhere.
 6. **Gate 2 — Allowed?** The real decision (`evaluateAccess`): does this user have
-   a **grant** for this Site — is it **approved**, and within its **time window**
+   a **grant** for this Resource — is it **approved**, and within its **time window**
    and **recurring schedule**? **If not → 403**, with a specific reason: no grant,
    pending approval, outside hours, denied, or expired.
-7. **Outbound tunnel.** The proxy sends the request, along with the Site's
+7. **Outbound tunnel.** The proxy sends the request, along with the Resource's
    internal address, through the connector's **outbound-only** tunnel. The
    cloud never dials into your network — the connector always opened the
    connection.
 8. **Gate 3 — Within the boundary?** The connector dials the internal address
-   defined on the Site (`http://10.0.5.20:8080`). If the connector's container
+   defined on the Resource (`http://10.0.5.20:8080`). If the connector's container
    has an optional `ALLOWED_TARGETS` boundary set, the address must fall
    inside it. **Outside it → 502.** Left unset, the connector dials whatever
    address the Manager routes to it.
@@ -115,7 +115,7 @@ Step by step:
 > (KVKK / Law No. 5651).
 
 > **A few variations on the same path.** WebSocket apps (e.g. a browser-based
-> console) are relayed the same way; **web sessions can be recorded** per Site
+> console) are relayed the same way; **web sessions can be recorded** per Resource
 > and replayed in the console; internal staff/admins can optionally sign in via
 > **SSO/OIDC** instead of a passkey; and **RDP/SSH/VNC** sessions take
 > [the remote-desktop path](#the-remote-desktop-path-gateway) below. Who can do
@@ -132,7 +132,7 @@ Step by step:
 
 ## The remote-desktop path (gateway)
 
-A **Remote desktop** Site (RDP/SSH/VNC) passes the same first two gates, but its
+A **Remote desktop** Resource (RDP/SSH/VNC) passes the same first two gates, but its
 tail is different: instead of an HTTP round trip to an internal app, the browser
 runs a live session rendered by **guacd** — the remote-desktop engine the
 connector deploys on its own host when you flag it as a *gateway host*. The
@@ -173,7 +173,7 @@ flowchart TD
   admin can **take control**. The vendor sees a "being monitored" notice, and
   every watch / take / release is audited.
 - **Health + logs.** Gateway targets are TCP-reachability-checked like web apps
-  (Sites page + dashboard), and guacd's own logs surface on the connector's
+  (Resources page + dashboard), and guacd's own logs surface on the connector's
   detail page ("Gateway logs") for troubleshooting.
 
 ---

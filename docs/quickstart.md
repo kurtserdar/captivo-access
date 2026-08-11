@@ -14,7 +14,7 @@ certificates — with no DNS records to create.
 
 - A server with a **public IP**, **ports 80 and 443 open** to the internet, and
   Docker + Docker Compose v2. (A cheap throwaway VPS is perfect. Don't reuse a
-  box that already serves a site or mail on 80/443.)
+  box that already serves a resource or mail on 80/443.)
 - 5 minutes.
 
 Throughout, replace `SERVER_IP` with your server's public IP written with dots,
@@ -43,9 +43,9 @@ WEBAUTHN_RP_ID=SERVER_IP.sslip.io
 
 The shipped `Caddyfile` already serves `manager.` and `connect.`, **and** a
 wildcard `*.{$ACCESS_DOMAIN}` block (On-Demand TLS, gated by the Manager) that
-covers every per-site vendor hostname automatically. Any app hostname you add
+covers every per-resource vendor hostname automatically. Any app hostname you add
 later — e.g. `app.SERVER_IP.sslip.io` — falls under that wildcard, so there's
-nothing to edit here: you just pick the hostname when you create the Site (step
+nothing to edit here: you just pick the hostname when you create the Resource (step
 6). Move on.
 
 ## 3. Bring it up
@@ -99,11 +99,11 @@ In the console:
    needed here — the connector takes no `UPSTREAMS` (only an optional
    `ALLOWED_TARGETS` boundary, unneeded for this quickstart).
 
-2. **Sites → add one.** Name it, set **hostname** = `app.SERVER_IP.sslip.io`,
+2. **Resources → add one.** Name it, set **hostname** = `app.SERVER_IP.sslip.io`,
    **internal address** = `http://testapp:80` (the dummy app's address on the
    compose network), and bind it to your connector.
 
-3. **Grants → grant yourself access** to that site (or invite a second user and
+3. **Grants → grant yourself access** to that resource (or invite a second user and
    grant them).
 
 ## 7. See it work
@@ -116,7 +116,7 @@ That's the whole product, running with real TLS and zero DNS setup. When you're
 ready for a real deployment (your own domain, wildcard so new apps are UI-only),
 follow [`deploy/README.md`](../deploy/README.md).
 
-## 8. Optional: a remote-desktop (SSH) site (+a few minutes)
+## 8. Optional: a remote-desktop (SSH) resource (+a few minutes)
 
 Captivo Access also serves **RDP/SSH/VNC** in the browser through a native
 gateway (guacd) — no separate install. RDP needs a Windows target, but **SSH**
@@ -141,7 +141,7 @@ password: it's stored encrypted and injected server-side.
 
    guacd reaches it at `sshtarget:2222` on the shared network.
 
-3. **Add a Remote desktop Site.** In the console: **Sites → add**, choose
+3. **Add a Remote desktop Resource.** In the console: **Resources → add**, choose
    **Remote desktop (RDP / SSH / VNC)**, protocol **SSH**, host `sshtarget`,
    port `2222`, username `demo`, password `demo`, and bind it to your connector.
    (Optionally turn on **Record sessions**.)
@@ -156,7 +156,7 @@ password: it's stored encrypted and injected server-side.
    ("Gateway logs").
 
 Cleanup for this part: `docker rm -f sshtarget captivo-guacd` (and remove the
-Site/connector in the console).
+Resource/connector in the console).
 
 ## Cleanup
 

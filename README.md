@@ -49,7 +49,7 @@ on your own infrastructure.
 
 ```
  Vendor's browser
-       │  HTTPS (passkey login, then per-site access)
+       │  HTTPS (passkey login, then per-resource access)
        ▼
  Front proxy  (Caddy/nginx — TLS termination, routes by hostname)
        │
@@ -77,11 +77,11 @@ Four moving pieces:
 
 - **Control plane** — a Next.js app (`/`, this repo's root). Owns identity
   (WebAuthn passkeys + TOTP recovery), the admin console (connectors,
-  sites, grants, audit), and Postgres.
+  resources, grants, audit), and Postgres.
 - **Data plane** (`dataplane/`) — a Go service with three listeners: the
   public WSS endpoint connectors dial into, an internal API the control
   plane calls, and the browser-facing identity-aware reverse proxy that
-  serves vendor traffic per site.
+  serves vendor traffic per resource.
 - **Connector** (`connector/`) — a small Go binary you run inside your own
   network. It dials **out** to the data plane over WSS and never opens a
   listening port; it holds a local allowlist of the internal services it's
@@ -90,7 +90,7 @@ Four moving pieces:
   body streaming) used by both the data plane and the connector.
 
 A vendor request is checked **live, on every single request** — session
-cookie → user, hostname → site, `evaluateAccess(user, site, now)` → allow
+cookie → user, hostname → resource, `evaluateAccess(user, site, now)` → allow
 or deny with a reason — before it's ever streamed to the connector.
 
 ## Features
@@ -99,11 +99,11 @@ Shipped and working today:
 
 - **Passkey (WebAuthn) authentication**, no passwords anywhere — plus TOTP
   as a break-glass recovery path if a user loses every passkey.
-- **Time-boxed access grants** — an admin ties one vendor to one site with
+- **Time-boxed access grants** — an admin ties one vendor to one resource with
   an optional start/end window; a vendor's `/access` page shows what's
   active vs. upcoming.
 - **Outbound-only connector** — dials the internal address defined on each
-  Site, and never accepts an inbound connection. An optional `ALLOWED_TARGETS`
+  Resource, and never accepts an inbound connection. An optional `ALLOWED_TARGETS`
   boundary caps which internal addresses a connector may reach.
 - **Identity-aware reverse proxy** — host-based routing
   (`<site>.access.<domain>`), session + grant checked on every request,
@@ -114,7 +114,7 @@ Shipped and working today:
 - **Light / dark / system theme** — the console follows the OS by default, with
   a light/dark switcher in the header.
 
-- **Approval flow** — a vendor can request access to a site; the request is
+- **Approval flow** — a vendor can request access to a resource; the request is
   pending (and denied) until an admin approves it, or the admin denies it.
   Admin-created grants are active immediately.
 - **Recurring schedules** — a grant can be restricted to weekly windows (e.g.
@@ -124,9 +124,9 @@ Shipped and working today:
   or tail-truncation. An optional **external anchor** (a trusted RFC 3161 /
   KamuSM timestamp on the chain head, enabled from Policy) seals the chain
   against an actor who could rewrite the whole database.
-- **Per-site health monitoring** — a scheduled probe TCP-connects to each Site
+- **Per-resource health monitoring** — a scheduled probe TCP-connects to each Resource
   through its connector and shows reachability + latency in the console. When a
-  Site goes down or recovers, an in-console notification is raised (nav bell +
+  Resource goes down or recovers, an in-console notification is raised (nav bell +
   list) and, optionally, a best-effort webhook is fired
   (`NOTIFICATION_WEBHOOK_URL`, Slack/Teams-friendly) — no mail server required.
 - **SSO / OIDC login** — internal staff/admins can sign in with an identity
@@ -134,25 +134,25 @@ Shipped and working today:
   invite-matched (no auto-provisioning). Vendors stay passkey-only.
 - **AD / LDAP directory + group mapping** — connect an LDAP/Active Directory
   (reached through a connector, bind tested from the console), then map
-  directory groups by DN to a console **role** or a specific **Site** at
+  directory groups by DN to a console **role** or a specific **Resource** at
   `/admin/directory`. Membership drives authorization, so revoking a user in
   your directory removes their mapped access.
 - **Roles** — five fixed roles (`ADMIN`, `OPERATOR`, `AUDITOR`, `STAFF`,
   `VENDOR`) drive a capability layer across the console and APIs.
-- **Custom domains** — publish a Site on its own hostname with automatic TLS
+- **Custom domains** — publish a Resource on its own hostname with automatic TLS
   (Caddy On-Demand), configured from the console.
 - **WebSocket passthrough** — the proxy relays WebSocket upgrades transparently,
   so WS/streaming internal apps (e.g. a Proxmox noVNC console) work end-to-end.
 - **Session recording** — with recording enabled (`RECORDING_ENABLED` + a
-  per-Site toggle), both **web sessions** (an injected rrweb DOM recorder) and
+  per-Resource toggle), both **web sessions** (an injected rrweb DOM recorder) and
   **remote-desktop sessions** (captured natively from the guacd stream,
   AES-256-GCM-encrypted at rest) are replayable at `/admin/recordings`; admins
   filter, replay, and delete them (each deletion is written to the audit log).
 - **Native remote-desktop gateway (RDP/SSH/VNC)** — console protocols are served
   in-browser with no separate pack: flag a connector host to run sessions and its
   install command also deploys the session engine (guacd). Add a **Remote
-  desktop** Site (protocol/host/port/credentials); the credential is injected
-  server-side and the vendor never sees the password. Sites carry a `TRANSPARENT`
+  desktop** Resource (protocol/host/port/credentials); the credential is injected
+  server-side and the vendor never sees the password. Resources carry a `TRANSPARENT`
   (web app) vs `GATEWAY` (remote desktop) label, and gateway targets are
   reachability-checked like web apps.
 - **Live session view** — an admin/auditor watches an in-progress remote-desktop
@@ -161,7 +161,7 @@ Shipped and working today:
   "being monitored" notice and every watch/take/release is written to the audit
   log.
 - **Email (SMTP)** — configured from the console (`/admin/email`); sends invite
-  emails, access-request/approval emails, and site down/recovered alerts. (Invites
+  emails, access-request/approval emails, and resource down/recovered alerts. (Invites
   can also be copied as a one-time link and sent yourself; all of these events also
   raise in-console notifications regardless of SMTP.)
 - **Automatic schema migration + guided upgrade** — the deploy stack runs
@@ -174,14 +174,14 @@ Shipped and working today:
   access), **retention** for the audit log and session recordings, a **recording
   consent** gate, the notification webhook, and the invitation-link lifetime.
   Settings that used to be environment variables now live here (the UI value wins).
-- **Zero-Trust source-IP allowlist** — restrict vendor access to published Sites
+- **Zero-Trust source-IP allowlist** — restrict vendor access to published Resources
   to specific networks (IPv4/IPv6 CIDRs). Checked live on every request against
   the real client IP (from the front proxy — not spoofable via `X-Forwarded-For`);
   the console itself is never gated, so a bad list can't lock an admin out.
-- **Per-site clipboard control** — a transparent Site can restrict the vendor's
+- **Per-resource clipboard control** — a transparent Resource can restrict the vendor's
   clipboard (block copy-out, block paste-in, or both); the proxy injects a
   capture-phase guard into the app's pages. A deterrent, not a hard control
-  (bypassable with JavaScript disabled); gateway Sites use Guacamole's own
+  (bypassable with JavaScript disabled); gateway Resources use Guacamole's own
   clipboard settings instead.
 - **Connector observability + egress policy** — each connector's detail page
   shows live telemetry (version, uptime, active/total connections, bytes
@@ -247,7 +247,7 @@ account.
 The repo-root `docker-compose.yml` above builds images locally and is meant
 for development. For a real deployment — the published `ghcr.io` images,
 fronted by [Caddy](https://caddyserver.com/) with automatic HTTPS for both
-the admin console and the per-site vendor proxy — use the
+the admin console and the per-resource vendor proxy — use the
 [`deploy/`](deploy/README.md) scaffold instead.
 
 > **New to this?** [`docs/install.md`](docs/install.md) is a complete,
@@ -270,7 +270,7 @@ on each `vX.Y.Z` release tag (plus `latest`) — see
 them already. The **schema is migrated automatically** on `up -d` by the
 one-shot `access-migrate` service — no manual `db push` step. `deploy/README.md`
 also covers the wildcard-TLS trade-off (one Caddy DNS-01 plugin vs. the
-On-Demand default that needs no per-site setup).
+On-Demand default that needs no per-resource setup).
 
 ## How access works
 
@@ -289,12 +289,12 @@ On-Demand default that needs no per-site setup).
    first start the connector redeems the pairing code, stores a long-lived
    token in its `/data` volume, and dials the data plane — it then shows up
    as online.
-2. **Add a site.** Under `/admin/sites`, the admin creates a `Site` bound to
+2. **Add a resource.** Under `/admin/sites`, the admin creates a `Site` bound to
    a connector, giving it the internal app's real address
    (`http://10.0.5.20:8080`) directly — that's the only place the address is
    configured.
 3. **Grant a vendor access.** At `/admin/grants`, the admin picks a vendor
-   user, a site, and an optional start/end window, then saves. Revoking a
+   user, a resource, and an optional start/end window, then saves. Revoking a
    grant is immediate and irreversible.
 4. **The vendor signs in and connects.** The vendor is invited via a
    one-time link at `/admin/invites` (email + role + expiry), registers a
@@ -326,7 +326,7 @@ the origin must also be HTTPS — browsers refuse WebAuthn over plain HTTP
 for any RP ID other than `localhost`.
 
 Cross-subdomain session sharing (the admin console at
-`manager.access.<domain>` and every vendor site at
+`manager.access.<domain>` and every vendor resource at
 `<site>.access.<domain>`) requires `COOKIE_DOMAIN` set to a leading-dot
 domain covering both, e.g. `.access.yourcompany.com` — left empty, it
 defaults to a host-only cookie, fine for local dev but broken across
@@ -343,7 +343,7 @@ instead, replicate that routing and forward those headers.
 - **Optional egress boundary.** A `Site`'s internal address is set once in
   the Manager and travels with the request through the tunnel to the
   connector, which dials it directly — no per-app config on the connector
-  itself. To constrain what a connector may reach regardless of what a Site
+  itself. To constrain what a connector may reach regardless of what a Resource
   requests, set `ALLOWED_TARGETS` (CIDRs/hosts) on its container; a target
   outside that boundary is rejected and the stream is closed.
 - **Passkey-only identity.** No password exists anywhere in the system —
@@ -352,7 +352,7 @@ instead, replicate that routing and forward those headers.
 - **Fail-closed access checks, live on every request.** There is no
   session-level cache: the data plane's proxy resolves the session,
   resolves the hostname to a `Site`, and calls `evaluateAccess()` for that
-  user + site + time before opening a connector stream — on **every**
+  user + resource + time before opening a connector stream — on **every**
   request. A missing/expired session redirects to `/login`; a resolved user
   without an active grant gets a 403 with a specific reason (no grant,
   expired, not yet started, revoked, pending approval, or a disabled
@@ -364,7 +364,7 @@ instead, replicate that routing and forward those headers.
   user. These limit how long a stolen or forgotten session stays usable,
   independent of grant state.
 - **Source-IP allowlist (Zero-Trust network gate).** An optional allowlist
-  (`/admin/policy`) restricts which networks may reach published Sites — a
+  (`/admin/policy`) restricts which networks may reach published Resources — a
   granted user from a non-allowlisted IP is denied (`ip_not_allowed`, audited)
   before any request reaches a connector. The IP evaluated is the one the
   trusted front proxy records (the rightmost `X-Forwarded-For` hop), so a client
@@ -374,12 +374,12 @@ instead, replicate that routing and forward those headers.
   never-expiring vendor access.
 - **Append-only audit log.** Every allowed request, and every denied
   request from an authenticated user, is written to an `AuditEvent` row —
-  timestamp, user, site, host/method/path, response status, bytes out, the
+  timestamp, user, resource, host/method/path, response status, bytes out, the
   decision and its reason, client IP, and user agent. Anonymous requests
   that simply redirect to `/login` aren't logged (there's no identity yet
-  to attribute them to). Rows are denormalized (the user's email and site's
+  to attribute them to). Rows are denormalized (the user's email and resource's
   name are captured at write time) so the trail still reads correctly after
-  the underlying user or site is later deleted, and are never updated —
+  the underlying user or resource is later deleted, and are never updated —
   only inserted. Admins can filter, paginate, and export to CSV at
   `/admin/audit`.
 - **Retention, not indefinite storage.** `AUDIT_RETENTION_DAYS` (default
@@ -406,7 +406,7 @@ Explicitly **not** built — don't assume these exist:
 - **RDP/SSH/VNC** — the core is an HTTP(S) + WebSocket proxy, not a
   general-purpose bastion. Recorded console access is available today via the
   built-in **native remote-desktop gateway**: flag a connector as a session host
-  (its install command bundles the guacd engine), then add a Remote desktop Site
+  (its install command bundles the guacd engine), then add a Remote desktop Resource
   with the target and credentials. Vendors connect straight from the console —
   no second login, no separate Guacamole install.
 
