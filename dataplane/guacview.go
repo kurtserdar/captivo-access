@@ -54,6 +54,18 @@ func serveGuacView(hub *SessionHub, ctrl *ControlClient, w http.ResponseWriter, 
 	ctx := context.Background()
 	log.Printf("guac-view session=%s viewer=%s: attached", sessionID, viewerUserID)
 
+	// Bootstrap the viewer's guac client: it joined mid-stream, so send `ready`
+	// (so the client starts) and the screen size (so its display is sized).
+	// Without these the client renders nothing — a black screen.
+	if err := c.Write(ctx, websocket.MessageText, encodeInstruction("ready", sessionID)); err != nil {
+		return
+	}
+	if sz := ls.bootstrap(); sz != nil {
+		if err := c.Write(ctx, websocket.MessageText, sz); err != nil {
+			return
+		}
+	}
+
 	errc := make(chan error, 2)
 	// hub -> viewer browser
 	go func() {

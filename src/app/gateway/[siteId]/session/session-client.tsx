@@ -38,7 +38,9 @@ export function GatewaySession({ siteId }: { siteId: string }) {
 
       const vw = () => Math.floor(window.innerWidth);
       const vh = () => Math.floor(window.innerHeight);
-      const dpi = Math.round(96 * (window.devicePixelRatio || 1));
+      // Fixed 96 DPI (100% scale). Multiplying by devicePixelRatio (e.g. 2 on a
+      // Retina Mac) made the RDP target render at 200% — icons/text too large.
+      const dpi = 96;
 
       // Scale the rendered display to exactly fit the viewport.
       const fit = () => {
@@ -120,9 +122,10 @@ export function GatewaySession({ siteId }: { siteId: string }) {
       {(watching || controlHeld) && (
         <div
           style={{
-            position: "fixed", top: 0, left: 0, right: 0, zIndex: 20,
-            background: controlHeld ? "rgba(180,0,0,0.9)" : "rgba(0,0,0,0.75)",
-            color: "#fff", textAlign: "center", padding: "8px", fontFamily: "sans-serif", fontSize: "14px",
+            position: "fixed", top: 8, left: "50%", transform: "translateX(-50%)", zIndex: 20,
+            pointerEvents: "none", // never intercept clicks — they must reach the session (e.g. the window close button)
+            background: controlHeld ? "rgba(180,0,0,0.92)" : "rgba(0,0,0,0.72)",
+            color: "#fff", padding: "6px 14px", borderRadius: 8, fontFamily: "sans-serif", fontSize: "13px", whiteSpace: "nowrap",
           }}
         >
           {controlHeld ? "An administrator has taken control of this session." : "This session is being monitored live."}

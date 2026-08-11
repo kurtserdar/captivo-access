@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -44,6 +45,7 @@ type liveSession struct {
 	viewers      map[int]chan []byte
 	nextViewer   int
 	controlOwner string // userID holding control, or "" for the vendor
+	lastSize     []byte // most recent screen `size` instruction (default layer 0), for viewer bootstrap
 }
 
 func (ls *liveSession) addViewer() (int, chan []byte) {
@@ -82,12 +84,27 @@ func (ls *liveSession) broadcast(inst []byte) {
 	copy(cp, inst)
 	ls.mu.Lock()
 	defer ls.mu.Unlock()
+	// Remember the screen's `size` instruction (default layer 0, "4.size,1.0,…").
+	// A viewer joins mid-stream and never saw it, so its display would stay 0x0
+	// (black). We replay it on attach so the display is sized and renders as the
+	// vendor's screen changes.
+	if bytes.HasPrefix(cp, []byte("4.size,1.0,")) {
+		ls.lastSize = cp
+	}
 	for _, ch := range ls.viewers {
 		select {
 		case ch <- cp:
 		default:
 		}
 	}
+}
+
+// bootstrap returns the instructions a joining viewer needs before live frames:
+// the most recent screen size (if seen). Nil-safe.
+func (ls *liveSession) bootstrap() []byte {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
+	return ls.lastSize
 }
 
 func (ls *liveSession) writeToGuac(data []byte) error {
