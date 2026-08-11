@@ -5,8 +5,10 @@ then the exact path a single request takes from a vendor's browser to an
 internal web app — and every gate it passes through on the way.
 
 Captivo Access gives outside users **time-boxed, audited access to specific
-internal web apps** — without a VPN, without opening inbound ports, and without
-ever exposing the apps' real addresses.
+internal web apps and remote desktops (RDP/SSH/VNC)** — without a VPN, without
+opening inbound ports, and without ever exposing the apps' real addresses. The
+walkthrough below follows a web app; [the remote-desktop path](#the-remote-desktop-path-gateway)
+is the same gates with a different tail.
 
 ---
 
@@ -115,10 +117,9 @@ Step by step:
 > **A few variations on the same path.** WebSocket apps (e.g. a browser-based
 > console) are relayed the same way; **web sessions can be recorded** per Site
 > and replayed in the console; internal staff/admins can optionally sign in via
-> **SSO/OIDC** instead of a passkey; and **RDP/SSH/VNC** sessions are served by a
-> native remote-desktop gateway bundled with the connector — recorded for later
-> replay and watchable live by an admin (who can also take control). Who can do what
-> in the console is governed by five roles (`ADMIN`, `OPERATOR`, `AUDITOR`,
+> **SSO/OIDC** instead of a passkey; and **RDP/SSH/VNC** sessions take
+> [the remote-desktop path](#the-remote-desktop-path-gateway) below. Who can do
+> what in the console is governed by five roles (`ADMIN`, `OPERATOR`, `AUDITOR`,
 > `STAFF`, `VENDOR`).
 
 > **Extra policy gates (optional).** Gate 2 can carry more than the grant: a
@@ -126,6 +127,54 @@ Step by step:
 > **maximum grant duration** stops anyone handing out never-expiring access, and
 > **session limits** (idle / max-lifetime / concurrency) bound the login itself.
 > All of these live on the console's **Policy** page and apply live.
+
+---
+
+## The remote-desktop path (gateway)
+
+A **Remote desktop** Site (RDP/SSH/VNC) passes the same first two gates, but its
+tail is different: instead of an HTTP round trip to an internal app, the browser
+runs a live session rendered by **guacd** — the remote-desktop engine the
+connector deploys on its own host when you flag it as a *gateway host*. The
+target's credential lives **encrypted** in the vault; only the data-plane
+decrypts it, per session, to hand to guacd, so the vendor never sees the
+password and the "internal app" is a live screen streamed to the browser.
+
+```mermaid
+flowchart TD
+    A["Vendor browser<br/>Remote desktop session"] -->|WSS /guac-tunnel| C["Data-plane :3103"]
+    C --> G1{"Gate 1<br/>Signed in?"}
+    G1 -->|no| L["Unauthorized"]
+    G1 -->|yes| G2{"Gate 2 — allowed?<br/>grant · approval · schedule"}
+    G2 -->|no| E403["Forbidden"]
+    G2 -->|yes| CR["Decrypt the vault credential<br/>(server-side only)"]
+    CR -->|outbound tunnel| GD["guacd on the connector host<br/>opens RDP/SSH/VNC to the target<br/>credential injected"]
+    GD --> SCR["Live screen streamed to the browser<br/>(recorded if enabled)"]
+    ADM["Admin · /admin/live"] -->|"join by connection ID (WSS /guac-view)"| GD
+    GD -.->|keyframe + live · optional take-control| ADM
+
+    classDef deny fill:#3b1b20,stroke:#ff6b7a,color:#ffc2c8;
+    classDef ok fill:#123027,stroke:#42d19a,color:#bff3df;
+    class L,E403 deny;
+    class SCR ok;
+```
+
+- **Gateway host.** The session runs on a connector flagged as a *gateway host*
+  in the console; its install command also deploys guacd on that host (no
+  separate pack, one command).
+- **Credential injection.** The RDP/SSH/VNC username and secret are stored
+  encrypted in the vault; the data-plane decrypts them only to build the guacd
+  handshake — they never reach the vendor's browser.
+- **Recording.** With **Record sessions** on, the guacd stream is captured
+  (AES-256-GCM at rest) and replayable at `/admin/recordings`.
+- **Live view.** An admin or auditor can watch an in-progress session at
+  `/admin/live`: the viewer **joins the same guacd connection by its ID**, so
+  guacd sends the current screen immediately (not just future changes), and an
+  admin can **take control**. The vendor sees a "being monitored" notice, and
+  every watch / take / release is audited.
+- **Health + logs.** Gateway targets are TCP-reachability-checked like web apps
+  (Sites page + dashboard), and guacd's own logs surface on the connector's
+  detail page ("Gateway logs") for troubleshooting.
 
 ---
 

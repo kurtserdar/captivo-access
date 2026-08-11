@@ -278,13 +278,15 @@ to the host's crontab:
 36 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/audit-anchor >/dev/null
 ```
 
-`POST /api/cron/site-health` opens a **TCP connection** to each configured
-Site's internal address through its connector and records the result
+`POST /api/cron/site-health` opens a **TCP connection** through the connector to
+each configured Site's target — a web-app Site's internal address, or a
+remote-desktop (gateway) Site's RDP/SSH/VNC host:port — and records the result
 (`probedAt`/`probeOk`/`probeDetail`/`probeLatencyMs`) — a successful connect
 counts as reachable, a refused/timed-out/tunnel error as unreachable. A
 transition (up→down or down→up) also raises an in-console notification and, if
-`NOTIFICATION_WEBHOOK_URL` is set, a best-effort webhook. Sites with no
-internal address set yet are skipped, not reported unreachable.
+`NOTIFICATION_WEBHOOK_URL` is set, a best-effort webhook. Sites with no target
+set yet (no internal address, or a gateway with no credential) are skipped, not
+reported unreachable.
 
 `POST /api/cron/audit-retention` deletes audit-log rows older than
 `AUDIT_RETENTION_DAYS` (default 730) by sequence prefix, preserving the

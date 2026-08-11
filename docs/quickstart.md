@@ -116,6 +116,48 @@ That's the whole product, running with real TLS and zero DNS setup. When you're
 ready for a real deployment (your own domain, wildcard so new apps are UI-only),
 follow [`deploy/README.md`](../deploy/README.md).
 
+## 8. Optional: a remote-desktop (SSH) site (+a few minutes)
+
+Captivo Access also serves **RDP/SSH/VNC** in the browser through a native
+gateway (guacd) — no separate install. RDP needs a Windows target, but **SSH**
+lets you try it end-to-end with a throwaway container. The vendor never sees the
+password: it's stored encrypted and injected server-side.
+
+1. **Make the connector a gateway host.** In the console, open your connector
+   (`/admin/connectors` → the connector → **Enable gateway mode**), then copy the
+   command it now shows and run it on the server. That one command creates the
+   `captivo-gateway` network and deploys the session engine (guacd) alongside the
+   connector — nothing else to install.
+
+2. **Run a throwaway SSH target** on that gateway network:
+
+   ```bash
+   docker run -d --name sshtarget --restart unless-stopped \
+     --network captivo-gateway \
+     -e PUID=1000 -e PGID=1000 \
+     -e USER_NAME=demo -e USER_PASSWORD=demo -e PASSWORD_ACCESS=true \
+     linuxserver/openssh-server
+   ```
+
+   guacd reaches it at `sshtarget:2222` on the shared network.
+
+3. **Add a Remote desktop Site.** In the console: **Sites → add**, choose
+   **Remote desktop (RDP / SSH / VNC)**, protocol **SSH**, host `sshtarget`,
+   port `2222`, username `demo`, password `demo`, and bind it to your connector.
+   (Optionally turn on **Record sessions**.)
+
+4. **Grant yourself** access to it, then open it from **My access** (`/access`).
+   You get an SSH terminal **in the browser** — you never typed the password, and
+   there's no second login.
+
+5. **See the extras (optional).** With recording on, the session is replayable at
+   `/admin/recordings`; while it's open, an admin can watch it live and take
+   control at `/admin/live`; and guacd's logs show on the connector's detail page
+   ("Gateway logs").
+
+Cleanup for this part: `docker rm -f sshtarget captivo-guacd` (and remove the
+Site/connector in the console).
+
 ## Cleanup
 
 ```bash
