@@ -480,6 +480,23 @@ export type EnumRoleNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumRoleNullableFilter<$PrismaModel>
 }
 
+export type EnumRecordingFormatFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecordingFormat | Prisma.EnumRecordingFormatFieldRefInput<$PrismaModel>
+  in?: $Enums.RecordingFormat[] | Prisma.ListEnumRecordingFormatFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecordingFormat[] | Prisma.ListEnumRecordingFormatFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecordingFormatFilter<$PrismaModel> | $Enums.RecordingFormat
+}
+
+export type EnumRecordingFormatWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecordingFormat | Prisma.EnumRecordingFormatFieldRefInput<$PrismaModel>
+  in?: $Enums.RecordingFormat[] | Prisma.ListEnumRecordingFormatFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecordingFormat[] | Prisma.ListEnumRecordingFormatFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecordingFormatWithAggregatesFilter<$PrismaModel> | $Enums.RecordingFormat
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRecordingFormatFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRecordingFormatFilter<$PrismaModel>
+}
+
 export type NestedStringFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -930,6 +947,23 @@ export type NestedEnumRoleNullableWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedEnumRoleNullableFilter<$PrismaModel>
   _max?: Prisma.NestedEnumRoleNullableFilter<$PrismaModel>
+}
+
+export type NestedEnumRecordingFormatFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecordingFormat | Prisma.EnumRecordingFormatFieldRefInput<$PrismaModel>
+  in?: $Enums.RecordingFormat[] | Prisma.ListEnumRecordingFormatFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecordingFormat[] | Prisma.ListEnumRecordingFormatFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecordingFormatFilter<$PrismaModel> | $Enums.RecordingFormat
+}
+
+export type NestedEnumRecordingFormatWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecordingFormat | Prisma.EnumRecordingFormatFieldRefInput<$PrismaModel>
+  in?: $Enums.RecordingFormat[] | Prisma.ListEnumRecordingFormatFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecordingFormat[] | Prisma.ListEnumRecordingFormatFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecordingFormatWithAggregatesFilter<$PrismaModel> | $Enums.RecordingFormat
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRecordingFormatFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRecordingFormatFilter<$PrismaModel>
 }
 
 

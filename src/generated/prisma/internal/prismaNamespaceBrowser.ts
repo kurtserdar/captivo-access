@@ -453,7 +453,10 @@ export const SessionRecordingScalarFieldEnum = {
   startedAt: 'startedAt',
   lastEventAt: 'lastEventAt',
   eventCount: 'eventCount',
-  bytes: 'bytes'
+  bytes: 'bytes',
+  format: 'format',
+  protocol: 'protocol',
+  encrypted: 'encrypted'
 } as const
 
 export type SessionRecordingScalarFieldEnum = (typeof SessionRecordingScalarFieldEnum)[keyof typeof SessionRecordingScalarFieldEnum]
