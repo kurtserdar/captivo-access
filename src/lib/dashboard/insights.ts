@@ -10,6 +10,7 @@ export interface AuditRow {
   decision: "ALLOW" | "DENY";
   siteName: string | null;
   siteId: string | null;
+  userId: string | null;
   userEmail: string | null;
   clientIp: string | null;
   reason: string | null;
@@ -64,6 +65,32 @@ export function topBy(rows: AuditRow[], field: "siteName" | "userEmail", limit: 
   }
   return [...counts.entries()]
     .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
+export interface RefCount { id: string; label: string; count: number }
+
+// Group by an id field, label by a name field (fallback to id), desc, top `limit`.
+export function topRef(
+  rows: AuditRow[],
+  idField: "siteId" | "userId",
+  nameField: "siteName" | "userEmail",
+  limit: number,
+  decision: "ALLOW" | "DENY" = "ALLOW",
+): RefCount[] {
+  const counts = new Map<string, number>();
+  const names = new Map<string, string>();
+  for (const r of rows) {
+    if (r.decision !== decision) continue;
+    const id = r[idField];
+    if (!id) continue;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+    const nm = r[nameField];
+    if (nm && !names.has(id)) names.set(id, nm);
+  }
+  return [...counts.entries()]
+    .map(([id, count]) => ({ id, label: names.get(id) ?? id, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
 }
@@ -152,8 +179,8 @@ export function sessionStats(recs: { startedAt: Date; lastEventAt: Date }[]): { 
 export interface Insights {
   trend: TrendDay[];
   heatmap: { grid: number[][]; max: number };
-  topResources: Labeled[];
-  topVendors: Labeled[];
+  topResources: RefCount[];
+  topVendors: RefCount[];
   deny: { total: number; reasons: Labeled[] };
   ipFlags: IpFlag[];
   expiring: { count: number; soonest: { userEmail: string; siteName: string; endsAt: string }[] };
@@ -174,7 +201,7 @@ export async function getInsights(now = new Date()): Promise<Insights> {
   const [rows, expiringRows, expiringCount, active, sites, recordings] = await Promise.all([
     db.auditEvent.findMany({
       where: { timestamp: { gte: since } },
-      select: { timestamp: true, decision: true, siteName: true, siteId: true, userEmail: true, clientIp: true, reason: true },
+      select: { timestamp: true, decision: true, siteName: true, siteId: true, userId: true, userEmail: true, clientIp: true, reason: true },
     }),
     db.accessGrant.findMany({
       where: expiringWhere,
@@ -198,8 +225,8 @@ export async function getInsights(now = new Date()): Promise<Insights> {
   return {
     trend: buildTrend(auditRows, now),
     heatmap: buildHeatmap(auditRows),
-    topResources: topBy(auditRows, "siteName", 5),
-    topVendors: topBy(auditRows, "userEmail", 5),
+    topResources: topRef(auditRows, "siteId", "siteName", 5),
+    topVendors: topRef(auditRows, "userId", "userEmail", 5),
     deny: denyReasons(auditRows, 5),
     ipFlags: ipFlags(auditRows, IP_FLAG_THRESHOLD),
     expiring: {

@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { buildTrend, buildHeatmap, topBy, denyReasons, ipFlags, activeVendors, typeMix, sessionStats, type AuditRow } from "./insights";
+import { buildTrend, buildHeatmap, topBy, denyReasons, ipFlags, activeVendors, typeMix, sessionStats, topRef, type AuditRow } from "./insights";
 
 function row(p: Partial<AuditRow> & { timestamp: Date; decision: "ALLOW" | "DENY" }): AuditRow {
-  return { siteName: null, siteId: null, userEmail: null, clientIp: null, reason: null, ...p };
+  return { siteName: null, siteId: null, userId: null, userEmail: null, clientIp: null, reason: null, ...p };
 }
 
 describe("buildTrend", () => {
@@ -112,6 +112,22 @@ describe("typeMix", () => {
       row({ timestamp: new Date(), decision: "ALLOW", siteId: null }), // null
     ];
     expect(typeMix(rows, map)).toEqual({ web: 2, remote: 1 });
+  });
+});
+
+describe("topRef", () => {
+  it("groups by id, labels by name, falls back to id, skips null id, sorts desc, honors decision", () => {
+    const rows = [
+      row({ timestamp: new Date(), decision: "ALLOW", siteId: "s1", siteName: "Alpha" }),
+      row({ timestamp: new Date(), decision: "ALLOW", siteId: "s1", siteName: "Alpha" }),
+      row({ timestamp: new Date(), decision: "ALLOW", siteId: "s2", siteName: null }),   // name null → id fallback
+      row({ timestamp: new Date(), decision: "DENY",  siteId: "s1", siteName: "Alpha" }), // deny ignored
+      row({ timestamp: new Date(), decision: "ALLOW", siteId: null, siteName: "X" }),     // null id skipped
+    ];
+    expect(topRef(rows, "siteId", "siteName", 5)).toEqual([
+      { id: "s1", label: "Alpha", count: 2 },
+      { id: "s2", label: "s2", count: 1 },
+    ]);
   });
 });
 
