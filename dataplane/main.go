@@ -199,7 +199,12 @@ func main() {
 	}, 5*time.Second, 200)
 
 	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: managerURL, audit: audit}
-	log.Fatal(http.ListenAndServe(env("PROXY_ADDR", ":3103"), proxy))
+	// Native gateway WebSocket tunnel (guacamole-common-js <-> guacd). The front
+	// nginx forwards /guac-tunnel here; everything else is the browser proxy.
+	mux := http.NewServeMux()
+	mux.HandleFunc("/guac-tunnel", func(w http.ResponseWriter, r *http.Request) { serveGuacTunnel(ctrl, reg, w, r) })
+	mux.Handle("/", proxy)
+	log.Fatal(http.ListenAndServe(env("PROXY_ADDR", ":3103"), mux))
 }
 
 func env(k, d string) string {

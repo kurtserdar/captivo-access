@@ -77,7 +77,7 @@ func (c *ControlClient) ResolveSession(token string) (userID, email string, err 
 // descriptor with the decrypted credential + the guacd address to reach. On a
 // denied grant / missing credential the control plane returns an HTTP status,
 // surfaced here as an error so the tunnel closes.
-func (c *ControlClient) GatewayDescriptor(userID, siteID string) (GuacConn, string, error) {
+func (c *ControlClient) GatewayDescriptor(userID, siteID string) (conn GuacConn, guacdAddress, connectorID string, err error) {
 	var out struct {
 		Protocol     string `json:"protocol"`
 		TargetHost   string `json:"targetHost"`
@@ -86,9 +86,10 @@ func (c *ControlClient) GatewayDescriptor(userID, siteID string) (GuacConn, stri
 		Secret       string `json:"secret"`
 		SecretKind   string `json:"secretKind"`
 		GuacdAddress string `json:"guacdAddress"`
+		ConnectorID  string `json:"connectorId"`
 	}
 	if err := c.post("/api/internal/gateway/descriptor", map[string]string{"userId": userID, "siteId": siteID}, &out); err != nil {
-		return GuacConn{}, "", err
+		return GuacConn{}, "", "", err
 	}
 	return GuacConn{
 		Protocol:   out.Protocol,
@@ -97,7 +98,7 @@ func (c *ControlClient) GatewayDescriptor(userID, siteID string) (GuacConn, stri
 		Username:   out.Username,
 		Secret:     out.Secret,
 		SecretKind: out.SecretKind,
-	}, out.GuacdAddress, nil
+	}, out.GuacdAddress, out.ConnectorID, nil
 }
 
 // SiteByHost resolves a browser-facing hostname to the site/connector it's

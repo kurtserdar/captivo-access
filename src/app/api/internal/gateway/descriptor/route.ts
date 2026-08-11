@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const siteId = typeof b.siteId === "string" ? b.siteId : "";
   if (!userId || !siteId) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true } });
   if (!site || site.accessMode !== "GATEWAY") return NextResponse.json({ error: "not_gateway" }, { status: 404 });
 
   const decision = await evaluateAccess(userId, siteId, new Date());
@@ -39,5 +39,6 @@ export async function POST(req: NextRequest) {
     secret: cred.secret,
     secretKind: cred.secretKind,
     guacdAddress: (process.env.GUACD_ADDR ?? "guacd:4822").trim(),
+    connectorId: site.connectorId,
   });
 }
