@@ -532,3 +532,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .spark-wrap { position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; }
 .spark-wrap .kpi-spark { position: static; }
 .spark-tip { font-size: .62rem; font-variant-numeric: tabular-nums; color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; line-height: 1.3; }
+
+/* Heatmap rich hover */
+.heatmap-wrap { position: relative; }
+.heatmap-cell.hot { outline: 1.5px solid var(--fg); outline-offset: -1px; }
+.heat-tip { position: absolute; transform: translate(-50%, -130%); pointer-events: none; white-space: nowrap; background: var(--surface); border: 1px solid var(--line); color: var(--fg); font-size: .72rem; padding: 3px 7px; border-radius: 6px; box-shadow: var(--shadow); z-index: 5; }
