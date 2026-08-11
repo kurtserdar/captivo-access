@@ -317,6 +317,67 @@ export type BytesNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedBytesNullableFilter<$PrismaModel>
 }
 
+export type EnumVaultProtocolFilter<$PrismaModel = never> = {
+  equals?: $Enums.VaultProtocol | Prisma.EnumVaultProtocolFieldRefInput<$PrismaModel>
+  in?: $Enums.VaultProtocol[] | Prisma.ListEnumVaultProtocolFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VaultProtocol[] | Prisma.ListEnumVaultProtocolFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVaultProtocolFilter<$PrismaModel> | $Enums.VaultProtocol
+}
+
+export type IntFilter<$PrismaModel = never> = {
+  equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
+  notIn?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
+  lt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  lte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedIntFilter<$PrismaModel> | number
+}
+
+export type EnumVaultSecretKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.VaultSecretKind | Prisma.EnumVaultSecretKindFieldRefInput<$PrismaModel>
+  in?: $Enums.VaultSecretKind[] | Prisma.ListEnumVaultSecretKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VaultSecretKind[] | Prisma.ListEnumVaultSecretKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVaultSecretKindFilter<$PrismaModel> | $Enums.VaultSecretKind
+}
+
+export type EnumVaultProtocolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VaultProtocol | Prisma.EnumVaultProtocolFieldRefInput<$PrismaModel>
+  in?: $Enums.VaultProtocol[] | Prisma.ListEnumVaultProtocolFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VaultProtocol[] | Prisma.ListEnumVaultProtocolFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVaultProtocolWithAggregatesFilter<$PrismaModel> | $Enums.VaultProtocol
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVaultProtocolFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVaultProtocolFilter<$PrismaModel>
+}
+
+export type IntWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
+  notIn?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
+  lt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  lte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedIntWithAggregatesFilter<$PrismaModel> | number
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _avg?: Prisma.NestedFloatFilter<$PrismaModel>
+  _sum?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedIntFilter<$PrismaModel>
+  _max?: Prisma.NestedIntFilter<$PrismaModel>
+}
+
+export type EnumVaultSecretKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VaultSecretKind | Prisma.EnumVaultSecretKindFieldRefInput<$PrismaModel>
+  in?: $Enums.VaultSecretKind[] | Prisma.ListEnumVaultSecretKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VaultSecretKind[] | Prisma.ListEnumVaultSecretKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVaultSecretKindWithAggregatesFilter<$PrismaModel> | $Enums.VaultSecretKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVaultSecretKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVaultSecretKindFilter<$PrismaModel>
+}
+
 export type EnumGrantStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.GrantStatus | Prisma.EnumGrantStatusFieldRefInput<$PrismaModel>
   in?: $Enums.GrantStatus[] | Prisma.ListEnumGrantStatusFieldRefInput<$PrismaModel>
@@ -385,38 +446,11 @@ export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
   _max?: Prisma.NestedJsonNullableFilter<$PrismaModel>
 }
 
-export type IntFilter<$PrismaModel = never> = {
-  equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
-  notIn?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
-  lt?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  lte?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  gt?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  gte?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedIntFilter<$PrismaModel> | number
-}
-
 export type EnumAuditDecisionFilter<$PrismaModel = never> = {
   equals?: $Enums.AuditDecision | Prisma.EnumAuditDecisionFieldRefInput<$PrismaModel>
   in?: $Enums.AuditDecision[] | Prisma.ListEnumAuditDecisionFieldRefInput<$PrismaModel>
   notIn?: $Enums.AuditDecision[] | Prisma.ListEnumAuditDecisionFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumAuditDecisionFilter<$PrismaModel> | $Enums.AuditDecision
-}
-
-export type IntWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
-  notIn?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
-  lt?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  lte?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  gt?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  gte?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedIntWithAggregatesFilter<$PrismaModel> | number
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _avg?: Prisma.NestedFloatFilter<$PrismaModel>
-  _sum?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedIntFilter<$PrismaModel>
-  _max?: Prisma.NestedIntFilter<$PrismaModel>
 }
 
 export type EnumAuditDecisionWithAggregatesFilter<$PrismaModel = never> = {
@@ -773,6 +807,56 @@ export type NestedBytesNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedBytesNullableFilter<$PrismaModel>
 }
 
+export type NestedEnumVaultProtocolFilter<$PrismaModel = never> = {
+  equals?: $Enums.VaultProtocol | Prisma.EnumVaultProtocolFieldRefInput<$PrismaModel>
+  in?: $Enums.VaultProtocol[] | Prisma.ListEnumVaultProtocolFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VaultProtocol[] | Prisma.ListEnumVaultProtocolFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVaultProtocolFilter<$PrismaModel> | $Enums.VaultProtocol
+}
+
+export type NestedEnumVaultSecretKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.VaultSecretKind | Prisma.EnumVaultSecretKindFieldRefInput<$PrismaModel>
+  in?: $Enums.VaultSecretKind[] | Prisma.ListEnumVaultSecretKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VaultSecretKind[] | Prisma.ListEnumVaultSecretKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVaultSecretKindFilter<$PrismaModel> | $Enums.VaultSecretKind
+}
+
+export type NestedEnumVaultProtocolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VaultProtocol | Prisma.EnumVaultProtocolFieldRefInput<$PrismaModel>
+  in?: $Enums.VaultProtocol[] | Prisma.ListEnumVaultProtocolFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VaultProtocol[] | Prisma.ListEnumVaultProtocolFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVaultProtocolWithAggregatesFilter<$PrismaModel> | $Enums.VaultProtocol
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVaultProtocolFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVaultProtocolFilter<$PrismaModel>
+}
+
+export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
+  notIn?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
+  lt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  lte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedIntWithAggregatesFilter<$PrismaModel> | number
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _avg?: Prisma.NestedFloatFilter<$PrismaModel>
+  _sum?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedIntFilter<$PrismaModel>
+  _max?: Prisma.NestedIntFilter<$PrismaModel>
+}
+
+export type NestedEnumVaultSecretKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VaultSecretKind | Prisma.EnumVaultSecretKindFieldRefInput<$PrismaModel>
+  in?: $Enums.VaultSecretKind[] | Prisma.ListEnumVaultSecretKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VaultSecretKind[] | Prisma.ListEnumVaultSecretKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVaultSecretKindWithAggregatesFilter<$PrismaModel> | $Enums.VaultSecretKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVaultSecretKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVaultSecretKindFilter<$PrismaModel>
+}
+
 export type NestedEnumGrantStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.GrantStatus | Prisma.EnumGrantStatusFieldRefInput<$PrismaModel>
   in?: $Enums.GrantStatus[] | Prisma.ListEnumGrantStatusFieldRefInput<$PrismaModel>
@@ -819,22 +903,6 @@ export type NestedEnumAuditDecisionFilter<$PrismaModel = never> = {
   in?: $Enums.AuditDecision[] | Prisma.ListEnumAuditDecisionFieldRefInput<$PrismaModel>
   notIn?: $Enums.AuditDecision[] | Prisma.ListEnumAuditDecisionFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumAuditDecisionFilter<$PrismaModel> | $Enums.AuditDecision
-}
-
-export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
-  notIn?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
-  lt?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  lte?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  gt?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  gte?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedIntWithAggregatesFilter<$PrismaModel> | number
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _avg?: Prisma.NestedFloatFilter<$PrismaModel>
-  _sum?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedIntFilter<$PrismaModel>
-  _max?: Prisma.NestedIntFilter<$PrismaModel>
 }
 
 export type NestedEnumAuditDecisionWithAggregatesFilter<$PrismaModel = never> = {

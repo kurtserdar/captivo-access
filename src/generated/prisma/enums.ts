@@ -46,6 +46,23 @@ export const SiteAccessMode = {
 export type SiteAccessMode = (typeof SiteAccessMode)[keyof typeof SiteAccessMode]
 
 
+export const VaultProtocol = {
+  RDP: 'RDP',
+  SSH: 'SSH',
+  VNC: 'VNC'
+} as const
+
+export type VaultProtocol = (typeof VaultProtocol)[keyof typeof VaultProtocol]
+
+
+export const VaultSecretKind = {
+  PASSWORD: 'PASSWORD',
+  KEY: 'KEY'
+} as const
+
+export type VaultSecretKind = (typeof VaultSecretKind)[keyof typeof VaultSecretKind]
+
+
 export const GrantStatus = {
   ACTIVE: 'ACTIVE',
   REVOKED: 'REVOKED',

@@ -59,9 +59,11 @@ export const ModelName = {
   Connector: 'Connector',
   ConnectorPairing: 'ConnectorPairing',
   Site: 'Site',
+  VaultCredential: 'VaultCredential',
   AccessGrant: 'AccessGrant',
   AuditEvent: 'AuditEvent',
   AuditChainState: 'AuditChainState',
+  AuditAnchor: 'AuditAnchor',
   SmtpConfig: 'SmtpConfig',
   Notification: 'Notification',
   OidcConfig: 'OidcConfig',
@@ -216,6 +218,22 @@ export const SiteScalarFieldEnum = {
 export type SiteScalarFieldEnum = (typeof SiteScalarFieldEnum)[keyof typeof SiteScalarFieldEnum]
 
 
+export const VaultCredentialScalarFieldEnum = {
+  id: 'id',
+  siteId: 'siteId',
+  protocol: 'protocol',
+  targetHost: 'targetHost',
+  targetPort: 'targetPort',
+  username: 'username',
+  secret: 'secret',
+  secretKind: 'secretKind',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type VaultCredentialScalarFieldEnum = (typeof VaultCredentialScalarFieldEnum)[keyof typeof VaultCredentialScalarFieldEnum]
+
+
 export const AccessGrantScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -272,6 +290,19 @@ export const AuditChainStateScalarFieldEnum = {
 } as const
 
 export type AuditChainStateScalarFieldEnum = (typeof AuditChainStateScalarFieldEnum)[keyof typeof AuditChainStateScalarFieldEnum]
+
+
+export const AuditAnchorScalarFieldEnum = {
+  id: 'id',
+  anchoredSeq: 'anchoredSeq',
+  anchoredHash: 'anchoredHash',
+  tsaUrl: 'tsaUrl',
+  token: 'token',
+  genTime: 'genTime',
+  createdAt: 'createdAt'
+} as const
+
+export type AuditAnchorScalarFieldEnum = (typeof AuditAnchorScalarFieldEnum)[keyof typeof AuditAnchorScalarFieldEnum]
 
 
 export const SmtpConfigScalarFieldEnum = {
@@ -388,6 +419,12 @@ export const PlatformSettingsScalarFieldEnum = {
   recordingConsentRequired: 'recordingConsentRequired',
   recordingRetentionDays: 'recordingRetentionDays',
   defaultConnectorLogLevel: 'defaultConnectorLogLevel',
+  externalAnchorEnabled: 'externalAnchorEnabled',
+  anchorTsaUrl: 'anchorTsaUrl',
+  anchorTsaAuth: 'anchorTsaAuth',
+  notifySiteHealth: 'notifySiteHealth',
+  notifyAccessRequests: 'notifyAccessRequests',
+  notifyAccessDecisions: 'notifyAccessDecisions',
   updatedAt: 'updatedAt'
 } as const
 

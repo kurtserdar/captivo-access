@@ -93,11 +93,11 @@ To cap what this connector may reach, add `-e ALLOWED_TARGETS=10.0.5.0/24`
 and unrelated to which apps route through this connector, which is decided
 entirely by Sites in the Manager.
 
-If this connector will also host the optional Guacamole gateway (recorded
-RDP/SSH/VNC), don't attach the gateway network by hand: flag the connector as a
-**gateway host** in the console (`/admin/connectors` → Enable gateway mode) so
-its generated command joins the shared `captivo-gateway` network durably. See
-[`deploy/gateway/README.md`](../deploy/gateway/README.md).
+If this connector will also run remote-desktop sessions (recorded RDP/SSH/VNC),
+don't attach the gateway network or install guacd by hand: flag the connector as
+a **gateway host** in the console (`/admin/connectors` → Enable gateway mode) so
+its generated command deploys the session engine (guacd) and joins the shared
+`captivo-gateway` network durably.
 
 You can still build from source with the `docker build` command above if
 you prefer (or need a version that hasn't been tagged yet).

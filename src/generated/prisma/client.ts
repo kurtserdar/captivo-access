@@ -82,6 +82,11 @@ export type ConnectorPairing = Prisma.ConnectorPairingModel
  */
 export type Site = Prisma.SiteModel
 /**
+ * Model VaultCredential
+ * 
+ */
+export type VaultCredential = Prisma.VaultCredentialModel
+/**
  * Model AccessGrant
  * 
  */
@@ -96,6 +101,11 @@ export type AuditEvent = Prisma.AuditEventModel
  * 
  */
 export type AuditChainState = Prisma.AuditChainStateModel
+/**
+ * Model AuditAnchor
+ * 
+ */
+export type AuditAnchor = Prisma.AuditAnchorModel
 /**
  * Model SmtpConfig
  * 

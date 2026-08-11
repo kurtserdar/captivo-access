@@ -73,11 +73,11 @@ export function ConnectorForm({ onDone }: { onDone?: () => void }) {
           <div className="field">
             <label className="form-check">
               <input type="checkbox" checked={gateway} onChange={(e) => setGateway(e.target.checked)} />
-              <span>This host will also run the Guacamole gateway</span>
+              <span>This host will also run remote-desktop sessions</span>
             </label>
             <p className="cell-sub">
-              Bakes <code>--network captivo-gateway</code> into the connector command so it can reach Guacamole
-              — no separate &quot;Enable gateway mode&quot; step. See <code>deploy/gateway/README.md</code>.
+              The connector command deploys the session engine (guacd) alongside the connector on this host, so
+              remote-desktop sites (RDP/SSH/VNC) can reach it — one command, nothing else to install.
             </p>
           </div>
           {error && (
