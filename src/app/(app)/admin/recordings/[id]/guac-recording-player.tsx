@@ -43,9 +43,14 @@ export function GuacRecordingPlayer({ recordingId }: { recordingId: string }) {
         recording.onseek = (millis: number) => setPosition(millis);
         recording.onplay = () => setPlaying(true);
         recording.onpause = () => setPlaying(false);
-        recording.onerror = () => setError("Couldn't play this recording.");
-      } catch {
-        setError("Couldn't play this recording.");
+        recording.onerror = (status: unknown) => {
+          console.error("[guac-recording] onerror:", status);
+          setError(`Couldn't play this recording. (${typeof status === "string" ? status : JSON.stringify(status)})`);
+        };
+      } catch (err) {
+        console.error("[guac-recording] failed:", err);
+        const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+        setError(`Couldn't play this recording. (${msg})`);
       }
     })();
     return () => {
