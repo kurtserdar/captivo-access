@@ -22,10 +22,15 @@ It has **three listeners**:
   or a clipboard restriction — injects an rrweb recorder and/or a clipboard
   guard into HTML responses (stripping the upstream CSP on any injected
   response so the inline script runs) and serves the reserved `/__captivo/*`
-  endpoints (never forwarded upstream);
+  endpoints (never forwarded upstream). The same listener also hosts the
+  **native remote-desktop gateway**: `/guac-tunnel` bridges a browser to guacd
+  (RDP/SSH/VNC) through the connector, driving the guacd handshake server-side
+  and injecting the vault credential so it never reaches the vendor; `/guac-view`
+  lets an admin **join** that guacd connection (by its connection ID) to watch or
+  take control of a live session;
 - an **internal API** (`:3102`) the Manager calls to round-trip an allowlisted
-  HTTP request (`/proxy`) or run a reachability probe (`/probe`) through a
-  specific connector.
+  HTTP request (`/proxy`), run a reachability probe (`/probe`), list active
+  gateway sessions, or set take-control, through a specific connector.
 
 It shares wire-format and dial types with the connector via the
 [`tunnel`](../tunnel) module and holds **no persistent state** — connector
@@ -70,7 +75,7 @@ secrets, and database.
 | Port | Address env     | Audience                                                              |
 | ---- | --------------- | -------------------------------------------------------------------- |
 | 3101 | `WSS_ADDR`      | Public — connectors dial in here (`/tunnel`, `/healthz`)             |
-| 3103 | `PROXY_ADDR`    | Public (behind the front TLS proxy) — vendor per-site traffic        |
+| 3103 | `PROXY_ADDR`    | Public (behind the front TLS proxy) — vendor per-site traffic, plus the native gateway `/guac-tunnel` + live-view `/guac-view` |
 | 3102 | `INTERNAL_ADDR` | Compose-internal only — the Manager's `/proxy` + `/probe`; **must not** be published to the host/internet |
 
 In `docker-compose.yml`, `3101` and `3103` are published; `3102` is reachable

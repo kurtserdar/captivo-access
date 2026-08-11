@@ -115,8 +115,9 @@ Step by step:
 > **A few variations on the same path.** WebSocket apps (e.g. a browser-based
 > console) are relayed the same way; **web sessions can be recorded** per Site
 > and replayed in the console; internal staff/admins can optionally sign in via
-> **SSO/OIDC** instead of a passkey; and recorded **RDP/SSH/VNC** sessions are
-> served by a native remote-desktop gateway bundled with the connector. Who can do what
+> **SSO/OIDC** instead of a passkey; and **RDP/SSH/VNC** sessions are served by a
+> native remote-desktop gateway bundled with the connector — recorded for later
+> replay and watchable live by an admin (who can also take control). Who can do what
 > in the console is governed by five roles (`ADMIN`, `OPERATOR`, `AUDITOR`,
 > `STAFF`, `VENDOR`).
 

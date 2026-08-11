@@ -307,7 +307,11 @@ separate pack. In the console, flag a connector as a session host
 deploys the session engine (guacd) on that host and joins the shared
 `captivo-gateway` network. Then add a **Remote desktop** Site (protocol, host,
 port, and vault credentials) and vendors connect straight from `/access`,
-streamed in-browser and recorded natively.
+streamed in-browser and recorded natively (replayable at `/admin/recordings`).
+
+Admins can watch an in-progress remote-desktop session live at `/admin/live` and
+take control; guacd's own logs appear on the connector's detail page ("Gateway
+logs") for troubleshooting connection or authentication failures.
 
 ## Updating
 

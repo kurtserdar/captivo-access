@@ -16,9 +16,10 @@ and no traffic that passes through anyone's infrastructure but your own.
 > tamper-evident (hash-chained) audit trail are all implemented and working
 > end-to-end (see [Features](#features)). SSO/OIDC login, session recording
 > (web sessions via rrweb, plus native RDP/SSH/VNC remote-desktop sessions
-> streamed in-browser), and a light/dark/system console are shipped too. Session
-> isolation (remote-browser rendering) and a credential vault — the rest of the
-> "Pro" layer — are **not built yet**; see [Roadmap](#roadmap-not-yet). Not
+> streamed in-browser, recorded, and watchable live), an encrypted **credential
+> vault** for remote-desktop targets, and a light/dark/system console are shipped
+> too. Session isolation (remote-browser rendering) — the rest of the "Pro"
+> layer — is **not built yet**; see [Roadmap](#roadmap-not-yet). Not
 > production-hardened; review the [Security model](#security-model) yourself
 > before relying on it.
 
@@ -120,8 +121,9 @@ Shipped and working today:
   weekdays 09:00–18:00 in a chosen timezone), evaluated in that timezone.
 - **Tamper-evident audit** — audit rows are hash-chained; the admin console
   can verify the chain is intact and detect alteration, deletion, splicing,
-  or tail-truncation. External trusted-timestamp anchoring (RFC 3161 / KamuSM)
-  is a documented fast-follow — see [Roadmap](#roadmap-not-yet).
+  or tail-truncation. An optional **external anchor** (a trusted RFC 3161 /
+  KamuSM timestamp on the chain head, enabled from Policy) seals the chain
+  against an actor who could rewrite the whole database.
 - **Per-site health monitoring** — a scheduled probe TCP-connects to each Site
   through its connector and shows reachability + latency in the console. When a
   Site goes down or recovers, an in-console notification is raised (nav bell +
@@ -141,15 +143,23 @@ Shipped and working today:
   (Caddy On-Demand), configured from the console.
 - **WebSocket passthrough** — the proxy relays WebSocket upgrades transparently,
   so WS/streaming internal apps (e.g. a Proxmox noVNC console) work end-to-end.
-- **Session recording (rrweb)** — for Sites with recording enabled
-  (`RECORDING_ENABLED` + a per-Site toggle), the proxy injects an rrweb DOM
-  recorder into web sessions; admins filter, replay, and delete them at
-  `/admin/recordings` (each deletion is written to the audit log). Console
-  protocols (RDP/SSH/VNC) are served by a **native remote-desktop gateway**:
-  flag a connector host to run sessions and its install command also deploys the
-  session engine (guacd) — no separate pack. Add a **Remote desktop** Site
-  (protocol/host/port/credentials) and vendors connect from the browser. Sites
-  carry a `TRANSPARENT` (web app) vs `GATEWAY` (remote desktop) label.
+- **Session recording** — with recording enabled (`RECORDING_ENABLED` + a
+  per-Site toggle), both **web sessions** (an injected rrweb DOM recorder) and
+  **remote-desktop sessions** (captured natively from the guacd stream,
+  AES-256-GCM-encrypted at rest) are replayable at `/admin/recordings`; admins
+  filter, replay, and delete them (each deletion is written to the audit log).
+- **Native remote-desktop gateway (RDP/SSH/VNC)** — console protocols are served
+  in-browser with no separate pack: flag a connector host to run sessions and its
+  install command also deploys the session engine (guacd). Add a **Remote
+  desktop** Site (protocol/host/port/credentials); the credential is injected
+  server-side and the vendor never sees the password. Sites carry a `TRANSPARENT`
+  (web app) vs `GATEWAY` (remote desktop) label, and gateway targets are
+  reachability-checked like web apps.
+- **Live session view** — an admin/auditor watches an in-progress remote-desktop
+  session in real time from `/admin/live` (the current screen shows on join, via
+  guacd connection sharing), and an admin can **take control**; the vendor sees a
+  "being monitored" notice and every watch/take/release is written to the audit
+  log.
 - **Email (SMTP)** — configured from the console (`/admin/email`); sends invite
   emails, access-request/approval emails, and site down/recovered alerts. (Invites
   can also be copied as a one-time link and sent yourself; all of these events also
@@ -176,7 +186,9 @@ Shipped and working today:
 - **Connector observability + egress policy** — each connector's detail page
   shows live telemetry (version, uptime, active/total connections, bytes
   in/out, denied count) and a recent-log tail, streamed over the tunnel's
-  control channel. An optional per-connector **egress policy** narrows what a
+  control channel — and, on a gateway host, a separate **Gateway logs** tail from
+  guacd for troubleshooting remote-desktop connections. An optional per-connector
+  **egress policy** narrows what a
   connector may reach on top of its local `ALLOWED_TARGETS` — it can only
   tighten that boundary, never widen it. A connector's **log level** (and a
   fleet-wide default) is set from the console and pushed live — turn on
@@ -378,22 +390,19 @@ instead, replicate that routing and forward those headers.
   `CRON_SECRET` unset, every call returns `401` and nothing is deleted.
 - **Tamper-evident:** rows are hash-chained (each row carries the previous
   row's hash), and the admin console verifies the chain — detecting
-  alteration, deletion, splicing, and tail-truncation. What's *not* here yet
-  is an **external** anchor (a trusted RFC 3161 / KamuSM timestamp on the
-  chain head), which is what would defend against an actor who can rewrite
-  the whole database. See [Roadmap](#roadmap-not-yet).
+  alteration, deletion, splicing, and tail-truncation. An optional **external
+  anchor** (a trusted RFC 3161 / KamuSM timestamp on the chain head, enabled
+  from Policy and driven by a daily cron) seals it against an actor who can
+  rewrite the whole database.
 
 ## Roadmap / not yet
 
 Explicitly **not** built — don't assume these exist:
 
-- **Session isolation / remote-browser rendering, and a credential vault** —
-  the rest of the future "Pro" layer, on top of what ships today. (Session
-  *recording* is already here — see [Features](#features).)
-- **External audit anchoring** — the audit log is hash-chained and
-  tamper-evident, but the chain head is not yet anchored to an external
-  trusted timestamp (RFC 3161 / KamuSM). That external anchor is what would
-  defend against an actor able to rewrite the entire database.
+- **Session isolation / remote-browser rendering** — the rest of the future
+  "Pro" layer, on top of what ships today. (Session *recording*, live view, and
+  the encrypted **credential vault** for remote-desktop targets are already here
+  — see [Features](#features).)
 - **RDP/SSH/VNC** — the core is an HTTP(S) + WebSocket proxy, not a
   general-purpose bastion. Recorded console access is available today via the
   built-in **native remote-desktop gateway**: flag a connector as a session host
