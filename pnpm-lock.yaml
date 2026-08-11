@@ -32,6 +32,9 @@ importers:
       asn1js:
         specifier: ^3.0.10
         version: 3.0.10
+      guacamole-common-js:
+        specifier: ^1.5.0
+        version: 1.5.0
       jose:
         specifier: ^6
         version: 6.2.4
@@ -2072,6 +2075,9 @@ packages:
 
   graphmatch@1.1.1:
     resolution: {integrity: sha512-5ykVn/EXM1hF0XCaWh05VbYvEiOL2lY1kBxZtaYsyvjp7cmWOU1XsAdfQBwClraEofXDT197lFbXOEVMHpvQOg==}
+
+  guacamole-common-js@1.5.0:
+    resolution: {integrity: sha512-zxztif3GGhKbg1RgOqwmqot8kXgv2HmHFg1EvWwd4q7UfEKvBcYZ0f+7G8HzvU+FUxF0Psqm9Kl5vCbgfrRgJg==}
 
   has-bigints@1.1.0:
     resolution: {integrity: sha512-R3pbpkcIqv2Pm3dUwgjclDRVmWpTJW2DcMzcIhEXEx1oh/CEMObMm3KLmRJOdvhM7o4uQBnwr8pzRK2sJWIqfg==}
@@ -5340,6 +5346,8 @@ snapshots:
   grammex@3.1.13: {}
 
   graphmatch@1.1.1: {}
+
+  guacamole-common-js@1.5.0: {}
 
   has-bigints@1.1.0: {}
 

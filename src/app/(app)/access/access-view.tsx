@@ -81,12 +81,17 @@ function FavStar({ on, onClick }: { on: boolean; onClick: () => void }) {
   );
 }
 
-function RowAction({ r }: { r: AccessRow }) {
+function RowAction({ r, nativeGateway }: { r: AccessRow; nativeGateway: boolean }) {
   if (r.status === "active") {
-    // GATEWAY sites go through the launch endpoint, which injects the vaulted
-    // credential and drops the vendor straight into the session (no gateway
-    // login, no password). Other sites open directly.
-    const href = r.accessMode === "GATEWAY" ? `/api/access/gateway/${r.siteId}/launch` : `https://${r.hostname}`;
+    // GATEWAY sites: native → the in-Captivo session page (guacd tunnel); else the
+    // json-auth launch (injects the vaulted credential into Guacamole). Other
+    // sites open directly.
+    const href =
+      r.accessMode === "GATEWAY"
+        ? nativeGateway
+          ? `/access/gateway/${r.siteId}/session`
+          : `/api/access/gateway/${r.siteId}/launch`
+        : `https://${r.hostname}`;
     return (
       <a className="btn sm" href={href} target="_blank" rel="noopener noreferrer">
         Open ↗
@@ -98,7 +103,7 @@ function RowAction({ r }: { r: AccessRow }) {
   return null;
 }
 
-export function AccessView({ rows }: { rows: AccessRow[] }) {
+export function AccessView({ rows, nativeGateway }: { rows: AccessRow[]; nativeGateway: boolean }) {
   const [view, setView] = useState<View>("cards");
   const [favs, setFavs] = useState<Set<string>>(new Set());
   const [favReady, setFavReady] = useState(false);
@@ -170,7 +175,7 @@ export function AccessView({ rows }: { rows: AccessRow[] }) {
                 </div>
                 <div className="cell-sub"><Window r={r} /></div>
                 <RecordedTag r={r} />
-                <div className="access-card-foot"><RowAction r={r} /></div>
+                <div className="access-card-foot"><RowAction r={r} nativeGateway={nativeGateway} /></div>
               </div>
             ))}
           </div>
@@ -198,7 +203,7 @@ export function AccessView({ rows }: { rows: AccessRow[] }) {
                       <RecordedTag r={r} />
                     </td>
                     <td>
-                      <span className="row-actions"><FavStar on={isFav(r)} onClick={() => toggleFav(r.siteId)} /><RowAction r={r} /></span>
+                      <span className="row-actions"><FavStar on={isFav(r)} onClick={() => toggleFav(r.siteId)} /><RowAction r={r} nativeGateway={nativeGateway} /></span>
                     </td>
                   </tr>
                 ))}
