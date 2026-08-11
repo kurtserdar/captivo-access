@@ -45,6 +45,12 @@ func main() {
 
 	logInfo("connector starting (version %s)", Version)
 	go logHeartbeat()
+	// On a gateway host the guacd log volume is mounted at /guaclog; tail guacd's
+	// log so the console can show it. On non-gateway hosts /guaclog is absent and
+	// the tail never starts (guacdLogRing stays empty).
+	if _, err := os.Stat("/guaclog"); err == nil {
+		go tailGuacdLog("/guaclog/guacd.log")
+	}
 	runClient(dataplaneURL, token, allow)
 }
 
