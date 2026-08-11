@@ -1,25 +1,31 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { encrypt, decrypt } from "./crypto";
+import { encryptBytes, decryptBytes } from "./crypto";
 
-beforeAll(() => { process.env.ENCRYPTION_KEY = "a".repeat(64); }); // 32-byte hex
+beforeAll(() => {
+  // 32-byte hex key for AES-256-GCM.
+  process.env.ENCRYPTION_KEY = "0".repeat(64);
+});
 
-describe("crypto AES-256-GCM", () => {
-  it("round-trip", () => {
-    const p = "plaintext-totp-secret-ABC123";
-    const c = encrypt(p);
-    expect(c).not.toContain(p);
-    expect(decrypt(c)).toBe(p);
+describe("encryptBytes/decryptBytes", () => {
+  it("round-trips arbitrary binary data", () => {
+    const raw = Buffer.from([0, 1, 2, 255, 254, 10, 13, 0, 128]);
+    const enc = encryptBytes(raw);
+    expect(enc.equals(raw)).toBe(false); // actually encrypted
+    expect(decryptBytes(enc).equals(raw)).toBe(true);
   });
-  it("each encryption produces different ciphertext (random IV)", () => {
-    expect(encrypt("x")).not.toBe(encrypt("x"));
+
+  it("produces a fresh IV each call (ciphertext differs)", () => {
+    const raw = Buffer.from("same input");
+    expect(encryptBytes(raw).equals(encryptBytes(raw))).toBe(false);
   });
-  it("corrupted payload → throw", () => {
-    expect(() => decrypt("corrupted")).toThrow();
+
+  it("throws on a tampered payload", () => {
+    const enc = encryptBytes(Buffer.from("secret"));
+    enc[enc.length - 1] ^= 0xff; // flip a ciphertext byte
+    expect(() => decryptBytes(enc)).toThrow();
   });
-  it("wrong key → throw (tag verification)", () => {
-    const c = encrypt("y");
-    process.env.ENCRYPTION_KEY = "b".repeat(64);
-    expect(() => decrypt(c)).toThrow();
-    process.env.ENCRYPTION_KEY = "a".repeat(64);
+
+  it("throws on a too-short payload", () => {
+    expect(() => decryptBytes(Buffer.alloc(10))).toThrow();
   });
 });

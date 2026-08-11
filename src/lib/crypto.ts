@@ -27,3 +27,22 @@ export function decrypt(payload: string): string {
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
 }
+
+/** AES-256-GCM for binary data. Layout: iv(12) | tag(16) | ciphertext (raw, no base64). */
+export function encryptBytes(plaintext: Buffer): Buffer {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", key(), iv);
+  const ct = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, ct]);
+}
+
+export function decryptBytes(payload: Buffer): Buffer {
+  if (payload.length < 28) throw new Error("Encrypted data is corrupted");
+  const iv = payload.subarray(0, 12);
+  const tag = payload.subarray(12, 28);
+  const ct = payload.subarray(28);
+  const decipher = createDecipheriv("aes-256-gcm", key(), iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(ct), decipher.final()]);
+}
