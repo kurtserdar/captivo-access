@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { probeSite } from "@/lib/connector/health";
+import { probeSite, probeGatewaySite } from "@/lib/connector/health";
 import { classifyTransition, notifyTransition } from "@/lib/notifications";
 import { recordCronRun } from "@/lib/cron/heartbeat";
 
@@ -21,7 +21,6 @@ export async function POST(req: NextRequest) {
   const toProbe = sites.filter(
     (s): s is { id: string; connectorId: string; upstreamUrl: string; name: string; probeOk: boolean | null } => !!s.upstreamUrl,
   );
-  const skipped = sites.length - toProbe.length;
 
   let reachable = 0;
   let unreachable = 0;
@@ -46,5 +45,45 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ checked: toProbe.length, reachable, unreachable, skipped });
+  // GATEWAY sites have no upstreamUrl; probe their remote-desktop target
+  // (VaultCredential.targetHost:targetPort) with the same TCP connect.
+  const gateways = await db.site.findMany({
+    where: { accessMode: "GATEWAY" },
+    select: {
+      id: true,
+      name: true,
+      probeOk: true,
+      connectorId: true,
+      vaultCredential: { select: { targetHost: true, targetPort: true } },
+    },
+  });
+  const gwToProbe = gateways.filter((g) => g.vaultCredential !== null);
+  for (let i = 0; i < gwToProbe.length; i += POOL) {
+    const batch = gwToProbe.slice(i, i + POOL);
+    await Promise.all(
+      batch.map(async (site) => {
+        const vc = site.vaultCredential!;
+        const { probeOk, probeDetail, probeLatencyMs } = await probeGatewaySite({
+          connectorId: site.connectorId,
+          targetHost: vc.targetHost,
+          targetPort: vc.targetPort,
+        });
+        if (probeOk) reachable++;
+        else unreachable++;
+        const transition = classifyTransition(site.probeOk, probeOk);
+        if (transition) {
+          const detail = transition === "site_down" ? probeDetail : null;
+          await notifyTransition({ type: transition, siteId: site.id, siteName: site.name, detail });
+        }
+        await db.site.update({ where: { id: site.id }, data: { probedAt: now, probeOk, probeDetail, probeLatencyMs } });
+      }),
+    );
+  }
+
+  return NextResponse.json({
+    checked: toProbe.length + gwToProbe.length,
+    reachable,
+    unreachable,
+    skipped: sites.length - toProbe.length - gwToProbe.length,
+  });
 }

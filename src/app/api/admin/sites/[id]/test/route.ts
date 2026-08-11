@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { proxyThroughConnector } from "@/lib/connector/dataplane";
-import { probeSite } from "@/lib/connector/health";
+import { probeSite, probeGatewaySite } from "@/lib/connector/health";
 import { classifyTransition, notifyTransition } from "@/lib/notifications";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +24,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       upstreamUrl: true,
       insecureSkipVerify: true,
       probeOk: true,
+      accessMode: true,
+      vaultCredential: { select: { targetHost: true, targetPort: true } },
       connector: { select: { status: true } },
     },
   });
@@ -35,6 +37,26 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     // data-plane: even if the connector's yamux session is still briefly
     // alive, never proxy to a connector we've already revoked.
     return NextResponse.json({ error: "connector_revoked" });
+  }
+  if (site.accessMode === "GATEWAY") {
+    if (!site.vaultCredential) {
+      return NextResponse.json({ error: "no_upstream_url" });
+    }
+    const probe = await probeGatewaySite({
+      connectorId: site.connectorId,
+      targetHost: site.vaultCredential.targetHost,
+      targetPort: site.vaultCredential.targetPort,
+    });
+    const transition = classifyTransition(site.probeOk, probe.probeOk);
+    if (transition) {
+      const detail = transition === "site_down" ? probe.probeDetail : null;
+      await notifyTransition({ type: transition, siteId: id, siteName: site.name, detail });
+    }
+    await db.site.update({
+      where: { id },
+      data: { probedAt: new Date(), probeOk: probe.probeOk, probeDetail: probe.probeDetail, probeLatencyMs: probe.probeLatencyMs },
+    });
+    return NextResponse.json(probe.probeOk ? { ok: true, latencyMs: probe.probeLatencyMs } : { error: probe.probeDetail });
   }
   if (!site.upstreamUrl) {
     // A Site upgraded from an older version (or not yet configured) has no

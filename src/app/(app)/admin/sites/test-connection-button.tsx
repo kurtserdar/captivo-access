@@ -26,6 +26,10 @@ export function TestConnectionButton({ siteId }: { siteId: string }) {
         setResult(`Failed: ${body.error}`);
         return;
       }
+      if (body?.ok === true) {
+        setResult(typeof body.latencyMs === "number" ? `Reachable · ${body.latencyMs} ms` : "Reachable");
+        return;
+      }
       if (typeof body?.status === "number") {
         const bytes = typeof body.bodyPreview === "string" ? decodedByteLength(body.bodyPreview) : 0;
         setResult(`HTTP ${body.status} · ${bytes} byte(s) received${body.truncated ? " (truncated)" : ""}`);
