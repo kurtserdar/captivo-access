@@ -15,7 +15,7 @@ export const GATEWAY_NETWORK = "captivo-gateway";
 // true, the command ALSO deploys guacd (the RDP/SSH/VNC engine for native remote
 // desktops) on the shared GATEWAY_NETWORK, idempotently — baked in so it survives
 // every recreate/update. Pure + db-free.
-function runCommand(managerUrl: string, tunnelUrl: string, code?: string, gatewayHost = false): string {
+function runCommand(managerUrl: string, tunnelUrl: string, code?: string, gatewayHost = false, pull = true): string {
   const guacd = gatewayHost
     ? `docker network inspect ${GATEWAY_NETWORK} >/dev/null 2>&1 || docker network create ${GATEWAY_NETWORK} && ` +
       `docker run --rm -v captivo_guacd_recordings:/rec busybox chown -R 1000:1000 /rec && ` +
@@ -23,8 +23,16 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, gatewa
       `docker run -d --name captivo-guacd --restart unless-stopped --network ${GATEWAY_NETWORK} ` +
       `-v captivo_guacd_recordings:/recordings guacamole/guacd:1.5.5 && `
     : "";
+  // Pull the connector image right before running it. `docker run <img>:latest`
+  // reuses a locally-cached `latest` and will NOT fetch a newer build — a fresh
+  // install on a host that ran an older connector would silently start the stale
+  // image. Gated by `&&` after the (self-contained) guacd block, so the shell
+  // precedence of the guacd block's `||` is unaffected. The update command sets
+  // pull=false because it already pulls first (to minimise connector downtime).
+  const pullCmd = pull ? "docker pull ghcr.io/kurtserdar/captivo-access-connector:latest && " : "";
   return (
     guacd +
+    pullCmd +
     "docker run -d --name access-connector --restart unless-stopped " +
     (gatewayHost ? `--network ${GATEWAY_NETWORK} ` : "") +
     `-e MANAGER_URL=${managerUrl} ` +
@@ -60,6 +68,6 @@ export function buildConnectorUpdateCommand(managerUrl: string, tunnelUrl: strin
   return (
     "docker pull ghcr.io/kurtserdar/captivo-access-connector:latest && " +
     "docker rm -f access-connector && " +
-    runCommand(managerUrl, tunnelUrl, undefined, gatewayHost)
+    runCommand(managerUrl, tunnelUrl, undefined, gatewayHost, false)
   );
 }

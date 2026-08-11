@@ -116,3 +116,21 @@ describe("gateway-host bundles guacd", () => {
     expect(cmd).toContain("docker pull ghcr.io/kurtserdar/captivo-access-connector:latest");
   });
 });
+
+describe("install/re-pair pull the newest connector image", () => {
+  const m = "https://mgr.example.com";
+  const t = "wss://connect.example.com";
+  const PULL = "docker pull ghcr.io/kurtserdar/captivo-access-connector:latest";
+
+  it("install pulls latest before running (avoids a stale cached :latest)", () => {
+    expect(buildInstallCommand("CODE123", m, t)).toContain(PULL);
+    expect(buildInstallCommand("CODE123", m, t, true)).toContain(PULL);
+  });
+  it("re-pair pulls latest before running", () => {
+    expect(buildReconfigureCommand("CODE123", m, t)).toContain(PULL);
+  });
+  it("update pulls exactly once (no double pull)", () => {
+    const cmd = buildConnectorUpdateCommand(m, t, true);
+    expect(cmd.split(PULL).length - 1).toBe(1);
+  });
+});
