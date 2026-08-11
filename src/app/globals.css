@@ -249,6 +249,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .stat-card.danger{background:var(--danger-soft);}
 .stat-card.danger:hover{background:color-mix(in srgb,var(--danger) 20%,var(--surface));}
 .dash-cols{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
+.dash-b + .dash-cols{margin-top:1.2rem;}
 @media (max-width:820px){.dash-cols{grid-template-columns:1fr;}}
 
 /* ---- topbar + command palette ---- */
