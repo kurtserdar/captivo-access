@@ -22,7 +22,7 @@ function errorMessage(code: string | undefined, isEdit: boolean): string {
     case "invalid_port":
       return "Port must be between 1 and 65535.";
     case "native_gateway_disabled":
-      return "Remote desktop gateway is not enabled.";
+      return "Remote session gateway is not enabled.";
     case "connector_name_required":
       return "Connector and name are required.";
     case "forbidden":
@@ -45,6 +45,12 @@ type SiteInitial = {
   accessMode: "TRANSPARENT" | "GATEWAY";
   hasLogo?: boolean;
 };
+
+// The standard port for each remote-session protocol; pre-filled when the
+// protocol changes (the operator can still override it for a non-standard port).
+function defaultPort(protocol: string): number {
+  return protocol === "SSH" ? 22 : protocol === "VNC" ? 5900 : 3389;
+}
 
 export function SiteForm({
   connectors,
@@ -217,7 +223,7 @@ export function SiteForm({
           onChange={(e) => setAccessMode(e.target.value === "GATEWAY" ? "GATEWAY" : "TRANSPARENT")}
         >
           <option value="TRANSPARENT">Web app</option>
-          {nativeGateway && <option value="GATEWAY">Remote desktop (RDP / SSH / VNC)</option>}
+          {nativeGateway && <option value="GATEWAY">Remote session (RDP / SSH / VNC)</option>}
         </select>
         <p className="hint">
           {accessMode === "GATEWAY"
@@ -269,7 +275,7 @@ export function SiteForm({
         <>
           <div className="field">
             <label className="field-label" htmlFor="site-protocol">Protocol</label>
-            <select id="site-protocol" className="select" value={protocol} onChange={(e) => setProtocol(e.target.value)}>
+            <select id="site-protocol" className="select" value={protocol} onChange={(e) => { setProtocol(e.target.value); setTargetPort(String(defaultPort(e.target.value))); }}>
               <option value="RDP">RDP</option>
               <option value="SSH">SSH</option>
               <option value="VNC">VNC</option>
