@@ -15,6 +15,16 @@ function errorMessage(code: string | undefined, isEdit: boolean): string {
       return "Select a valid connector.";
     case "hostname_taken":
       return "That public hostname is already used by another site.";
+    case "remote_desktop_fields_required":
+      return "Fill protocol, host, port, username, and password.";
+    case "invalid_protocol":
+      return "Pick a protocol (RDP, SSH, or VNC).";
+    case "invalid_port":
+      return "Port must be between 1 and 65535.";
+    case "native_gateway_disabled":
+      return "Remote desktop gateway is not enabled.";
+    case "connector_name_required":
+      return "Connector and name are required.";
     case "forbidden":
       return "Admin privileges are required for this action.";
     default:
@@ -40,11 +50,15 @@ export function SiteForm({
   connectors,
   site,
   recordingEnabled = false,
+  nativeGateway = false,
+  vault,
   onDone,
 }: {
   connectors: { id: string; name: string }[];
   site?: SiteInitial;
   recordingEnabled?: boolean;
+  nativeGateway?: boolean;
+  vault?: { protocol: string; targetHost: string; targetPort: number; username: string; hasSecret: boolean };
   onDone?: () => void;
 }) {
   const router = useRouter();
@@ -57,6 +71,13 @@ export function SiteForm({
   const [recordSessions, setRecordSessions] = useState(site?.recordSessions ?? false);
   const [clipboardMode, setClipboardMode] = useState(site?.clipboardMode ?? "allow");
   const [accessMode, setAccessMode] = useState<"TRANSPARENT" | "GATEWAY">(site?.accessMode ?? "TRANSPARENT");
+  // Remote-desktop (GATEWAY) target — seeded from the site's vault credential; the
+  // secret is always blank (write-only).
+  const [protocol, setProtocol] = useState(vault?.protocol ?? "RDP");
+  const [targetHost, setTargetHost] = useState(vault?.targetHost ?? "");
+  const [targetPort, setTargetPort] = useState(String(vault?.targetPort ?? 3389));
+  const [username, setUsername] = useState(vault?.username ?? "");
+  const [secret, setSecret] = useState("");
   // logo: undefined = leave unchanged; null = remove; string = new base64 data URL.
   const [logo, setLogo] = useState<string | null | undefined>(undefined);
   const [logoType, setLogoType] = useState<string | undefined>(undefined);
@@ -116,13 +137,16 @@ export function SiteForm({
         body: JSON.stringify({
           connectorId,
           name,
+          accessMode,
           hostname,
           upstreamUrl,
           description: description.trim() || undefined,
           insecureSkipVerify,
           recordSessions: accessMode === "GATEWAY" ? false : recordSessions,
           clipboardMode: accessMode === "GATEWAY" ? "allow" : clipboardMode,
-          accessMode,
+          ...(accessMode === "GATEWAY"
+            ? { protocol, targetHost, targetPort: Number(targetPort), username, secret }
+            : {}),
           logo,
           logoType,
         }),
@@ -182,6 +206,8 @@ export function SiteForm({
           placeholder="e.g. Internal wiki"
         />
       </div>
+      {accessMode === "TRANSPARENT" && (
+      <>
       <div className="field">
         <label className="field-label" htmlFor="site-hostname">
           Public hostname
@@ -218,9 +244,11 @@ export function SiteForm({
           <p className="notice warn" role="alert">{tlsPortWarning}</p>
         )}
       </div>
+      </>
+      )}
       <div className="field">
         <label className="field-label" htmlFor="site-access-mode">
-          Access mode
+          Type
         </label>
         <select
           id="site-access-mode"
@@ -228,29 +256,60 @@ export function SiteForm({
           value={accessMode}
           onChange={(e) => setAccessMode(e.target.value === "GATEWAY" ? "GATEWAY" : "TRANSPARENT")}
         >
-          <option value="TRANSPARENT">Transparent web app</option>
-          <option value="GATEWAY">Gateway (RDP/SSH/VNC via Guacamole)</option>
+          <option value="TRANSPARENT">Web app</option>
+          {nativeGateway && <option value="GATEWAY">Remote desktop (RDP / SSH / VNC)</option>}
         </select>
-        {accessMode === "GATEWAY" && (
-          <p className="hint">
-            Publish a Guacamole gateway (see <code>deploy/gateway/</code>) as this Site for recorded
-            RDP/SSH/VNC access.
-          </p>
-        )}
+        <p className="hint">
+          {accessMode === "GATEWAY"
+            ? "A native RDP/SSH/VNC session, rendered inside Captivo. The vendor never sees the target password."
+            : "Proxy an internal web app; the vendor opens it in their browser."}
+        </p>
       </div>
-      <div className="field">
-        <label className="field-label">
-          <input
-            type="checkbox"
-            checked={insecureSkipVerify}
-            onChange={(e) => setInsecureSkipVerify(e.target.checked)}
-          />{" "}
-          Allow self-signed certificate (skip TLS verification)
-        </label>
-        <span className="hint">
-          Only for internal devices you trust — the certificate on the connector→app leg won&apos;t be verified.
-        </span>
-      </div>
+      {accessMode === "GATEWAY" && (
+        <>
+          <div className="field">
+            <label className="field-label" htmlFor="site-protocol">Protocol</label>
+            <select id="site-protocol" className="select" value={protocol} onChange={(e) => setProtocol(e.target.value)}>
+              <option value="RDP">RDP</option>
+              <option value="SSH">SSH</option>
+              <option value="VNC">VNC</option>
+            </select>
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="site-target-host">Target host</label>
+            <input id="site-target-host" type="text" className="input" value={targetHost} onChange={(e) => setTargetHost(e.target.value)} placeholder="10.0.0.5" />
+            <p className="hint">The RDP/SSH/VNC host, reachable from the connector&apos;s network.</p>
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="site-target-port">Port</label>
+            <input id="site-target-port" type="number" className="input" value={targetPort} onChange={(e) => setTargetPort(e.target.value)} placeholder="3389" />
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="site-username">Username</label>
+            <input id="site-username" type="text" className="input" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Administrator" />
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="site-secret">Password</label>
+            <input id="site-secret" type="password" className="input" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder={vault?.hasSecret ? "•••••••• (stored — type to replace)" : "target password"} autoComplete="new-password" />
+            <p className="hint">Stored encrypted and injected into the session — the vendor never sees it.</p>
+          </div>
+        </>
+      )}
+      {accessMode === "TRANSPARENT" && (
+        <div className="field">
+          <label className="field-label">
+            <input
+              type="checkbox"
+              checked={insecureSkipVerify}
+              onChange={(e) => setInsecureSkipVerify(e.target.checked)}
+            />{" "}
+            Allow self-signed certificate (skip TLS verification)
+          </label>
+          <span className="hint">
+            Only for internal devices you trust — the certificate on the connector→app leg won&apos;t be verified.
+          </span>
+        </div>
+      )}
       {recordingEnabled && accessMode !== "GATEWAY" && (
         <div className="field">
           <label className="field-label">
@@ -279,14 +338,6 @@ export function SiteForm({
             Restricts clipboard in the vendor&apos;s browser via injected script — a deterrent, not a hard
             control (bypassable if JavaScript is disabled). Gateway sites use Guacamole&apos;s own settings.
           </span>
-        </div>
-      )}
-      {recordingEnabled && accessMode === "GATEWAY" && (
-        <div className="field">
-          <p className="hint">
-            Gateway sessions are recorded by Guacamole itself, on the gateway host — see{" "}
-            <code>deploy/gateway/</code>.
-          </p>
         </div>
       )}
       <div className="field">

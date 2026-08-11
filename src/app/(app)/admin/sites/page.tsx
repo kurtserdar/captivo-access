@@ -3,6 +3,7 @@ import { SitesIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { timeAgo } from "@/lib/format";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { nativeGatewayEnabled } from "@/lib/gateway/native";
 import { AddSiteButton } from "./add-site-button";
 import { SitesView, type SiteRow } from "./sites-view";
 
@@ -73,7 +74,7 @@ export default async function AdminSitesPage() {
             tunnel.
           </p>
         </div>
-        {connectors.length > 0 && <AddSiteButton connectors={connectors} recordingEnabled={recordingEnabled()} />}
+        {connectors.length > 0 && <AddSiteButton connectors={connectors} recordingEnabled={recordingEnabled()} nativeGateway={nativeGatewayEnabled()} />}
       </div>
 
       {connectors.length === 0 ? (
