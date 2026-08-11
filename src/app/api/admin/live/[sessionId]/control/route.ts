@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { setSessionControl } from "@/lib/dataplane/client";
 import { appendAuditEvents } from "@/lib/audit/append";
+import { clientIp } from "@/lib/request-ip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ session
         status: 200,
         decision: "ALLOW",
         reason: action === "take" ? "Admin took control of a live session" : "Admin released control of a live session",
+        clientIp: clientIp(req.headers),
+        userAgent: req.headers.get("user-agent") ?? undefined,
       },
     ]);
   } catch (err) {

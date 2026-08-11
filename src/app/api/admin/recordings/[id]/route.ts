@@ -3,11 +3,12 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { appendAuditEvents } from "@/lib/audit/append";
+import { clientIp } from "@/lib/request-ip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -38,6 +39,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         status: 200,
         decision: "ALLOW",
         reason: `Deleted session recording (vendor ${vendor?.email ?? rec.userId}, ${rec.eventCount} events, ${rec.bytes} bytes, started ${rec.startedAt.toISOString()})`,
+        clientIp: clientIp(req.headers),
+        userAgent: req.headers.get("user-agent") ?? undefined,
       },
     ]);
   } catch (err) {

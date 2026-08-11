@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { appendAuditEvents } from "@/lib/audit/append";
+import { clientIp } from "@/lib/request-ip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: Request, { params }: { params: Promise<{ siteId: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ siteId: string }> }) {
   const user = await requireUser();
   const { siteId } = await params;
   const site = await db.site.findUnique({ where: { id: siteId }, select: { id: true } });
@@ -23,6 +24,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ siteId
         status: 200,
         decision: "ALLOW",
         reason: "Vendor acknowledged that this session is recorded",
+        clientIp: clientIp(req.headers),
+        userAgent: req.headers.get("user-agent") ?? undefined,
       },
     ]);
   } catch (err) {
