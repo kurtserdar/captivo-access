@@ -7,7 +7,7 @@ import { getVaultCredentialMeta } from "@/lib/vault/store";
 import { SiteForm } from "../../site-form";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Edit site" };
+export const metadata = { title: "Edit resource" };
 
 export default async function EditSitePage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
@@ -27,7 +27,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
     <main>
       <div className="page-head">
         <div>
-          <h1>Edit site</h1>
+          <h1>Edit resource</h1>
           <p><Link href="/admin/sites">← Back to sites</Link></p>
         </div>
       </div>

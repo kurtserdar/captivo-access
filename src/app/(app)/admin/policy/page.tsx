@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Policy" };
 
 const JOB_LABEL: Record<CronJob, string> = {
-  "site-health": "Site health",
+  "site-health": "Resource health",
   "audit-retention": "Audit log retention",
   "recording-retention": "Recording retention",
   "audit-anchor": "External anchor",

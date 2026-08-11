@@ -11,7 +11,7 @@ export function DeleteSiteButton({ id, name, grantCount }: { id: string; name: s
 
   async function handleClick() {
     const grants = grantCount === 1 ? "1 access grant" : `${grantCount} access grants`;
-    if (!(await confirm(`Delete site "${name}"? This also removes ${grants} and can't be undone.`, { danger: true }))) return;
+    if (!(await confirm(`Delete resource "${name}"? This also removes ${grants} and can't be undone.`, { danger: true }))) return;
     setError(null);
     setBusy(true);
     try {

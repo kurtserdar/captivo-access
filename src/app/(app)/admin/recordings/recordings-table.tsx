@@ -161,7 +161,7 @@ export function RecordingsTable({
         <div className="field">
           <label className="field-label" htmlFor="rec-filter-site">Site</label>
           <select id="rec-filter-site" className="select" value={filters.siteId} onChange={(e) => updateFilter("siteId", e.target.value)}>
-            <option value="">All sites</option>
+            <option value="">All resources</option>
             {sites.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name ?? s.id}
@@ -211,7 +211,7 @@ export function RecordingsTable({
                 <th><input type="checkbox" aria-label="Select all on page" checked={allOnPage} onChange={toggleAll} /></th>
                 <th>Started</th>
                 <th>User</th>
-                <th>Site</th>
+                <th>Resource</th>
                 <th>Type</th>
                 <th>Duration</th>
                 <th>Events</th>

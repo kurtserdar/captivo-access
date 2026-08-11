@@ -133,9 +133,9 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       </div>
 
       <div className="card">
-        <div className="card-head"><div className="ch-title"><h2>Sites on this connector</h2><span className="sub">Apps routed through it</span></div></div>
+        <div className="card-head"><div className="ch-title"><h2>Resources on this connector</h2><span className="sub">Apps routed through it</span></div></div>
         {connector.sites.length === 0 ? (
-          <div className="empty">No sites yet.</div>
+          <div className="empty">No resources yet.</div>
         ) : (
           <div className="table-wrap">
             <table className="table">
@@ -187,13 +187,13 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       )}
 
       <div className="card">
-        <div className="card-head"><div className="ch-title"><h2>Recent activity</h2><span className="sub">Latest access decisions on its sites</span></div></div>
+        <div className="card-head"><div className="ch-title"><h2>Recent activity</h2><span className="sub">Latest access decisions on its resources</span></div></div>
         {activity.length === 0 ? (
           <div className="empty">No access activity yet.</div>
         ) : (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>When</th><th>User</th><th>Site</th><th>Request</th><th>Decision</th></tr></thead>
+              <thead><tr><th>When</th><th>User</th><th>Resource</th><th>Request</th><th>Decision</th></tr></thead>
               <tbody>
                 {activity.map((e) => (
                   <tr key={e.id}>

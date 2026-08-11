@@ -7,15 +7,15 @@ export function SiteHealthPanel({ sites }: { sites: SiteHealthRow[] }) {
   return (
     <div className="card">
       <div className="card-head">
-        <h2>Site health</h2>
+        <h2>Resource health</h2>
         <Link className="link-button" href="/admin/sites">All sites</Link>
       </div>
       {sites.length === 0 ? (
-        <div className="empty">No sites yet.</div>
+        <div className="empty">No resources yet.</div>
       ) : (
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>Site</th><th>Status</th><th>Latency</th><th>Checked</th></tr></thead>
+            <thead><tr><th>Resource</th><th>Status</th><th>Latency</th><th>Checked</th></tr></thead>
             <tbody>
               {sites.map((site) => {
                 const p = siteStatePill(site.probeOk);

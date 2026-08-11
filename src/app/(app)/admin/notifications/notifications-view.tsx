@@ -33,7 +33,7 @@ export function NotificationsView({ rows }: { rows: NotificationRow[] }) {
         <input
           className="input"
           type="search"
-          placeholder="Search site or detail…"
+          placeholder="Search resource or detail…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           style={{ maxWidth: 240 }}
@@ -56,7 +56,7 @@ export function NotificationsView({ rows }: { rows: NotificationRow[] }) {
             <thead>
               <tr>
                 <th>Status</th>
-                <th>Site</th>
+                <th>Resource</th>
                 <th>Detail</th>
                 <th>When</th>
                 <th></th>

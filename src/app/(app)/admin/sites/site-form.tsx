@@ -200,7 +200,7 @@ export function SiteForm({
       </div>
       <div className="field">
         <label className="field-label" htmlFor="site-name">
-          Site name
+          Resource name
         </label>
         <input
           id="site-name"

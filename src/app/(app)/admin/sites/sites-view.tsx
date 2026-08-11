@@ -98,7 +98,7 @@ export function SitesView({
   return (
     <div>
       <div className="section-head">
-        <h2>Configured sites</h2>
+        <h2>Configured resources</h2>
         <div className="view-toggle">
           <button type="button" className={`btn sm ${view === "cards" ? "primary" : ""}`} aria-pressed={view === "cards"} onClick={() => choose("cards")}>Cards</button>
           <button type="button" className={`btn sm ${view === "list" ? "primary" : ""}`} aria-pressed={view === "list"} onClick={() => choose("list")}>List</button>

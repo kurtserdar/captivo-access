@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
 const MESSAGES: Record<string, string> = {
-  has_sites: "This connector still has sites — move or remove them under Sites first.",
+  has_sites: "This connector still has resources — move or remove them under Resources first.",
   not_revoked: "Revoke the connector before deleting it.",
 };
 

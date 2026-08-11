@@ -3,7 +3,7 @@ export type CommandItem = {
   label: string;
   sub: string | null;
   href: string;
-  group: "Pages" | "Sites" | "Connectors" | "Users";
+  group: "Pages" | "Resources" | "Connectors" | "Users";
 };
 
 export function filterCommandItems(query: string, items: CommandItem[], limit = 12): CommandItem[] {

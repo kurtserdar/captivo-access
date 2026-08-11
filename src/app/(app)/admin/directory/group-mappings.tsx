@@ -52,7 +52,7 @@ export function GroupMappings({ mappings, sites }: { mappings: GroupMappingRow[]
     <div className="card">
       <h2>Group mappings</h2>
       <p className="cell-sub">
-        Map an AD group DN to a console role or a site. At login, a user&apos;s role and site grants are reconciled
+        Map an AD group DN to a console role or a resource. At login, a user&apos;s role and resource grants are reconciled
         to match their group membership; a directory-managed user in no mapped group is deprovisioned.
       </p>
 
@@ -107,7 +107,7 @@ export function GroupMappings({ mappings, sites }: { mappings: GroupMappingRow[]
             <input type="radio" name="gm-kind" checked={kind === "ROLE"} onChange={() => setKind("ROLE")} /> Console role
           </label>
           <label className="form-check">
-            <input type="radio" name="gm-kind" checked={kind === "SITE"} onChange={() => setKind("SITE")} /> Site access
+            <input type="radio" name="gm-kind" checked={kind === "SITE"} onChange={() => setKind("SITE")} /> Resource access
           </label>
         </div>
         {kind === "ROLE" ? (

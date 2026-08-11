@@ -171,7 +171,7 @@ export function AuditTable({
         </div>
         <div className="field">
           <label className="field-label" htmlFor="audit-filter-site">
-            Site
+            Resource
           </label>
           <select
             id="audit-filter-site"
@@ -179,7 +179,7 @@ export function AuditTable({
             value={filters.siteId}
             onChange={(e) => updateFilter("siteId", e.target.value)}
           >
-            <option value="">All sites</option>
+            <option value="">All resources</option>
             {sites.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -254,7 +254,7 @@ export function AuditTable({
                 <th>Time</th>
                 <th>User</th>
                 <th>Company</th>
-                <th>Site / Host</th>
+                <th>Resource / Host</th>
                 <th>Request</th>
                 <th>Status</th>
                 <th>Decision</th>

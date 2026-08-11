@@ -99,7 +99,7 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
         <div className="setting">
           <div className="setting-main">
             <div className="setting-label">Require recording consent</div>
-            <div className="setting-hint">On recorded sites, show the vendor a one-time &quot;this session is recorded&quot; acknowledgement before any app content loads. The banner and &quot;Recorded&quot; label are always shown regardless.</div>
+            <div className="setting-hint">On recorded resources, show the vendor a one-time &quot;this session is recorded&quot; acknowledgement before any app content loads. The banner and &quot;Recorded&quot; label are always shown regardless.</div>
           </div>
           <div className="setting-ctl">
             <label className="switch"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span className="track" /></label>
@@ -158,7 +158,7 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
         <div className="setting setting-stack">
           <div className="setting-main">
             <div className="setting-label">Notification webhook URL</div>
-            <div className="setting-hint">Site up/down events POST here (Slack/Teams-friendly JSON), in addition to the in-console bell. Empty = disabled.</div>
+            <div className="setting-hint">Resource up/down events POST here (Slack/Teams-friendly JSON), in addition to the in-console bell. Empty = disabled.</div>
           </div>
           <div className="setting-ctl">
             <input type="url" className="input" style={{ width: "100%" }} value={webhook} onChange={(e) => setWebhook(e.target.value)} placeholder="https://hooks.slack.com/…" />
@@ -169,7 +169,7 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
           <div className="setting-main">
             <div className="setting-label">Vendor source-IP allowlist</div>
             <div className="setting-hint">
-              When set, vendors can reach published <b>sites</b> only from these networks (checked live; the console is never gated, so you can&apos;t lock yourself out). <b>Empty = no restriction.</b> <b>Include your own network.</b> The evaluated IP is the one your front proxy records — a forged <code>X-Forwarded-For</code> won&apos;t bypass it.
+              When set, vendors can reach published <b>resources</b> only from these networks (checked live; the console is never gated, so you can&apos;t lock yourself out). <b>Empty = no restriction.</b> <b>Include your own network.</b> The evaluated IP is the one your front proxy records — a forged <code>X-Forwarded-For</code> won&apos;t bypass it.
             </div>
             {allowEntries.length > 0 && (
               <div className="chips" style={{ marginTop: ".55rem" }}>

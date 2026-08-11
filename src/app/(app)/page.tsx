@@ -54,8 +54,8 @@ export default async function DashboardPage() {
   const setup = await getSetupStatus();
   const steps = [
     { done: setup.connectorsOnline >= 1, title: "Connect your network", hint: "Add a connector and run it inside your network so it comes online.", href: "/admin/connectors" },
-    { done: setup.sites >= 1, title: "Add an internal app", hint: "Define a Site for an app the connector can reach.", href: "/admin/sites" },
-    { done: setup.grants >= 1, title: "Grant someone access", hint: "Tie a user to a site — optionally time-boxed, approved, or scheduled.", href: "/admin/grants" },
+    { done: setup.sites >= 1, title: "Add an internal app", hint: "Define a Resource for an app the connector can reach.", href: "/admin/sites" },
+    { done: setup.grants >= 1, title: "Grant someone access", hint: "Tie a user to a resource — optionally time-boxed, approved, or scheduled.", href: "/admin/grants" },
   ];
   const allDone = steps.every((st) => st.done);
 

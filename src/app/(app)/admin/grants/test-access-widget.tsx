@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { DecisionReason } from "@/lib/access/evaluate";
 
 const REASON_LABEL: Record<Exclude<DecisionReason, "allow">, string> = {
-  no_grant: "No grant for this site",
+  no_grant: "No grant for this resource",
   not_yet: "Grant not active yet",
   off_schedule: "Outside scheduled hours",
   expired: "Grant expired",
@@ -55,7 +55,7 @@ export function TestAccessWidget({
       <div className="card-head">
         <h2>Check access</h2>
       </div>
-      <p>Pick a user and a site to see the live access decision.</p>
+      <p>Pick a user and a resource to see the live access decision.</p>
       <div className="field">
         <label className="field-label" htmlFor="test-access-user">
           User
@@ -70,7 +70,7 @@ export function TestAccessWidget({
       </div>
       <div className="field">
         <label className="field-label" htmlFor="test-access-site">
-          Site
+          Resource
         </label>
         <select id="test-access-site" className="select" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
           {sites.map((s) => (

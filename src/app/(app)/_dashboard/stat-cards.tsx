@@ -24,7 +24,7 @@ export function StatCards({ s }: { s: DashboardStats }) {
   const connTone = s.connectors === 0 ? "neutral" : s.connectorsOnline === s.connectors ? "ok" : "warn";
   const cards = [
     { k: "Connectors online", v: `${s.connectorsOnline}/${s.connectors}`, sub: null, tone: connTone, href: "/admin/connectors", Icon: ConnectorsIcon },
-    { k: "Sites reachable", v: `${s.sitesReachable}/${s.sites}`, sub: s.sitesDown > 0 ? `${s.sitesDown} down` : null, tone: healthTone(s.sitesReachable, s.sites), href: "/admin/sites", Icon: SitesIcon },
+    { k: "Resources reachable", v: `${s.sitesReachable}/${s.sites}`, sub: s.sitesDown > 0 ? `${s.sitesDown} down` : null, tone: healthTone(s.sitesReachable, s.sites), href: "/admin/sites", Icon: SitesIcon },
     { k: "Active grants", v: `${s.activeGrants}`, sub: null, tone: "neutral", href: "/admin/grants", Icon: GrantsIcon },
     { k: "Pending approvals", v: `${s.pending}`, sub: s.pending > 0 ? "awaiting review" : null, tone: s.pending > 0 ? "warn" : "neutral", href: "/admin/grants", Icon: ClockIcon },
     { k: "Unread alerts", v: `${s.unreadAlerts}`, sub: null, tone: s.unreadAlerts > 0 ? "danger" : "neutral", href: "/admin/notifications", Icon: BellIcon },

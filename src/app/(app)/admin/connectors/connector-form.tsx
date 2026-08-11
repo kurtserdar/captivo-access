@@ -77,7 +77,7 @@ export function ConnectorForm({ onDone }: { onDone?: () => void }) {
             </label>
             <p className="cell-sub">
               The connector command deploys the session engine (guacd) alongside the connector on this host, so
-              remote-desktop sites (RDP/SSH/VNC) can reach it — one command, nothing else to install.
+              remote-desktop resources (RDP/SSH/VNC) can reach it — one command, nothing else to install.
             </p>
           </div>
           {error && (
@@ -114,7 +114,7 @@ export function ConnectorForm({ onDone }: { onDone?: () => void }) {
           )}
           <p>
             This connector needs no per-app configuration. Define each internal app as a{" "}
-            <b>Site</b> (with its internal address) in the console — the connector reads that address
+            <b>Resource</b> (with its internal address) in the console — the connector reads that address
             from the Manager and dials it directly.
           </p>
           <p>

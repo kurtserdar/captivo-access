@@ -8,7 +8,7 @@ import { AddSiteButton } from "./add-site-button";
 import { SitesView, type SiteRow } from "./sites-view";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Sites" };
+export const metadata = { title: "Resources" };
 
 export default async function AdminSitesPage() {
   await requireAdmin();
@@ -67,9 +67,9 @@ export default async function AdminSitesPage() {
     <main>
       <div className="page-head">
         <div>
-          <div className="page-title-row"><span className="page-icon"><SitesIcon /></span><h1>Sites</h1></div>
+          <div className="page-title-row"><span className="page-icon"><SitesIcon /></span><h1>Resources</h1></div>
           <p>
-            A site is an internal upstream reachable through a connector, addressed by its real internal
+            A resource is an internal upstream reachable through a connector, addressed by its real internal
             URL. Use &quot;Test connection&quot; to verify a live round trip through the connector&apos;s
             tunnel.
           </p>

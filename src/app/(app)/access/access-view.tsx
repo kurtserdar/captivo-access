@@ -178,7 +178,7 @@ export function AccessView({ rows }: { rows: AccessRow[] }) {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Site</th>
+                  <th>Resource</th>
                   <th>Window</th>
                   <th>Status</th>
                   <th></th>

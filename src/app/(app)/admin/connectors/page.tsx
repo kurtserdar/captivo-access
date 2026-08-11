@@ -51,7 +51,7 @@ export default async function AdminConnectorsPage() {
           <div className="page-title-row"><span className="page-icon"><ConnectorsIcon /></span><h1>Connectors</h1></div>
           <p>
             A connector is a small agent you run inside a customer&apos;s network. Pair one here, then add
-            sites to expose specific internal upstreams through it.
+            resources to expose specific internal upstreams through it.
           </p>
         </div>
         <div className="row-actions">

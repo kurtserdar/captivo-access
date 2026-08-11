@@ -64,7 +64,7 @@ export default async function AdminGrantsPage() {
       <div className="page-head">
         <div>
           <div className="page-title-row"><span className="page-icon"><GrantsIcon /></span><h1>Access grants</h1></div>
-          <p>Grant a user time-boxed access to a site. Leave the end date empty for permanent access.</p>
+          <p>Grant a user time-boxed access to a resource. Leave the end date empty for permanent access.</p>
         </div>
         {canApprove && users.length > 0 && sites.length > 0 && <AddGrantButton users={users} sites={sites} />}
       </div>
@@ -103,7 +103,7 @@ export default async function AdminGrantsPage() {
             <thead>
               <tr>
                 <th>User</th>
-                <th>Site</th>
+                <th>Resource</th>
                 <th>Window</th>
                 <th>Note</th>
                 <th>Status</th>

@@ -79,7 +79,7 @@ export function DirectoryForm({ initial, connectors }: { initial: Initial; conne
       <div className="setting" style={{ marginBottom: "1.1rem" }}>
         <div className="setting-main">
           <div className="setting-label">Enable directory integration</div>
-          <div className="setting-hint">Sign in via your LDAP/Active Directory and map groups to roles or sites. When off, the settings below are kept but not used.</div>
+          <div className="setting-hint">Sign in via your LDAP/Active Directory and map groups to roles or resources. When off, the settings below are kept but not used.</div>
         </div>
         <div className="setting-ctl">
           <label className="switch"><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /><span className="track" /></label>

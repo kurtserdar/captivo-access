@@ -12,7 +12,7 @@ const PAGES: { label: string; href: string; cap: Capability | null }[] = [
   { label: "My access", href: "/access", cap: null },
   { label: "Grants", href: "/admin/grants", cap: "read_console" },
   { label: "Connectors", href: "/admin/connectors", cap: "configure" },
-  { label: "Sites", href: "/admin/sites", cap: "configure" },
+  { label: "Resources", href: "/admin/sites", cap: "configure" },
   { label: "Notifications", href: "/admin/notifications", cap: "read_console" },
   { label: "Live sessions", href: "/admin/live", cap: "read_console" },
   { label: "Users", href: "/admin/users", cap: "configure" },
@@ -22,7 +22,7 @@ const PAGES: { label: string; href: string; cap: Capability | null }[] = [
   { label: "Settings", href: "/settings/passkeys", cap: null },
 ];
 const GROUP_FOR: Record<SearchRecord["type"], CommandItem["group"]> = {
-  site: "Sites",
+  site: "Resources",
   connector: "Connectors",
   user: "Users",
 };
@@ -140,7 +140,7 @@ function PaletteOverlay({ items, onClose }: { items: CommandItem[]; onClose: () 
         <input
           ref={inputRef}
           className="cmd-input"
-          placeholder="Jump to a page, site, connector, or user…"
+          placeholder="Jump to a page, resource, connector, or user…"
           value={query}
           onChange={onQueryChange}
           onKeyDown={onInputKey}

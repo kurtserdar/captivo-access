@@ -20,7 +20,7 @@ export function LiveTable({ rows }: { rows: LiveRow[] }) {
         <thead>
           <tr>
             <th>User</th>
-            <th>Site</th>
+            <th>Resource</th>
             <th>Type</th>
             <th>Started</th>
             <th>Watchers</th>

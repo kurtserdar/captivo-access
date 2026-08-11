@@ -10,13 +10,13 @@ import type { Role } from "@/generated/prisma/enums";
 function errorMessage(code: string | undefined): string {
   switch (code) {
     case "user_site_required":
-      return "A user and a site are required.";
+      return "A user and a resource are required.";
     case "invalid_date":
       return "Start and end must be valid dates.";
     case "invalid_user":
       return "Select a valid user.";
     case "invalid_site":
-      return "Select a valid site.";
+      return "Select a valid resource.";
     case "grant_requires_end":
       return "Policy requires an end date — permanent grants aren't allowed here.";
     case "grant_exceeds_max":
@@ -98,7 +98,7 @@ export function GrantForm({
       </div>
       <div className="field">
         <label className="field-label" htmlFor="grant-site">
-          Site
+          Resource
         </label>
         <select id="grant-site" className="select" value={siteId} onChange={(e) => setSiteId(e.target.value)} required>
           {sites.map((s) => (

@@ -14,7 +14,7 @@ export function RecentActivityPanel({ events }: { events: ActivityRow[] }) {
       ) : (
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>Decision</th><th>User</th><th>Site</th><th>Path</th><th>When</th></tr></thead>
+            <thead><tr><th>Decision</th><th>User</th><th>Resource</th><th>Path</th><th>When</th></tr></thead>
             <tbody>
               {events.map((e) => (
                 <tr key={e.id}>

@@ -39,7 +39,7 @@ export default async function AdminRecordingsPage() {
       <div className="page-head">
         <div>
           <div className="page-title-row"><span className="page-icon"><RecordingsIcon /></span><h1>Recordings</h1></div>
-          <p>Replay captured vendor sessions on recorded sites.</p>
+          <p>Replay captured vendor sessions on recorded resources.</p>
         </div>
       </div>
       <RecordingsTable users={users} sites={sites} initialRows={initialRows} initialTotal={total} />
