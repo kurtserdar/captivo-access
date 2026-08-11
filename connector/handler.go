@@ -82,6 +82,8 @@ func handleStream(st io.ReadWriteCloser, allow *TargetMatcher) {
 		handleWS(cst, allow, reqBytes)
 	case "ldap":
 		handleLdap(cst, allow, reqBytes)
+	case "guacd":
+		handleGuacd(cst, allow, reqBytes)
 	default:
 		handleDial(cst, allow, reqBytes)
 	}
@@ -167,6 +169,52 @@ func handleLdap(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 	go func() { _, _ = io.Copy(st, upstream); done <- struct{}{} }() // directory -> tunnel
 	go func() { _, _ = io.Copy(upstream, st); done <- struct{}{} }() // tunnel -> directory
 	<-done
+}
+
+// handleGuacd services a raw relay to guacd — a byte-for-byte clone of the LDAP
+// relay. The first frame is a tunnel.GuacdDialRequest carrying guacd's "host:port";
+// it validates against the egress boundary, plain-TCP-dials guacd, and relays the
+// Guacamole protocol opaquely (guacd, not the connector, speaks it).
+func handleGuacd(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
+	var gr tunnel.GuacdDialRequest
+	if json.Unmarshal(reqBytes, &gr) != nil {
+		return
+	}
+	host, port, err := net.SplitHostPort(gr.Target)
+	if err != nil || host == "" || port == "" {
+		writeGuacdErr(st, "bad target")
+		return
+	}
+	if !egressAllowed(allow, gr.Target) {
+		denied()
+		logDenied("guacd", gr.Target)
+		writeGuacdErr(st, "target not allowed") // egress boundary — fail closed
+		return
+	}
+	upstream, err := net.DialTimeout("tcp", gr.Target, 10*time.Second)
+	if err != nil {
+		logUpstreamErr("guacd", gr.Target, err.Error())
+		writeGuacdErr(st, "guacd unreachable")
+		return
+	}
+	defer upstream.Close()
+	if b, mErr := json.Marshal(tunnel.GuacdDialResponse{}); mErr == nil {
+		if tunnel.WriteFrame(st, b) != nil {
+			return
+		}
+	} else {
+		return
+	}
+	done := make(chan struct{}, 2)
+	go func() { _, _ = io.Copy(st, upstream); done <- struct{}{} }() // guacd -> tunnel
+	go func() { _, _ = io.Copy(upstream, st); done <- struct{}{} }() // tunnel -> guacd
+	<-done
+}
+
+func writeGuacdErr(st io.Writer, msg string) {
+	if b, err := json.Marshal(tunnel.GuacdDialResponse{Error: msg}); err == nil {
+		_ = tunnel.WriteFrame(st, b)
+	}
 }
 
 func writeLdapErr(st io.Writer, msg string) {
