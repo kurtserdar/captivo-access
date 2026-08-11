@@ -1,4 +1,6 @@
-const BASE = () => (process.env.DATAPLANE_INTERNAL_URL ?? "http://access-dataplane:3102").replace(/\/+$/, "");
+// Reuses the existing manager→data-plane internal env (same one lib/connector/
+// dataplane.ts uses) so no new configuration is needed on any deployment.
+const BASE = () => (process.env.DATAPLANE_URL || "http://access-dataplane:3102").replace(/\/+$/, "");
 function authHeaders(): Record<string, string> {
   return { "content-type": "application/json", "x-dataplane-secret": process.env.DATAPLANE_SECRET ?? "" };
 }
