@@ -104,10 +104,14 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 		log.Printf("guac-tunnel site=%s: recording enabled key=%s", siteID, rec.key)
 	}
 
+	connID := ""
+	if len(readyArgs) > 0 {
+		connID = readyArgs[0] // guacd connection ID — the share key for viewers
+	}
 	sessionID := newSessionID()
-	ls := hub.Register(sessionID, siteID, userID, conn.Protocol, conn.Hostname, time.Now(), guac)
+	ls := hub.Register(sessionID, siteID, userID, conn.Protocol, conn.Hostname, time.Now(), connID, connectorID, guacdAddr)
 	defer hub.Remove(sessionID)
-	log.Printf("guac-tunnel site=%s: live session id=%s", siteID, sessionID)
+	log.Printf("guac-tunnel site=%s: live session id=%s connID=%s", siteID, sessionID, connID)
 
 	// Upgrade the browser WebSocket and bridge. The browser is same-origin behind
 	// the front nginx; skip strict origin checks (the session cookie already
@@ -145,7 +149,6 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 			if rec != nil {
 				rec.Write(inst)
 			}
-			ls.broadcast(inst)
 			if werr := c.Write(ctx, websocket.MessageText, inst); werr != nil {
 				errc <- werr
 				return
@@ -163,7 +166,7 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 			if !ls.vendorInputAllowed() {
 				continue // an admin has taken control; drop vendor input
 			}
-			if werr := ls.writeToGuac(data); werr != nil {
+			if _, werr := guac.Write(data); werr != nil {
 				errc <- werr
 				return
 			}

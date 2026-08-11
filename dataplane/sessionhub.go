@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
-	"net"
 	"sync"
 	"time"
 )
@@ -14,8 +12,6 @@ var (
 	errControlHeld = errors.New("control already held")
 	errNoSession   = errors.New("session not found")
 )
-
-const viewerChanBuf = 256
 
 // SessionInfo is the JSON snapshot of one active session for the internal list API.
 type SessionInfo struct {
@@ -29,92 +25,37 @@ type SessionInfo struct {
 	ControlOwner string    `json:"controlOwner"`
 }
 
-// liveSession is one in-progress gateway session. It buffers NOTHING — viewers
-// receive instructions only from the moment they attach (the CyberArk
-// active-monitor model). `guac` is the guacd write conn, shared with the vendor
-// bridge loop; `writeMu` serializes writes so a controlling viewer's input and
-// the vendor's input never interleave mid-instruction.
+// liveSession is one in-progress gateway session. Viewers join guacd's shared
+// connection directly (by connID) rather than being fanned out here, so this
+// holds only what viewers need to dial + join, plus control state.
 type liveSession struct {
 	id, siteID, userID, protocol, host string
 	startedAt                          time.Time
-
-	guac    net.Conn
-	writeMu sync.Mutex
+	connID, connectorID, guacdAddr     string
 
 	mu           sync.Mutex
-	viewers      map[int]chan []byte
-	nextViewer   int
 	controlOwner string // userID holding control, or "" for the vendor
-	lastSize     []byte // most recent screen `size` instruction (default layer 0), for viewer bootstrap
+	viewers      int    // attached live viewers (for the console list)
 }
 
-func (ls *liveSession) addViewer() (int, chan []byte) {
+func (ls *liveSession) shareInfo() (string, string, string) {
 	ls.mu.Lock()
 	defer ls.mu.Unlock()
-	id := ls.nextViewer
-	ls.nextViewer++
-	ch := make(chan []byte, viewerChanBuf)
-	ls.viewers[id] = ch
-	return id, ch
+	return ls.connID, ls.connectorID, ls.guacdAddr
 }
 
-func (ls *liveSession) removeViewer(id int) {
+func (ls *liveSession) addViewer() {
 	ls.mu.Lock()
-	defer ls.mu.Unlock()
-	if ch, ok := ls.viewers[id]; ok {
-		close(ch)
-		delete(ls.viewers, id)
-	}
+	ls.viewers++
+	ls.mu.Unlock()
 }
 
-func (ls *liveSession) closeAllViewers() {
+func (ls *liveSession) removeViewer() {
 	ls.mu.Lock()
-	defer ls.mu.Unlock()
-	for id, ch := range ls.viewers {
-		close(ch)
-		delete(ls.viewers, id)
+	if ls.viewers > 0 {
+		ls.viewers--
 	}
-}
-
-// broadcast copies the instruction (the source slice may be reused by the reader)
-// and non-blockingly sends it to every viewer. A full channel drops the frame —
-// never block the vendor session for a slow viewer.
-func (ls *liveSession) broadcast(inst []byte) {
-	cp := make([]byte, len(inst))
-	copy(cp, inst)
-	ls.mu.Lock()
-	defer ls.mu.Unlock()
-	// Remember the screen's `size` instruction (default layer 0, "4.size,1.0,…").
-	// A viewer joins mid-stream and never saw it, so its display would stay 0x0
-	// (black). We replay it on attach so the display is sized and renders as the
-	// vendor's screen changes.
-	if bytes.HasPrefix(cp, []byte("4.size,1.0,")) {
-		ls.lastSize = cp
-	}
-	for _, ch := range ls.viewers {
-		select {
-		case ch <- cp:
-		default:
-		}
-	}
-}
-
-// bootstrap returns the instructions a joining viewer needs before live frames:
-// the most recent screen size (if seen). Nil-safe.
-func (ls *liveSession) bootstrap() []byte {
-	ls.mu.Lock()
-	defer ls.mu.Unlock()
-	return ls.lastSize
-}
-
-func (ls *liveSession) writeToGuac(data []byte) error {
-	ls.writeMu.Lock()
-	defer ls.writeMu.Unlock()
-	if ls.guac == nil {
-		return nil
-	}
-	_, err := ls.guac.Write(data)
-	return err
+	ls.mu.Unlock()
 }
 
 func (ls *liveSession) vendorInputAllowed() bool {
@@ -161,10 +102,10 @@ func newSessionID() string {
 	return hex.EncodeToString(b[:])
 }
 
-func (h *SessionHub) Register(sessionID, siteID, userID, protocol, host string, startedAt time.Time, guac net.Conn) *liveSession {
+func (h *SessionHub) Register(sessionID, siteID, userID, protocol, host string, startedAt time.Time, connID, connectorID, guacdAddr string) *liveSession {
 	ls := &liveSession{
 		id: sessionID, siteID: siteID, userID: userID, protocol: protocol, host: host,
-		startedAt: startedAt, guac: guac, viewers: map[int]chan []byte{},
+		startedAt: startedAt, connID: connID, connectorID: connectorID, guacdAddr: guacdAddr,
 	}
 	h.mu.Lock()
 	h.m[sessionID] = ls
@@ -180,12 +121,8 @@ func (h *SessionHub) Get(id string) *liveSession {
 
 func (h *SessionHub) Remove(id string) {
 	h.mu.Lock()
-	ls := h.m[id]
 	delete(h.m, id)
 	h.mu.Unlock()
-	if ls != nil {
-		ls.closeAllViewers()
-	}
 }
 
 func (h *SessionHub) List() []SessionInfo {
@@ -196,7 +133,7 @@ func (h *SessionHub) List() []SessionInfo {
 		ls.mu.Lock()
 		out = append(out, SessionInfo{
 			SessionID: ls.id, SiteID: ls.siteID, UserID: ls.userID, Protocol: ls.protocol,
-			Host: ls.host, StartedAt: ls.startedAt, ViewerCount: len(ls.viewers), ControlOwner: ls.controlOwner,
+			Host: ls.host, StartedAt: ls.startedAt, ViewerCount: ls.viewers, ControlOwner: ls.controlOwner,
 		})
 		ls.mu.Unlock()
 	}
@@ -223,7 +160,7 @@ func (h *SessionHub) WatchStatus(userID, siteID string) (bool, bool) {
 	for _, ls := range h.m {
 		if ls.userID == userID && ls.siteID == siteID {
 			ls.mu.Lock()
-			watching := len(ls.viewers) > 0
+			watching := ls.viewers > 0
 			controlHeld := ls.controlOwner != ""
 			ls.mu.Unlock()
 			return watching, controlHeld
