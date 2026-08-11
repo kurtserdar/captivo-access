@@ -2615,7 +2615,10 @@ export const SessionRecordingScalarFieldEnum = {
   startedAt: 'startedAt',
   lastEventAt: 'lastEventAt',
   eventCount: 'eventCount',
-  bytes: 'bytes'
+  bytes: 'bytes',
+  format: 'format',
+  protocol: 'protocol',
+  encrypted: 'encrypted'
 } as const
 
 export type SessionRecordingScalarFieldEnum = (typeof SessionRecordingScalarFieldEnum)[keyof typeof SessionRecordingScalarFieldEnum]
@@ -2879,6 +2882,20 @@ export type EnumAuditDecisionFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
  * Reference to a field of type 'AuditDecision[]'
  */
 export type ListEnumAuditDecisionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AuditDecision[]'>
+    
+
+
+/**
+ * Reference to a field of type 'RecordingFormat'
+ */
+export type EnumRecordingFormatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RecordingFormat'>
+    
+
+
+/**
+ * Reference to a field of type 'RecordingFormat[]'
+ */
+export type ListEnumRecordingFormatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RecordingFormat[]'>
     
 
 

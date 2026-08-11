@@ -1,0 +1,32 @@
+import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/current-user";
+import { db } from "@/lib/db";
+import { appendAuditEvents } from "@/lib/audit/append";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function POST(_req: Request, { params }: { params: Promise<{ siteId: string }> }) {
+  const user = await requireUser();
+  const { siteId } = await params;
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { id: true } });
+  if (!site) return NextResponse.json({ error: "not_found" }, { status: 404 });
+
+  try {
+    await appendAuditEvents([
+      {
+        userId: user.id,
+        siteId,
+        host: "manager",
+        method: "POST",
+        path: `/gateway/${siteId}/session`,
+        status: 200,
+        decision: "ALLOW",
+        reason: "Vendor acknowledged that this session is recorded",
+      },
+    ]);
+  } catch (err) {
+    console.error("[gateway/consent] audit append failed:", err);
+  }
+  return NextResponse.json({ ok: true });
+}

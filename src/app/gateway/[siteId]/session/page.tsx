@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
+import { resolvedRecordingConsentRequired } from "@/lib/settings/platform";
 import { GatewaySession } from "./session-client";
+import { ConsentGate } from "./consent-gate";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Session" };
@@ -12,11 +14,12 @@ export const metadata = { title: "Session" };
 export default async function GatewaySessionPage({ params }: { params: Promise<{ siteId: string }> }) {
   await requireUser();
   const { siteId } = await params;
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, recordSessions: true } });
   // Native is the only gateway now — a non-native / disabled / non-gateway site
   // has no session here.
   if (!nativeGatewayEnabled() || !site || site.accessMode !== "GATEWAY") {
     notFound();
   }
-  return <GatewaySession siteId={siteId} />;
+  const consentNeeded = site.recordSessions && (await resolvedRecordingConsentRequired());
+  return consentNeeded ? <ConsentGate siteId={siteId} /> : <GatewaySession siteId={siteId} />;
 }

@@ -470,3 +470,11 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 /* Guide steps (gateway setup modal, etc.) */
 .guide-steps{margin:.3rem 0 .6rem;padding-left:1.2rem;display:flex;flex-direction:column;gap:.5rem;font-size:.9rem;color:var(--fg);}
 .guide-steps li{line-height:1.5;}
+
+/* Native (guacd) recording replay */
+.guac-recording-display { overflow: auto; max-width: 100%; background: #000; border-radius: 8px; }
+.guac-recording-controls { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+
+/* Recording-consent interstitial (native gateway session) */
+.consent-gate { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+.consent-card { max-width: 420px; text-align: center; display: flex; flex-direction: column; gap: 16px; }

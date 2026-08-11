@@ -46,6 +46,9 @@ export type SessionRecordingMinAggregateOutputType = {
   lastEventAt: Date | null
   eventCount: number | null
   bytes: number | null
+  format: $Enums.RecordingFormat | null
+  protocol: string | null
+  encrypted: boolean | null
 }
 
 export type SessionRecordingMaxAggregateOutputType = {
@@ -58,6 +61,9 @@ export type SessionRecordingMaxAggregateOutputType = {
   lastEventAt: Date | null
   eventCount: number | null
   bytes: number | null
+  format: $Enums.RecordingFormat | null
+  protocol: string | null
+  encrypted: boolean | null
 }
 
 export type SessionRecordingCountAggregateOutputType = {
@@ -70,6 +76,9 @@ export type SessionRecordingCountAggregateOutputType = {
   lastEventAt: number
   eventCount: number
   bytes: number
+  format: number
+  protocol: number
+  encrypted: number
   _all: number
 }
 
@@ -94,6 +103,9 @@ export type SessionRecordingMinAggregateInputType = {
   lastEventAt?: true
   eventCount?: true
   bytes?: true
+  format?: true
+  protocol?: true
+  encrypted?: true
 }
 
 export type SessionRecordingMaxAggregateInputType = {
@@ -106,6 +118,9 @@ export type SessionRecordingMaxAggregateInputType = {
   lastEventAt?: true
   eventCount?: true
   bytes?: true
+  format?: true
+  protocol?: true
+  encrypted?: true
 }
 
 export type SessionRecordingCountAggregateInputType = {
@@ -118,6 +133,9 @@ export type SessionRecordingCountAggregateInputType = {
   lastEventAt?: true
   eventCount?: true
   bytes?: true
+  format?: true
+  protocol?: true
+  encrypted?: true
   _all?: true
 }
 
@@ -217,6 +235,9 @@ export type SessionRecordingGroupByOutputType = {
   lastEventAt: Date
   eventCount: number
   bytes: number
+  format: $Enums.RecordingFormat
+  protocol: string | null
+  encrypted: boolean
   _count: SessionRecordingCountAggregateOutputType | null
   _avg: SessionRecordingAvgAggregateOutputType | null
   _sum: SessionRecordingSumAggregateOutputType | null
@@ -252,6 +273,9 @@ export type SessionRecordingWhereInput = {
   lastEventAt?: Prisma.DateTimeFilter<"SessionRecording"> | Date | string
   eventCount?: Prisma.IntFilter<"SessionRecording"> | number
   bytes?: Prisma.IntFilter<"SessionRecording"> | number
+  format?: Prisma.EnumRecordingFormatFilter<"SessionRecording"> | $Enums.RecordingFormat
+  protocol?: Prisma.StringNullableFilter<"SessionRecording"> | string | null
+  encrypted?: Prisma.BoolFilter<"SessionRecording"> | boolean
   chunks?: Prisma.RecordingChunkListRelationFilter
 }
 
@@ -265,6 +289,9 @@ export type SessionRecordingOrderByWithRelationInput = {
   lastEventAt?: Prisma.SortOrder
   eventCount?: Prisma.SortOrder
   bytes?: Prisma.SortOrder
+  format?: Prisma.SortOrder
+  protocol?: Prisma.SortOrderInput | Prisma.SortOrder
+  encrypted?: Prisma.SortOrder
   chunks?: Prisma.RecordingChunkOrderByRelationAggregateInput
 }
 
@@ -281,6 +308,9 @@ export type SessionRecordingWhereUniqueInput = Prisma.AtLeast<{
   lastEventAt?: Prisma.DateTimeFilter<"SessionRecording"> | Date | string
   eventCount?: Prisma.IntFilter<"SessionRecording"> | number
   bytes?: Prisma.IntFilter<"SessionRecording"> | number
+  format?: Prisma.EnumRecordingFormatFilter<"SessionRecording"> | $Enums.RecordingFormat
+  protocol?: Prisma.StringNullableFilter<"SessionRecording"> | string | null
+  encrypted?: Prisma.BoolFilter<"SessionRecording"> | boolean
   chunks?: Prisma.RecordingChunkListRelationFilter
 }, "id" | "recordingKey">
 
@@ -294,6 +324,9 @@ export type SessionRecordingOrderByWithAggregationInput = {
   lastEventAt?: Prisma.SortOrder
   eventCount?: Prisma.SortOrder
   bytes?: Prisma.SortOrder
+  format?: Prisma.SortOrder
+  protocol?: Prisma.SortOrderInput | Prisma.SortOrder
+  encrypted?: Prisma.SortOrder
   _count?: Prisma.SessionRecordingCountOrderByAggregateInput
   _avg?: Prisma.SessionRecordingAvgOrderByAggregateInput
   _max?: Prisma.SessionRecordingMaxOrderByAggregateInput
@@ -314,6 +347,9 @@ export type SessionRecordingScalarWhereWithAggregatesInput = {
   lastEventAt?: Prisma.DateTimeWithAggregatesFilter<"SessionRecording"> | Date | string
   eventCount?: Prisma.IntWithAggregatesFilter<"SessionRecording"> | number
   bytes?: Prisma.IntWithAggregatesFilter<"SessionRecording"> | number
+  format?: Prisma.EnumRecordingFormatWithAggregatesFilter<"SessionRecording"> | $Enums.RecordingFormat
+  protocol?: Prisma.StringNullableWithAggregatesFilter<"SessionRecording"> | string | null
+  encrypted?: Prisma.BoolWithAggregatesFilter<"SessionRecording"> | boolean
 }
 
 export type SessionRecordingCreateInput = {
@@ -326,6 +362,9 @@ export type SessionRecordingCreateInput = {
   lastEventAt?: Date | string
   eventCount?: number
   bytes?: number
+  format?: $Enums.RecordingFormat
+  protocol?: string | null
+  encrypted?: boolean
   chunks?: Prisma.RecordingChunkCreateNestedManyWithoutRecordingInput
 }
 
@@ -339,6 +378,9 @@ export type SessionRecordingUncheckedCreateInput = {
   lastEventAt?: Date | string
   eventCount?: number
   bytes?: number
+  format?: $Enums.RecordingFormat
+  protocol?: string | null
+  encrypted?: boolean
   chunks?: Prisma.RecordingChunkUncheckedCreateNestedManyWithoutRecordingInput
 }
 
@@ -352,6 +394,9 @@ export type SessionRecordingUpdateInput = {
   lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   eventCount?: Prisma.IntFieldUpdateOperationsInput | number
   bytes?: Prisma.IntFieldUpdateOperationsInput | number
+  format?: Prisma.EnumRecordingFormatFieldUpdateOperationsInput | $Enums.RecordingFormat
+  protocol?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  encrypted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   chunks?: Prisma.RecordingChunkUpdateManyWithoutRecordingNestedInput
 }
 
@@ -365,6 +410,9 @@ export type SessionRecordingUncheckedUpdateInput = {
   lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   eventCount?: Prisma.IntFieldUpdateOperationsInput | number
   bytes?: Prisma.IntFieldUpdateOperationsInput | number
+  format?: Prisma.EnumRecordingFormatFieldUpdateOperationsInput | $Enums.RecordingFormat
+  protocol?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  encrypted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   chunks?: Prisma.RecordingChunkUncheckedUpdateManyWithoutRecordingNestedInput
 }
 
@@ -378,6 +426,9 @@ export type SessionRecordingCreateManyInput = {
   lastEventAt?: Date | string
   eventCount?: number
   bytes?: number
+  format?: $Enums.RecordingFormat
+  protocol?: string | null
+  encrypted?: boolean
 }
 
 export type SessionRecordingUpdateManyMutationInput = {
@@ -390,6 +441,9 @@ export type SessionRecordingUpdateManyMutationInput = {
   lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   eventCount?: Prisma.IntFieldUpdateOperationsInput | number
   bytes?: Prisma.IntFieldUpdateOperationsInput | number
+  format?: Prisma.EnumRecordingFormatFieldUpdateOperationsInput | $Enums.RecordingFormat
+  protocol?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  encrypted?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type SessionRecordingUncheckedUpdateManyInput = {
@@ -402,6 +456,9 @@ export type SessionRecordingUncheckedUpdateManyInput = {
   lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   eventCount?: Prisma.IntFieldUpdateOperationsInput | number
   bytes?: Prisma.IntFieldUpdateOperationsInput | number
+  format?: Prisma.EnumRecordingFormatFieldUpdateOperationsInput | $Enums.RecordingFormat
+  protocol?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  encrypted?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type SessionRecordingCountOrderByAggregateInput = {
@@ -414,6 +471,9 @@ export type SessionRecordingCountOrderByAggregateInput = {
   lastEventAt?: Prisma.SortOrder
   eventCount?: Prisma.SortOrder
   bytes?: Prisma.SortOrder
+  format?: Prisma.SortOrder
+  protocol?: Prisma.SortOrder
+  encrypted?: Prisma.SortOrder
 }
 
 export type SessionRecordingAvgOrderByAggregateInput = {
@@ -431,6 +491,9 @@ export type SessionRecordingMaxOrderByAggregateInput = {
   lastEventAt?: Prisma.SortOrder
   eventCount?: Prisma.SortOrder
   bytes?: Prisma.SortOrder
+  format?: Prisma.SortOrder
+  protocol?: Prisma.SortOrder
+  encrypted?: Prisma.SortOrder
 }
 
 export type SessionRecordingMinOrderByAggregateInput = {
@@ -443,6 +506,9 @@ export type SessionRecordingMinOrderByAggregateInput = {
   lastEventAt?: Prisma.SortOrder
   eventCount?: Prisma.SortOrder
   bytes?: Prisma.SortOrder
+  format?: Prisma.SortOrder
+  protocol?: Prisma.SortOrder
+  encrypted?: Prisma.SortOrder
 }
 
 export type SessionRecordingSumOrderByAggregateInput = {
@@ -453,6 +519,10 @@ export type SessionRecordingSumOrderByAggregateInput = {
 export type SessionRecordingScalarRelationFilter = {
   is?: Prisma.SessionRecordingWhereInput
   isNot?: Prisma.SessionRecordingWhereInput
+}
+
+export type EnumRecordingFormatFieldUpdateOperationsInput = {
+  set?: $Enums.RecordingFormat
 }
 
 export type SessionRecordingCreateNestedOneWithoutChunksInput = {
@@ -479,6 +549,9 @@ export type SessionRecordingCreateWithoutChunksInput = {
   lastEventAt?: Date | string
   eventCount?: number
   bytes?: number
+  format?: $Enums.RecordingFormat
+  protocol?: string | null
+  encrypted?: boolean
 }
 
 export type SessionRecordingUncheckedCreateWithoutChunksInput = {
@@ -491,6 +564,9 @@ export type SessionRecordingUncheckedCreateWithoutChunksInput = {
   lastEventAt?: Date | string
   eventCount?: number
   bytes?: number
+  format?: $Enums.RecordingFormat
+  protocol?: string | null
+  encrypted?: boolean
 }
 
 export type SessionRecordingCreateOrConnectWithoutChunksInput = {
@@ -519,6 +595,9 @@ export type SessionRecordingUpdateWithoutChunksInput = {
   lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   eventCount?: Prisma.IntFieldUpdateOperationsInput | number
   bytes?: Prisma.IntFieldUpdateOperationsInput | number
+  format?: Prisma.EnumRecordingFormatFieldUpdateOperationsInput | $Enums.RecordingFormat
+  protocol?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  encrypted?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type SessionRecordingUncheckedUpdateWithoutChunksInput = {
@@ -531,6 +610,9 @@ export type SessionRecordingUncheckedUpdateWithoutChunksInput = {
   lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   eventCount?: Prisma.IntFieldUpdateOperationsInput | number
   bytes?: Prisma.IntFieldUpdateOperationsInput | number
+  format?: Prisma.EnumRecordingFormatFieldUpdateOperationsInput | $Enums.RecordingFormat
+  protocol?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  encrypted?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -574,6 +656,9 @@ export type SessionRecordingSelect<ExtArgs extends runtime.Types.Extensions.Inte
   lastEventAt?: boolean
   eventCount?: boolean
   bytes?: boolean
+  format?: boolean
+  protocol?: boolean
+  encrypted?: boolean
   chunks?: boolean | Prisma.SessionRecording$chunksArgs<ExtArgs>
   _count?: boolean | Prisma.SessionRecordingCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["sessionRecording"]>
@@ -588,6 +673,9 @@ export type SessionRecordingSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   lastEventAt?: boolean
   eventCount?: boolean
   bytes?: boolean
+  format?: boolean
+  protocol?: boolean
+  encrypted?: boolean
 }, ExtArgs["result"]["sessionRecording"]>
 
 export type SessionRecordingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -600,6 +688,9 @@ export type SessionRecordingSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   lastEventAt?: boolean
   eventCount?: boolean
   bytes?: boolean
+  format?: boolean
+  protocol?: boolean
+  encrypted?: boolean
 }, ExtArgs["result"]["sessionRecording"]>
 
 export type SessionRecordingSelectScalar = {
@@ -612,9 +703,12 @@ export type SessionRecordingSelectScalar = {
   lastEventAt?: boolean
   eventCount?: boolean
   bytes?: boolean
+  format?: boolean
+  protocol?: boolean
+  encrypted?: boolean
 }
 
-export type SessionRecordingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "recordingKey" | "siteId" | "userId" | "host" | "startedAt" | "lastEventAt" | "eventCount" | "bytes", ExtArgs["result"]["sessionRecording"]>
+export type SessionRecordingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "recordingKey" | "siteId" | "userId" | "host" | "startedAt" | "lastEventAt" | "eventCount" | "bytes" | "format" | "protocol" | "encrypted", ExtArgs["result"]["sessionRecording"]>
 export type SessionRecordingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   chunks?: boolean | Prisma.SessionRecording$chunksArgs<ExtArgs>
   _count?: boolean | Prisma.SessionRecordingCountOutputTypeDefaultArgs<ExtArgs>
@@ -637,6 +731,9 @@ export type $SessionRecordingPayload<ExtArgs extends runtime.Types.Extensions.In
     lastEventAt: Date
     eventCount: number
     bytes: number
+    format: $Enums.RecordingFormat
+    protocol: string | null
+    encrypted: boolean
   }, ExtArgs["result"]["sessionRecording"]>
   composites: {}
 }
@@ -1070,6 +1167,9 @@ export interface SessionRecordingFieldRefs {
   readonly lastEventAt: Prisma.FieldRef<"SessionRecording", 'DateTime'>
   readonly eventCount: Prisma.FieldRef<"SessionRecording", 'Int'>
   readonly bytes: Prisma.FieldRef<"SessionRecording", 'Int'>
+  readonly format: Prisma.FieldRef<"SessionRecording", 'RecordingFormat'>
+  readonly protocol: Prisma.FieldRef<"SessionRecording", 'String'>
+  readonly encrypted: Prisma.FieldRef<"SessionRecording", 'Boolean'>
 }
     
 

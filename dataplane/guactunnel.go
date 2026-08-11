@@ -45,7 +45,7 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 		return
 	}
 
-	conn, guacdAddr, connectorID, err := ctrl.GatewayDescriptor(userID, siteID)
+	conn, guacdAddr, connectorID, record, err := ctrl.GatewayDescriptor(userID, siteID)
 	if err != nil {
 		log.Printf("guac-tunnel site=%s user=%s: descriptor failed err=%v", siteID, userID, err)
 		http.Error(w, "forbidden", http.StatusForbidden)
@@ -96,6 +96,13 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 	}
 	log.Printf("guac-tunnel site=%s: READY, bridging", siteID)
 
+	var rec *recWriter
+	if record {
+		rec = newRecWriter(ctrl.BaseURL, ctrl.Secret, newRecordingKey(siteID, userID), siteID, userID, conn.Hostname, conn.Protocol, recordingMaxBytes())
+		defer rec.Close()
+		log.Printf("guac-tunnel site=%s: recording enabled key=%s", siteID, rec.key)
+	}
+
 	// Upgrade the browser WebSocket and bridge. The browser is same-origin behind
 	// the front nginx; skip strict origin checks (the session cookie already
 	// authenticated the request).
@@ -128,6 +135,9 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 			if rerr != nil {
 				errc <- rerr
 				return
+			}
+			if rec != nil {
+				rec.Write(inst)
 			}
 			if werr := c.Write(ctx, websocket.MessageText, inst); werr != nil {
 				errc <- werr

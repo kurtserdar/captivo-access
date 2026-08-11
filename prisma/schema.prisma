@@ -410,6 +410,11 @@ model UpdateCheckConfig {
   updatedAt     DateTime  @updatedAt
 }
 
+enum RecordingFormat {
+  RRWEB
+  GUAC
+}
+
 model SessionRecording {
   id           String           @id @default(cuid())
   recordingKey String           @unique
@@ -420,6 +425,9 @@ model SessionRecording {
   lastEventAt  DateTime         @default(now())
   eventCount   Int              @default(0)
   bytes        Int              @default(0)
+  format       RecordingFormat  @default(RRWEB)
+  protocol     String?
+  encrypted    Boolean          @default(false)
   chunks       RecordingChunk[]
 
   @@index([siteId])

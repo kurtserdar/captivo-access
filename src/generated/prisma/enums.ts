@@ -78,3 +78,11 @@ export const AuditDecision = {
 } as const
 
 export type AuditDecision = (typeof AuditDecision)[keyof typeof AuditDecision]
+
+
+export const RecordingFormat = {
+  RRWEB: 'RRWEB',
+  GUAC: 'GUAC'
+} as const
+
+export type RecordingFormat = (typeof RecordingFormat)[keyof typeof RecordingFormat]

@@ -30,6 +30,8 @@ export default async function AdminRecordingsPage() {
     userEmail: userMap.get(r.userId)?.email ?? null,
     siteId: r.siteId,
     siteName: siteMap.get(r.siteId)?.name ?? null,
+    format: r.format,
+    protocol: r.protocol,
   }));
 
   return (
