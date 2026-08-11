@@ -1,3 +1,6 @@
+import { db } from "@/lib/db";
+import { listActiveSessions } from "@/lib/dataplane/client";
+
 export interface TrendDay { date: string; allow: number; deny: number }
 export interface Labeled { label: string; count: number }
 export interface IpFlag { userEmail: string; ipCount: number }
@@ -97,4 +100,60 @@ export function ipFlags(rows: AuditRow[], threshold: number): IpFlag[] {
     .map(([userEmail, ips]) => ({ userEmail, ipCount: ips.size }))
     .filter((f) => f.ipCount >= threshold)
     .sort((a, b) => b.ipCount - a.ipCount);
+}
+
+export interface Insights {
+  trend: TrendDay[];
+  heatmap: { grid: number[][]; max: number };
+  topResources: Labeled[];
+  topVendors: Labeled[];
+  deny: { total: number; reasons: Labeled[] };
+  ipFlags: IpFlag[];
+  expiring: { count: number; soonest: { userEmail: string; siteName: string; endsAt: string }[] };
+  activeSessions: { count: number; longestStartedAt: string | null };
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export async function getInsights(now = new Date()): Promise<Insights> {
+  const since = new Date(now.getTime() - 30 * DAY_MS);
+  const in7d = new Date(now.getTime() + 7 * DAY_MS);
+  const expiringWhere = { status: "ACTIVE" as const, endsAt: { gte: now, lte: in7d } };
+
+  const [rows, expiringRows, expiringCount, active] = await Promise.all([
+    db.auditEvent.findMany({
+      where: { timestamp: { gte: since } },
+      select: { timestamp: true, decision: true, siteName: true, userEmail: true, clientIp: true, reason: true },
+    }),
+    db.accessGrant.findMany({
+      where: expiringWhere,
+      select: { endsAt: true, user: { select: { email: true } }, site: { select: { name: true } } },
+      orderBy: { endsAt: "asc" },
+      take: 5,
+    }),
+    db.accessGrant.count({ where: expiringWhere }),
+    listActiveSessions(),
+  ]);
+
+  // `rows` already matches AuditRow (decision is the AuditDecision "ALLOW"|"DENY").
+  const auditRows: AuditRow[] = rows;
+  const longestStartedAt = active.length ? [...active].map((a) => a.startedAt).sort()[0] : null;
+
+  return {
+    trend: buildTrend(auditRows, now),
+    heatmap: buildHeatmap(auditRows),
+    topResources: topBy(auditRows, "siteName", 5),
+    topVendors: topBy(auditRows, "userEmail", 5),
+    deny: denyReasons(auditRows, 5),
+    ipFlags: ipFlags(auditRows, IP_FLAG_THRESHOLD),
+    expiring: {
+      count: expiringCount,
+      soonest: expiringRows.map((g) => ({
+        userEmail: g.user.email ?? "—",
+        siteName: g.site.name,
+        endsAt: (g.endsAt as Date).toISOString(),
+      })),
+    },
+    activeSessions: { count: active.length, longestStartedAt },
+  };
 }
