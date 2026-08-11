@@ -219,6 +219,14 @@ internal app. It only dials outward — no inbound port.
    after restarts without the pairing code. Optionally add
    `-e ALLOWED_TARGETS=10.0.5.0/24` to hard-limit what this connector may ever
    reach.
+
+   > **Always copy the command from the console** rather than hand-writing it —
+   > it comes pre-filled and adapts to your choices. In particular, if this host
+   > will run **remote-desktop sessions** (RDP/SSH/VNC), toggle **gateway host**
+   > when adding the connector (or **Enable gateway mode** later) and the command
+   > it shows *also* deploys the session engine (guacd) alongside the connector —
+   > one command, nothing else to install. See
+   > [remote-desktop gateway](../deploy/README.md#recorded-rdpsshvnc-native-remote-desktop-gateway).
 3. Back in the console, the connector flips to **Online** within a few seconds.
 
 ## Step 10 — Publish your first app as a Site
