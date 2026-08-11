@@ -1,44 +1,20 @@
 "use client";
-import { useState } from "react";
-import { Modal } from "@/app/(app)/_shell/modal";
-import { SiteForm } from "./site-form";
+import Link from "next/link";
 import type { SiteRow } from "./sites-view";
 
+// Edit opens the full-page site editor (which also surfaces the Vault credential
+// section for GATEWAY sites) rather than a modal. connectors/recordingEnabled are
+// accepted for call-site compatibility but the full page loads its own data.
 export function EditSiteButton({
   site,
-  connectors,
-  recordingEnabled,
 }: {
   site: SiteRow;
   connectors: { id: string; name: string }[];
   recordingEnabled: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   return (
-    <>
-      <button type="button" className="btn sm" onClick={() => setOpen(true)}>
-        Edit
-      </button>
-      <Modal open={open} onClose={() => setOpen(false)} title="Edit site" size="lg">
-        <SiteForm
-          connectors={connectors}
-          recordingEnabled={recordingEnabled}
-          onDone={() => setOpen(false)}
-          site={{
-            id: site.id,
-            connectorId: site.connectorId,
-            name: site.name,
-            hostname: site.hostname,
-            upstreamUrl: site.upstreamUrl ?? "",
-            description: site.description ?? "",
-            insecureSkipVerify: site.insecureSkipVerify,
-            recordSessions: site.recordSessions,
-            clipboardMode: site.clipboardMode,
-            accessMode: site.accessMode,
-            hasLogo: site.hasLogo,
-          }}
-        />
-      </Modal>
-    </>
+    <Link className="btn sm" href={`/admin/sites/${site.id}/edit`}>
+      Edit
+    </Link>
   );
 }
