@@ -45,12 +45,13 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 		return
 	}
 
-	conn, guacdAddr, connectorID, err := ctrl.GatewayDescriptor(userID, siteID)
+	conn, guacdAddr, connectorID, record, err := ctrl.GatewayDescriptor(userID, siteID)
 	if err != nil {
 		log.Printf("guac-tunnel site=%s user=%s: descriptor failed err=%v", siteID, userID, err)
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
+	_ = record // consumed in Task 6 (tee wiring)
 	log.Printf("guac-tunnel site=%s user=%s: descriptor ok protocol=%s target=%s:%s guacd=%s connector=%s", siteID, userID, conn.Protocol, conn.Hostname, conn.Port, guacdAddr, connectorID)
 	sess := reg.Get(connectorID)
 	if sess == nil {

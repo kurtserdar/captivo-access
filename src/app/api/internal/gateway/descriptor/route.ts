@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { getVaultCredential } from "@/lib/vault/store";
+import { recordingEnabled } from "@/lib/recording/enabled";
 import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
   const siteId = typeof b.siteId === "string" ? b.siteId : "";
   if (!userId || !siteId) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true, recordSessions: true } });
   if (!site || site.accessMode !== "GATEWAY") return NextResponse.json({ error: "not_gateway" }, { status: 404 });
 
   const decision = await evaluateAccess(userId, siteId, new Date());
@@ -40,5 +41,6 @@ export async function POST(req: NextRequest) {
     secretKind: cred.secretKind,
     guacdAddress: (process.env.GUACD_ADDR ?? "captivo-guacd:4822").trim(),
     connectorId: site.connectorId,
+    record: recordingEnabled() && site.recordSessions,
   });
 }
