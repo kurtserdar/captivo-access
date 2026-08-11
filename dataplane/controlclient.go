@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -70,6 +71,33 @@ func (c *ControlClient) ResolveSession(token string) (userID, email string, err 
 		return "", "", err
 	}
 	return out.UserID, out.Email, nil
+}
+
+// GatewayDescriptor authorizes (userID, siteID) and returns the guacd connection
+// descriptor with the decrypted credential + the guacd address to reach. On a
+// denied grant / missing credential the control plane returns an HTTP status,
+// surfaced here as an error so the tunnel closes.
+func (c *ControlClient) GatewayDescriptor(userID, siteID string) (GuacConn, string, error) {
+	var out struct {
+		Protocol     string `json:"protocol"`
+		TargetHost   string `json:"targetHost"`
+		TargetPort   int    `json:"targetPort"`
+		Username     string `json:"username"`
+		Secret       string `json:"secret"`
+		SecretKind   string `json:"secretKind"`
+		GuacdAddress string `json:"guacdAddress"`
+	}
+	if err := c.post("/api/internal/gateway/descriptor", map[string]string{"userId": userID, "siteId": siteID}, &out); err != nil {
+		return GuacConn{}, "", err
+	}
+	return GuacConn{
+		Protocol:   out.Protocol,
+		Hostname:   out.TargetHost,
+		Port:       strconv.Itoa(out.TargetPort),
+		Username:   out.Username,
+		Secret:     out.Secret,
+		SecretKind: out.SecretKind,
+	}, out.GuacdAddress, nil
 }
 
 // SiteByHost resolves a browser-facing hostname to the site/connector it's
