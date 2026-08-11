@@ -115,6 +115,17 @@ describe("gateway-host bundles guacd", () => {
     expect(cmd).toContain("--name captivo-guacd");
     expect(cmd).toContain("docker pull ghcr.io/kurtserdar/captivo-access-connector:latest");
   });
+  it("gateway install captures guacd logs to a shared volume", () => {
+    const cmd = buildInstallCommand("CODE123", m, t, true);
+    expect(cmd).toContain("-v captivo_guacd_logs:/guaclog ");
+    expect(cmd).toContain("tee /guaclog/guacd.log");
+    expect(cmd).toContain("-v captivo_guacd_logs:/guaclog:ro");
+  });
+  it("non-gateway install has no guacd log volume", () => {
+    const cmd = buildInstallCommand("CODE123", m, t, false);
+    expect(cmd).not.toContain("captivo_guacd_logs");
+    expect(cmd).not.toContain("/guaclog");
+  });
 });
 
 describe("install/re-pair pull the newest connector image", () => {

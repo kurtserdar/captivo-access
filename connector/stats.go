@@ -33,6 +33,7 @@ func snapshot() tunnel.Telemetry {
 		BytesIn:           atomic.LoadInt64(&statBytesIn),
 		BytesOut:          atomic.LoadInt64(&statBytesOut),
 		RecentLogs:        logRingBuf.tail(80),
+		GuacdLogs:         guacdLogRing.tail(80),
 	}
 }
 
