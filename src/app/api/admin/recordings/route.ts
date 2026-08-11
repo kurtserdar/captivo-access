@@ -33,6 +33,8 @@ export async function GET(req: NextRequest) {
     userEmail: users.get(r.userId)?.email ?? null,
     siteId: r.siteId,
     siteName: sites.get(r.siteId)?.name ?? null,
+    format: r.format,
+    protocol: r.protocol,
   }));
 
   return NextResponse.json({ rows: out, total });

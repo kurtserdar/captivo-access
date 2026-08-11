@@ -10,6 +10,8 @@ export interface RecordingRow {
   lastEventAt: Date;
   eventCount: number;
   bytes: number;
+  format: string;
+  protocol: string | null;
 }
 
 export async function listRecordings(filter: RecordingFilter): Promise<{ rows: RecordingRow[]; total: number }> {
@@ -20,7 +22,7 @@ export async function listRecordings(filter: RecordingFilter): Promise<{ rows: R
       orderBy: { startedAt: "desc" },
       skip: filter.offset,
       take: filter.limit,
-      select: { id: true, siteId: true, userId: true, host: true, startedAt: true, lastEventAt: true, eventCount: true, bytes: true },
+      select: { id: true, siteId: true, userId: true, host: true, startedAt: true, lastEventAt: true, eventCount: true, bytes: true, format: true, protocol: true },
     }),
     db.sessionRecording.count({ where }),
   ]);

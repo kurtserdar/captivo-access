@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { RecordingPlayer } from "./recording-player";
+import { GuacRecordingPlayer } from "./guac-recording-player";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Recording" };
@@ -26,7 +27,9 @@ export default async function RecordingPage({ params }: { params: Promise<{ id: 
         <Link href="/admin/recordings" className="btn sm">Back to recordings</Link>
       </div>
       <div className="card">
-        <RecordingPlayer id={rec.id} />
+        {rec.format === "GUAC"
+          ? <GuacRecordingPlayer recordingId={rec.id} />
+          : <RecordingPlayer id={rec.id} />}
       </div>
     </main>
   );

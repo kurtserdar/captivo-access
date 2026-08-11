@@ -18,6 +18,13 @@ export interface RecordingRowJSON {
   userEmail: string | null;
   siteId: string;
   siteName: string | null;
+  format: string;
+  protocol: string | null;
+}
+
+function formatBadge(r: RecordingRowJSON): string {
+  if (r.format === "GUAC") return r.protocol ? r.protocol.toUpperCase() : "RDP";
+  return "WEB";
 }
 
 type Opt = { id: string; name: string | null; email?: string | null };
@@ -205,6 +212,7 @@ export function RecordingsTable({
                 <th>Started</th>
                 <th>User</th>
                 <th>Site</th>
+                <th>Type</th>
                 <th>Duration</th>
                 <th>Events</th>
                 <th>Size</th>
@@ -221,6 +229,7 @@ export function RecordingsTable({
                     {r.userEmail && <div className="cell-sub">{r.userEmail}</div>}
                   </td>
                   <td>{r.siteName ?? r.host}</td>
+                  <td><span className="pill">{formatBadge(r)}</span></td>
                   <td className="cell-sub">{duration(r.startedAt, r.lastEventAt)}</td>
                   <td className="cell-sub">{r.eventCount}</td>
                   <td className="cell-sub">{humanBytes(r.bytes)}</td>
