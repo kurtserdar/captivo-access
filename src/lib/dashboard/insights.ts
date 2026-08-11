@@ -158,6 +158,10 @@ export interface Insights {
   ipFlags: IpFlag[];
   expiring: { count: number; soonest: { userEmail: string; siteName: string; endsAt: string }[] };
   activeSessions: { count: number; longestStartedAt: string | null };
+  activeVendors: { count: number; series: number[] };
+  typeMix: { web: number; remote: number };
+  sessionStats: { recordings: number; totalHours: number; avgMinutes: number };
+  topDenied: Labeled[];
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -167,10 +171,10 @@ export async function getInsights(now = new Date()): Promise<Insights> {
   const in7d = new Date(now.getTime() + 7 * DAY_MS);
   const expiringWhere = { status: "ACTIVE" as const, endsAt: { gte: now, lte: in7d } };
 
-  const [rows, expiringRows, expiringCount, active] = await Promise.all([
+  const [rows, expiringRows, expiringCount, active, sites, recordings] = await Promise.all([
     db.auditEvent.findMany({
       where: { timestamp: { gte: since } },
-      select: { timestamp: true, decision: true, siteName: true, userEmail: true, clientIp: true, reason: true },
+      select: { timestamp: true, decision: true, siteName: true, siteId: true, userEmail: true, clientIp: true, reason: true },
     }),
     db.accessGrant.findMany({
       where: expiringWhere,
@@ -180,10 +184,15 @@ export async function getInsights(now = new Date()): Promise<Insights> {
     }),
     db.accessGrant.count({ where: expiringWhere }),
     listActiveSessions(),
+    db.site.findMany({ select: { id: true, accessMode: true } }),
+    db.sessionRecording.findMany({ where: { startedAt: { gte: since } }, select: { startedAt: true, lastEventAt: true } }),
   ]);
 
   // `rows` already matches AuditRow (decision is the AuditDecision "ALLOW"|"DENY").
   const auditRows: AuditRow[] = rows;
+  const siteType = new Map<string, "web" | "remote">(
+    sites.map((s) => [s.id, s.accessMode === "GATEWAY" ? "remote" : "web"] as const),
+  );
   const longestStartedAt = active.length ? [...active].map((a) => a.startedAt).sort()[0] : null;
 
   return {
@@ -202,5 +211,9 @@ export async function getInsights(now = new Date()): Promise<Insights> {
       })),
     },
     activeSessions: { count: active.length, longestStartedAt },
+    activeVendors: activeVendors(auditRows, now),
+    typeMix: typeMix(auditRows, siteType),
+    sessionStats: sessionStats(recordings),
+    topDenied: topBy(auditRows, "userEmail", 3, "DENY"),
   };
 }
