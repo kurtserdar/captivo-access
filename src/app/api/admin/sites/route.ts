@@ -3,6 +3,9 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { nativeGatewayEnabled } from "@/lib/gateway/native";
+import { encrypt } from "@/lib/crypto";
+import { validateSiteInput } from "@/lib/site/validate";
 import { parseLogoUpload } from "@/lib/site/logo";
 
 export async function POST(req: NextRequest) {
@@ -15,37 +18,10 @@ export async function POST(req: NextRequest) {
   }
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const connectorId = typeof body.connectorId === "string" ? body.connectorId.trim() : "";
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-  const hostname = typeof body.hostname === "string" ? body.hostname.trim().toLowerCase() : "";
-  const upstreamUrl = typeof body.upstreamUrl === "string" ? body.upstreamUrl.trim() : "";
-  const description = typeof body.description === "string" && body.description.trim() ? body.description.trim() : null;
-  const insecureSkipVerify = body.insecureSkipVerify === true;
-  const accessMode = body.accessMode === "GATEWAY" ? "GATEWAY" : "TRANSPARENT";
-  // Gateway sites are recorded by Guacamole, not rrweb — rrweb cannot capture a
-  // gateway's canvas, so recording must never be persisted as enabled for them.
-  const recordSessions = accessMode === "GATEWAY" ? false : recordingEnabled() && body.recordSessions === true;
-  const CLIP = ["allow", "no_copy", "no_paste", "none"];
-  const clipboardMode = accessMode === "GATEWAY" ? "allow" : (typeof body.clipboardMode === "string" && CLIP.includes(body.clipboardMode) ? body.clipboardMode : "allow");
+  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled(), requireSecret: true, recordingEnabled: recordingEnabled() });
+  if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.error === "native_gateway_disabled" ? 403 : 400 });
 
-  if (!connectorId || !name || !upstreamUrl) {
-    return NextResponse.json({ error: "connector_name_upstream_required" }, { status: 400 });
-  }
-  if (!hostname) {
-    return NextResponse.json({ error: "invalid_hostname" }, { status: 400 });
-  }
-
-  let u: URL;
-  try {
-    u = new URL(upstreamUrl);
-  } catch {
-    return NextResponse.json({ error: "invalid_upstream_url" }, { status: 400 });
-  }
-  if (u.protocol !== "http:" && u.protocol !== "https:") {
-    return NextResponse.json({ error: "invalid_upstream_url" }, { status: 400 });
-  }
-
-  const connector = await db.connector.findUnique({ where: { id: connectorId }, select: { id: true } });
+  const connector = await db.connector.findUnique({ where: { id: v.connectorId }, select: { id: true } });
   if (!connector) {
     return NextResponse.json({ error: "connector_not_found" }, { status: 400 });
   }
@@ -54,16 +30,32 @@ export async function POST(req: NextRequest) {
   if (logoResult.action === "error") {
     return NextResponse.json({ error: logoResult.error }, { status: 400 });
   }
+  const logoData = logoResult.action === "set" ? { logo: logoResult.data, logoType: logoResult.type } : {};
 
-  const site = await db.site.create({
-    data: {
-      connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, clipboardMode, accessMode,
-      ...(logoResult.action === "set" ? { logo: logoResult.data, logoType: logoResult.type } : {}),
-    },
-    select: { id: true },
+  if (v.mode === "TRANSPARENT") {
+    const site = await db.site.create({
+      data: {
+        connectorId: v.connectorId, name: v.name, hostname: v.hostname, upstreamUrl: v.upstreamUrl, description: v.description,
+        insecureSkipVerify: v.insecureSkipVerify, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "TRANSPARENT", ...logoData,
+      },
+      select: { id: true },
+    });
+    return NextResponse.json({ id: site.id });
+  }
+
+  // GATEWAY (remote desktop): the site (null hostname/upstream) + its credential, atomically.
+  const encSecret = encrypt(v.secret as string);
+  const id = await db.$transaction(async (tx) => {
+    const site = await tx.site.create({
+      data: { connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: null, description: v.description, accessMode: "GATEWAY", ...logoData },
+      select: { id: true },
+    });
+    await tx.vaultCredential.create({
+      data: { siteId: site.id, protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, secret: encSecret, secretKind: "PASSWORD" },
+    });
+    return site.id;
   });
-
-  return NextResponse.json({ id: site.id });
+  return NextResponse.json({ id });
 }
 
 export async function GET() {

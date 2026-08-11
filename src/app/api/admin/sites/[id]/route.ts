@@ -3,6 +3,9 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { nativeGatewayEnabled } from "@/lib/gateway/native";
+import { encrypt } from "@/lib/crypto";
+import { validateSiteInput } from "@/lib/site/validate";
 import { parseLogoUpload } from "@/lib/site/logo";
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -12,26 +15,10 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const { id } = await ctx.params;
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const connectorId = typeof body.connectorId === "string" ? body.connectorId.trim() : "";
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-  const hostname = typeof body.hostname === "string" ? body.hostname.trim().toLowerCase() : "";
-  const upstreamUrl = typeof body.upstreamUrl === "string" ? body.upstreamUrl.trim() : "";
-  const description = typeof body.description === "string" && body.description.trim() ? body.description.trim() : null;
-  const insecureSkipVerify = body.insecureSkipVerify === true;
-  const accessMode = body.accessMode === "GATEWAY" ? "GATEWAY" : "TRANSPARENT";
-  // Gateway sites are recorded by Guacamole, not rrweb — rrweb cannot capture a
-  // gateway's canvas, so recording must never be persisted as enabled for them.
-  const recordSessions = accessMode === "GATEWAY" ? false : recordingEnabled() && body.recordSessions === true;
-  const CLIP = ["allow", "no_copy", "no_paste", "none"];
-  const clipboardMode = accessMode === "GATEWAY" ? "allow" : (typeof body.clipboardMode === "string" && CLIP.includes(body.clipboardMode) ? body.clipboardMode : "allow");
+  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled(), requireSecret: false, recordingEnabled: recordingEnabled() });
+  if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.error === "native_gateway_disabled" ? 403 : 400 });
 
-  if (!connectorId || !name || !upstreamUrl) return NextResponse.json({ error: "connector_name_upstream_required" }, { status: 400 });
-  if (!hostname) return NextResponse.json({ error: "invalid_hostname" }, { status: 400 });
-  let u: URL;
-  try { u = new URL(upstreamUrl); } catch { return NextResponse.json({ error: "invalid_upstream_url" }, { status: 400 }); }
-  if (u.protocol !== "http:" && u.protocol !== "https:") return NextResponse.json({ error: "invalid_upstream_url" }, { status: 400 });
-
-  const connector = await db.connector.findUnique({ where: { id: connectorId }, select: { id: true } });
+  const connector = await db.connector.findUnique({ where: { id: v.connectorId }, select: { id: true } });
   if (!connector) return NextResponse.json({ error: "connector_not_found" }, { status: 400 });
 
   const existing = await db.site.findUnique({ where: { id }, select: { id: true } });
@@ -44,15 +31,31 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     : logoResult.action === "clear" ? { logo: null, logoType: null }
     : {};
 
-  try {
-    await db.site.update({ where: { id }, data: { connectorId, name, hostname, upstreamUrl, description, insecureSkipVerify, recordSessions, clipboardMode, accessMode, ...logoData } });
-  } catch (e) {
-    // P2002 = the hostname unique constraint is taken by a different site.
-    if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2002") {
-      return NextResponse.json({ error: "hostname_taken" }, { status: 409 });
+  if (v.mode === "TRANSPARENT") {
+    try {
+      await db.site.update({ where: { id }, data: { connectorId: v.connectorId, name: v.name, hostname: v.hostname, upstreamUrl: v.upstreamUrl, description: v.description, insecureSkipVerify: v.insecureSkipVerify, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "TRANSPARENT", ...logoData } });
+    } catch (e) {
+      if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2002") {
+        return NextResponse.json({ error: "hostname_taken" }, { status: 409 });
+      }
+      throw e;
     }
-    throw e;
+    return NextResponse.json({ ok: true });
   }
+
+  // GATEWAY update: a first-time credential must include a secret.
+  const hadVault = (await db.vaultCredential.count({ where: { siteId: id } })) > 0;
+  if (!hadVault && !v.secret) return NextResponse.json({ error: "remote_desktop_fields_required" }, { status: 400 });
+
+  const secretUpdate = v.secret ? { secret: encrypt(v.secret) } : {};
+  await db.$transaction(async (tx) => {
+    await tx.site.update({ where: { id }, data: { connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: null, description: v.description, accessMode: "GATEWAY", ...logoData } });
+    await tx.vaultCredential.upsert({
+      where: { siteId: id },
+      create: { siteId: id, protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, secret: encrypt(v.secret ?? ""), secretKind: "PASSWORD" },
+      update: { protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, ...secretUpdate },
+    });
+  });
   return NextResponse.json({ ok: true });
 }
 

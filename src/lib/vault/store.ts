@@ -46,6 +46,15 @@ export async function hasVaultCredential(siteId: string): Promise<boolean> {
   return (await db.vaultCredential.count({ where: { siteId } })) > 0;
 }
 
+// Non-secret fields for seeding the site form (the secret is never returned).
+export async function getVaultCredentialMeta(siteId: string) {
+  const c = await db.vaultCredential.findUnique({
+    where: { siteId },
+    select: { protocol: true, targetHost: true, targetPort: true, username: true },
+  });
+  return c ? { ...c, hasSecret: true as const } : null;
+}
+
 export async function clearVaultCredential(siteId: string): Promise<void> {
   await db.vaultCredential.deleteMany({ where: { siteId } });
 }
