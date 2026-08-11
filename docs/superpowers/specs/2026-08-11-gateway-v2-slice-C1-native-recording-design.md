@@ -99,7 +99,7 @@ model SessionRecording {
 ### 2. At-rest encryption (`src/lib/crypto.ts`)
 
 Add a Buffer-oriented pair beside the existing string `encrypt`/`decrypt`,
-reusing the same AES-256-GCM construction and `DATA_ENCRYPTION_KEY`:
+reusing the same AES-256-GCM construction and `ENCRYPTION_KEY`:
 
 ```ts
 export function encryptBytes(plaintext: Buffer): Buffer; // iv ‖ tag ‖ ciphertext
@@ -263,7 +263,7 @@ and compliance. Continue?") instead of `<GatewaySession>` directly.
 ## Capability gating
 
 - No new capability env. Native recording shares `RECORDING_ENABLED` +
-  per-site `recordSessions`. Encryption uses the existing `DATA_ENCRYPTION_KEY`.
+  per-site `recordSessions`. Encryption uses the existing `ENCRYPTION_KEY` (via crypto.ts `key()`).
 - New tuning env (optional, defaulted): `RECORDING_MAX_BYTES` (500 MiB).
 
 ## Testing
