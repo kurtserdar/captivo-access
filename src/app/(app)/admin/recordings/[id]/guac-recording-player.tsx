@@ -7,6 +7,7 @@ export function GuacRecordingPlayer({ recordingId }: { recordingId: string }) {
   const recRef = useRef<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [empty, setEmpty] = useState(false);
+  const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -23,26 +24,33 @@ export function GuacRecordingPlayer({ recordingId }: { recordingId: string }) {
 
         const mod: any = await import("guacamole-common-js");
         const Guacamole: any = mod.default ?? mod;
+        // A Blob source auto-parses in the constructor — there is NO connect().
         const recording = new Guacamole.SessionRecording(blob);
         recRef.current = recording;
 
         const display = recording.getDisplay();
         displayRef.current.innerHTML = "";
         displayRef.current.appendChild(display.getElement());
+        const fit = () => {
+          const dw = display.getWidth();
+          const dh = display.getHeight();
+          if (dw > 0 && dh > 0) display.scale(Math.min((displayRef.current?.clientWidth ?? dw) / dw, 1));
+        };
+        display.onresize = fit;
 
-        recording.onprogress = (total: number) => setDuration(total);
+        recording.onload = () => { setReady(true); setDuration(recording.getDuration()); fit(); };
+        recording.onprogress = (dur: number) => setDuration(dur);
         recording.onseek = (millis: number) => setPosition(millis);
         recording.onplay = () => setPlaying(true);
         recording.onpause = () => setPlaying(false);
-
-        recording.connect();
+        recording.onerror = () => setError("Couldn't play this recording.");
       } catch {
         setError("Couldn't play this recording.");
       }
     })();
     return () => {
       disposed = true;
-      try { recRef.current?.disconnect?.(); } catch { /* ignore */ }
+      try { recRef.current?.pause?.(); } catch { /* ignore */ }
       recRef.current = null;
     };
   }, [recordingId]);
@@ -67,7 +75,9 @@ export function GuacRecordingPlayer({ recordingId }: { recordingId: string }) {
     <div className="guac-recording">
       <div ref={displayRef} className="guac-recording-display" />
       <div className="guac-recording-controls">
-        <button type="button" className="btn sm" onClick={toggle}>{playing ? "Pause" : "Play"}</button>
+        <button type="button" className="btn sm" onClick={toggle} disabled={!ready}>
+          {!ready ? "Loading…" : playing ? "Pause" : "Play"}
+        </button>
         <input
           type="range"
           min={0}
@@ -75,6 +85,7 @@ export function GuacRecordingPlayer({ recordingId }: { recordingId: string }) {
           value={position}
           onChange={onScrub}
           aria-label="Seek"
+          disabled={!ready}
           style={{ flex: 1 }}
         />
         <span className="cell-sub">{fmt(position)} / {fmt(duration)}</span>
