@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/coder/websocket"
 )
@@ -26,7 +27,7 @@ func qInt(r *http.Request, key string, def, lo, hi int) string {
 // the server does select/args/connect; the browser only renders + sends input),
 // and then relays the Guacamole protocol both ways. The credential appears only
 // inside the server-side `connect` instruction and never reaches the browser.
-func serveGuacTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, r *http.Request) {
+func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http.ResponseWriter, r *http.Request) {
 	siteID := r.URL.Query().Get("site")
 	if siteID == "" {
 		http.Error(w, "missing site", http.StatusBadRequest)
@@ -103,6 +104,11 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 		log.Printf("guac-tunnel site=%s: recording enabled key=%s", siteID, rec.key)
 	}
 
+	sessionID := newSessionID()
+	ls := hub.Register(sessionID, siteID, userID, conn.Protocol, conn.Hostname, time.Now(), guac)
+	defer hub.Remove(sessionID)
+	log.Printf("guac-tunnel site=%s: live session id=%s", siteID, sessionID)
+
 	// Upgrade the browser WebSocket and bridge. The browser is same-origin behind
 	// the front nginx; skip strict origin checks (the session cookie already
 	// authenticated the request).
@@ -139,13 +145,14 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 			if rec != nil {
 				rec.Write(inst)
 			}
+			ls.broadcast(inst)
 			if werr := c.Write(ctx, websocket.MessageText, inst); werr != nil {
 				errc <- werr
 				return
 			}
 		}
 	}()
-	// browser -> guacd
+	// browser -> guacd (vendor input; suppressed while an admin holds control)
 	go func() {
 		for {
 			_, data, rerr := c.Read(ctx)
@@ -153,7 +160,10 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 				errc <- rerr
 				return
 			}
-			if _, werr := guac.Write(data); werr != nil {
+			if !ls.vendorInputAllowed() {
+				continue // an admin has taken control; drop vendor input
+			}
+			if werr := ls.writeToGuac(data); werr != nil {
 				errc <- werr
 				return
 			}
