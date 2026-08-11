@@ -142,7 +142,7 @@ password and the "internal app" is a live screen streamed to the browser.
 
 ```mermaid
 flowchart TD
-    A["Vendor browser<br/>Remote desktop session"] -->|WSS /guac-tunnel| C["Data-plane :3103"]
+    A["Vendor browser<br/>Remote desktop session"] -->|"WSS /guac-tunnel"| C["Data-plane :3103"]
     C --> G1{"Gate 1<br/>Signed in?"}
     G1 -->|no| L["Unauthorized"]
     G1 -->|yes| G2{"Gate 2 — allowed?<br/>grant · approval · schedule"}
@@ -151,7 +151,7 @@ flowchart TD
     CR -->|outbound tunnel| GD["guacd on the connector host<br/>opens RDP/SSH/VNC to the target<br/>credential injected"]
     GD --> SCR["Live screen streamed to the browser<br/>(recorded if enabled)"]
     ADM["Admin · /admin/live"] -->|"join by connection ID (WSS /guac-view)"| GD
-    GD -.->|keyframe + live · optional take-control| ADM
+    GD -.->|"keyframe + live · optional take-control"| ADM
 
     classDef deny fill:#3b1b20,stroke:#ff6b7a,color:#ffc2c8;
     classDef ok fill:#123027,stroke:#42d19a,color:#bff3df;
