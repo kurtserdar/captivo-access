@@ -29,6 +29,7 @@ func main() {
 	go func() { log.Fatal(http.ListenAndServe(env("WSS_ADDR", ":3101"), wss)) }()
 
 	// Internal API (compose-internal only; guarded by x-dataplane-secret).
+	hub := NewSessionHub()
 	in := http.NewServeMux()
 	in.HandleFunc("/proxy", func(w http.ResponseWriter, r *http.Request) {
 		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
@@ -180,6 +181,46 @@ func main() {
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	})
+	in.HandleFunc("/sessions", func(w http.ResponseWriter, r *http.Request) {
+		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		writeJSON(w, http.StatusOK, hub.List())
+	})
+	in.HandleFunc("/sessions/control", func(w http.ResponseWriter, r *http.Request) {
+		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		var body struct {
+			SessionID   string `json:"sessionId"`
+			OwnerUserID string `json:"ownerUserId"`
+			Action      string `json:"action"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SessionID == "" || body.OwnerUserID == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"ok": false, "reason": "invalid_body"})
+			return
+		}
+		if body.Action == "release" {
+			hub.ReleaseControl(body.SessionID, body.OwnerUserID)
+			writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+			return
+		}
+		if err := hub.SetControl(body.SessionID, body.OwnerUserID); err != nil {
+			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "reason": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+	})
+	in.HandleFunc("/sessions/watch-status", func(w http.ResponseWriter, r *http.Request) {
+		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		watching, controlHeld := hub.WatchStatus(r.URL.Query().Get("userId"), r.URL.Query().Get("siteId"))
+		writeJSON(w, http.StatusOK, map[string]any{"watching": watching, "controlHeld": controlHeld})
+	})
 	in.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok")) })
 	go func() { log.Fatal(http.ListenAndServe(env("INTERNAL_ADDR", ":3102"), in)) }()
 
@@ -202,7 +243,8 @@ func main() {
 	// Native gateway WebSocket tunnel (guacamole-common-js <-> guacd). The front
 	// nginx forwards /guac-tunnel here; everything else is the browser proxy.
 	mux := http.NewServeMux()
-	mux.HandleFunc("/guac-tunnel", func(w http.ResponseWriter, r *http.Request) { serveGuacTunnel(ctrl, reg, w, r) })
+	mux.HandleFunc("/guac-tunnel", func(w http.ResponseWriter, r *http.Request) { serveGuacTunnel(ctrl, reg, hub, w, r) })
+	mux.HandleFunc("/guac-view", func(w http.ResponseWriter, r *http.Request) { serveGuacView(hub, ctrl, w, r) })
 	mux.Handle("/", proxy)
 	log.Fatal(http.ListenAndServe(env("PROXY_ADDR", ":3103"), mux))
 }

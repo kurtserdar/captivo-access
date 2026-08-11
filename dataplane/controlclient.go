@@ -73,6 +73,20 @@ func (c *ControlClient) ResolveSession(token string) (userID, email string, err 
 	return out.UserID, out.Email, nil
 }
 
+// ViewAuthz asks the manager whether a user may watch live sessions (read_console).
+func (c *ControlClient) ViewAuthz(userID string) (bool, error) {
+	var out struct {
+		Allow bool `json:"allow"`
+	}
+	if err := c.post("/api/internal/gateway/view-authz", map[string]string{"userId": userID}, &out); err != nil {
+		if isHTTPStatus(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return out.Allow, nil
+}
+
 // GatewayDescriptor authorizes (userID, siteID) and returns the guacd connection
 // descriptor with the decrypted credential + the guacd address to reach. On a
 // denied grant / missing credential the control plane returns an HTTP status,

@@ -14,6 +14,7 @@ const PAGES: { label: string; href: string; cap: Capability | null }[] = [
   { label: "Connectors", href: "/admin/connectors", cap: "configure" },
   { label: "Sites", href: "/admin/sites", cap: "configure" },
   { label: "Notifications", href: "/admin/notifications", cap: "read_console" },
+  { label: "Live sessions", href: "/admin/live", cap: "read_console" },
   { label: "Users", href: "/admin/users", cap: "configure" },
   { label: "Invites", href: "/admin/invites", cap: "configure" },
   { label: "Sessions", href: "/admin/sessions", cap: "configure" },
