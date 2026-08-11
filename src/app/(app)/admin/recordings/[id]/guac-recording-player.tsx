@@ -6,7 +6,6 @@ export function GuacRecordingPlayer({ recordingId }: { recordingId: string }) {
   const displayRef = useRef<HTMLDivElement>(null);
   const recRef = useRef<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [empty, setEmpty] = useState(false);
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [position, setPosition] = useState(0);
@@ -16,16 +15,17 @@ export function GuacRecordingPlayer({ recordingId }: { recordingId: string }) {
     let disposed = false;
     (async () => {
       try {
-        const res = await fetch(`/api/admin/recordings/${recordingId}/guac`);
-        if (!res.ok) { setError("Couldn't load this recording."); return; }
-        const blob = await res.blob();
-        if (blob.size === 0) { setEmpty(true); return; }
-        if (disposed || !displayRef.current) return;
-
         const mod: any = await import("guacamole-common-js");
         const Guacamole: any = mod.default ?? mod;
-        // A Blob source auto-parses in the constructor — there is NO connect().
-        const recording = new Guacamole.SessionRecording(blob);
+        if (disposed || !displayRef.current) return;
+
+        // Feed the recording from a StaticHTTPTunnel, not a Blob: passing a Blob
+        // directly to SessionRecording is broken in guacamole-common-js 1.5.0
+        // (its internal recordingBlob is never assigned in the Blob branch, so
+        // construction throws "reading 'size'"). The tunnel path is the canonical
+        // recording-replay mechanism and works.
+        const tunnel = new Guacamole.StaticHTTPTunnel(`/api/admin/recordings/${recordingId}/guac`);
+        const recording = new Guacamole.SessionRecording(tunnel);
         recRef.current = recording;
 
         const display = recording.getDisplay();
@@ -47,6 +47,8 @@ export function GuacRecordingPlayer({ recordingId }: { recordingId: string }) {
           console.error("[guac-recording] onerror:", status);
           setError(`Couldn't play this recording. (${typeof status === "string" ? status : JSON.stringify(status)})`);
         };
+
+        tunnel.connect("");
       } catch (err) {
         console.error("[guac-recording] failed:", err);
         const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
@@ -74,7 +76,6 @@ export function GuacRecordingPlayer({ recordingId }: { recordingId: string }) {
   }
 
   if (error) return <p className="notice error">{error}</p>;
-  if (empty) return <p className="notice">This recording is empty.</p>;
 
   return (
     <div className="guac-recording">
