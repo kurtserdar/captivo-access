@@ -35,9 +35,10 @@ function GatewayPill({ accessMode }: { accessMode: SiteRow["accessMode"] }) {
 }
 
 function HealthPill({ s }: { s: SiteRow }) {
+  const noAddress = s.accessMode !== "GATEWAY" && s.upstreamUrl == null;
   return (
     <>
-      {s.upstreamUrl == null ? (
+      {noAddress ? (
         <span className="pill neutral">No address</span>
       ) : s.probeOk == null ? (
         <span className="pill neutral">Not checked</span>
