@@ -405,9 +405,11 @@ export const ModelName = {
   Connector: 'Connector',
   ConnectorPairing: 'ConnectorPairing',
   Site: 'Site',
+  VaultCredential: 'VaultCredential',
   AccessGrant: 'AccessGrant',
   AuditEvent: 'AuditEvent',
   AuditChainState: 'AuditChainState',
+  AuditAnchor: 'AuditAnchor',
   SmtpConfig: 'SmtpConfig',
   Notification: 'Notification',
   OidcConfig: 'OidcConfig',
@@ -434,7 +436,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "accessGrant" | "auditEvent" | "auditChainState" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "groupMapping" | "sessionPolicy" | "cronRun" | "platformSettings" | "updateCheckConfig" | "sessionRecording" | "recordingChunk"
+    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "vaultCredential" | "accessGrant" | "auditEvent" | "auditChainState" | "auditAnchor" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "groupMapping" | "sessionPolicy" | "cronRun" | "platformSettings" | "updateCheckConfig" | "sessionRecording" | "recordingChunk"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1030,6 +1032,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    VaultCredential: {
+      payload: Prisma.$VaultCredentialPayload<ExtArgs>
+      fields: Prisma.VaultCredentialFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.VaultCredentialFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VaultCredentialPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.VaultCredentialFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VaultCredentialPayload>
+        }
+        findFirst: {
+          args: Prisma.VaultCredentialFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VaultCredentialPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.VaultCredentialFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VaultCredentialPayload>
+        }
+        findMany: {
+          args: Prisma.VaultCredentialFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VaultCredentialPayload>[]
+        }
+        create: {
+          args: Prisma.VaultCredentialCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VaultCredentialPayload>
+        }
+        createMany: {
+          args: Prisma.VaultCredentialCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.VaultCredentialCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VaultCredentialPayload>[]
+        }
+        delete: {
+          args: Prisma.VaultCredentialDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VaultCredentialPayload>
+        }
+        update: {
+          args: Prisma.VaultCredentialUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VaultCredentialPayload>
+        }
+        deleteMany: {
+          args: Prisma.VaultCredentialDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.VaultCredentialUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.VaultCredentialUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VaultCredentialPayload>[]
+        }
+        upsert: {
+          args: Prisma.VaultCredentialUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VaultCredentialPayload>
+        }
+        aggregate: {
+          args: Prisma.VaultCredentialAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateVaultCredential>
+        }
+        groupBy: {
+          args: Prisma.VaultCredentialGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.VaultCredentialGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.VaultCredentialCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.VaultCredentialCountAggregateOutputType> | number
+        }
+      }
+    }
     AccessGrant: {
       payload: Prisma.$AccessGrantPayload<ExtArgs>
       fields: Prisma.AccessGrantFieldRefs
@@ -1249,6 +1325,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.AuditChainStateCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.AuditChainStateCountAggregateOutputType> | number
+        }
+      }
+    }
+    AuditAnchor: {
+      payload: Prisma.$AuditAnchorPayload<ExtArgs>
+      fields: Prisma.AuditAnchorFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AuditAnchorFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuditAnchorPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AuditAnchorFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuditAnchorPayload>
+        }
+        findFirst: {
+          args: Prisma.AuditAnchorFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuditAnchorPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AuditAnchorFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuditAnchorPayload>
+        }
+        findMany: {
+          args: Prisma.AuditAnchorFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuditAnchorPayload>[]
+        }
+        create: {
+          args: Prisma.AuditAnchorCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuditAnchorPayload>
+        }
+        createMany: {
+          args: Prisma.AuditAnchorCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AuditAnchorCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuditAnchorPayload>[]
+        }
+        delete: {
+          args: Prisma.AuditAnchorDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuditAnchorPayload>
+        }
+        update: {
+          args: Prisma.AuditAnchorUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuditAnchorPayload>
+        }
+        deleteMany: {
+          args: Prisma.AuditAnchorDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AuditAnchorUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AuditAnchorUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuditAnchorPayload>[]
+        }
+        upsert: {
+          args: Prisma.AuditAnchorUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuditAnchorPayload>
+        }
+        aggregate: {
+          args: Prisma.AuditAnchorAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAuditAnchor>
+        }
+        groupBy: {
+          args: Prisma.AuditAnchorGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AuditAnchorGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AuditAnchorCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AuditAnchorCountAggregateOutputType> | number
         }
       }
     }
@@ -2230,6 +2380,22 @@ export const SiteScalarFieldEnum = {
 export type SiteScalarFieldEnum = (typeof SiteScalarFieldEnum)[keyof typeof SiteScalarFieldEnum]
 
 
+export const VaultCredentialScalarFieldEnum = {
+  id: 'id',
+  siteId: 'siteId',
+  protocol: 'protocol',
+  targetHost: 'targetHost',
+  targetPort: 'targetPort',
+  username: 'username',
+  secret: 'secret',
+  secretKind: 'secretKind',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type VaultCredentialScalarFieldEnum = (typeof VaultCredentialScalarFieldEnum)[keyof typeof VaultCredentialScalarFieldEnum]
+
+
 export const AccessGrantScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2286,6 +2452,19 @@ export const AuditChainStateScalarFieldEnum = {
 } as const
 
 export type AuditChainStateScalarFieldEnum = (typeof AuditChainStateScalarFieldEnum)[keyof typeof AuditChainStateScalarFieldEnum]
+
+
+export const AuditAnchorScalarFieldEnum = {
+  id: 'id',
+  anchoredSeq: 'anchoredSeq',
+  anchoredHash: 'anchoredHash',
+  tsaUrl: 'tsaUrl',
+  token: 'token',
+  genTime: 'genTime',
+  createdAt: 'createdAt'
+} as const
+
+export type AuditAnchorScalarFieldEnum = (typeof AuditAnchorScalarFieldEnum)[keyof typeof AuditAnchorScalarFieldEnum]
 
 
 export const SmtpConfigScalarFieldEnum = {
@@ -2402,6 +2581,12 @@ export const PlatformSettingsScalarFieldEnum = {
   recordingConsentRequired: 'recordingConsentRequired',
   recordingRetentionDays: 'recordingRetentionDays',
   defaultConnectorLogLevel: 'defaultConnectorLogLevel',
+  externalAnchorEnabled: 'externalAnchorEnabled',
+  anchorTsaUrl: 'anchorTsaUrl',
+  anchorTsaAuth: 'anchorTsaAuth',
+  notifySiteHealth: 'notifySiteHealth',
+  notifyAccessRequests: 'notifyAccessRequests',
+  notifyAccessDecisions: 'notifyAccessDecisions',
   updatedAt: 'updatedAt'
 } as const
 
@@ -2628,6 +2813,34 @@ export type ListEnumSiteAccessModeFieldRefInput<$PrismaModel> = FieldRefInputTyp
 
 
 /**
+ * Reference to a field of type 'VaultProtocol'
+ */
+export type EnumVaultProtocolFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VaultProtocol'>
+    
+
+
+/**
+ * Reference to a field of type 'VaultProtocol[]'
+ */
+export type ListEnumVaultProtocolFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VaultProtocol[]'>
+    
+
+
+/**
+ * Reference to a field of type 'VaultSecretKind'
+ */
+export type EnumVaultSecretKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VaultSecretKind'>
+    
+
+
+/**
+ * Reference to a field of type 'VaultSecretKind[]'
+ */
+export type ListEnumVaultSecretKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VaultSecretKind[]'>
+    
+
+
+/**
  * Reference to a field of type 'GrantStatus'
  */
 export type EnumGrantStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GrantStatus'>
@@ -2841,9 +3054,11 @@ export type GlobalOmitConfig = {
   connector?: Prisma.ConnectorOmit
   connectorPairing?: Prisma.ConnectorPairingOmit
   site?: Prisma.SiteOmit
+  vaultCredential?: Prisma.VaultCredentialOmit
   accessGrant?: Prisma.AccessGrantOmit
   auditEvent?: Prisma.AuditEventOmit
   auditChainState?: Prisma.AuditChainStateOmit
+  auditAnchor?: Prisma.AuditAnchorOmit
   smtpConfig?: Prisma.SmtpConfigOmit
   notification?: Prisma.NotificationOmit
   oidcConfig?: Prisma.OidcConfigOmit

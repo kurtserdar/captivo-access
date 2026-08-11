@@ -70,9 +70,9 @@ export function UpgradeGuide({
           />
           {hasGatewayHost && (
             <p className="cell-sub">
-              If a connector also runs the Guacamole gateway, update it from{" "}
-              <Link href="/admin/connectors">Connectors</Link> instead — that command keeps it on the gateway
-              network.
+              If a connector also runs remote-desktop sessions, update it from{" "}
+              <Link href="/admin/connectors">Connectors</Link> instead — that command keeps the session engine
+              and gateway network in place.
             </p>
           )}
         </div>

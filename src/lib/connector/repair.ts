@@ -5,22 +5,26 @@ export function canRepairConnector(status: string): boolean {
   return status !== "REVOKED";
 }
 
-// Shared docker network that gateway-host connectors join so they can reach the
-// Guacamole container (`cap-guacamole`) by name.
+// Shared docker network that gateway-host connectors + guacd join so the
+// connector can reach guacd (`captivo-guacd`) by name.
 export const GATEWAY_NETWORK = "captivo-gateway";
 
 // The `docker run` invocation for the connector container. Pass `code` to enroll
 // a connector (install / re-pair); omit it to update an already-paired connector
 // in place (the token already in /data re-authenticates). When `gatewayHost` is
-// true, the connector joins the shared GATEWAY_NETWORK so it can reach the
-// Guacamole container (`cap-guacamole`) by name — baked into the command so it
-// survives every recreate/update. Pure + db-free.
+// true, the command ALSO deploys guacd (the RDP/SSH/VNC engine for native remote
+// desktops) on the shared GATEWAY_NETWORK, idempotently — baked in so it survives
+// every recreate/update. Pure + db-free.
 function runCommand(managerUrl: string, tunnelUrl: string, code?: string, gatewayHost = false): string {
-  const ensureNet = gatewayHost
-    ? `docker network inspect ${GATEWAY_NETWORK} >/dev/null 2>&1 || docker network create ${GATEWAY_NETWORK} && `
+  const guacd = gatewayHost
+    ? `docker network inspect ${GATEWAY_NETWORK} >/dev/null 2>&1 || docker network create ${GATEWAY_NETWORK} && ` +
+      `docker run --rm -v captivo_guacd_recordings:/rec busybox chown -R 1000:1000 /rec && ` +
+      `docker rm -f captivo-guacd >/dev/null 2>&1; ` +
+      `docker run -d --name captivo-guacd --restart unless-stopped --network ${GATEWAY_NETWORK} ` +
+      `-v captivo_guacd_recordings:/recordings guacamole/guacd:1.5.5 && `
     : "";
   return (
-    ensureNet +
+    guacd +
     "docker run -d --name access-connector --restart unless-stopped " +
     (gatewayHost ? `--network ${GATEWAY_NETWORK} ` : "") +
     `-e MANAGER_URL=${managerUrl} ` +

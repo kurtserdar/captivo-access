@@ -15,8 +15,8 @@ and no traffic that passes through anyone's infrastructure but your own.
 > recurring schedules), the identity-aware reverse proxy, and a
 > tamper-evident (hash-chained) audit trail are all implemented and working
 > end-to-end (see [Features](#features)). SSO/OIDC login, session recording
-> (web sessions via rrweb, plus an optional Guacamole gateway for recorded
-> RDP/SSH/VNC), and a light/dark/system console are shipped too. Session
+> (web sessions via rrweb, plus native RDP/SSH/VNC remote-desktop sessions
+> streamed in-browser), and a light/dark/system console are shipped too. Session
 > isolation (remote-browser rendering) and a credential vault — the rest of the
 > "Pro" layer — are **not built yet**; see [Roadmap](#roadmap-not-yet). Not
 > production-hardened; review the [Security model](#security-model) yourself
@@ -144,10 +144,12 @@ Shipped and working today:
 - **Session recording (rrweb)** — for Sites with recording enabled
   (`RECORDING_ENABLED` + a per-Site toggle), the proxy injects an rrweb DOM
   recorder into web sessions; admins filter, replay, and delete them at
-  `/admin/recordings` (each deletion is written to the audit log). For console
-  protocols (RDP/SSH/VNC), an optional **Guacamole gateway** pack
-  ([`deploy/gateway/`](deploy/gateway/README.md)) is published as a Site and
-  records natively, on-prem. Sites carry a `TRANSPARENT` vs `GATEWAY` label.
+  `/admin/recordings` (each deletion is written to the audit log). Console
+  protocols (RDP/SSH/VNC) are served by a **native remote-desktop gateway**:
+  flag a connector host to run sessions and its install command also deploys the
+  session engine (guacd) — no separate pack. Add a **Remote desktop** Site
+  (protocol/host/port/credentials) and vendors connect from the browser. Sites
+  carry a `TRANSPARENT` (web app) vs `GATEWAY` (remote desktop) label.
 - **Email (SMTP)** — configured from the console (`/admin/email`); sends invite
   emails, access-request/approval emails, and site down/recovered alerts. (Invites
   can also be copied as a one-time link and sent yourself; all of these events also
@@ -394,9 +396,10 @@ Explicitly **not** built — don't assume these exist:
   defend against an actor able to rewrite the entire database.
 - **RDP/SSH/VNC** — the core is an HTTP(S) + WebSocket proxy, not a
   general-purpose bastion. Recorded console access is available today via the
-  opt-in **Guacamole gateway** pack ([`deploy/gateway/`](deploy/gateway/README.md)),
-  published as a Site — not by the proxy itself. Single sign-on into the gateway
-  (header-auth) is built in and on by default, so vendors don't hit a second login.
+  built-in **native remote-desktop gateway**: flag a connector as a session host
+  (its install command bundles the guacd engine), then add a Remote desktop Site
+  with the target and credentials. Vendors connect straight from the console —
+  no second login, no separate Guacamole install.
 
 The console is intentionally **English-only** (Turkish localization is not
 planned for the console itself; the KVKK/5651 framing is about data behavior,

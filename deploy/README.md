@@ -299,11 +299,15 @@ set; failures are logged and retried on the next run.
 Like the other cron endpoints, both fail closed — with `CRON_SECRET` unset or a
 missing/wrong Bearer header they return `401` and do nothing.
 
-## Optional: recorded RDP/SSH/VNC (Guacamole gateway)
+## Recorded RDP/SSH/VNC (native remote-desktop gateway)
 
-For recorded console-protocol (RDP/SSH/VNC) sessions, an optional Guacamole
-gateway pack runs alongside a connector and is published as an ordinary Site.
-See [`gateway/README.md`](gateway/README.md).
+Console-protocol (RDP/SSH/VNC) sessions are served by a built-in gateway — no
+separate pack. In the console, flag a connector as a session host
+(`/admin/connectors` → gateway host); its generated install command also
+deploys the session engine (guacd) on that host and joins the shared
+`captivo-gateway` network. Then add a **Remote desktop** Site (protocol, host,
+port, and vault credentials) and vendors connect straight from `/access`,
+streamed in-browser and recorded natively.
 
 ## Updating
 

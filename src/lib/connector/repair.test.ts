@@ -93,3 +93,26 @@ describe("gateway-host connector commands", () => {
     expect(buildReconfigureCommand("CODE123", m, t, true)).toContain(`--network ${GATEWAY_NETWORK}`);
   });
 });
+
+describe("gateway-host bundles guacd", () => {
+  const m = "https://mgr.example.com";
+  const t = "wss://connect.example.com";
+  it("install with gatewayHost includes guacd + network + recordings volume", () => {
+    const cmd = buildInstallCommand("CODE123", m, t, true);
+    expect(cmd).toContain("--name captivo-guacd");
+    expect(cmd).toContain(`--network ${GATEWAY_NETWORK}`);
+    expect(cmd).toContain("captivo_guacd_recordings");
+    expect(cmd).toContain("guacamole/guacd:1.5.5");
+    expect(cmd).toContain("docker run -d --name access-connector");
+  });
+  it("install without gatewayHost has no guacd", () => {
+    const cmd = buildInstallCommand("CODE123", m, t, false);
+    expect(cmd).not.toContain("captivo-guacd");
+    expect(cmd).not.toContain("guacamole/guacd");
+  });
+  it("update with gatewayHost re-provisions guacd", () => {
+    const cmd = buildConnectorUpdateCommand(m, t, true);
+    expect(cmd).toContain("--name captivo-guacd");
+    expect(cmd).toContain("docker pull ghcr.io/kurtserdar/captivo-access-connector:latest");
+  });
+});
