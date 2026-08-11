@@ -5,7 +5,9 @@ import { managerVersion } from "@/lib/version";
 import { isConnectorOutdated } from "@/lib/updates/semver";
 import { getSetupStatus, getDashboardStats, getSiteHealth, getRecentActivity } from "@/lib/dashboard/stats";
 import { isConsoleUser, ROLE_LABELS } from "@/lib/auth/roles";
+import { getInsights } from "@/lib/dashboard/insights";
 import { StatCards } from "./_dashboard/stat-cards";
+import { InsightsPanel } from "./_dashboard/insights-panel";
 import { SiteHealthPanel } from "./_dashboard/site-health-panel";
 import { RecentActivityPanel } from "./_dashboard/recent-activity-panel";
 
@@ -81,7 +83,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const [stats, siteHealth, activity] = await Promise.all([getDashboardStats(), getSiteHealth(), getRecentActivity()]);
+  const [stats, siteHealth, activity, insights] = await Promise.all([getDashboardStats(), getSiteHealth(), getRecentActivity(), getInsights()]);
 
   const conns = await db.connector.findMany({ where: { status: { not: "REVOKED" } }, select: { version: true } });
   const mgr = managerVersion();
@@ -97,6 +99,7 @@ export default async function DashboardPage() {
         </div>
       )}
       <StatCards s={stats} />
+      <InsightsPanel data={insights} />
       <div className="dash-cols">
         <SiteHealthPanel sites={siteHealth} />
         <RecentActivityPanel events={activity} />
