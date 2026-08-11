@@ -21,7 +21,8 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, gatewa
       `docker run --rm -v captivo_guacd_recordings:/rec busybox chown -R 1000:1000 /rec && ` +
       `docker rm -f captivo-guacd >/dev/null 2>&1; ` +
       `docker run -d --name captivo-guacd --restart unless-stopped --network ${GATEWAY_NETWORK} ` +
-      `-v captivo_guacd_recordings:/recordings guacamole/guacd:1.5.5 && `
+      `-v captivo_guacd_recordings:/recordings -v captivo_guacd_logs:/guaclog ` +
+      `guacamole/guacd:1.5.5 /bin/sh -c '/opt/guacamole/sbin/guacd -b 0.0.0.0 -L $GUACD_LOG_LEVEL -f 2>&1 | tee /guaclog/guacd.log' && `
     : "";
   // Pull the connector image right before running it. `docker run <img>:latest`
   // reuses a locally-cached `latest` and will NOT fetch a newer build — a fresh
@@ -39,6 +40,7 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, gatewa
     `-e DATAPLANE_URL=${tunnelUrl} ` +
     (code ? `-e PAIR_CODE=${code} ` : "") +
     "-v access_connector_data:/data " +
+    (gatewayHost ? "-v captivo_guacd_logs:/guaclog:ro " : "") +
     "ghcr.io/kurtserdar/captivo-access-connector:latest"
   );
 }
