@@ -9,6 +9,7 @@ export interface AuditRow {
   timestamp: Date;
   decision: "ALLOW" | "DENY";
   siteName: string | null;
+  siteId: string | null;
   userEmail: string | null;
   clientIp: string | null;
   reason: string | null;
@@ -53,10 +54,10 @@ export function buildHeatmap(rows: AuditRow[]): { grid: number[][]; max: number 
 }
 
 // ALLOW-only counts by a label field, nulls skipped, desc, top `limit`.
-export function topBy(rows: AuditRow[], field: "siteName" | "userEmail", limit: number): Labeled[] {
+export function topBy(rows: AuditRow[], field: "siteName" | "userEmail", limit: number, decision: "ALLOW" | "DENY" = "ALLOW"): Labeled[] {
   const counts = new Map<string, number>();
   for (const r of rows) {
-    if (r.decision !== "ALLOW") continue;
+    if (r.decision !== decision) continue;
     const label = r[field];
     if (!label) continue;
     counts.set(label, (counts.get(label) ?? 0) + 1);
@@ -100,6 +101,52 @@ export function ipFlags(rows: AuditRow[], threshold: number): IpFlag[] {
     .map(([userEmail, ips]) => ({ userEmail, ipCount: ips.size }))
     .filter((f) => f.ipCount >= threshold)
     .sort((a, b) => b.ipCount - a.ipCount);
+}
+
+// Distinct ALLOW vendors over the window + a 30-day daily-distinct series (UTC, oldest→newest).
+export function activeVendors(rows: AuditRow[], now: Date, days = 30): { count: number; series: number[] } {
+  const keys: string[] = [];
+  const perDay = new Map<string, Set<string>>();
+  const base = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(base);
+    d.setUTCDate(base.getUTCDate() - i);
+    const k = dayKey(d);
+    keys.push(k);
+    perDay.set(k, new Set());
+  }
+  const all = new Set<string>();
+  for (const r of rows) {
+    if (r.decision !== "ALLOW" || !r.userEmail) continue;
+    all.add(r.userEmail);
+    const set = perDay.get(dayKey(r.timestamp));
+    if (set) set.add(r.userEmail);
+  }
+  return { count: all.size, series: keys.map((k) => perDay.get(k)!.size) };
+}
+
+// ALLOW events bucketed web/remote via a siteId→type map; null/unmatched skipped.
+export function typeMix(rows: AuditRow[], siteType: Map<string, "web" | "remote">): { web: number; remote: number } {
+  let web = 0, remote = 0;
+  for (const r of rows) {
+    if (r.decision !== "ALLOW" || !r.siteId) continue;
+    const t = siteType.get(r.siteId);
+    if (t === "web") web++;
+    else if (t === "remote") remote++;
+  }
+  return { web, remote };
+}
+
+// Recording volume in the window: count, total hours, average minutes.
+export function sessionStats(recs: { startedAt: Date; lastEventAt: Date }[]): { recordings: number; totalHours: number; avgMinutes: number } {
+  if (recs.length === 0) return { recordings: 0, totalHours: 0, avgMinutes: 0 };
+  let totalMs = 0;
+  for (const r of recs) totalMs += Math.max(0, r.lastEventAt.getTime() - r.startedAt.getTime());
+  return {
+    recordings: recs.length,
+    totalHours: Math.round(totalMs / 3_600_000),
+    avgMinutes: Math.round(totalMs / recs.length / 60_000),
+  };
 }
 
 export interface Insights {
