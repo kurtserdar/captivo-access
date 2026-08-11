@@ -8,6 +8,8 @@ import { useEffect, useRef, useState } from "react";
 export function GatewaySession({ siteId }: { siteId: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [watching, setWatching] = useState(false);
+  const [controlHeld, setControlHeld] = useState(false);
 
   useEffect(() => {
     let client: any;
@@ -86,11 +88,46 @@ export function GatewaySession({ siteId }: { siteId: string }) {
     };
   }, [siteId]);
 
+  useEffect(() => {
+    let stop = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/gateway/${siteId}/watch-status`, { cache: "no-store" });
+        if (res.ok) {
+          const s = (await res.json()) as { watching: boolean; controlHeld: boolean };
+          if (!stop) {
+            setWatching(s.watching);
+            setControlHeld(s.controlHeld);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    void poll();
+    const t = setInterval(poll, 2000);
+    return () => {
+      stop = true;
+      clearInterval(t);
+    };
+  }, [siteId]);
+
   return (
     <div
       ref={ref}
       style={{ position: "fixed", inset: 0, background: "#000", overflow: "hidden", cursor: "none" }}
     >
+      {(watching || controlHeld) && (
+        <div
+          style={{
+            position: "fixed", top: 0, left: 0, right: 0, zIndex: 20,
+            background: controlHeld ? "rgba(180,0,0,0.9)" : "rgba(0,0,0,0.75)",
+            color: "#fff", textAlign: "center", padding: "8px", fontFamily: "sans-serif", fontSize: "14px",
+          }}
+        >
+          {controlHeld ? "An administrator has taken control of this session." : "This session is being monitored live."}
+        </div>
+      )}
       {error && (
         <div style={{ color: "#fff", padding: "1.25rem", fontFamily: "sans-serif" }}>{error}</div>
       )}
