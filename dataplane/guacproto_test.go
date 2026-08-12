@@ -7,6 +7,19 @@ import (
 	"testing"
 )
 
+func TestInjectDrivePath(t *testing.T) {
+	p := map[string]string{"enable-drive": "true"}
+	injectDrivePath(p, "sess123")
+	if p["drive-path"] != "/drive/sess123" {
+		t.Fatalf("drive-path not injected: %v", p)
+	}
+	q := map[string]string{}
+	injectDrivePath(q, "sess123")
+	if _, ok := q["drive-path"]; ok {
+		t.Fatalf("drive-path set without enable-drive: %v", q)
+	}
+}
+
 func TestBuildConnectEmitsParamForListedArg(t *testing.T) {
 	names := []string{"VERSION_1_5_0", "hostname", "server-layout", "enable-wallpaper"}
 	c := GuacConn{Hostname: "h", Params: map[string]string{"server-layout": "tr-tr-qwerty", "enable-wallpaper": "true"}}

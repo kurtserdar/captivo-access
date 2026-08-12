@@ -106,6 +106,15 @@ type GuacConn struct {
 	Params                                                 map[string]string // resolved guacd arg-name→value (server-layout, color-depth, enable-*, disable-copy/paste)
 }
 
+// injectDrivePath gives an RDP drive session-scoped isolation: a fresh
+// /drive/<sessionID> that create-drive-path makes on connect. No-op unless the
+// drive is enabled.
+func injectDrivePath(params map[string]string, sessionID string) {
+	if params != nil && params["enable-drive"] == "true" {
+		params["drive-path"] = "/drive/" + sessionID
+	}
+}
+
 // buildConnect echoes one value per arg name guacd listed, filling connection
 // params from c. The leading VERSION arg is echoed back (spike-confirmed);
 // names it doesn't recognise get an empty value (guacd default).

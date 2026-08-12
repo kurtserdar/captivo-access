@@ -84,6 +84,8 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 	_, _ = guac.Write(encodeInstruction("audio"))
 	_, _ = guac.Write(encodeInstruction("video"))
 	_, _ = guac.Write(encodeInstruction("image"))
+	sessionID := newSessionID()
+	injectDrivePath(conn.Params, sessionID) // per-session RDP drive isolation (/drive/<sessionID>)
 	if _, err := guac.Write(buildConnect(argNames, conn)); err != nil {
 		log.Printf("guac-tunnel site=%s: write connect failed err=%v", siteID, err)
 		http.Error(w, "connect", http.StatusBadGateway)
@@ -108,7 +110,6 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 	if len(readyArgs) > 0 {
 		connID = readyArgs[0] // guacd connection ID — the share key for viewers
 	}
-	sessionID := newSessionID()
 	ls := hub.Register(sessionID, siteID, userID, conn.Protocol, conn.Hostname, time.Now(), connID, connectorID, guacdAddr)
 	defer hub.Remove(sessionID)
 	log.Printf("guac-tunnel site=%s: live session id=%s connID=%s", siteID, sessionID, connID)
