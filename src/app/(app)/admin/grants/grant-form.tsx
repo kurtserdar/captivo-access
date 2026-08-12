@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ScheduleBuilder } from "@/app/(app)/access/schedule-builder";
+import { ScheduleBuilder } from "@/components/schedule-builder";
 import type { Schedule } from "@/lib/access/schedule";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import type { Role } from "@/generated/prisma/enums";

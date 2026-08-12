@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ScheduleBuilder } from "./schedule-builder";
+import { ScheduleBuilder } from "@/components/schedule-builder";
 import type { Schedule } from "@/lib/access/schedule";
 
 type Site = { id: string; name: string };

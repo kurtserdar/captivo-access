@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { managerVersion } from "@/lib/version";
@@ -26,18 +27,7 @@ export default async function DashboardPage() {
   );
 
   if (!isConsoleUser(user.role)) {
-    const activeGrants = await db.accessGrant.count({ where: { userId: user.id, status: "ACTIVE" } });
-    return (
-      <main>
-        {head}
-        <div className="card">
-          <p>
-            You have <strong>{activeGrants}</strong> active access grant{activeGrants === 1 ? "" : "s"}. See the apps
-            you can reach and request new access under <Link href="/access">My access</Link>.
-          </p>
-        </div>
-      </main>
-    );
+    redirect("/access");
   }
 
   if (user.role !== "ADMIN") {
