@@ -6,6 +6,8 @@ describe("adminActionLabel", () => {
     expect(adminActionLabel("session.terminate")).toBe("Session terminated");
     expect(adminActionLabel("grant.update")).toBe("Grant updated");
     expect(adminActionLabel("resource.vault_update")).toBe("Resource credential updated");
+    expect(adminActionLabel("config.smtp_update")).toBe("SMTP settings updated");
+    expect(adminActionLabel("recording.delete")).toBe("Recording deleted");
   });
   it("falls back to the raw action for unknown values", () => {
     expect(adminActionLabel("something.new")).toBe("something.new");

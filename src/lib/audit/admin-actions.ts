@@ -17,6 +17,20 @@ const LABELS: Record<string, string> = {
   "resource.update": "Resource updated",
   "resource.delete": "Resource deleted",
   "resource.vault_update": "Resource credential updated",
+  "config.smtp_update": "SMTP settings updated",
+  "config.sso_update": "SSO settings updated",
+  "config.platform_update": "Platform settings updated",
+  "config.session_policy_update": "Session policy updated",
+  "config.log_level_reset": "Connector log level reset",
+  "config.directory_update": "Directory settings updated",
+  "config.directory_mapping_create": "Directory mapping created",
+  "config.directory_mapping_update": "Directory mapping updated",
+  "config.directory_mapping_delete": "Directory mapping deleted",
+  "config.updates_update": "Update settings updated",
+  "connector.egress_update": "Connector egress policy updated",
+  "connector.log_level": "Connector log level set",
+  "connector.repair": "Connector repaired",
+  "recording.delete": "Recording deleted",
 };
 
 export function adminActionLabel(action: string): string {
