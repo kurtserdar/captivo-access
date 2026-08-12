@@ -5,14 +5,47 @@ import { listAuditEvents } from "@/lib/audit/query";
 import { resolvedExternalAnchorEnabled } from "@/lib/settings/platform";
 import { AuditTable, type AuditRowJSON } from "./audit-table";
 import { IntegrityPanel } from "./integrity-panel";
+import Link from "next/link";
+import { listAdminAuditEvents } from "@/lib/audit/admin-query";
+import { AdminAuditTable, type AdminAuditRowJSON } from "./admin-audit-table";
+
+function AuditTabs({ admin }: { admin: boolean }) {
+  return (
+    <div className="audit-tabs">
+      <Link href="/admin/audit" className={admin ? "audit-tab" : "audit-tab active"}>Access</Link>
+      <Link href="/admin/audit?tab=admin" className={admin ? "audit-tab active" : "audit-tab"}>Admin actions</Link>
+    </div>
+  );
+}
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Audit log" };
 
 const INITIAL_LIMIT = 50;
 
-export default async function AdminAuditPage() {
+export default async function AdminAuditPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   await requireCapability("read_console");
+  const { tab } = await searchParams;
+
+  if (tab === "admin") {
+    const { rows: adminRowsRaw } = await listAdminAuditEvents({ limit: 50, offset: 0 });
+    const adminRows: AdminAuditRowJSON[] = adminRowsRaw.map((r) => ({
+      id: r.id, timestamp: r.timestamp.toISOString(), actorEmail: r.actorEmail,
+      action: r.action, targetType: r.targetType, targetId: r.targetId, summary: r.summary,
+    }));
+    return (
+      <main>
+        <div className="page-head">
+          <div>
+            <div className="page-title-row"><span className="page-icon"><AuditIcon /></span><h1>Audit log</h1></div>
+            <p>Security-critical changes made by admins.</p>
+          </div>
+        </div>
+        <AuditTabs admin />
+        <AdminAuditTable rows={adminRows} />
+      </main>
+    );
+  }
 
   const [users, sites, { rows, total }] = await Promise.all([
     db.user.findMany({
@@ -66,6 +99,8 @@ export default async function AdminAuditPage() {
           <p>Every proxied request through a connector, with the access decision that was applied.</p>
         </div>
       </div>
+
+      <AuditTabs admin={false} />
 
       <IntegrityPanel anchor={anchor} />
 

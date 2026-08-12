@@ -565,6 +565,12 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .clip-hint { margin-top: 10px; font-size: 11px; color: #8b98a9; }
 .clip-disabled { font-size: 13px; color: #8b98a9; padding: 8px 0; }
 
+/* Audit tabs */
+.audit-tabs { display: flex; gap: 6px; margin: 4px 0 16px; }
+.audit-tab { padding: 6px 14px; border-radius: 8px; font-size: .86rem; color: var(--muted); text-decoration: none; }
+.audit-tab:hover { color: var(--fg); background: var(--surface-hover); }
+.audit-tab.active { color: var(--nav-accent); background: var(--nav-active); }
+
 /* Security console */
 .sc { display: flex; flex-direction: column; gap: 24px; }
 .sc-kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
