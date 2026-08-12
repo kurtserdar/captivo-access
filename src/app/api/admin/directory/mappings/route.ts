@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { listGroupMappings, createGroupMapping } from "@/lib/directory/mappings";
 
@@ -33,5 +35,14 @@ export async function POST(req: NextRequest) {
     siteId: body.kind === "SITE" ? body.siteId ?? null : null,
     enabled: body.enabled !== false,
   });
+  if (result.ok) {
+    await recordAdminAction({
+      actor: { id: g.admin.id, email: g.admin.email },
+      action: "config.directory_mapping_create",
+      targetType: "mapping",
+      summary: "Created directory mapping",
+      clientIp: clientIp(req.headers) ?? null,
+    });
+  }
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { recordAdminAction } from "@/lib/audit/admin";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { appendAuditEvents } from "@/lib/audit/append";
@@ -47,5 +48,12 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     console.error("[recordings/delete] audit append failed:", err);
   }
 
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "recording.delete",
+    targetType: "recording", targetId: id,
+    summary: `Deleted recording ${id}`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }

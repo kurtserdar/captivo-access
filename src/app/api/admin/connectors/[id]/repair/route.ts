@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { createPairing } from "@/lib/connector/enrollment";
@@ -38,5 +40,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const reconfigureCommand = buildReconfigureCommand(code, managerUrl, connectorTunnelUrl(), connector.gatewayHost);
   const managerUrlIsLocal = isLocalManagerUrl(managerUrl);
 
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "connector.repair",
+    targetType: "connector", targetId: id,
+    summary: `Repaired connector ${id}`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ code, reconfigureCommand, managerUrlIsLocal });
 }

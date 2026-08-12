@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { pushConnectorPolicy } from "@/lib/connector/policy";
@@ -23,5 +25,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (updated.count === 0) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const push = await pushConnectorPolicy(id);
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "connector.log_level",
+    targetType: "connector", targetId: id,
+    summary: `Set log level for connector ${id}`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true, live: push.ok });
 }
