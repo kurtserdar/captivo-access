@@ -26,14 +26,26 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
     const fs = fsRef.current, G = guacRef.current;
     if (!fs || !G || !e.dataTransfer?.files?.length) return;
     for (const file of Array.from(e.dataTransfer.files)) {
-      const stream = fs.createOutputStream(file.type || "application/octet-stream", "/" + file.name);
-      const writer = new G.BlobWriter(stream);
       setToast(`Uploading ${file.name}…`);
-      // BlobWriter.sendBlob does NOT end the stream itself — without sendEnd() guacd
-      // never finalises the file and it arrives truncated.
-      writer.oncomplete = () => { writer.sendEnd(); setToast(`Uploaded ${file.name}`); };
-      writer.onerror = () => setToast(`Upload failed: ${file.name}`);
-      writer.sendBlob(file);
+      // Read the whole file, then stream it with ArrayBufferWriter (which chunks +
+      // sends every blob in order, then we end the stream). We deliberately avoid
+      // Guacamole.BlobWriter: its ack-chained sender reuses a single FileReader and,
+      // when an extra stream-open ack advances it twice, silently skips one 6 KB
+      // blob — corrupting large multi-chunk uploads (verified: one chunk dropped
+      // mid-file). ArrayBufferWriter has no such ack-timing race.
+      const fr = new FileReader();
+      fr.onerror = () => setToast(`Upload failed: ${file.name}`);
+      fr.onload = () => {
+        const stream = fs.createOutputStream(file.type || "application/octet-stream", "/" + file.name);
+        const writer = new G.ArrayBufferWriter(stream);
+        writer.onack = (status: any) => {
+          if (status.isError()) setToast(`Upload failed: ${file.name}`);
+        };
+        writer.sendData(fr.result);
+        writer.sendEnd();
+        setToast(`Uploaded ${file.name}`);
+      };
+      fr.readAsArrayBuffer(file);
     }
   };
 
