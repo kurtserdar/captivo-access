@@ -48,6 +48,10 @@ export function canonicalize(e: ChainableEvent): string {
   ].join(US);
 }
 
+export function chainHash(prevHash: string, canonical: string): string {
+  return createHash("sha256").update(prevHash + "\n" + canonical).digest("hex");
+}
+
 export function computeHash(prevHash: string, e: ChainableEvent): string {
-  return createHash("sha256").update(prevHash + "\n" + canonicalize(e)).digest("hex");
+  return chainHash(prevHash, canonicalize(e));
 }
