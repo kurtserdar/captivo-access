@@ -54,13 +54,16 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
 
       guacRef.current = Guacamole;
       client.onfile = (stream: any, mimetype: string, filename: string) => {
+        if (!disposed) setToast(`Downloading ${filename}…`);
         const reader = new Guacamole.BlobReader(stream, mimetype);
         reader.onend = () => {
           const url = URL.createObjectURL(reader.getBlob());
           const a = document.createElement("a");
           a.href = url; a.download = filename;
           document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+          // Revoke only after the browser has had a chance to start the download —
+          // revoking synchronously after click() cancels it silently.
+          setTimeout(() => URL.revokeObjectURL(url), 2000);
           if (!disposed) setToast(`Downloaded ${filename}`);
         };
       };
