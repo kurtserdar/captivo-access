@@ -16,7 +16,7 @@ export const metadata = { title: "Session" };
 export default async function GatewaySessionPage({ params }: { params: Promise<{ siteId: string }> }) {
   await requireUser();
   const { siteId } = await params;
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, recordSessions: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, recordSessions: true, clipboardMode: true } });
   // Native is the only gateway now — a non-native / disabled / non-gateway site
   // has no session here.
   if (!nativeGatewayEnabled() || !site || site.accessMode !== "GATEWAY") {
@@ -27,5 +27,7 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
   // skip the gate if the vendor already acknowledged this resource this session.
   const alreadyConsented = (await cookies()).get(`ca_rec_consent_${siteId}`)?.value === "1";
   const consentNeeded = site.recordSessions && !alreadyConsented && (await resolvedRecordingConsentRequired());
-  return consentNeeded ? <ConsentGate siteId={siteId} recorded={recorded} /> : <GatewaySession siteId={siteId} recorded={recorded} />;
+  return consentNeeded
+    ? <ConsentGate siteId={siteId} recorded={recorded} clipboardMode={site.clipboardMode} />
+    : <GatewaySession siteId={siteId} recorded={recorded} clipboardMode={site.clipboardMode} />;
 }

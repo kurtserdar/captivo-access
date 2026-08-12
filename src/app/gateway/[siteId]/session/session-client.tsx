@@ -1,17 +1,21 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState } from "react";
+import { clipboardCaps } from "@/lib/gateway/clipboard-caps";
+import { createClipboardBridge, type ClipboardBridge } from "./clipboard";
 
 // Fullscreen HTML5 session: embeds guacamole-common-js and points it at the
 // data-plane guac-tunnel (same origin, fronted by nginx). The server drives the
 // guacd handshake + credential injection; this only renders + sends input.
-export function GatewaySession({ siteId, recorded }: { siteId: string; recorded: boolean }) {
+export function GatewaySession({ siteId, recorded, clipboardMode }: { siteId: string; recorded: boolean; clipboardMode: string }) {
+  const caps = clipboardCaps(clipboardMode);
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [watching, setWatching] = useState(false);
   const [controlHeld, setControlHeld] = useState(false);
   const guacRef = useRef<any>(null);
   const fsRef = useRef<any>(null);
+  const clipRef = useRef<ClipboardBridge | null>(null);
   const [canUpload, setCanUpload] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -53,6 +57,7 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
     let client: any;
     let keyboard: any;
     let onResize: (() => void) | null = null;
+    let onFocus: (() => void) | null = null;
     let disposed = false;
 
     (async () => {
@@ -95,6 +100,7 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
         fsRef.current = object;
         if (!disposed) setCanUpload(true);
       };
+      clipRef.current = createClipboardBridge(client, Guacamole, caps);
 
       const display = client.getDisplay();
       const el = display.getElement();
@@ -140,13 +146,20 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
         fit();
       };
       window.addEventListener("resize", onResize);
+      // Push the browser clipboard to the remote whenever the session regains
+      // focus (and once now), so a Ctrl+V inside the session pastes it. Silent
+      // no-op where the Clipboard API is blocked — the manual panel covers that.
+      onFocus = () => clipRef.current?.syncFromBrowser();
+      window.addEventListener("focus", onFocus);
       fit();
+      clipRef.current?.syncFromBrowser();
     })().catch(() => setError("Couldn't start the session."));
 
     return () => {
       disposed = true;
       try {
         if (onResize) window.removeEventListener("resize", onResize);
+        if (onFocus) window.removeEventListener("focus", onFocus);
         if (keyboard) {
           keyboard.onkeydown = null;
           keyboard.onkeyup = null;
