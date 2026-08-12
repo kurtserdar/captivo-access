@@ -28,7 +28,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
       <div className="page-head">
         <div>
           <h1>Edit resource</h1>
-          <p><Link href="/admin/sites">← Back to sites</Link></p>
+          <p><Link href="/admin/sites">← Back to resources</Link></p>
         </div>
       </div>
       {!site ? (

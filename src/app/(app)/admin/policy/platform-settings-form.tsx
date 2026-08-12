@@ -89,6 +89,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
   return (
     <div>
       <div className="settings">
+        <div className="settings-group">Access &amp; grants</div>
         <div className="setting">
           <div className="setting-main">
             <div className="setting-label">Maximum grant duration</div>
@@ -96,38 +97,6 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
           </div>
           <div className="setting-ctl">
             <input type="number" min={1} className="input" style={{ width: "5rem" }} value={maxGrant} onChange={(e) => setMaxGrant(e.target.value)} placeholder="—" aria-label="Maximum grant duration in days" />
-            <span className="unit">days</span>
-          </div>
-        </div>
-
-        <div className="setting">
-          <div className="setting-main">
-            <div className="setting-label">Require recording consent</div>
-            <div className="setting-hint">On recorded resources, show the vendor a one-time &quot;this session is recorded&quot; acknowledgement before any app content loads. The banner and &quot;Recorded&quot; label are always shown regardless.</div>
-          </div>
-          <div className="setting-ctl">
-            <label className="switch"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span className="track" /></label>
-          </div>
-        </div>
-
-        <div className="setting">
-          <div className="setting-main">
-            <div className="setting-label">Audit log retention</div>
-            <div className="setting-hint">Older audit rows are trimmed by the retention cron, preserving the tamper-evident chain. <code>0</code> keeps nothing beyond today; empty uses the default (730).</div>
-          </div>
-          <div className="setting-ctl">
-            <input type="number" min={0} className="input" style={{ width: "5rem" }} value={audit} onChange={(e) => setAudit(e.target.value)} placeholder="730" aria-label="Audit retention days" />
-            <span className="unit">days</span>
-          </div>
-        </div>
-
-        <div className="setting">
-          <div className="setting-main">
-            <div className="setting-label">Session recording retention</div>
-            <div className="setting-hint">Recorded sessions older than this are deleted by the recording-retention cron (audited). Empty = kept indefinitely. Needs the <code>/api/cron/recording-retention</code> job scheduled.</div>
-          </div>
-          <div className="setting-ctl">
-            <input type="number" min={1} className="input" style={{ width: "5rem" }} value={recRetention} onChange={(e) => setRecRetention(e.target.value)} placeholder="—" aria-label="Recording retention days" />
             <span className="unit">days</span>
           </div>
         </div>
@@ -143,46 +112,37 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
           </div>
         </div>
 
+        <div className="settings-group">Session recording</div>
         <div className="setting">
           <div className="setting-main">
-            <div className="setting-label">Default connector log level</div>
-            <div className="setting-hint">For connectors set to &quot;Use default&quot; on their detail page — a connector&apos;s own level overrides it. Save first, then <b>Reset all</b> switches every connector back to this default (pushed live to online ones).</div>
+            <div className="setting-label">Require recording consent</div>
+            <div className="setting-hint">On recorded resources, show the vendor a one-time &quot;this session is recorded&quot; acknowledgement before any app content loads. The banner and &quot;Recorded&quot; label are always shown regardless.</div>
           </div>
           <div className="setting-ctl">
-            <select className="select" value={connLog} onChange={(e) => setConnLog(e.target.value)} aria-label="Default connector log level">
-              <option value="error">Error</option>
-              <option value="warn">Warn</option>
-              <option value="info">Info</option>
-              <option value="debug">Debug</option>
-            </select>
-            <button type="button" className="btn sm ghost" disabled={busy} onClick={resetAllConnectors}>Reset all</button>
+            <label className="switch"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span className="track" /></label>
           </div>
         </div>
 
-        <div className="setting setting-stack">
+        <div className="setting">
           <div className="setting-main">
-            <div className="setting-label">Notification webhook URL</div>
-            <div className="setting-hint">Resource up/down events POST here (Slack/Teams-friendly JSON), in addition to the in-console bell. Empty = disabled.</div>
+            <div className="setting-label">Session recording retention</div>
+            <div className="setting-hint">Recorded sessions older than this are deleted by the recording-retention cron (audited). Empty = kept indefinitely. Needs the <code>/api/cron/recording-retention</code> job scheduled.</div>
           </div>
           <div className="setting-ctl">
-            <input type="url" className="input" style={{ width: "100%" }} value={webhook} onChange={(e) => setWebhook(e.target.value)} placeholder="https://hooks.slack.com/…" />
+            <input type="number" min={1} className="input" style={{ width: "5rem" }} value={recRetention} onChange={(e) => setRecRetention(e.target.value)} placeholder="—" aria-label="Recording retention days" />
+            <span className="unit">days</span>
           </div>
         </div>
 
-        <div className="setting setting-stack">
+        <div className="settings-group">Audit log</div>
+        <div className="setting">
           <div className="setting-main">
-            <div className="setting-label">Vendor source-IP allowlist</div>
-            <div className="setting-hint">
-              When set, vendors can reach published <b>resources</b> only from these networks (checked live; the console is never gated, so you can&apos;t lock yourself out). <b>Empty = no restriction.</b> <b>Include your own network.</b> The evaluated IP is the one your front proxy records — a forged <code>X-Forwarded-For</code> won&apos;t bypass it.
-            </div>
-            {allowEntries.length > 0 && (
-              <div className="chips" style={{ marginTop: ".55rem" }}>
-                {allowEntries.map((e, i) => <span key={i} className="chip">{e}</span>)}
-              </div>
-            )}
+            <div className="setting-label">Audit log retention</div>
+            <div className="setting-hint">Older audit rows are trimmed by the retention cron, preserving the tamper-evident chain. <code>0</code> keeps nothing beyond today; empty uses the default (730).</div>
           </div>
           <div className="setting-ctl">
-            <textarea className="textarea" rows={2} value={ipAllow} onChange={(e) => setIpAllow(e.target.value)} placeholder="203.0.113.0/24, 198.51.100.10, 2001:db8::/32" />
+            <input type="number" min={0} className="input" style={{ width: "5rem" }} value={audit} onChange={(e) => setAudit(e.target.value)} placeholder="730" aria-label="Audit retention days" />
+            <span className="unit">days</span>
           </div>
         </div>
 
@@ -207,6 +167,35 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
           </div>
         </div>
 
+        <div className="settings-group">Network &amp; security</div>
+        <div className="setting setting-stack">
+          <div className="setting-main">
+            <div className="setting-label">Vendor source-IP allowlist</div>
+            <div className="setting-hint">
+              When set, vendors can reach published <b>resources</b> only from these networks (checked live; the console is never gated, so you can&apos;t lock yourself out). <b>Empty = no restriction.</b> <b>Include your own network.</b> The evaluated IP is the one your front proxy records — a forged <code>X-Forwarded-For</code> won&apos;t bypass it.
+            </div>
+            {allowEntries.length > 0 && (
+              <div className="chips" style={{ marginTop: ".55rem" }}>
+                {allowEntries.map((e, i) => <span key={i} className="chip">{e}</span>)}
+              </div>
+            )}
+          </div>
+          <div className="setting-ctl">
+            <textarea className="textarea" rows={2} value={ipAllow} onChange={(e) => setIpAllow(e.target.value)} placeholder="203.0.113.0/24, 198.51.100.10, 2001:db8::/32" />
+          </div>
+        </div>
+
+        <div className="settings-group">Notifications</div>
+        <div className="setting setting-stack">
+          <div className="setting-main">
+            <div className="setting-label">Notification webhook URL</div>
+            <div className="setting-hint">Resource up/down events POST here (Slack/Teams-friendly JSON), in addition to the in-console bell. Empty = disabled.</div>
+          </div>
+          <div className="setting-ctl">
+            <input type="url" className="input" style={{ width: "100%" }} value={webhook} onChange={(e) => setWebhook(e.target.value)} placeholder="https://hooks.slack.com/…" />
+          </div>
+        </div>
+
         {NOTIF_EVENTS.map((ev) => (
           <div className="setting" key={ev.key}>
             <div className="setting-main">
@@ -225,6 +214,23 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
             </div>
           </div>
         ))}
+
+        <div className="settings-group">Connectors</div>
+        <div className="setting">
+          <div className="setting-main">
+            <div className="setting-label">Default connector log level</div>
+            <div className="setting-hint">For connectors set to &quot;Use default&quot; on their detail page — a connector&apos;s own level overrides it. Save first, then <b>Reset all</b> switches every connector back to this default (pushed live to online ones).</div>
+          </div>
+          <div className="setting-ctl">
+            <select className="select" value={connLog} onChange={(e) => setConnLog(e.target.value)} aria-label="Default connector log level">
+              <option value="error">Error</option>
+              <option value="warn">Warn</option>
+              <option value="info">Info</option>
+              <option value="debug">Debug</option>
+            </select>
+            <button type="button" className="btn sm ghost" disabled={busy} onClick={resetAllConnectors}>Reset all</button>
+          </div>
+        </div>
       </div>
 
       <div className="setting-row" style={{ display: "block" }}>

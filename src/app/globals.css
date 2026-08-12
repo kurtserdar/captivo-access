@@ -551,3 +551,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 /* Gateway file transfer */
 .ft-hint { position: fixed; left: 12px; bottom: 12px; z-index: 20; pointer-events: none; background: rgba(0,0,0,0.6); color: #cdd7e6; font: 500 12px/1 sans-serif; padding: 6px 10px; border-radius: 6px; }
 .ft-toast { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 21; pointer-events: none; background: rgba(0,0,0,0.8); color: #fff; font: 500 13px/1 sans-serif; padding: 8px 14px; border-radius: 8px; white-space: nowrap; }
+
+/* Policy settings section headings */
+.settings-group { grid-column: 1 / -1; font: 600 .72rem/1 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 1.4rem 0 .2rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.settings-group:first-child { border-top: none; padding-top: 0; margin-top: .2rem; }
