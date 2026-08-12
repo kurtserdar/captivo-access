@@ -2,7 +2,7 @@
 
 This directory is a **production** deployment scaffold for Captivo Access:
 the published `ghcr.io` images, fronted by [Caddy](https://caddyserver.com/)
-for automatic HTTPS, with the Manager console and per-site vendor proxy
+for automatic HTTPS, with the Manager console and per-resource vendor proxy
 routed to the right service.
 
 It's separate from the repo-root `docker-compose.yml`, which is the
@@ -52,7 +52,7 @@ The rest of this document is the reference for what it sets up and how to tune i
    - `manager.access.example.com` → this host (Manager console)
    - `connect.access.example.com` → this host (connector tunnel — gets its
      own cert automatically via HTTP-01, no plugin needed)
-   - `*.access.example.com` → this host (per-site vendor access — wildcard;
+   - `*.access.example.com` → this host (per-resource vendor access — wildcard;
      cert is issued automatically on first use, see [Wildcard TLS](#wildcard-tls) below)
 3. Docker + Docker Compose v2 on the host, ports 80 and 443 reachable from
    the internet.
@@ -122,7 +122,7 @@ nothing further to set up to get here.
 
 On-Demand TLS issues one certificate per app hostname, so it's bounded by
 Let's Encrypt's per-registered-domain new-certificate rate limit. If you're
-publishing enough vendor sites to approach that limit, switch to a **single
+publishing enough vendor resources to approach that limit, switch to a **single
 DNS-01 wildcard certificate** that covers every current and future hostname
 under `*.access.example.com` in one issuance — no per-app certs, no
 rate-limit exposure. This requires programmatic access to your DNS zone via
@@ -147,15 +147,15 @@ touching the registrar's (possibly locked-down) API.** Two paths, but they are
 not equal in risk:
 
 > ⚠️ **If your access domain is a subdomain of a domain you already use for a
-> website or email (e.g. `access.acme.com`, where `acme.com` serves your site
+> website or email (e.g. `access.acme.com`, where `acme.com` serves your resource
 > and mail), do NOT move that domain's nameservers.** Moving nameservers hands
 > the *entire* zone to the new host, and every record you don't recreate there
-> (your site's `A`, `MX`/mail, `SPF`/`DKIM`/`DMARC`) goes dark. Use the
+> (your resource's `A`, `MX`/mail, `SPF`/`DKIM`/`DMARC`) goes dark. Use the
 > subdomain path below — it leaves your existing DNS completely untouched.
 
 **Recommended — delegate just the subdomain (deSEC).** Keep the domain's DNS
 where it is and hand off only `access.example.com`. Nothing else in the zone
-changes; your site and mail are never at risk. This is the right choice for the
+changes; your resource and mail are never at risk. This is the right choice for the
 common case: adding vendor access to a domain you already run.
 
 1. [deSEC](https://desec.io/) (free) → **Create domain** → `access.example.com`.
@@ -175,11 +175,11 @@ common case: adding vendor access to a domain you already run.
 
 **Only if the domain is dedicated to this deployment — move the whole zone
 (Cloudflare).** Choose this **only** when the domain serves nothing else (no
-site, no mail) or you're deliberately migrating all its DNS to Cloudflare. The
+resource, no mail) or you're deliberately migrating all its DNS to Cloudflare. The
 Cloudflare **free plan supports only a full-zone move**, not delegating a lone
 subdomain (subdomain-only zones are Enterprise).
 
-1. [Cloudflare](https://www.cloudflare.com/) → **Add a site** → `example.com`
+1. [Cloudflare](https://www.cloudflare.com/) → **Add a resource** → `example.com`
    (Free). **Recreate every existing record first** (MX/mail, web `A`/`CNAME`,
    TXT) so nothing breaks when nameservers move.
 2. At your registrar, change the domain's nameservers to the two Cloudflare
@@ -215,7 +215,7 @@ base stack. So:
    }
    ```
    (for deSEC use `dns desec {$DNS_API_TOKEN}`). You can also drop the global
-   `on_demand_tls` block at the top of the file — it's unused once no site
+   `on_demand_tls` block at the top of the file — it's unused once no resource
    block references `on_demand`.
 3. Bring the stack up with both compose files — the override builds the custom
    Caddy image automatically:
@@ -248,7 +248,7 @@ in their browser. Caddy terminates TLS and forwards to
 `access-dataplane:3103`, which checks the session cookie (scoped to
 `COOKIE_DOMAIN`, so it's already set from logging in at
 `manager.access.example.com`), evaluates the grant, and — if allowed —
-streams the request, along with the Site's internal address, over the
+streams the request, along with the Resource's internal address, over the
 outbound tunnel to the connector running inside the customer's network,
 which dials that address. The connector itself takes no `UPSTREAMS`
 configuration; the only thing you can set on it is an optional
@@ -263,7 +263,7 @@ the Policy page if a job stops running. If you deploy by hand instead, add these
 to the host's crontab:
 
 ```cron
-# Probe each Site's reachability through its connector every 5 minutes:
+# Probe each Resource's reachability through its connector every 5 minutes:
 */5 * * * * curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/site-health >/dev/null
 
 # Trim the audit log past its retention window, once a day:
@@ -279,12 +279,12 @@ to the host's crontab:
 ```
 
 `POST /api/cron/site-health` opens a **TCP connection** through the connector to
-each configured Site's target — a web-app Site's internal address, or a
-remote-desktop (gateway) Site's RDP/SSH/VNC host:port — and records the result
+each configured Resource's target — a web-app Resource's internal address, or a
+remote-desktop (gateway) Resource's RDP/SSH/VNC host:port — and records the result
 (`probedAt`/`probeOk`/`probeDetail`/`probeLatencyMs`) — a successful connect
 counts as reachable, a refused/timed-out/tunnel error as unreachable. A
 transition (up→down or down→up) also raises an in-console notification and, if
-`NOTIFICATION_WEBHOOK_URL` is set, a best-effort webhook. Sites with no target
+`NOTIFICATION_WEBHOOK_URL` is set, a best-effort webhook. Resources with no target
 set yet (no internal address, or a gateway with no credential) are skipped, not
 reported unreachable.
 
@@ -307,7 +307,7 @@ Console-protocol (RDP/SSH/VNC) sessions are served by a built-in gateway — no
 separate pack. In the console, flag a connector as a session host
 (`/admin/connectors` → gateway host); its generated install command also
 deploys the session engine (guacd) on that host and joins the shared
-`captivo-gateway` network. Then add a **Remote desktop** Site (protocol, host,
+`captivo-gateway` network. Then add a **Remote desktop** Resource (protocol, host,
 port, and vault credentials) and vendors connect straight from `/access`,
 streamed in-browser and recorded natively (replayable at `/admin/recordings`).
 
@@ -330,7 +330,7 @@ Connectors run on their own hosts — update each with `docker pull …connector
 
 ### Breaking change: v0.2.0 (dynamic upstreams)
 
-v0.2.0 moves the internal address off the connector and onto the Site, which
+v0.2.0 moves the internal address off the connector and onto the Resource, which
 changes both the schema and the connector↔data-plane protocol:
 
 - **Upgrade the data-plane and every connector together.** An old connector
@@ -338,8 +338,8 @@ changes both the schema and the connector↔data-plane protocol:
   alias). Pull the new images for all three services and restart; connectors
   re-run on the new image (no re-enrollment needed — the token in `/data`
   persists).
-- **Re-set each Site's address.** `db push` drops the old `upstreamName` column
-  and adds `upstreamUrl`; existing Sites come out blank. Open each Site and set
+- **Re-set each Resource's address.** `db push` drops the old `upstreamName` column
+  and adds `upstreamUrl`; existing Resources come out blank. Open each Resource and set
   its **Internal address** (`http://host:port`) before it will route.
 
   > The automatic `access-migrate` service refuses destructive changes, so this

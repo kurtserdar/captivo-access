@@ -9,7 +9,7 @@ private VPC, home lab — anywhere that isn't internet-reachable). It:
   connections, never needs an open firewall port),
 - proxies HTTP requests from the data-plane to the internal address the
   Manager sends for each request — that address is defined once, per app,
-  as a **Site** in the Manager console, not on the connector itself,
+  as a **Resource** in the Manager console, not on the connector itself,
 - relays **WebSocket** connections and answers **TCP reachability probes** for
   the same targets — both bounded by the same `ALLOWED_TARGETS` check as HTTP,
 - reports live **telemetry** (version, uptime, connection counts, throughput, a
@@ -26,11 +26,11 @@ It shares wire-format and dial types with the data-plane via the
 | `MANAGER_URL`     | yes      | Base URL of the Manager (used for enrollment/pairing).                  |
 | `DATAPLANE_URL`   | yes      | TLS-terminated WSS URL of the data-plane tunnel to dial, e.g. `wss://connect.access.example.com`. Use `wss://` — a plain `ws://` tunnel is unencrypted. |
 | `PAIR_CODE`       | first run only | One-time pairing code from the Manager UI. Only needed until a token is stored at `TOKEN_FILE`; ignored afterwards. |
-| `ALLOWED_TARGETS` | no       | Optional egress boundary: comma-separated CIDRs/hosts/`host:port`s, e.g. `10.0.5.0/24,jira.internal,192.168.1.50:8080`. If set, the connector refuses to dial any target outside this list, even if a Site's internal address points there. Unset means it dials whatever the Manager routes to it. |
+| `ALLOWED_TARGETS` | no       | Optional egress boundary: comma-separated CIDRs/hosts/`host:port`s, e.g. `10.0.5.0/24,jira.internal,192.168.1.50:8080`. If set, the connector refuses to dial any target outside this list, even if a Resource's internal address points there. Unset means it dials whatever the Manager routes to it. |
 | `TOKEN_FILE`      | no       | Path to the stored connector token. Default: `/data/token`.            |
 
 Upstream targets themselves aren't configured on the connector at all —
-each internal app is defined as a **Site** (with its internal address) in
+each internal app is defined as a **Resource** (with its internal address) in
 the Manager console, and the connector dials whatever address the Manager
 sends it for a given request, subject to `ALLOWED_TARGETS` if set.
 
@@ -91,7 +91,7 @@ Repair / Update / Enable-gateway-mode commands expect.
 To cap what this connector may reach, add `-e ALLOWED_TARGETS=10.0.5.0/24`
 (or a comma-separated list of CIDRs/hosts) to the command above — optional,
 and unrelated to which apps route through this connector, which is decided
-entirely by Sites in the Manager.
+entirely by Resources in the Manager.
 
 If this connector will also run remote-desktop sessions (recorded RDP/SSH/VNC),
 don't attach the gateway network or install guacd by hand: flag the connector as

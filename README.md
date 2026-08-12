@@ -5,9 +5,9 @@
 **Open-source, self-hosted, VPN-less Zero Trust remote access for third-party vendors.**
 
 Grant an external vendor or contractor passkey-authenticated, time-boxed,
-audited access to one specific internal web app — without a VPN, without
-opening an inbound port into your network, and without handing out a
-standing credential. You self-host it: there is no SaaS, no vendor lock-in,
+audited access to one specific internal web app **or remote desktop
+(RDP/SSH/VNC)** — without a VPN, without opening an inbound port into your
+network, and without handing out a standing credential. You self-host it: there is no SaaS, no vendor lock-in,
 and no traffic that passes through anyone's infrastructure but your own.
 
 > **Status: early development.** Passkey identity, the outbound-only
@@ -43,7 +43,9 @@ If you just need a transparent identity-aware proxy in front of internal
 web apps, this is in the same space as Cloudflare Access or Pomerium — with
 a vendor-lifecycle (invite → time-boxed grant → revoke) and Turkish
 KVKK/5651-style retention framing layered on top, and it's yours to run
-on your own infrastructure.
+on your own infrastructure. Unlike a pure web proxy, it also brokers native
+**RDP / SSH / VNC** sessions to internal desktops — streamed in-browser,
+recorded, and watchable live — with no VPN and no separate bastion.
 
 ## Architecture
 
@@ -69,8 +71,10 @@ on your own infrastructure.
              Connector (Go — runs inside the customer network)
                    │  dials OUT to the data plane; never listens,
                    │  never accepts an inbound connection
-                   ▼
-             Internal web app  (wiki, admin panel, dashboard, ...)
+                   ├──▶ Internal web app   (wiki, admin panel, dashboard, ...)
+                   │
+                   └──▶ guacd  (session engine, deployed on a gateway-flagged host)
+                             └──▶ Remote desktop  (RDP / SSH / VNC target)
 ```
 
 Four moving pieces:
@@ -400,15 +404,9 @@ instead, replicate that routing and forward those headers.
 Explicitly **not** built — don't assume these exist:
 
 - **Session isolation / remote-browser rendering** — the rest of the future
-  "Pro" layer, on top of what ships today. (Session *recording*, live view, and
-  the encrypted **credential vault** for remote-desktop targets are already here
-  — see [Features](#features).)
-- **RDP/SSH/VNC** — the core is an HTTP(S) + WebSocket proxy, not a
-  general-purpose bastion. Recorded console access is available today via the
-  built-in **native remote-desktop gateway**: flag a connector as a session host
-  (its install command bundles the guacd engine), then add a Remote desktop Resource
-  with the target and credentials. Vendors connect straight from the console —
-  no second login, no separate Guacamole install.
+  "Pro" layer, on top of what ships today. (Session *recording*, live view, the
+  encrypted **credential vault**, and the **native RDP/SSH/VNC gateway** are all
+  already here — see [Features](#features).)
 
 The console is intentionally **English-only** (Turkish localization is not
 planned for the console itself; the KVKK/5651 framing is about data behavior,

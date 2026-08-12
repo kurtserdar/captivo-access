@@ -15,10 +15,10 @@ It has **three listeners**:
   connection counts, throughput, a recent-log tail) up to the Manager and
   egress-policy updates down to the connector;
 - a **browser-facing identity-aware reverse proxy** (`:3103`) that serves vendor
-  traffic per site — it checks the session cookie and the access grant on
+  traffic per resource — it checks the session cookie and the access grant on
   **every request** (fail-closed) before streaming it down the right connector's
   tunnel, and emits an audit event for each decision. It also relays
-  **WebSocket** upgrades transparently, and — for Sites with recording enabled
+  **WebSocket** upgrades transparently, and — for Resources with recording enabled
   or a clipboard restriction — injects an rrweb recorder and/or a clipboard
   guard into HTML responses (stripping the upstream CSP on any injected
   response so the inline script runs) and serves the reserved `/__captivo/*`
@@ -57,9 +57,8 @@ sessions live only in memory and re-establish on reconnect.
                                                      ▼
                                            Connector  (Go, inside customer network)
                                              dials out; never listens
-                                                     │
-                                                     ▼
-                                           Internal app  (wiki, dashboard, …)
+                                                     ├──▶ Internal app  (wiki, dashboard, …)
+                                                     └──▶ guacd ─▶ Remote desktop (RDP/SSH/VNC)
 ```
 
 A vendor request never reaches an internal app until the data-plane has resolved
@@ -75,7 +74,7 @@ secrets, and database.
 | Port | Address env     | Audience                                                              |
 | ---- | --------------- | -------------------------------------------------------------------- |
 | 3101 | `WSS_ADDR`      | Public — connectors dial in here (`/tunnel`, `/healthz`)             |
-| 3103 | `PROXY_ADDR`    | Public (behind the front TLS proxy) — vendor per-site traffic, plus the native gateway `/guac-tunnel` + live-view `/guac-view` |
+| 3103 | `PROXY_ADDR`    | Public (behind the front TLS proxy) — vendor per-resource traffic, plus the native gateway `/guac-tunnel` + live-view `/guac-view` |
 | 3102 | `INTERNAL_ADDR` | Compose-internal only — the Manager's `/proxy` + `/probe`; **must not** be published to the host/internet |
 
 In `docker-compose.yml`, `3101` and `3103` are published; `3102` is reachable
