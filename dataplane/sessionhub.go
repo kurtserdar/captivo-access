@@ -36,6 +36,7 @@ type liveSession struct {
 	mu           sync.Mutex
 	controlOwner string // userID holding control, or "" for the vendor
 	viewers      int    // attached live viewers (for the console list)
+	closer       func() // closes the underlying tunnel; set by guactunnel after Register
 }
 
 func (ls *liveSession) shareInfo() (string, string, string) {
@@ -138,6 +139,30 @@ func (h *SessionHub) List() []SessionInfo {
 		ls.mu.Unlock()
 	}
 	return out
+}
+
+// SetCloser records how to force-close this session's tunnel.
+func (h *SessionHub) SetCloser(id string, fn func()) {
+	if ls := h.Get(id); ls != nil {
+		ls.mu.Lock()
+		ls.closer = fn
+		ls.mu.Unlock()
+	}
+}
+
+// Terminate force-closes a session's tunnel. Returns false if no such session.
+func (h *SessionHub) Terminate(id string) bool {
+	ls := h.Get(id)
+	if ls == nil {
+		return false
+	}
+	ls.mu.Lock()
+	fn := ls.closer
+	ls.mu.Unlock()
+	if fn != nil {
+		fn()
+	}
+	return true
 }
 
 func (h *SessionHub) SetControl(id, ownerUserID string) error {

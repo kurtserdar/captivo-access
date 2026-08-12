@@ -111,6 +111,9 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 		connID = readyArgs[0] // guacd connection ID — the share key for viewers
 	}
 	ls := hub.Register(sessionID, siteID, userID, conn.Protocol, conn.Hostname, time.Now(), connID, connectorID, guacdAddr)
+	// Closing the guacd conn makes the relay error out → goroutines exit → session
+	// tears down (defer c.CloseNow + hub.Remove). This is how admin Terminate works.
+	hub.SetCloser(sessionID, func() { _ = guac.Close() })
 	defer hub.Remove(sessionID)
 	log.Printf("guac-tunnel site=%s: live session id=%s connID=%s", siteID, sessionID, connID)
 

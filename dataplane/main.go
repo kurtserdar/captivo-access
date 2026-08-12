@@ -101,6 +101,21 @@ func main() {
 		reg.Remove(body.ConnectorID)
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	})
+	in.HandleFunc("/sessions/terminate", func(w http.ResponseWriter, r *http.Request) {
+		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		var body struct {
+			SessionID string `json:"sessionId"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SessionID == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_body"})
+			return
+		}
+		found := hub.Terminate(body.SessionID)
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "found": found})
+	})
 	in.HandleFunc("/ldap-test", func(w http.ResponseWriter, r *http.Request) {
 		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
 			http.Error(w, "forbidden", http.StatusForbidden)
