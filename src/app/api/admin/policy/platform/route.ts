@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
-import { savePlatformSettings } from "@/lib/settings/platform";
+import { savePlatformSettings, saveGuacParamDefaults } from "@/lib/settings/platform";
+import { parseGuacParams } from "@/lib/gateway/guac-params";
 import { validateAllowlist } from "@/lib/net/cidr";
 
 export const runtime = "nodejs";
@@ -70,5 +71,6 @@ export async function POST(req: NextRequest) {
     notifyAccessRequests: body.notifyAccessRequests !== false,
     notifyAccessDecisions: body.notifyAccessDecisions !== false,
   });
+  await saveGuacParamDefaults(parseGuacParams(body.guacParamDefaults));
   return NextResponse.json({ ok: true });
 }

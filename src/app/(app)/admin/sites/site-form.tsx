@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { parseGuacParams } from "@/lib/gateway/guac-params";
+import { GuacParamsFields, paramsToGuacFields, guacFieldsToParams, type GuacFields } from "@/components/guac-params-fields";
 
 function errorMessage(code: string | undefined, isEdit: boolean): string {
   switch (code) {
@@ -64,7 +66,7 @@ export function SiteForm({
   site?: SiteInitial;
   recordingEnabled?: boolean;
   nativeGateway?: boolean;
-  vault?: { protocol: string; targetHost: string; targetPort: number; username: string; hasSecret: boolean };
+  vault?: { protocol: string; targetHost: string; targetPort: number; username: string; hasSecret: boolean; guacParams?: unknown };
   onDone?: () => void;
 }) {
   const router = useRouter();
@@ -84,6 +86,7 @@ export function SiteForm({
   const [targetPort, setTargetPort] = useState(String(vault?.targetPort ?? 3389));
   const [username, setUsername] = useState(vault?.username ?? "");
   const [secret, setSecret] = useState("");
+  const [guac, setGuac] = useState<GuacFields>(paramsToGuacFields(parseGuacParams(vault?.guacParams)));
   // logo: undefined = leave unchanged; null = remove; string = new base64 data URL.
   const [logo, setLogo] = useState<string | null | undefined>(undefined);
   const [logoType, setLogoType] = useState<string | undefined>(undefined);
@@ -149,9 +152,9 @@ export function SiteForm({
           description: description.trim() || undefined,
           insecureSkipVerify,
           recordSessions,
-          clipboardMode: accessMode === "GATEWAY" ? "allow" : clipboardMode,
+          clipboardMode,
           ...(accessMode === "GATEWAY"
-            ? { protocol, targetHost, targetPort: Number(targetPort), username, secret }
+            ? { protocol, targetHost, targetPort: Number(targetPort), username, secret, guacParams: guacFieldsToParams(guac) }
             : {}),
           logo,
           logoType,
@@ -299,6 +302,11 @@ export function SiteForm({
             <input id="site-secret" type="password" className="input" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder={vault?.hasSecret ? "•••••••• (stored — type to replace)" : "target password"} autoComplete="new-password" />
             <p className="hint">Stored encrypted and injected into the session — the vendor never sees it.</p>
           </div>
+          <details className="guac-advanced">
+            <summary>Advanced (Guacamole)</summary>
+            <p className="hint">Leave a field on <b>Default</b> to inherit the Policy default. Overrides here win for this resource.</p>
+            <GuacParamsFields value={guac} onChange={setGuac} protocol={protocol as "RDP" | "SSH" | "VNC"} />
+          </details>
         </>
       )}
       {accessMode === "TRANSPARENT" && (
@@ -334,7 +342,7 @@ export function SiteForm({
           </span>
         </div>
       )}
-      {accessMode !== "GATEWAY" && (
+      {(
         <div className="field">
           <label className="field-label" htmlFor="site-clipboard">Clipboard</label>
           <select id="site-clipboard" className="select" value={clipboardMode} onChange={(e) => setClipboardMode(e.target.value)}>

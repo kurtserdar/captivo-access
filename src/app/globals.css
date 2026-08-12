@@ -541,3 +541,9 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 /* Web (rrweb) recording replay — keep the player inside its card */
 .web-recording { max-width: 100%; overflow: hidden; }
 .web-recording .rr-player { max-width: 100%; }
+
+/* Guacamole connection params */
+.guac-fields { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem 1rem; }
+@media (max-width: 560px) { .guac-fields { grid-template-columns: 1fr; } }
+.guac-advanced { margin: .4rem 0 1rem; border: 1px solid var(--line); border-radius: var(--radius); padding: .3rem .8rem; }
+.guac-advanced summary { cursor: pointer; font-weight: 600; font-size: .9rem; padding: .5rem 0; }

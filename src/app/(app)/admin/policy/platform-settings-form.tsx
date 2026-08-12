@@ -1,13 +1,15 @@
 "use client";
 import { useState } from "react";
 import type { PlatformSettings } from "@/lib/settings/platform";
+import type { GuacParams } from "@/lib/gateway/guac-params";
+import { GuacParamsFields, paramsToGuacFields, guacFieldsToParams, type GuacFields } from "@/components/guac-params-fields";
 import { NOTIF_EVENTS, type NotifKey } from "@/lib/notifications/events";
 
 function str(n: number | null): string {
   return n == null ? "" : String(n);
 }
 
-export function PlatformSettingsForm({ initial, consentEffective }: { initial: PlatformSettings; consentEffective: boolean }) {
+export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }: { initial: PlatformSettings; consentEffective: boolean; guacDefaults: GuacParams }) {
   const [audit, setAudit] = useState(str(initial.auditRetentionDays));
   const [invite, setInvite] = useState(str(initial.inviteTtlHours));
   const [webhook, setWebhook] = useState(initial.notificationWebhookUrl ?? "");
@@ -24,6 +26,7 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
     access_requests: initial.notifyAccessRequests !== false,
     access_decisions: initial.notifyAccessDecisions !== false,
   });
+  const [guac, setGuac] = useState<GuacFields>(paramsToGuacFields(guacDefaults));
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
@@ -61,6 +64,7 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
         notifySiteHealth: notif.site_health,
         notifyAccessRequests: notif.access_requests,
         notifyAccessDecisions: notif.access_decisions,
+        guacParamDefaults: guacFieldsToParams(guac),
       }),
     });
     const body = await res.json().catch(() => ({}));
@@ -221,6 +225,16 @@ export function PlatformSettingsForm({ initial, consentEffective }: { initial: P
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="setting-row" style={{ display: "block" }}>
+        <div className="setting-main">
+          <div className="setting-label">Remote-desktop defaults</div>
+          <div className="setting-hint">Default Guacamole connection parameters for remote-desktop (RDP/SSH/VNC) resources. A resource can override any of these on its own form. Layout &amp; the visual toggles apply to RDP; colour depth to RDP/VNC.</div>
+        </div>
+        <div style={{ marginTop: ".7rem" }}>
+          <GuacParamsFields value={guac} onChange={setGuac} />
+        </div>
       </div>
 
       {notice && <p className={`notice ${notice.kind === "ok" ? "success" : "error"}`} role="alert" style={{ marginTop: "1rem" }}>{notice.msg}</p>}
