@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { getVaultCredential } from "@/lib/vault/store";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { parseGuacParams, resolveGuacParams, toGuacArgs } from "@/lib/gateway/guac-params";
+import { resolvedGuacParamDefaults } from "@/lib/settings/platform";
 import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
   const siteId = typeof b.siteId === "string" ? b.siteId : "";
   if (!userId || !siteId) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true, recordSessions: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true, recordSessions: true, clipboardMode: true } });
   if (!site || site.accessMode !== "GATEWAY") return NextResponse.json({ error: "not_gateway" }, { status: 404 });
 
   const decision = await evaluateAccess(userId, siteId, new Date());
@@ -32,8 +34,12 @@ export async function POST(req: NextRequest) {
   const cred = await getVaultCredential(siteId);
   if (!cred) return NextResponse.json({ error: "no_credential" }, { status: 404 });
 
+  const resolved = resolveGuacParams(parseGuacParams(cred.guacParams), await resolvedGuacParamDefaults());
+  const params = toGuacArgs(resolved, site.clipboardMode);
+
   return NextResponse.json({
     protocol: cred.protocol.toLowerCase(),
+    params,
     targetHost: cred.targetHost,
     targetPort: cred.targetPort,
     username: cred.username,

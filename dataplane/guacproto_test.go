@@ -3,8 +3,18 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"strings"
 	"testing"
 )
+
+func TestBuildConnectEmitsParamForListedArg(t *testing.T) {
+	names := []string{"VERSION_1_5_0", "hostname", "server-layout", "enable-wallpaper"}
+	c := GuacConn{Hostname: "h", Params: map[string]string{"server-layout": "tr-tr-qwerty", "enable-wallpaper": "true"}}
+	got := string(buildConnect(names, c))
+	if !strings.Contains(got, "12.tr-tr-qwerty") || !strings.Contains(got, "4.true") {
+		t.Fatalf("params not emitted: %s", got)
+	}
+}
 
 func TestEncodeInstruction(t *testing.T) {
 	if got := string(encodeInstruction("select", "rdp")); got != "6.select,3.rdp;" {

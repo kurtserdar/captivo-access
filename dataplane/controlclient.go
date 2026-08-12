@@ -99,9 +99,10 @@ func (c *ControlClient) GatewayDescriptor(userID, siteID string) (conn GuacConn,
 		Username     string `json:"username"`
 		Secret       string `json:"secret"`
 		SecretKind   string `json:"secretKind"`
-		GuacdAddress string `json:"guacdAddress"`
-		ConnectorID  string `json:"connectorId"`
-		Record       bool   `json:"record"`
+		GuacdAddress string            `json:"guacdAddress"`
+		ConnectorID  string            `json:"connectorId"`
+		Record       bool              `json:"record"`
+		Params       map[string]string `json:"params"`
 	}
 	if err := c.post("/api/internal/gateway/descriptor", map[string]string{"userId": userID, "siteId": siteID}, &out); err != nil {
 		return GuacConn{}, "", "", false, err
@@ -113,6 +114,7 @@ func (c *ControlClient) GatewayDescriptor(userID, siteID string) (conn GuacConn,
 		Username:   out.Username,
 		Secret:     out.Secret,
 		SecretKind: out.SecretKind,
+		Params:     out.Params,
 	}, out.GuacdAddress, out.ConnectorID, out.Record, nil
 }
 

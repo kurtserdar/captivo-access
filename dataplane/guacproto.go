@@ -103,6 +103,7 @@ func parseInstruction(r *bufio.Reader) (string, []string, error) {
 type GuacConn struct {
 	Protocol, Hostname, Port, Username, Secret, SecretKind string
 	Width, Height, Dpi                                     int
+	Params                                                 map[string]string // resolved guacd arg-name→value (server-layout, color-depth, enable-*, disable-copy/paste)
 }
 
 // buildConnect echoes one value per arg name guacd listed, filling connection
@@ -139,7 +140,11 @@ func buildConnect(argNames []string, c GuacConn) []byte {
 		case name == "resize-method":
 			elems = append(elems, "display-update") // smoother RDP resize when supported
 		default:
-			elems = append(elems, "")
+			if v, ok := c.Params[name]; ok {
+				elems = append(elems, v)
+			} else {
+				elems = append(elems, "")
+			}
 		}
 	}
 	return encodeInstruction(elems...)
