@@ -56,3 +56,18 @@ export async function getWatchStatus(userId: string, siteId: string): Promise<{ 
     return { watching: false, controlHeld: false };
   }
 }
+
+export async function terminateSession(sessionId: string): Promise<{ ok: boolean; found: boolean }> {
+  try {
+    const res = await fetch(`${BASE()}/sessions/terminate`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ sessionId }),
+      cache: "no-store",
+    });
+    if (!res.ok) return { ok: false, found: false };
+    return (await res.json()) as { ok: boolean; found: boolean };
+  } catch {
+    return { ok: false, found: false };
+  }
+}
