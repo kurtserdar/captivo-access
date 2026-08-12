@@ -153,3 +153,15 @@ export async function decideGrant(
   const res = await db.accessGrant.updateMany({ where: { id, ...PENDING_WHERE }, data });
   return res.count;
 }
+
+export async function listUserRequests(userId: string) {
+  return db.accessGrant.findMany({
+    where: { userId, requiresApproval: true },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true, createdAt: true, startsAt: true, endsAt: true,
+      status: true, approvedAt: true, denyReason: true, note: true,
+      site: { select: { name: true } },
+    },
+  });
+}

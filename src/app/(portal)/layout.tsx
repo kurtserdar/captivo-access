@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
 import { LogoutButton } from "../(app)/logout-button";
+import { PortalNav } from "./_nav/portal-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export default async function PortalLayout({ children }: { children: React.React
           <span className="vp-word">Captivo <span className="vp-word-sub">ACCESS</span></span>
         </div>
         <nav className="vp-navlinks">
-          <Link href="/access" className="vp-navlink vp-navlink-active">My access</Link>
+          <PortalNav />
         </nav>
         <div className="vp-navright">
           <div className="vp-avatar">{initials}</div>
