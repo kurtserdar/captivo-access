@@ -305,6 +305,16 @@ export function SiteForm({
           <details className="guac-advanced">
             <summary>Advanced (Guacamole)</summary>
             <p className="hint">Leave a field on <b>Default</b> to inherit the Policy default. Overrides here win for this resource.</p>
+            <div className="field">
+              <label className="field-label" htmlFor="site-clipboard-gw">Clipboard</label>
+              <select id="site-clipboard-gw" className="select" value={clipboardMode} onChange={(e) => setClipboardMode(e.target.value)}>
+                <option value="allow">Allow copy &amp; paste</option>
+                <option value="no_copy">Block copy out (no exfil)</option>
+                <option value="no_paste">Block paste in</option>
+                <option value="none">Block both</option>
+              </select>
+              <span className="hint">Enforced by the session engine (guacd) — copy out / paste in are disabled server-side, a real control (not a browser deterrent).</span>
+            </div>
             <GuacParamsFields value={guac} onChange={setGuac} protocol={protocol as "RDP" | "SSH" | "VNC"} />
           </details>
         </>
@@ -342,7 +352,7 @@ export function SiteForm({
           </span>
         </div>
       )}
-      {(
+      {accessMode === "TRANSPARENT" && (
         <div className="field">
           <label className="field-label" htmlFor="site-clipboard">Clipboard</label>
           <select id="site-clipboard" className="select" value={clipboardMode} onChange={(e) => setClipboardMode(e.target.value)}>
@@ -351,11 +361,7 @@ export function SiteForm({
             <option value="no_paste">Block paste in</option>
             <option value="none">Block both</option>
           </select>
-          <span className="hint">
-            {accessMode === "GATEWAY"
-              ? "Enforced by the remote-desktop engine (guacd) — copy out / paste in are disabled server-side, so it's a real control, not just a browser deterrent."
-              : "Restricts clipboard in the vendor's browser via an injected script — a deterrent, not a hard control (bypassable if JavaScript is disabled)."}
-          </span>
+          <span className="hint">Restricts clipboard in the vendor&apos;s browser via an injected script — a deterrent, not a hard control (bypassable if JavaScript is disabled).</span>
         </div>
       )}
       <div className="field">
