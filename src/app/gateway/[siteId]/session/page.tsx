@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
+import { recordingEnabled } from "@/lib/recording/enabled";
 import { resolvedRecordingConsentRequired } from "@/lib/settings/platform";
 import { GatewaySession } from "./session-client";
 import { ConsentGate } from "./consent-gate";
@@ -20,6 +21,7 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
   if (!nativeGatewayEnabled() || !site || site.accessMode !== "GATEWAY") {
     notFound();
   }
+  const recorded = recordingEnabled() && site.recordSessions;
   const consentNeeded = site.recordSessions && (await resolvedRecordingConsentRequired());
-  return consentNeeded ? <ConsentGate siteId={siteId} /> : <GatewaySession siteId={siteId} />;
+  return consentNeeded ? <ConsentGate siteId={siteId} recorded={recorded} /> : <GatewaySession siteId={siteId} recorded={recorded} />;
 }

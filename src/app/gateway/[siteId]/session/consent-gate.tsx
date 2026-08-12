@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { GatewaySession } from "./session-client";
 
-export function ConsentGate({ siteId }: { siteId: string }) {
+export function ConsentGate({ siteId, recorded }: { siteId: string; recorded: boolean }) {
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -16,7 +16,7 @@ export function ConsentGate({ siteId }: { siteId: string }) {
     setAccepted(true);
   }
 
-  if (accepted) return <GatewaySession siteId={siteId} />;
+  if (accepted) return <GatewaySession siteId={siteId} recorded={recorded} />;
 
   return (
     <div className="consent-gate">

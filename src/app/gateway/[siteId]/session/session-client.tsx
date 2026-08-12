@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 // Fullscreen HTML5 session: embeds guacamole-common-js and points it at the
 // data-plane guac-tunnel (same origin, fronted by nginx). The server drives the
 // guacd handshake + credential injection; this only renders + sends input.
-export function GatewaySession({ siteId }: { siteId: string }) {
+export function GatewaySession({ siteId, recorded }: { siteId: string; recorded: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [watching, setWatching] = useState(false);
@@ -119,6 +119,20 @@ export function GatewaySession({ siteId }: { siteId: string }) {
       ref={ref}
       style={{ position: "fixed", inset: 0, background: "#000", overflow: "hidden", cursor: "none" }}
     >
+      {recorded && (
+        <div
+          style={{
+            position: "fixed", top: 12, left: 12, zIndex: 20, pointerEvents: "none",
+            display: "flex", alignItems: "center", gap: 6,
+            background: "rgba(0,0,0,0.6)", color: "#ff4d4f",
+            font: "600 12px/1 sans-serif", letterSpacing: "0.06em",
+            padding: "6px 10px", borderRadius: 6,
+          }}
+        >
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#ff4d4f", display: "inline-block" }} />
+          RECORDED
+        </div>
+      )}
       {(watching || controlHeld) && (
         <div
           style={{
