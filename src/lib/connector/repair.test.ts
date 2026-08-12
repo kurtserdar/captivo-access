@@ -118,6 +118,8 @@ describe("gateway-host bundles guacd", () => {
   it("gateway install captures guacd logs to a shared volume", () => {
     const cmd = buildInstallCommand("CODE123", m, t, true);
     expect(cmd).toContain("-v captivo_guacd_logs:/guaclog ");
+    // guacd 1.6.0's entrypoint swallows a CMD; bypass it so our tee wrapper runs.
+    expect(cmd).toContain("--entrypoint /bin/sh guacamole/guacd:1.6.0");
     expect(cmd).toContain("tee /guaclog/guacd.log");
     expect(cmd).toContain("-v captivo_guacd_logs:/guaclog:ro");
     // guacd runs as uid 1000; the fresh log volume must be chowned or tee gets EACCES.
