@@ -8,6 +8,7 @@ import { IntegrityPanel } from "./integrity-panel";
 import Link from "next/link";
 import { listAdminAuditEvents } from "@/lib/audit/admin-query";
 import { AdminAuditTable, type AdminAuditRowJSON } from "./admin-audit-table";
+import { AdminIntegrityPanel } from "./admin-integrity-panel";
 
 function AuditTabs({ admin }: { admin: boolean }) {
   return (
@@ -42,6 +43,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
           </div>
         </div>
         <AuditTabs admin />
+        <AdminIntegrityPanel />
         <AdminAuditTable rows={adminRows} />
       </main>
     );

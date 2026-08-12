@@ -728,3 +728,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 /* Policy settings section headings */
 .settings-group { grid-column: 1 / -1; font: 600 .72rem/1 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 1.4rem 0 .2rem; padding-top: 1rem; border-top: 1px solid var(--line); }
 .settings-group:first-child { border-top: none; padding-top: 0; margin-top: .2rem; }
+
+.aa-integrity { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; }
+.aa-ok { color: var(--ok); font-size: .85rem; }
+.aa-bad { color: var(--danger); font-size: .85rem; font-weight: 600; }
