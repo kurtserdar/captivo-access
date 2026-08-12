@@ -22,7 +22,7 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, gatewa
       `docker rm -f captivo-guacd >/dev/null 2>&1; ` +
       `docker run -d --name captivo-guacd --restart unless-stopped --network ${GATEWAY_NETWORK} ` +
       `-v captivo_guacd_recordings:/recordings -v captivo_guacd_logs:/guaclog ` +
-      `guacamole/guacd:1.5.5 /bin/sh -c '/opt/guacamole/sbin/guacd -b 0.0.0.0 -L $GUACD_LOG_LEVEL -f 2>&1 | tee /guaclog/guacd.log' && `
+      `guacamole/guacd:1.6.0 /bin/sh -c '/opt/guacamole/sbin/guacd -b 0.0.0.0 -L $GUACD_LOG_LEVEL -f 2>&1 | tee /guaclog/guacd.log' && `
     : "";
   // Pull the connector image right before running it. `docker run <img>:latest`
   // reuses a locally-cached `latest` and will NOT fetch a newer build — a fresh

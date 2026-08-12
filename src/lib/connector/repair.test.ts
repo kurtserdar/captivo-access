@@ -102,7 +102,7 @@ describe("gateway-host bundles guacd", () => {
     expect(cmd).toContain("--name captivo-guacd");
     expect(cmd).toContain(`--network ${GATEWAY_NETWORK}`);
     expect(cmd).toContain("captivo_guacd_recordings");
-    expect(cmd).toContain("guacamole/guacd:1.5.5");
+    expect(cmd).toContain("guacamole/guacd:1.6.0");
     expect(cmd).toContain("docker run -d --name access-connector");
   });
   it("install without gatewayHost has no guacd", () => {
