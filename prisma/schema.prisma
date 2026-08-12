@@ -460,8 +460,12 @@ model AdminAuditEvent {
   metadata   Json?
   clientIp   String?
   createdAt  DateTime @default(now())
+  seq        BigInt?  @unique
+  prevHash   String   @default("")
+  hash       String   @default("")
 
   @@index([timestamp])
   @@index([action, timestamp])
   @@index([targetType, targetId])
+  @@index([seq])
 }

@@ -420,7 +420,8 @@ export const ModelName = {
   PlatformSettings: 'PlatformSettings',
   UpdateCheckConfig: 'UpdateCheckConfig',
   SessionRecording: 'SessionRecording',
-  RecordingChunk: 'RecordingChunk'
+  RecordingChunk: 'RecordingChunk',
+  AdminAuditEvent: 'AdminAuditEvent'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -436,7 +437,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "vaultCredential" | "accessGrant" | "auditEvent" | "auditChainState" | "auditAnchor" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "groupMapping" | "sessionPolicy" | "cronRun" | "platformSettings" | "updateCheckConfig" | "sessionRecording" | "recordingChunk"
+    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "vaultCredential" | "accessGrant" | "auditEvent" | "auditChainState" | "auditAnchor" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "groupMapping" | "sessionPolicy" | "cronRun" | "platformSettings" | "updateCheckConfig" | "sessionRecording" | "recordingChunk" | "adminAuditEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2216,6 +2217,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AdminAuditEvent: {
+      payload: Prisma.$AdminAuditEventPayload<ExtArgs>
+      fields: Prisma.AdminAuditEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdminAuditEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdminAuditEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditEventPayload>
+        }
+        findFirst: {
+          args: Prisma.AdminAuditEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdminAuditEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditEventPayload>
+        }
+        findMany: {
+          args: Prisma.AdminAuditEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditEventPayload>[]
+        }
+        create: {
+          args: Prisma.AdminAuditEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditEventPayload>
+        }
+        createMany: {
+          args: Prisma.AdminAuditEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdminAuditEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditEventPayload>[]
+        }
+        delete: {
+          args: Prisma.AdminAuditEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditEventPayload>
+        }
+        update: {
+          args: Prisma.AdminAuditEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.AdminAuditEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdminAuditEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdminAuditEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.AdminAuditEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditEventPayload>
+        }
+        aggregate: {
+          args: Prisma.AdminAuditEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdminAuditEvent>
+        }
+        groupBy: {
+          args: Prisma.AdminAuditEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminAuditEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdminAuditEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminAuditEventCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2635,6 +2710,26 @@ export const RecordingChunkScalarFieldEnum = {
 } as const
 
 export type RecordingChunkScalarFieldEnum = (typeof RecordingChunkScalarFieldEnum)[keyof typeof RecordingChunkScalarFieldEnum]
+
+
+export const AdminAuditEventScalarFieldEnum = {
+  id: 'id',
+  timestamp: 'timestamp',
+  actorId: 'actorId',
+  actorEmail: 'actorEmail',
+  action: 'action',
+  targetType: 'targetType',
+  targetId: 'targetId',
+  summary: 'summary',
+  metadata: 'metadata',
+  clientIp: 'clientIp',
+  createdAt: 'createdAt',
+  seq: 'seq',
+  prevHash: 'prevHash',
+  hash: 'hash'
+} as const
+
+export type AdminAuditEventScalarFieldEnum = (typeof AdminAuditEventScalarFieldEnum)[keyof typeof AdminAuditEventScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3089,6 +3184,7 @@ export type GlobalOmitConfig = {
   updateCheckConfig?: Prisma.UpdateCheckConfigOmit
   sessionRecording?: Prisma.SessionRecordingOmit
   recordingChunk?: Prisma.RecordingChunkOmit
+  adminAuditEvent?: Prisma.AdminAuditEventOmit
 }
 
 /* Types for Logging */

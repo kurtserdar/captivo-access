@@ -161,3 +161,8 @@ export type SessionRecording = Prisma.SessionRecordingModel
  * 
  */
 export type RecordingChunk = Prisma.RecordingChunkModel
+/**
+ * Model AdminAuditEvent
+ * 
+ */
+export type AdminAuditEvent = Prisma.AdminAuditEventModel

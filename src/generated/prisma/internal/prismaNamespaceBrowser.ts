@@ -74,7 +74,8 @@ export const ModelName = {
   PlatformSettings: 'PlatformSettings',
   UpdateCheckConfig: 'UpdateCheckConfig',
   SessionRecording: 'SessionRecording',
-  RecordingChunk: 'RecordingChunk'
+  RecordingChunk: 'RecordingChunk',
+  AdminAuditEvent: 'AdminAuditEvent'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -473,6 +474,26 @@ export const RecordingChunkScalarFieldEnum = {
 } as const
 
 export type RecordingChunkScalarFieldEnum = (typeof RecordingChunkScalarFieldEnum)[keyof typeof RecordingChunkScalarFieldEnum]
+
+
+export const AdminAuditEventScalarFieldEnum = {
+  id: 'id',
+  timestamp: 'timestamp',
+  actorId: 'actorId',
+  actorEmail: 'actorEmail',
+  action: 'action',
+  targetType: 'targetType',
+  targetId: 'targetId',
+  summary: 'summary',
+  metadata: 'metadata',
+  clientIp: 'clientIp',
+  createdAt: 'createdAt',
+  seq: 'seq',
+  prevHash: 'prevHash',
+  hash: 'hash'
+} as const
+
+export type AdminAuditEventScalarFieldEnum = (typeof AdminAuditEventScalarFieldEnum)[keyof typeof AdminAuditEventScalarFieldEnum]
 
 
 export const SortOrder = {
