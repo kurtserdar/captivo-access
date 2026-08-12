@@ -711,6 +711,19 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .vp-muted { font-size: 13px; color: #a8a29e; }
 .vp-empty { background: #fff; border: 1px solid #eceae6; border-radius: 16px; padding: 24px 28px; color: #78716c; font-size: 14px; }
 .vp-footer { display: flex; align-items: center; background: #f5f5f4; border-radius: 14px; padding: 18px 24px; font-size: 14px; color: #57534e; }
+.vp-req { background: #fff; border: 1px solid #eceae6; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; }
+.vp-req-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.vp-req-id { display: flex; align-items: center; gap: 10px; }
+.vp-req-name { font: 700 15px var(--font-public-sans), sans-serif; color: #1c1917; }
+.vp-req-meta { font-size: 13px; color: #78716c; }
+.vp-badge { font: 600 11px var(--font-plex-mono), monospace; border-radius: 99px; padding: 2px 10px; }
+.vp-badge.amber { background: #fff7ed; color: #b45309; }
+.vp-badge.teal { background: #f0fdfa; color: #0f766e; }
+.vp-badge.red { background: #fef2f2; color: #b91c1c; }
+.vp-badge.gray { background: #f5f5f4; color: #78716c; }
+.vp-loadmore { align-self: flex-start; margin-top: 8px; background: #f5f5f4; color: #1c1917; border: 1px solid #eceae6; border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
+.vp-loadmore:hover { background: #eceae6; }
+.vp-loadmore:disabled { opacity: .6; cursor: default; }
 
 /* Policy settings section headings */
 .settings-group { grid-column: 1 / -1; font: 600 .72rem/1 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 1.4rem 0 .2rem; padding-top: 1rem; border-top: 1px solid var(--line); }
