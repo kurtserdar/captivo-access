@@ -352,8 +352,9 @@ export function SiteForm({
             <option value="none">Block both</option>
           </select>
           <span className="hint">
-            Restricts clipboard in the vendor&apos;s browser via injected script — a deterrent, not a hard
-            control (bypassable if JavaScript is disabled). Gateway sites use Guacamole&apos;s own settings.
+            {accessMode === "GATEWAY"
+              ? "Enforced by the remote-desktop engine (guacd) — copy out / paste in are disabled server-side, so it's a real control, not just a browser deterrent."
+              : "Restricts clipboard in the vendor's browser via an injected script — a deterrent, not a hard control (bypassable if JavaScript is disabled)."}
           </span>
         </div>
       )}
