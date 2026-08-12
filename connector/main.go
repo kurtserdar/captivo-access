@@ -18,6 +18,10 @@ func main() {
 	// Initial threshold from env; the Manager can override it live via policy.
 	setLogLevel(envOr("LOG_LEVEL", "info"))
 
+	// On a gateway host the guacd drive volume is mounted at /drive; prune old
+	// per-session dirs. No-op elsewhere (directory absent).
+	startDriveCleanup("/drive")
+
 	managerURL := os.Getenv("MANAGER_URL")
 	dataplaneURL := os.Getenv("DATAPLANE_URL")
 	tokenFile := envOr("TOKEN_FILE", "/data/token")

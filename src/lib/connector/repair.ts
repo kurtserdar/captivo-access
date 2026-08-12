@@ -18,10 +18,10 @@ export const GATEWAY_NETWORK = "captivo-gateway";
 function runCommand(managerUrl: string, tunnelUrl: string, code?: string, gatewayHost = false, pull = true): string {
   const guacd = gatewayHost
     ? `docker network inspect ${GATEWAY_NETWORK} >/dev/null 2>&1 || docker network create ${GATEWAY_NETWORK} && ` +
-      `docker run --rm -v captivo_guacd_recordings:/rec -v captivo_guacd_logs:/log busybox chown -R 1000:1000 /rec /log && ` +
+      `docker run --rm -v captivo_guacd_recordings:/rec -v captivo_guacd_logs:/log -v captivo_guacd_drive:/drive2 busybox chown -R 1000:1000 /rec /log /drive2 && ` +
       `docker rm -f captivo-guacd >/dev/null 2>&1; ` +
       `docker run -d --name captivo-guacd --restart unless-stopped --network ${GATEWAY_NETWORK} ` +
-      `-v captivo_guacd_recordings:/recordings -v captivo_guacd_logs:/guaclog ` +
+      `-v captivo_guacd_recordings:/recordings -v captivo_guacd_logs:/guaclog -v captivo_guacd_drive:/drive ` +
       // guacd 1.6.0's entrypoint execs guacd directly and appends "$@" as guacd args,
       // so a `/bin/sh -c '…|tee…'` CMD would be swallowed. Bypass the entrypoint to run
       // our own shell wrapper that tees guacd's output into the shared log volume.
@@ -43,7 +43,7 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, gatewa
     `-e DATAPLANE_URL=${tunnelUrl} ` +
     (code ? `-e PAIR_CODE=${code} ` : "") +
     "-v access_connector_data:/data " +
-    (gatewayHost ? "-v captivo_guacd_logs:/guaclog:ro " : "") +
+    (gatewayHost ? "-v captivo_guacd_logs:/guaclog:ro -v captivo_guacd_drive:/drive:rw " : "") +
     "ghcr.io/kurtserdar/captivo-access-connector:latest"
   );
 }
