@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
+import { TerminateButton } from "@/app/(app)/_console/terminate-button";
 
 export interface LiveRow {
   sessionId: string;
@@ -12,7 +13,7 @@ export interface LiveRow {
   controlled: boolean;
 }
 
-export function LiveTable({ rows }: { rows: LiveRow[] }) {
+export function LiveTable({ rows, canTerminate }: { rows: LiveRow[]; canTerminate: boolean }) {
   if (rows.length === 0) return <div className="empty">No active remote-desktop sessions.</div>;
   return (
     <div className="table-wrap">
@@ -36,7 +37,10 @@ export function LiveTable({ rows }: { rows: LiveRow[] }) {
               <td className="cell-sub"><LocalTime iso={r.startedAt} /></td>
               <td className="cell-sub">{r.viewerCount}{r.controlled ? " · controlled" : ""}</td>
               <td className="row-actions">
-                <Link href={`/live/${r.sessionId}`} className="btn sm">Watch</Link>
+                <span style={{ display: "inline-flex", gap: 8 }}>
+                  <Link href={`/live/${r.sessionId}`} className="btn sm">Watch</Link>
+                  {canTerminate && <TerminateButton sessionId={r.sessionId} className="btn sm danger" />}
+                </span>
               </td>
             </tr>
           ))}

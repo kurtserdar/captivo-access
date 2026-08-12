@@ -603,6 +603,10 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .sc-audit-t { color: var(--faint); flex: 0 0 auto; } .sc-audit-k { flex: 0 0 auto; width: 52px; } .sc-audit-k.ok { color: var(--nav-accent); } .sc-audit-k.deny { color: var(--danger); }
 .sc-audit-m { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-morefoot { padding-top: 6px; }
+.sc-card-actions { display: flex; gap: 8px; }
+.sc-card-actions .sc-watch { flex: 1; }
+.sc-extend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sc-extend-err { font-size: .72rem; color: var(--danger); }
 @media (max-width: 900px) { .sc-kpis { grid-template-columns: repeat(2, 1fr); } .sc-grid { grid-template-columns: 1fr; } }
 
 /* Admin top-nav */

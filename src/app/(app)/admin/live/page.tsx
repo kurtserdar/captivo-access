@@ -40,7 +40,7 @@ export default async function AdminLivePage() {
           <p>Watch in-progress remote-desktop sessions in real time.</p>
         </div>
       </div>
-      <LiveTable rows={rows} />
+      <LiveTable rows={rows} canTerminate={can(user!.role, "configure")} />
     </main>
   );
 }
