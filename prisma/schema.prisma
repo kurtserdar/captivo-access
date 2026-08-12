@@ -447,3 +447,21 @@ model RecordingChunk {
 
   @@index([recordingId, seq])
 }
+
+model AdminAuditEvent {
+  id         String   @id @default(cuid())
+  timestamp  DateTime @default(now())
+  actorId    String?
+  actorEmail String?
+  action     String
+  targetType String?
+  targetId   String?
+  summary    String
+  metadata   Json?
+  clientIp   String?
+  createdAt  DateTime @default(now())
+
+  @@index([timestamp])
+  @@index([action, timestamp])
+  @@index([targetType, targetId])
+}
