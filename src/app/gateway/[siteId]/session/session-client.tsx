@@ -16,6 +16,11 @@ export function GatewaySession({ siteId, recorded, clipboardMode }: { siteId: st
   const guacRef = useRef<any>(null);
   const fsRef = useRef<any>(null);
   const clipRef = useRef<ClipboardBridge | null>(null);
+  const keyboardRef = useRef<any>(null);
+  const keyHandlersRef = useRef<{ kd: (k: number) => void; ku: (k: number) => void } | null>(null);
+  const clipboardOpenRef = useRef(false);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  const [clipboardOpen, setClipboardOpen] = useState(false);
   const [canUpload, setCanUpload] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -24,6 +29,60 @@ export function GatewaySession({ siteId, recorded, clipboardMode }: { siteId: st
     const t = setTimeout(() => setToast(null), 3000);
     return () => clearTimeout(t);
   }, [toast]);
+
+  // While the clipboard panel is open the guac keyboard is suspended so keys go
+  // to the textarea instead of the remote; reset() first releases Ctrl/Alt/Shift
+  // already sent to the remote so no modifier sticks.
+  const suspendKeyboard = () => {
+    const kb = keyboardRef.current;
+    if (!kb) return;
+    kb.reset();
+    kb.onkeydown = null;
+    kb.onkeyup = null;
+  };
+  const resumeKeyboard = () => {
+    const kb = keyboardRef.current, h = keyHandlersRef.current;
+    if (kb && h) { kb.onkeydown = h.kd; kb.onkeyup = h.ku; }
+  };
+  const closeClipboard = () => { clipboardOpenRef.current = false; setClipboardOpen(false); };
+
+  useEffect(() => {
+    if (clipboardOpen) {
+      suspendKeyboard();
+      const ta = taRef.current;
+      if (ta) {
+        ta.value = caps.allowCopyOut ? (clipRef.current?.getRemoteText() ?? "") : "";
+        ta.readOnly = !caps.allowPasteIn;
+        ta.focus();
+        ta.select();
+      }
+    } else {
+      resumeKeyboard();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clipboardOpen]);
+
+  // Guacamole convention: Ctrl+Alt+Shift toggles the clipboard panel. Capture
+  // phase so it preempts the guac keyboard; Esc closes while open.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!clipboardOpenRef.current) {
+        if (e.ctrlKey && e.altKey && e.shiftKey && !e.repeat) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          clipboardOpenRef.current = true;
+          setClipboardOpen(true);
+        }
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        closeClipboard();
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -127,8 +186,12 @@ export function GatewaySession({ siteId, recorded, clipboardMode }: { siteId: st
       client.connect(`site=${encodeURIComponent(siteId)}&w=${vw()}&h=${vh()}&dpi=${dpi}`);
 
       keyboard = new Guacamole.Keyboard(document);
-      keyboard.onkeydown = (k: number) => client.sendKeyEvent(1, k);
-      keyboard.onkeyup = (k: number) => client.sendKeyEvent(0, k);
+      const kd = (k: number) => client.sendKeyEvent(1, k);
+      const ku = (k: number) => client.sendKeyEvent(0, k);
+      keyboard.onkeydown = kd;
+      keyboard.onkeyup = ku;
+      keyboardRef.current = keyboard;
+      keyHandlersRef.current = { kd, ku };
 
       const mouse = new Guacamole.Mouse(el);
       const send = (state: any) => client.sendMouseState(state);
@@ -228,6 +291,41 @@ export function GatewaySession({ siteId, recorded, clipboardMode }: { siteId: st
       )}
       {canUpload && <div className="ft-hint">Drop files to upload</div>}
       {toast && <div className="ft-toast">{toast}</div>}
+      {clipboardOpen && (
+        <div className="clip-overlay" role="dialog" aria-label="Clipboard" aria-modal="true">
+          <div className="clip-panel">
+            <div className="clip-title">Clipboard</div>
+            {(caps.allowCopyOut || caps.allowPasteIn) ? (
+              <>
+                <textarea
+                  ref={taRef}
+                  className="clip-ta"
+                  spellCheck={false}
+                  placeholder={caps.allowPasteIn ? "Paste text here, then Send to push it into the session…" : "Remote clipboard (read-only)"}
+                />
+                <div className="clip-actions">
+                  {caps.allowPasteIn && (
+                    <button
+                      type="button"
+                      className="clip-btn clip-btn-primary"
+                      onClick={() => { clipRef.current?.pushLocal(taRef.current?.value ?? ""); closeClipboard(); }}
+                    >
+                      Send to session
+                    </button>
+                  )}
+                  <button type="button" className="clip-btn" onClick={closeClipboard}>Close</button>
+                </div>
+                <div className="clip-hint">Ctrl+Alt+Shift toggles this panel · Esc closes</div>
+              </>
+            ) : (
+              <>
+                <div className="clip-disabled">Clipboard is disabled for this resource.</div>
+                <div className="clip-actions"><button type="button" className="clip-btn" onClick={closeClipboard}>Close</button></div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
       {error && (
         <div style={{ color: "#fff", padding: "1.25rem", fontFamily: "sans-serif" }}>{error}</div>
       )}
