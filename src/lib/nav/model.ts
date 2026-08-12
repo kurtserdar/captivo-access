@@ -29,6 +29,7 @@ export function buildNavModel(role: Role, counts: { pending: number; unread: num
   }
   if (config) primary.push({ label: "Recordings", href: "/admin/recordings" });
   if (read) primary.push({ label: "Audit", href: "/admin/audit" });
+  if (read) primary.push({ label: "Insights", href: "/admin/insights" });
 
   const groups: NavGroup[] = [];
   if (config) {

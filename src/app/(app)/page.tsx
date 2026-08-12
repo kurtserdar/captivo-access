@@ -4,12 +4,10 @@ import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { managerVersion } from "@/lib/version";
 import { isConnectorOutdated } from "@/lib/updates/semver";
-import { getSetupStatus, getDashboardStats, getSiteHealth, getRecentActivity } from "@/lib/dashboard/stats";
+import { getSetupStatus } from "@/lib/dashboard/stats";
 import { isConsoleUser, ROLE_LABELS } from "@/lib/auth/roles";
-import { getInsights } from "@/lib/dashboard/insights";
-import { DashboardInsights } from "./_dashboard/dashboard-insights";
-import { SiteHealthPanel } from "./_dashboard/site-health-panel";
-import { RecentActivityPanel } from "./_dashboard/recent-activity-panel";
+import { getConsoleData } from "@/lib/console/data";
+import { SecurityConsole } from "./_console/security-console";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Overview" };
@@ -72,11 +70,10 @@ export default async function DashboardPage() {
     );
   }
 
-  const [stats, siteHealth, activity, insights] = await Promise.all([getDashboardStats(), getSiteHealth(), getRecentActivity(), getInsights()]);
-
   const conns = await db.connector.findMany({ where: { status: { not: "REVOKED" } }, select: { version: true } });
   const mgr = managerVersion();
   const outdated = conns.filter((c) => isConnectorOutdated(c.version, mgr)).length;
+  const data = await getConsoleData();
 
   return (
     <main>
@@ -87,11 +84,7 @@ export default async function DashboardPage() {
           <Link href="/admin/connectors">Review →</Link>
         </div>
       )}
-      <DashboardInsights stats={stats} insights={insights} />
-      <div className="dash-cols">
-        <SiteHealthPanel sites={siteHealth} />
-        <RecentActivityPanel events={activity} />
-      </div>
+      <SecurityConsole data={data} />
     </main>
   );
 }
