@@ -4,6 +4,8 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { currentSessionId } from "@/lib/auth/session";
 import { sessionIdsToRevoke } from "@/lib/auth/session-select";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 
 export async function POST(req: NextRequest) {
   const admin = await getCurrentUser();
@@ -17,5 +19,13 @@ export async function POST(req: NextRequest) {
   if (toRevoke.length === 0) return NextResponse.json({ ok: true, revoked: 0 });
 
   const res = await db.session.deleteMany({ where: { id: { in: toRevoke } } });
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "authsession.revoke",
+    targetType: "session",
+    summary: `Revoked ${res.count} auth session${res.count === 1 ? "" : "s"}`,
+    metadata: { revoked: res.count },
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true, revoked: res.count });
 }

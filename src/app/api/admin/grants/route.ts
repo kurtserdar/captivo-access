@@ -6,6 +6,8 @@ import { createGrant, listGrants, revokeGrant } from "@/lib/access/grants";
 import { validateSchedule, type Schedule } from "@/lib/access/schedule";
 import { grantCapError } from "@/lib/access/grant-edit";
 import { resolvedMaxGrantDays } from "@/lib/settings/platform";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 
 function parseDate(value: unknown): { ok: true; value: Date | null } | { ok: false } {
   if (value === undefined || value === null || value === "") return { ok: true, value: null };
@@ -70,6 +72,14 @@ export async function POST(req: NextRequest) {
     schedule,
   });
 
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "grant.create",
+    targetType: "grant", targetId: id,
+    summary: `Created access grant ${id}`,
+    metadata: { userId, siteId },
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ id }, { status: 201 });
 }
 
@@ -101,5 +111,12 @@ export async function DELETE(req: NextRequest) {
   }
 
   await revokeGrant(id);
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "grant.revoke",
+    targetType: "grant", targetId: id,
+    summary: `Revoked access grant ${id}`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }

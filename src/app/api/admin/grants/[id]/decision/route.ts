@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { sendMail } from "@/lib/email/mailer";
 import { accessDecisionEmail } from "@/lib/email/templates";
 import { notifyEmailEnabled } from "@/lib/notifications/gate";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
@@ -23,6 +25,14 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const reason = normalizeDenyReason(body.reason);
   const count = await decideGrant(id, decision, admin.id, reason);
   if (count === 0) return NextResponse.json({ error: "not_pending" }, { status: 409 });
+
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: decision === "approve" ? "grant.approve" : "grant.deny",
+    targetType: "grant", targetId: id,
+    summary: `${decision === "approve" ? "Approved" : "Denied"} access request ${id}`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
 
   if (await notifyEmailEnabled("access_decisions")) {
     try {

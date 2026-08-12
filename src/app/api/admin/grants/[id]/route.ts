@@ -4,6 +4,8 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { grantEndsAtError, grantCapError } from "@/lib/access/grant-edit";
 import { resolvedMaxGrantDays } from "@/lib/settings/platform";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 
 const NOTE_MAX = 500;
 
@@ -42,5 +44,13 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   // (mirrors the repo's deleteMany/updateMany idiom). count 0 ⇒ raced to non-active.
   const res = await db.accessGrant.updateMany({ where: { id, status: "ACTIVE" }, data });
   if (res.count === 0) return NextResponse.json({ error: "not_active" }, { status: 409 });
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "grant.update",
+    targetType: "grant", targetId: id,
+    summary: `Updated access grant ${id}`,
+    metadata: { endsAt: data.endsAt ? data.endsAt.toISOString() : undefined },
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }
