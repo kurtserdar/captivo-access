@@ -35,7 +35,7 @@ export default async function DashboardPage() {
       <main>
         {head}
         <div className="card">
-          <p>Use the sidebar to review access grants and the audit log.</p>
+          <p>Use the navigation above to review access grants and the audit log.</p>
         </div>
       </main>
     );
