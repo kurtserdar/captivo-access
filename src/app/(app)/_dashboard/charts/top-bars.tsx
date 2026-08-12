@@ -5,7 +5,7 @@ import type { RefCount } from "@/lib/dashboard/insights";
 
 const TT = { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "8px", fontSize: "12px", color: "var(--fg)" } as const;
 
-export function TopBars({ items, hrefFor }: { items: RefCount[]; hrefFor: (item: RefCount) => string }) {
+export function TopBars({ items, hrefBase }: { items: RefCount[]; hrefBase: string }) {
   const router = useRouter();
   if (items.length === 0) return <p className="cell-sub">No data yet.</p>;
   return (
@@ -20,7 +20,7 @@ export function TopBars({ items, hrefFor }: { items: RefCount[]; hrefFor: (item:
           radius={[0, 3, 3, 0]}
           cursor="pointer"
           activeBar={{ fill: "var(--accent)", opacity: 0.85 }}
-          onClick={(_, index) => { const it = items[index]; if (it) router.push(hrefFor(it)); }}
+          onClick={(_, index) => { const it = items[index]; if (it) router.push(`${hrefBase}${encodeURIComponent(it.id)}`); }}
         />
       </BarChart>
     </ResponsiveContainer>
