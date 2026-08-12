@@ -72,6 +72,12 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
             if (!disposed) setToast(`Download failed: ${filename}`);
           }
         };
+        // guacd streams downloads on demand: after the "file" instruction it sends
+        // the first blob only once the client acknowledges the stream. The Client
+        // sends no ack when onfile is handled, and BlobReader only acks blobs as
+        // they arrive — so without this initial ack guacd waits forever, no blob or
+        // end ever comes, and onend never fires. This kicks off the transfer.
+        stream.sendAck("OK", 0);
       };
       client.onfilesystem = (object: any) => {
         fsRef.current = object;
