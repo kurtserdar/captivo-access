@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
 import { encrypt } from "@/lib/crypto";
+import type { Prisma } from "@/generated/prisma/client";
 import { validateSiteInput } from "@/lib/site/validate";
 import { parseLogoUpload } from "@/lib/site/logo";
 
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
     await tx.vaultCredential.create({
-      data: { siteId: site.id, protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, secret: encSecret, secretKind: "PASSWORD" },
+      data: { siteId: site.id, protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, secret: encSecret, secretKind: "PASSWORD", guacParams: v.guacParams as Prisma.InputJsonValue },
     });
     return site.id;
   });

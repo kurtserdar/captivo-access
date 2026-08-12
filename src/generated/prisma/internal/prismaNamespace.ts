@@ -2389,6 +2389,7 @@ export const VaultCredentialScalarFieldEnum = {
   username: 'username',
   secret: 'secret',
   secretKind: 'secretKind',
+  guacParams: 'guacParams',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2587,6 +2588,7 @@ export const PlatformSettingsScalarFieldEnum = {
   notifySiteHealth: 'notifySiteHealth',
   notifyAccessRequests: 'notifyAccessRequests',
   notifyAccessDecisions: 'notifyAccessDecisions',
+  guacParamDefaults: 'guacParamDefaults',
   updatedAt: 'updatedAt'
 } as const
 
@@ -2844,20 +2846,6 @@ export type ListEnumVaultSecretKindFieldRefInput<$PrismaModel> = FieldRefInputTy
 
 
 /**
- * Reference to a field of type 'GrantStatus'
- */
-export type EnumGrantStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GrantStatus'>
-    
-
-
-/**
- * Reference to a field of type 'GrantStatus[]'
- */
-export type ListEnumGrantStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GrantStatus[]'>
-    
-
-
-/**
  * Reference to a field of type 'Json'
  */
 export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -2868,6 +2856,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'GrantStatus'
+ */
+export type EnumGrantStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GrantStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'GrantStatus[]'
+ */
+export type ListEnumGrantStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GrantStatus[]'>
     
 
 

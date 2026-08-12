@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { vaultEnabled } from "@/lib/vault/enabled";
 import { setVaultCredential, clearVaultCredential } from "@/lib/vault/store";
+import { parseGuacParams } from "@/lib/gateway/guac-params";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!targetHost || !Number.isInteger(port) || port < 1 || port > 65535 || !username || !secret) {
     return NextResponse.json({ error: "invalid_fields" }, { status: 400 });
   }
-  await setVaultCredential({ siteId: id, protocol, targetHost, targetPort: port, username, secret, secretKind });
+  await setVaultCredential({ siteId: id, protocol, targetHost, targetPort: port, username, secret, secretKind, guacParams: parseGuacParams(b.guacParams) });
   return NextResponse.json({ ok: true });
 }
 

@@ -1,6 +1,8 @@
+import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/crypto";
 import type { VaultProtocol, VaultSecretKind } from "@/generated/prisma/enums";
+import { parseGuacParams, type GuacParams } from "@/lib/gateway/guac-params";
 
 export type VaultInput = {
   siteId: string;
@@ -10,6 +12,7 @@ export type VaultInput = {
   username: string;
   secret: string; // plaintext in; encrypted at rest
   secretKind: VaultSecretKind;
+  guacParams?: GuacParams;
 };
 
 export async function setVaultCredential(input: VaultInput): Promise<void> {
@@ -20,6 +23,7 @@ export async function setVaultCredential(input: VaultInput): Promise<void> {
     username: input.username.trim(),
     secret: encrypt(input.secret),
     secretKind: input.secretKind,
+    guacParams: parseGuacParams(input.guacParams ?? {}) as Prisma.InputJsonValue,
   };
   await db.vaultCredential.upsert({
     where: { siteId: input.siteId },
@@ -39,6 +43,7 @@ export async function getVaultCredential(siteId: string) {
     username: c.username,
     secret: decrypt(c.secret),
     secretKind: c.secretKind,
+    guacParams: c.guacParams,
   };
 }
 
@@ -50,7 +55,7 @@ export async function hasVaultCredential(siteId: string): Promise<boolean> {
 export async function getVaultCredentialMeta(siteId: string) {
   const c = await db.vaultCredential.findUnique({
     where: { siteId },
-    select: { protocol: true, targetHost: true, targetPort: true, username: true },
+    select: { protocol: true, targetHost: true, targetPort: true, username: true, guacParams: true },
   });
   return c ? { ...c, hasSecret: true as const } : null;
 }

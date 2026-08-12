@@ -152,7 +152,7 @@ model Site {
   probeDetail        String?
   probeLatencyMs     Int?
   recordSessions     Boolean       @default(false)
-  clipboardMode      String        @default("allow") // allow | no_copy | no_paste | none (transparent only)
+  clipboardMode      String        @default("allow") // allow | no_copy | no_paste | none (web via proxy; gateway via guacd disable-copy/disable-paste)
   accessMode         SiteAccessMode @default(TRANSPARENT)
   logo               Bytes?
   logoType           String?
@@ -185,6 +185,7 @@ model VaultCredential {
   username   String
   secret     String // AES-256-GCM ciphertext (password OR private key)
   secretKind VaultSecretKind @default(PASSWORD)
+  guacParams Json? // curated per-resource Guacamole connection params (validated allowlist)
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
 }
@@ -397,6 +398,7 @@ model PlatformSettings {
   notifySiteHealth      Boolean? // email admins on site up/down; null = default on
   notifyAccessRequests  Boolean? // email admins on new access requests; null = default on
   notifyAccessDecisions Boolean? // email the vendor on approve/deny; null = default on
+  guacParamDefaults     Json? // global default Guacamole connection params (validated allowlist)
   updatedAt              DateTime @updatedAt
 }
 

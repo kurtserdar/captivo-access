@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
 import { encrypt } from "@/lib/crypto";
+import type { Prisma } from "@/generated/prisma/client";
 import { validateSiteInput } from "@/lib/site/validate";
 import { parseLogoUpload } from "@/lib/site/logo";
 
@@ -52,8 +53,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     await tx.site.update({ where: { id }, data: { connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: null, description: v.description, recordSessions: v.recordSessions, accessMode: "GATEWAY", ...logoData } });
     await tx.vaultCredential.upsert({
       where: { siteId: id },
-      create: { siteId: id, protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, secret: encrypt(v.secret ?? ""), secretKind: "PASSWORD" },
-      update: { protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, ...secretUpdate },
+      create: { siteId: id, protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, secret: encrypt(v.secret ?? ""), secretKind: "PASSWORD", guacParams: v.guacParams as Prisma.InputJsonValue },
+      update: { protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, ...secretUpdate, guacParams: v.guacParams as Prisma.InputJsonValue },
     });
   });
   return NextResponse.json({ ok: true });

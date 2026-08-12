@@ -227,6 +227,7 @@ export const VaultCredentialScalarFieldEnum = {
   username: 'username',
   secret: 'secret',
   secretKind: 'secretKind',
+  guacParams: 'guacParams',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -425,6 +426,7 @@ export const PlatformSettingsScalarFieldEnum = {
   notifySiteHealth: 'notifySiteHealth',
   notifyAccessRequests: 'notifyAccessRequests',
   notifyAccessDecisions: 'notifyAccessDecisions',
+  guacParamDefaults: 'guacParamDefaults',
   updatedAt: 'updatedAt'
 } as const
 

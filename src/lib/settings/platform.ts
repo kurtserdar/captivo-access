@@ -1,4 +1,6 @@
+import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
+import { parseGuacParams, type GuacParams } from "@/lib/gateway/guac-params";
 
 // Tenant-wide operational settings, editable from /admin/policy. Each was
 // previously env-only; the resolvers below read the DB value first, fall back
@@ -75,6 +77,27 @@ export async function savePlatformSettings(input: PlatformSettings): Promise<voi
     where: { id: ID },
     create: { id: ID, ...input },
     update: { ...input },
+  });
+  cache = null;
+}
+
+// Global default Guacamole connection params (curated allowlist). Kept out of the
+// generic PlatformSettings interface/save to avoid Prisma Json-null friction.
+export async function resolvedGuacParamDefaults(): Promise<GuacParams> {
+  try {
+    const c = await db.platformSettings.findUnique({ where: { id: ID }, select: { guacParamDefaults: true } });
+    return parseGuacParams(c?.guacParamDefaults);
+  } catch {
+    return {};
+  }
+}
+
+export async function saveGuacParamDefaults(p: GuacParams): Promise<void> {
+  const value = parseGuacParams(p) as Prisma.InputJsonValue;
+  await db.platformSettings.upsert({
+    where: { id: ID },
+    create: { id: ID, guacParamDefaults: value },
+    update: { guacParamDefaults: value },
   });
   cache = null;
 }

@@ -1,3 +1,5 @@
+import { parseGuacParams, type GuacParams } from "@/lib/gateway/guac-params";
+
 const CLIP = ["allow", "no_copy", "no_paste", "none"];
 const PROTOCOLS = ["RDP", "SSH", "VNC"] as const;
 
@@ -26,6 +28,7 @@ export type SiteValidation =
       username: string;
       secret: string | null;
       recordSessions: boolean;
+      guacParams: GuacParams;
     }
   | { ok: false; error: string };
 
@@ -68,6 +71,7 @@ export function validateSiteInput(
       username,
       secret: secret || null,
       recordSessions: opts.recordingEnabled && body.recordSessions === true,
+      guacParams: parseGuacParams(body.guacParams),
     };
   }
 
