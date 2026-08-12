@@ -31,5 +31,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ siteId:
   } catch (err) {
     console.error("[gateway/consent] audit append failed:", err);
   }
-  return NextResponse.json({ ok: true });
+
+  // Remember the acknowledgement like web sessions do: a session-scoped (no expiry
+  // → cleared on browser close → fresh consent each browser session), per-site,
+  // HttpOnly cookie that the session page reads to skip re-prompting.
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set({
+    name: `ca_rec_consent_${siteId}`,
+    value: "1",
+    path: "/",
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+  });
+  return res;
 }

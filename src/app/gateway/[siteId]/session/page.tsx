@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
@@ -22,6 +23,9 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
     notFound();
   }
   const recorded = recordingEnabled() && site.recordSessions;
-  const consentNeeded = site.recordSessions && (await resolvedRecordingConsentRequired());
+  // Ask for recording consent once per browser session (matches web sessions):
+  // skip the gate if the vendor already acknowledged this resource this session.
+  const alreadyConsented = (await cookies()).get(`ca_rec_consent_${siteId}`)?.value === "1";
+  const consentNeeded = site.recordSessions && !alreadyConsented && (await resolvedRecordingConsentRequired());
   return consentNeeded ? <ConsentGate siteId={siteId} recorded={recorded} /> : <GatewaySession siteId={siteId} recorded={recorded} />;
 }
