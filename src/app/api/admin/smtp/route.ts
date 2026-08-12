@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
@@ -30,5 +32,11 @@ export async function POST(req: NextRequest) {
 
   const data = { host, port, secure, username, password: encPassword, fromName, fromEmail, enabled };
   await db.smtpConfig.upsert({ where: { id: "singleton" }, create: { id: "singleton", ...data }, update: data });
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "config.smtp_update",
+    summary: "Updated SMTP settings",
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { savePlatformSettings, saveGuacParamDefaults } from "@/lib/settings/platform";
 import { parseGuacParams } from "@/lib/gateway/guac-params";
@@ -72,5 +74,11 @@ export async function POST(req: NextRequest) {
     notifyAccessDecisions: body.notifyAccessDecisions !== false,
   });
   await saveGuacParamDefaults(parseGuacParams(body.guacParamDefaults));
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "config.platform_update",
+    summary: "Updated platform settings",
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { saveDirectoryConfig, type DirectorySecurity } from "@/lib/directory/config";
 
@@ -27,6 +29,12 @@ export async function POST(req: NextRequest) {
     baseDN: typeof body.baseDN === "string" ? body.baseDN : "",
     bindDN: typeof body.bindDN === "string" ? body.bindDN : "",
     bindPassword: typeof body.bindPassword === "string" ? body.bindPassword : undefined,
+  });
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "config.directory_update",
+    summary: "Updated directory settings",
+    clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
 }

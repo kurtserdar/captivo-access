@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { saveSessionPolicy } from "@/lib/policy/session-policy";
 
@@ -20,6 +22,12 @@ export async function POST(req: NextRequest) {
     idleTimeoutMinutes: toInt(body.idleTimeoutMinutes),
     maxSessionHours: toInt(body.maxSessionHours),
     maxConcurrentPerUser: toInt(body.maxConcurrentPerUser),
+  });
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "config.session_policy_update",
+    summary: "Updated session policy",
+    clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
 }
