@@ -11,6 +11,7 @@ export interface SiteRow {
   name: string;
   hostname: string;
   upstreamUrl: string | null;
+  gatewayTarget: string | null;
   description: string | null;
   accessMode: "TRANSPARENT" | "GATEWAY";
   hasLogo: boolean;
@@ -121,10 +122,10 @@ export function SitesView({
               </div>
               <div className="site-card-meta">
                 <div className="site-card-mrow"><span className="site-card-k">Connector</span><span className="site-card-v">{s.connectorName}</span></div>
-                {s.upstreamUrl && (
+                {(s.upstreamUrl ?? s.gatewayTarget) && (
                   <div className="site-card-mrow">
                     <span className="site-card-k">Internal</span>
-                    <span className="site-card-v cell-inline"><span className="cell-truncate" title={s.upstreamUrl}>{s.upstreamUrl}</span><CopyButton value={s.upstreamUrl} label="Copy" /></span>
+                    <span className="site-card-v cell-inline"><span className="cell-truncate" title={(s.upstreamUrl ?? s.gatewayTarget)!}>{s.upstreamUrl ?? s.gatewayTarget}</span><CopyButton value={(s.upstreamUrl ?? s.gatewayTarget)!} label="Copy" /></span>
                   </div>
                 )}
                 <div className="site-card-mrow"><span className="site-card-k">Health</span><span className="site-card-v"><HealthPill s={s} /></span></div>
@@ -155,7 +156,7 @@ export function SitesView({
                   </td>
                   <td>{s.connectorName}</td>
                   <td className="cell-sub">
-                    {s.upstreamUrl && (<span className="cell-inline"><span className="cell-truncate" title={s.upstreamUrl}>{s.upstreamUrl}</span><CopyButton value={s.upstreamUrl} label="Copy" /></span>)}
+                    {(s.upstreamUrl ?? s.gatewayTarget) ? (<span className="cell-inline"><span className="cell-truncate" title={(s.upstreamUrl ?? s.gatewayTarget)!}>{s.upstreamUrl ?? s.gatewayTarget}</span><CopyButton value={(s.upstreamUrl ?? s.gatewayTarget)!} label="Copy" /></span>) : "—"}
                   </td>
                   <td className="cell-sub">{s.description ?? "—"}</td>
                   <td><HealthPill s={s} /></td>

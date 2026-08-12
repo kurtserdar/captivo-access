@@ -537,3 +537,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .heatmap-wrap { position: relative; }
 .heatmap-cell.hot { outline: 1.5px solid var(--fg); outline-offset: -1px; }
 .heat-tip { position: absolute; transform: translate(-50%, -130%); pointer-events: none; white-space: nowrap; background: var(--surface); border: 1px solid var(--line); color: var(--fg); font-size: .72rem; padding: 3px 7px; border-radius: 6px; box-shadow: var(--shadow); z-index: 5; }
+
+/* Web (rrweb) recording replay — keep the player inside its card */
+.web-recording { max-width: 100%; overflow: hidden; }
+.web-recording .rr-player { max-width: 100%; }

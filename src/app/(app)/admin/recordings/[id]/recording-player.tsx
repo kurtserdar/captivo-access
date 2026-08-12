@@ -24,9 +24,10 @@ export function RecordingPlayer({ id }: { id: string }) {
         const { default: Player } = await import("rrweb-player");
         await import("rrweb-player/dist/style.css");
         ref.current.innerHTML = "";
+        const width = Math.max(320, Math.min(ref.current.clientWidth || 960, 1400));
         const p = new Player({
           target: ref.current,
-          props: { events: events as unknown as eventWithTime[], autoPlay: true, showController: true },
+          props: { events: events as unknown as eventWithTime[], autoPlay: true, showController: true, width, height: Math.round(width * 0.6) },
         });
         playerRef.current = p as unknown as { $destroy?: () => void };
       } catch {
@@ -44,5 +45,5 @@ export function RecordingPlayer({ id }: { id: string }) {
   if (empty) return <p className="notice">This recording is too short to play.</p>;
   if (incomplete)
     return <p className="notice">This recording is incomplete and can&apos;t be replayed (its opening snapshot was not captured).</p>;
-  return <div ref={ref} />;
+  return <div ref={ref} className="web-recording" />;
 }
