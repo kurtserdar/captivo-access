@@ -66,14 +66,16 @@ export function GatewaySession({ siteId, recorded, clipboardMode }: { siteId: st
   // phase so it preempts the guac keyboard; Esc closes while open.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!clipboardOpenRef.current) {
-        if (e.ctrlKey && e.altKey && e.shiftKey && !e.repeat) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
+      if (e.ctrlKey && e.altKey && e.shiftKey && !e.repeat) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (clipboardOpenRef.current) {
+          closeClipboard();
+        } else {
           clipboardOpenRef.current = true;
           setClipboardOpen(true);
         }
-      } else if (e.key === "Escape") {
+      } else if (clipboardOpenRef.current && e.key === "Escape") {
         e.preventDefault();
         e.stopImmediatePropagation();
         closeClipboard();
