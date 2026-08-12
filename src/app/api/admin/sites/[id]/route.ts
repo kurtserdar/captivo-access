@@ -8,6 +8,8 @@ import { encrypt } from "@/lib/crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { validateSiteInput } from "@/lib/site/validate";
 import { parseLogoUpload } from "@/lib/site/logo";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
@@ -41,6 +43,12 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       }
       throw e;
     }
+    await recordAdminAction({
+      actor: { id: admin.id, email: admin.email },
+      action: "resource.update", targetType: "resource", targetId: id,
+      summary: `Updated resource "${v.name}"`,
+      clientIp: clientIp(req.headers) ?? null,
+    });
     return NextResponse.json({ ok: true });
   }
 
@@ -57,10 +65,16 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       update: { protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, ...secretUpdate, guacParams: v.guacParams as Prisma.InputJsonValue },
     });
   });
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "resource.update", targetType: "resource", targetId: id,
+    summary: `Updated resource "${v.name}"`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -68,5 +82,11 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
   const existing = await db.site.findUnique({ where: { id }, select: { id: true } });
   if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
   await db.site.delete({ where: { id } }); // cascades the Site's AccessGrant rows
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "resource.delete", targetType: "resource", targetId: id,
+    summary: `Deleted resource ${id}`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }

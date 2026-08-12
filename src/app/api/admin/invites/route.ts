@@ -8,6 +8,8 @@ import { managerBaseUrl } from "@/lib/url";
 import { getSmtpConfig, sendMail } from "@/lib/email/mailer";
 import { inviteEmail } from "@/lib/email/templates";
 import type { Role } from "@/generated/prisma/enums";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 
 export async function POST(req: NextRequest) {
   const admin = await getCurrentUser();
@@ -65,5 +67,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "invite.create",
+    targetType: "invite",
+    summary: `Created invite for ${email}`,
+    metadata: { email, role },
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ link, emailed: sendEmail ? emailed : null });
 }

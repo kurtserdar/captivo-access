@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can, ASSIGNABLE_ROLES } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { UserStatus } from "@/generated/prisma/enums";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 
 const VALID_STATUSES: string[] = Object.values(UserStatus);
 
@@ -59,10 +61,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   await db.user.update({ where: { id }, data: updateData });
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "user.update",
+    targetType: "user", targetId: id,
+    summary: `Updated user ${id}`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -78,5 +87,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   // approver attribution on other users' invites/grants; AuditEvent +
   // SessionRecording (no relation) are untouched.
   await db.user.delete({ where: { id } });
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "user.delete",
+    targetType: "user", targetId: id,
+    summary: `Deleted user ${id}`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }

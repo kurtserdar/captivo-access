@@ -6,6 +6,8 @@ import { createPairing } from "@/lib/connector/enrollment";
 import { kickConnector } from "@/lib/connector/dataplane";
 import { managerBaseUrl, connectorTunnelUrl, isLocalManagerUrl } from "@/lib/url";
 import { buildInstallCommand } from "@/lib/connector/repair";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 
 export async function POST(req: NextRequest) {
   const admin = await getCurrentUser();
@@ -30,6 +32,14 @@ export async function POST(req: NextRequest) {
   // when the admin browses via an SSH tunnel) won't be reachable from it.
   const managerUrlIsLocal = isLocalManagerUrl(managerUrl);
 
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "connector.create",
+    targetType: "connector",
+    summary: `Created connector "${name}"`,
+    metadata: { gateway },
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ code, installCommand, managerUrlIsLocal });
 }
 
@@ -71,5 +81,12 @@ export async function DELETE(req: NextRequest) {
 
   await db.connector.update({ where: { id }, data: { status: "REVOKED" } });
   await kickConnector(id);
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "connector.revoke",
+    targetType: "connector", targetId: id,
+    summary: `Revoked connector ${id}`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }

@@ -8,6 +8,8 @@ import { encrypt } from "@/lib/crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { validateSiteInput } from "@/lib/site/validate";
 import { parseLogoUpload } from "@/lib/site/logo";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 
 export async function POST(req: NextRequest) {
   const admin = await getCurrentUser();
@@ -41,6 +43,13 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true },
     });
+    await recordAdminAction({
+      actor: { id: admin.id, email: admin.email },
+      action: "resource.create",
+      targetType: "resource", targetId: site.id,
+      summary: `Created resource "${v.name}"`,
+      clientIp: clientIp(req.headers) ?? null,
+    });
     return NextResponse.json({ id: site.id });
   }
 
@@ -55,6 +64,13 @@ export async function POST(req: NextRequest) {
       data: { siteId: site.id, protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, secret: encSecret, secretKind: "PASSWORD", guacParams: v.guacParams as Prisma.InputJsonValue },
     });
     return site.id;
+  });
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "resource.create",
+    targetType: "resource", targetId: id,
+    summary: `Created resource "${v.name}"`,
+    clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ id });
 }

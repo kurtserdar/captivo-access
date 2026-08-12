@@ -4,6 +4,8 @@ import { can } from "@/lib/auth/roles";
 import { vaultEnabled } from "@/lib/vault/enabled";
 import { setVaultCredential, clearVaultCredential } from "@/lib/vault/store";
 import { parseGuacParams } from "@/lib/gateway/guac-params";
+import { recordAdminAction } from "@/lib/audit/admin";
+import { clientIp } from "@/lib/request-ip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,14 +34,26 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "invalid_fields" }, { status: 400 });
   }
   await setVaultCredential({ siteId: id, protocol, targetHost, targetPort: port, username, secret, secretKind, guacParams: parseGuacParams(b.guacParams) });
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "resource.vault_update", targetType: "resource", targetId: id,
+    summary: `Updated vault credential for resource ${id}`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const { id } = await params;
   await clearVaultCredential(id);
+  await recordAdminAction({
+    actor: { id: admin.id, email: admin.email },
+    action: "resource.vault_update", targetType: "resource", targetId: id,
+    summary: `Cleared vault credential for resource ${id}`,
+    clientIp: clientIp(req.headers) ?? null,
+  });
   return NextResponse.json({ ok: true });
 }
