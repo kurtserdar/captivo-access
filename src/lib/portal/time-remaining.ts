@@ -15,7 +15,9 @@ function humanize(ms: number): string {
   return `${m}m left`;
 }
 
-export function remaining(startISO: string | null, endISO: string | null, schedule: string | null, now: Date): Remaining {
+// `schedule` is only used as a "has a recurring schedule?" flag, so it accepts
+// any truthy value (the grant's schedule is stored as JSON).
+export function remaining(startISO: string | null, endISO: string | null, schedule: unknown, now: Date): Remaining {
   if (!endISO) {
     if (schedule) return { text: "Scheduled window", pct: 0, tone: "schedule" };
     return { text: "Permanent", pct: 0, tone: "ok" };
