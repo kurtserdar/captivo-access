@@ -10,6 +10,30 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
   const [error, setError] = useState<string | null>(null);
   const [watching, setWatching] = useState(false);
   const [controlHeld, setControlHeld] = useState(false);
+  const guacRef = useRef<any>(null);
+  const fsRef = useRef<any>(null);
+  const [canUpload, setCanUpload] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const fs = fsRef.current, G = guacRef.current;
+    if (!fs || !G || !e.dataTransfer?.files?.length) return;
+    for (const file of Array.from(e.dataTransfer.files)) {
+      const stream = fs.createOutputStream(file.type || "application/octet-stream", "/" + file.name);
+      const writer = new G.BlobWriter(stream);
+      setToast(`Uploading ${file.name}…`);
+      writer.oncomplete = () => setToast(`Uploaded ${file.name}`);
+      writer.onerror = () => setToast(`Upload failed: ${file.name}`);
+      writer.sendBlob(file);
+    }
+  };
 
   useEffect(() => {
     let client: any;
@@ -27,6 +51,23 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
       const fail = () => setError("The session ended or could not start.");
       tunnel.onerror = fail;
       client.onerror = fail;
+
+      guacRef.current = Guacamole;
+      client.onfile = (stream: any, mimetype: string, filename: string) => {
+        const reader = new Guacamole.BlobReader(stream, mimetype);
+        reader.onend = () => {
+          const url = URL.createObjectURL(reader.getBlob());
+          const a = document.createElement("a");
+          a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          if (!disposed) setToast(`Downloaded ${filename}`);
+        };
+      };
+      client.onfilesystem = (object: any) => {
+        fsRef.current = object;
+        if (!disposed) setCanUpload(true);
+      };
 
       const display = client.getDisplay();
       const el = display.getElement();
@@ -115,7 +156,7 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
   }, [siteId]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#000", overflow: "hidden", cursor: "none" }}>
+    <div style={{ position: "fixed", inset: 0, background: "#000", overflow: "hidden", cursor: "none" }} onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
       {/* Dedicated display target: the guac client clears this via innerHTML, so the
           overlays below must NOT live inside it (they'd be wiped on connect). */}
       <div ref={ref} style={{ position: "absolute", inset: 0 }} />
@@ -145,6 +186,8 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
           {controlHeld ? "An administrator has taken control of this session." : "This session is being monitored live."}
         </div>
       )}
+      {canUpload && <div className="ft-hint">Drop files to upload</div>}
+      {toast && <div className="ft-toast">{toast}</div>}
       {error && (
         <div style={{ color: "#fff", padding: "1.25rem", fontFamily: "sans-serif" }}>{error}</div>
       )}

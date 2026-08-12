@@ -547,3 +547,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 @media (max-width: 560px) { .guac-fields { grid-template-columns: 1fr; } }
 .guac-advanced { margin: .4rem 0 1rem; border: 1px solid var(--line); border-radius: var(--radius); padding: .3rem .8rem; }
 .guac-advanced summary { cursor: pointer; font-weight: 600; font-size: .9rem; padding: .5rem 0; }
+
+/* Gateway file transfer */
+.ft-hint { position: fixed; left: 12px; bottom: 12px; z-index: 20; pointer-events: none; background: rgba(0,0,0,0.6); color: #cdd7e6; font: 500 12px/1 sans-serif; padding: 6px 10px; border-radius: 6px; }
+.ft-toast { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 21; pointer-events: none; background: rgba(0,0,0,0.8); color: #fff; font: 500 13px/1 sans-serif; padding: 8px 14px; border-radius: 8px; white-space: nowrap; }
