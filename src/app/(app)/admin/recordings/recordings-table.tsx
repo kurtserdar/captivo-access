@@ -159,7 +159,7 @@ export function RecordingsTable({
           />
         </div>
         <div className="field">
-          <label className="field-label" htmlFor="rec-filter-site">Site</label>
+          <label className="field-label" htmlFor="rec-filter-site">Resource</label>
           <select id="rec-filter-site" className="select" value={filters.siteId} onChange={(e) => updateFilter("siteId", e.target.value)}>
             <option value="">All resources</option>
             {sites.map((s) => (

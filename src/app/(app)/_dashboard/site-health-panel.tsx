@@ -8,7 +8,7 @@ export function SiteHealthPanel({ sites }: { sites: SiteHealthRow[] }) {
     <div className="card">
       <div className="card-head">
         <h2>Resource health</h2>
-        <Link className="link-button" href="/admin/sites">All sites</Link>
+        <Link className="link-button" href="/admin/sites">All resources</Link>
       </div>
       {sites.length === 0 ? (
         <div className="empty">No resources yet.</div>

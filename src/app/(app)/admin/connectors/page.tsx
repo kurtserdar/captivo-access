@@ -106,7 +106,7 @@ export default async function AdminConnectorsPage() {
                       ) : c._count.sites === 0 ? (
                         <DeleteConnectorButton id={c.id} name={c.name} />
                       ) : (
-                        <span className="cell-sub">Revoked · remove its {c._count.sites} site{c._count.sites === 1 ? "" : "s"} under Sites to delete this connector</span>
+                        <span className="cell-sub">Revoked · remove its {c._count.sites} resource{c._count.sites === 1 ? "" : "s"} under Resources to delete this connector</span>
                       )}
                     </td>
                   </tr>

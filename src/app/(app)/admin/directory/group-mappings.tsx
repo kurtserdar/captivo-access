@@ -121,7 +121,7 @@ export function GroupMappings({ mappings, sites }: { mappings: GroupMappingRow[]
           </div>
         ) : (
           <div className="field">
-            <label className="field-label" htmlFor="gm-site">Site</label>
+            <label className="field-label" htmlFor="gm-site">Resource</label>
             <select id="gm-site" className="select" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
               {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
