@@ -115,10 +115,10 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
   }, [siteId]);
 
   return (
-    <div
-      ref={ref}
-      style={{ position: "fixed", inset: 0, background: "#000", overflow: "hidden", cursor: "none" }}
-    >
+    <div style={{ position: "fixed", inset: 0, background: "#000", overflow: "hidden", cursor: "none" }}>
+      {/* Dedicated display target: the guac client clears this via innerHTML, so the
+          overlays below must NOT live inside it (they'd be wiped on connect). */}
+      <div ref={ref} style={{ position: "absolute", inset: 0 }} />
       {recorded && (
         <div
           style={{
