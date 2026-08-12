@@ -10,10 +10,14 @@ export interface GuacFields {
   enableTheming: string;
   enableFontSmoothing: string;
   enableFullWindowDrag: string;
+  fileTransfer: string;
+  blockUpload: string;
+  blockDownload: string;
 }
 
 export const EMPTY_GUAC_FIELDS: GuacFields = {
   serverLayout: "", colorDepth: "", enableWallpaper: "", enableTheming: "", enableFontSmoothing: "", enableFullWindowDrag: "",
+  fileTransfer: "", blockUpload: "", blockDownload: "",
 };
 
 const TOGGLES: { key: keyof GuacFields; label: string }[] = [
@@ -32,6 +36,9 @@ export function paramsToGuacFields(p: GuacParams): GuacFields {
     enableTheming: tri(p.enableTheming),
     enableFontSmoothing: tri(p.enableFontSmoothing),
     enableFullWindowDrag: tri(p.enableFullWindowDrag),
+    fileTransfer: tri(p.enableFileTransfer),
+    blockUpload: tri(p.blockUpload),
+    blockDownload: tri(p.blockDownload),
   };
 }
 
@@ -43,6 +50,13 @@ export function guacFieldsToParams(f: GuacFields): GuacParams {
     if (f[key] === "on") (p as Record<string, unknown>)[key] = true;
     else if (f[key] === "off") (p as Record<string, unknown>)[key] = false;
   }
+  const triToBool = (v: string, k: "enableFileTransfer" | "blockUpload" | "blockDownload") => {
+    if (v === "on") (p as Record<string, unknown>)[k] = true;
+    else if (v === "off") (p as Record<string, unknown>)[k] = false;
+  };
+  triToBool(f.fileTransfer, "enableFileTransfer");
+  triToBool(f.blockUpload, "blockUpload");
+  triToBool(f.blockDownload, "blockDownload");
   return p;
 }
 
@@ -52,7 +66,7 @@ export function GuacParamsFields({ value, onChange, protocol }: { value: GuacFie
   const showLayout = !protocol || protocol === "RDP";
   const showDepth = !protocol || protocol === "RDP" || protocol === "VNC";
   const showPerf = !protocol || protocol === "RDP";
-  if (protocol === "SSH") return <p className="cell-sub">No display parameters for SSH. Clipboard is controlled above.</p>;
+  const showFt = !protocol || protocol === "RDP" || protocol === "SSH";
   return (
     <div className="guac-fields">
       {showLayout && (
@@ -81,6 +95,27 @@ export function GuacParamsFields({ value, onChange, protocol }: { value: GuacFie
           </select>
         </label>
       ))}
+      {showFt && (
+        <label className="field"><span className="field-label">File transfer</span>
+          <select className="select" value={value.fileTransfer} onChange={(e) => set("fileTransfer", e.target.value)}>
+            <option value="">Default</option><option value="on">On</option><option value="off">Off</option>
+          </select>
+        </label>
+      )}
+      {showFt && value.fileTransfer !== "off" && (
+        <label className="field"><span className="field-label">Block upload</span>
+          <select className="select" value={value.blockUpload} onChange={(e) => set("blockUpload", e.target.value)}>
+            <option value="">Default</option><option value="on">On</option><option value="off">Off</option>
+          </select>
+        </label>
+      )}
+      {showFt && value.fileTransfer !== "off" && (
+        <label className="field"><span className="field-label">Block download</span>
+          <select className="select" value={value.blockDownload} onChange={(e) => set("blockDownload", e.target.value)}>
+            <option value="">Default</option><option value="on">On</option><option value="off">Off</option>
+          </select>
+        </label>
+      )}
     </div>
   );
 }
