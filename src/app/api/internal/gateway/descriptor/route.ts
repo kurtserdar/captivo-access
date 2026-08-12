@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   if (!cred) return NextResponse.json({ error: "no_credential" }, { status: 404 });
 
   const resolved = resolveGuacParams(parseGuacParams(cred.guacParams), await resolvedGuacParamDefaults());
-  const params = toGuacArgs(resolved, site.clipboardMode);
+  const params = toGuacArgs(resolved, site.clipboardMode, cred.protocol as "RDP" | "SSH" | "VNC");
 
   return NextResponse.json({
     protocol: cred.protocol.toLowerCase(),

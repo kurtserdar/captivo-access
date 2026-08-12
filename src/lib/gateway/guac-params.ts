@@ -5,6 +5,9 @@ export interface GuacParams {
   enableTheming?: boolean;
   enableFontSmoothing?: boolean;
   enableFullWindowDrag?: boolean;
+  enableFileTransfer?: boolean;
+  blockUpload?: boolean;
+  blockDownload?: boolean;
 }
 
 export const KEYBOARD_LAYOUTS: { value: string; label: string }[] = [
@@ -29,7 +32,7 @@ export const KEYBOARD_LAYOUTS: { value: string; label: string }[] = [
 
 const LAYOUTS = new Set(KEYBOARD_LAYOUTS.map((l) => l.value).filter(Boolean));
 const DEPTHS = new Set([8, 16, 24]);
-const BOOL_KEYS = ["enableWallpaper", "enableTheming", "enableFontSmoothing", "enableFullWindowDrag"] as const;
+const BOOL_KEYS = ["enableWallpaper", "enableTheming", "enableFontSmoothing", "enableFullWindowDrag", "enableFileTransfer", "blockUpload", "blockDownload"] as const;
 
 // Coerce untrusted JSON into GuacParams, keeping ONLY curated keys with valid values.
 export function parseGuacParams(input: unknown): GuacParams {
@@ -51,11 +54,14 @@ export function resolveGuacParams(resource: GuacParams, policy: GuacParams): Gua
     enableTheming: resource.enableTheming ?? policy.enableTheming,
     enableFontSmoothing: resource.enableFontSmoothing ?? policy.enableFontSmoothing,
     enableFullWindowDrag: resource.enableFullWindowDrag ?? policy.enableFullWindowDrag,
+    enableFileTransfer: resource.enableFileTransfer ?? policy.enableFileTransfer,
+    blockUpload: resource.blockUpload ?? policy.blockUpload,
+    blockDownload: resource.blockDownload ?? policy.blockDownload,
   };
 }
 
 // Map resolved params + clipboardMode → guacd arg-name→value (only set/true fields).
-export function toGuacArgs(p: GuacParams, clipboardMode: string): Record<string, string> {
+export function toGuacArgs(p: GuacParams, clipboardMode: string, protocol: "RDP" | "SSH" | "VNC"): Record<string, string> {
   const a: Record<string, string> = {};
   if (p.serverLayout) a["server-layout"] = p.serverLayout;
   if (p.colorDepth) a["color-depth"] = String(p.colorDepth);
@@ -65,5 +71,18 @@ export function toGuacArgs(p: GuacParams, clipboardMode: string): Record<string,
   if (p.enableFullWindowDrag) a["enable-full-window-drag"] = "true";
   if (clipboardMode === "no_copy" || clipboardMode === "none") a["disable-copy"] = "true";
   if (clipboardMode === "no_paste" || clipboardMode === "none") a["disable-paste"] = "true";
+  if (p.enableFileTransfer) {
+    if (protocol === "RDP") {
+      a["enable-drive"] = "true";
+      a["create-drive-path"] = "true";
+      a["drive-name"] = "Captivo";
+      if (p.blockUpload) a["disable-upload"] = "true";
+      if (p.blockDownload) a["disable-download"] = "true";
+    } else if (protocol === "SSH") {
+      a["enable-sftp"] = "true";
+      if (p.blockUpload) a["sftp-disable-upload"] = "true";
+      if (p.blockDownload) a["sftp-disable-download"] = "true";
+    }
+  }
   return a;
 }

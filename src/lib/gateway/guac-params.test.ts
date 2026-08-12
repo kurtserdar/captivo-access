@@ -28,11 +28,30 @@ describe("resolveGuacParams", () => {
 
 describe("toGuacArgs", () => {
   it("emits set/true params and maps clipboardMode", () => {
-    expect(toGuacArgs({ serverLayout: "tr-tr-qwerty", colorDepth: 16, enableWallpaper: true, enableTheming: false }, "no_copy"))
+    expect(toGuacArgs({ serverLayout: "tr-tr-qwerty", colorDepth: 16, enableWallpaper: true, enableTheming: false }, "no_copy", "RDP"))
       .toEqual({ "server-layout": "tr-tr-qwerty", "color-depth": "16", "enable-wallpaper": "true", "disable-copy": "true" });
   });
   it("clipboardMode none blocks both; allow blocks neither", () => {
-    expect(toGuacArgs({}, "none")).toEqual({ "disable-copy": "true", "disable-paste": "true" });
-    expect(toGuacArgs({}, "allow")).toEqual({});
+    expect(toGuacArgs({}, "none", "RDP")).toEqual({ "disable-copy": "true", "disable-paste": "true" });
+    expect(toGuacArgs({}, "allow", "RDP")).toEqual({});
+  });
+});
+
+describe("toGuacArgs file transfer", () => {
+  it("RDP on emits drive args; blocks map to disable-upload/download", () => {
+    expect(toGuacArgs({ enableFileTransfer: true, blockUpload: true }, "allow", "RDP")).toEqual({
+      "enable-drive": "true", "create-drive-path": "true", "drive-name": "Captivo", "disable-upload": "true",
+    });
+  });
+  it("SSH on emits enable-sftp; blocks map to sftp-disable-*", () => {
+    expect(toGuacArgs({ enableFileTransfer: true, blockDownload: true }, "allow", "SSH")).toEqual({
+      "enable-sftp": "true", "sftp-disable-download": "true",
+    });
+  });
+  it("VNC emits no file-transfer args", () => {
+    expect(toGuacArgs({ enableFileTransfer: true, blockUpload: true }, "allow", "VNC")).toEqual({});
+  });
+  it("off emits nothing", () => {
+    expect(toGuacArgs({ blockUpload: true }, "allow", "RDP")).toEqual({});
   });
 });
