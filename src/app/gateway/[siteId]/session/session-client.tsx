@@ -29,7 +29,9 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
       const stream = fs.createOutputStream(file.type || "application/octet-stream", "/" + file.name);
       const writer = new G.BlobWriter(stream);
       setToast(`Uploading ${file.name}…`);
-      writer.oncomplete = () => setToast(`Uploaded ${file.name}`);
+      // BlobWriter.sendBlob does NOT end the stream itself — without sendEnd() guacd
+      // never finalises the file and it arrives truncated.
+      writer.oncomplete = () => { writer.sendEnd(); setToast(`Uploaded ${file.name}`); };
       writer.onerror = () => setToast(`Upload failed: ${file.name}`);
       writer.sendBlob(file);
     }
@@ -57,14 +59,18 @@ export function GatewaySession({ siteId, recorded }: { siteId: string; recorded:
         if (!disposed) setToast(`Downloading ${filename}…`);
         const reader = new Guacamole.BlobReader(stream, mimetype);
         reader.onend = () => {
-          const url = URL.createObjectURL(reader.getBlob());
-          const a = document.createElement("a");
-          a.href = url; a.download = filename;
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          // Revoke only after the browser has had a chance to start the download —
-          // revoking synchronously after click() cancels it silently.
-          setTimeout(() => URL.revokeObjectURL(url), 2000);
-          if (!disposed) setToast(`Downloaded ${filename}`);
+          try {
+            const url = URL.createObjectURL(reader.getBlob());
+            const a = document.createElement("a");
+            a.href = url; a.download = filename; a.style.display = "none";
+            document.body.appendChild(a); a.click();
+            // Remove + revoke only after the browser has started the download —
+            // doing it synchronously after click() cancels it silently.
+            setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 2000);
+            if (!disposed) setToast(`Downloaded ${filename}`);
+          } catch {
+            if (!disposed) setToast(`Download failed: ${filename}`);
+          }
         };
       };
       client.onfilesystem = (object: any) => {
