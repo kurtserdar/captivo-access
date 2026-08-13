@@ -12,7 +12,6 @@ import { ConnectorName } from "./connector-name";
 import { DeleteConnectorButton } from "./delete-connector-button";
 import { RepairConnectorButton } from "./repair-connector-button";
 import { RevokeConnectorButton } from "./revoke-connector-button";
-import { ToggleGatewayButton } from "./toggle-gateway-button";
 import { UpdateConnectorButton } from "./update-connector-button";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +35,7 @@ export default async function AdminConnectorsPage() {
   await requireAdmin();
 
   const connectors = await db.connector.findMany({
-    select: { id: true, name: true, status: true, lastSeenAt: true, version: true, gatewayHost: true, _count: { select: { sites: true } } },
+    select: { id: true, name: true, status: true, lastSeenAt: true, version: true, _count: { select: { sites: true } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -75,7 +74,7 @@ export default async function AdminConnectorsPage() {
             </thead>
             <tbody>
               {connectors.map((c) => {
-                const updateCommand = buildConnectorUpdateCommand(managerUrl, connectorTunnelUrl(), c.gatewayHost);
+                const updateCommand = buildConnectorUpdateCommand(managerUrl, connectorTunnelUrl());
                 return (
                   <tr key={c.id}>
                     <td><ConnectorName id={c.id} name={c.name} /></td>
@@ -83,7 +82,6 @@ export default async function AdminConnectorsPage() {
                       <span className={`pill ${STATUS_PILL[c.status] ?? "neutral"}`}>
                         {STATUS_LABEL[c.status] ?? c.status}
                       </span>
-                      {c.gatewayHost && <span className="pill neutral" style={{ marginLeft: ".4rem" }}>Gateway</span>}
                     </td>
                     <td className="cell-sub">{c.lastSeenAt ? <LocalTime iso={c.lastSeenAt.toISOString()} /> : "Never"}</td>
                     <td className="cell-sub">
@@ -100,7 +98,6 @@ export default async function AdminConnectorsPage() {
                             <UpdateConnectorButton command={updateCommand} managerUrlIsLocal={managerUrlIsLocal} />
                           )}
                           <RepairConnectorButton id={c.id} />
-                          <ToggleGatewayButton id={c.id} gatewayHost={c.gatewayHost} />
                           <RevokeConnectorButton id={c.id} />
                         </div>
                       ) : c._count.sites === 0 ? (

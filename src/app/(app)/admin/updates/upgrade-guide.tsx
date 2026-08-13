@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CommandBlock } from "@/app/(app)/_shell/command-block";
 import { formatDockerRun } from "@/lib/format/docker-command";
 
@@ -15,14 +14,12 @@ export function UpgradeGuide({
   latestUrl,
   connectorCommand,
   outdatedConnectors,
-  hasGatewayHost = false,
 }: {
   currentVersion: string;
   latestVersion: string;
   latestUrl: string | null;
   connectorCommand: string | null;
   outdatedConnectors: number;
-  hasGatewayHost?: boolean;
 }) {
   return (
     <div className="card">
@@ -68,13 +65,6 @@ export function UpgradeGuide({
             display={formatDockerRun(connectorCommand)}
             title="connector-update"
           />
-          {hasGatewayHost && (
-            <p className="cell-sub">
-              If a connector also runs remote-desktop sessions, update it from{" "}
-              <Link href="/admin/connectors">Connectors</Link> instead — that command keeps the session engine
-              and gateway network in place.
-            </p>
-          )}
         </div>
       )}
     </div>

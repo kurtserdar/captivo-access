@@ -117,7 +117,6 @@ model Connector {
   status     ConnectorStatus @default(PENDING)
   lastSeenAt DateTime?
   version    String?
-  gatewayHost Boolean @default(false)
   remoteAddr String?
   egressPolicy String?
   logLevel   String?         // debug | info | warn | error; null = inherit the policy default — pushed to the connector live
@@ -130,7 +129,6 @@ model ConnectorPairing {
   id          String     @id @default(cuid())
   codeHash    String
   name        String
-  gatewayHost Boolean    @default(false)
   connectorId String?
   connector   Connector? @relation(fields: [connectorId], references: [id], onDelete: Cascade)
   expiresAt   DateTime

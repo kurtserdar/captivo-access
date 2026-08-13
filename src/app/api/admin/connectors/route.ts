@@ -23,11 +23,9 @@ export async function POST(req: NextRequest) {
   if (!name) {
     return NextResponse.json({ error: "name_required" }, { status: 400 });
   }
-  const gateway = body.gateway === true;
-
-  const { code } = await createPairing(name, { gatewayHost: gateway });
+  const { code } = await createPairing(name);
   const managerUrl = managerBaseUrl(req);
-  const installCommand = buildInstallCommand(code, managerUrl, connectorTunnelUrl(), gateway);
+  const installCommand = buildInstallCommand(code, managerUrl, connectorTunnelUrl());
   // A connector runs on a different machine, so a localhost manager URL (seen
   // when the admin browses via an SSH tunnel) won't be reachable from it.
   const managerUrlIsLocal = isLocalManagerUrl(managerUrl);
@@ -37,7 +35,6 @@ export async function POST(req: NextRequest) {
     action: "connector.create",
     targetType: "connector",
     summary: `Created connector "${name}"`,
-    metadata: { gateway },
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ code, installCommand, managerUrlIsLocal });

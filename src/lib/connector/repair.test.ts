@@ -36,7 +36,9 @@ describe("buildConnectorRunCommand", () => {
     const cmd = buildConnectorRunCommand("CODE123", "https://mgr.example.com", "wss://connect.example.com");
     expect(cmd).toContain("docker run -d --name access-connector");
     expect(cmd).toContain("PAIR_CODE=CODE123");
-    expect(cmd).not.toContain("docker rm -f");
+    // The run command never resets the connector itself (that's re-pair's job).
+    // (It DOES `docker rm -f captivo-guacd` to re-provision the bundled engine.)
+    expect(cmd).not.toContain("docker rm -f access-connector");
     expect(cmd).not.toContain("docker volume rm");
   });
   it("buildReconfigureCommand = reset prefix + the run command", () => {
@@ -63,60 +65,41 @@ describe("buildConnectorUpdateCommand", () => {
   });
 });
 
-describe("gateway-host connector commands", () => {
+describe("every connector bundles guacd on the shared network", () => {
   const m = "https://manager.access.example.com";
   const t = "wss://connect.access.example.com";
 
-  it("injects the network + ensure-prefix when gatewayHost is true (install)", () => {
-    const cmd = buildInstallCommand("CODE123", m, t, true);
+  it("install always joins the network + ensure-prefix", () => {
+    const cmd = buildInstallCommand("CODE123", m, t);
     expect(cmd).toContain(`--network ${GATEWAY_NETWORK}`);
     expect(cmd).toContain(`docker network inspect ${GATEWAY_NETWORK}`);
     expect(cmd).toContain(`docker network create ${GATEWAY_NETWORK}`);
   });
 
-  it("omits the network when gatewayHost is false/default (install)", () => {
-    expect(buildInstallCommand("CODE123", m, t)).not.toContain("--network");
-    expect(buildInstallCommand("CODE123", m, t, false)).not.toContain("--network");
-  });
-
-  it("injects the network for the update command when gatewayHost is true", () => {
-    const cmd = buildConnectorUpdateCommand(m, t, true);
+  it("update always joins the network", () => {
+    const cmd = buildConnectorUpdateCommand(m, t);
     expect(cmd).toContain(`--network ${GATEWAY_NETWORK}`);
     expect(cmd).toContain("docker pull");
   });
 
-  it("omits the network for the update command by default", () => {
-    expect(buildConnectorUpdateCommand(m, t)).not.toContain("--network");
+  it("re-pair always joins the network", () => {
+    expect(buildReconfigureCommand("CODE123", m, t)).toContain(`--network ${GATEWAY_NETWORK}`);
   });
 
-  it("injects the network for the re-pair command when gatewayHost is true", () => {
-    expect(buildReconfigureCommand("CODE123", m, t, true)).toContain(`--network ${GATEWAY_NETWORK}`);
-  });
-});
-
-describe("gateway-host bundles guacd", () => {
-  const m = "https://mgr.example.com";
-  const t = "wss://connect.example.com";
-  it("install with gatewayHost includes guacd + network + recordings volume", () => {
-    const cmd = buildInstallCommand("CODE123", m, t, true);
+  it("install includes guacd + recordings volume", () => {
+    const cmd = buildInstallCommand("CODE123", m, t);
     expect(cmd).toContain("--name captivo-guacd");
-    expect(cmd).toContain(`--network ${GATEWAY_NETWORK}`);
     expect(cmd).toContain("captivo_guacd_recordings");
     expect(cmd).toContain("guacamole/guacd:1.6.0");
     expect(cmd).toContain("docker run -d --name access-connector");
   });
-  it("install without gatewayHost has no guacd", () => {
-    const cmd = buildInstallCommand("CODE123", m, t, false);
-    expect(cmd).not.toContain("captivo-guacd");
-    expect(cmd).not.toContain("guacamole/guacd");
-  });
-  it("update with gatewayHost re-provisions guacd", () => {
-    const cmd = buildConnectorUpdateCommand(m, t, true);
+  it("update re-provisions guacd", () => {
+    const cmd = buildConnectorUpdateCommand(m, t);
     expect(cmd).toContain("--name captivo-guacd");
     expect(cmd).toContain("docker pull ghcr.io/kurtserdar/captivo-access-connector:latest");
   });
-  it("gateway install captures guacd logs to a shared volume", () => {
-    const cmd = buildInstallCommand("CODE123", m, t, true);
+  it("captures guacd logs to a shared volume", () => {
+    const cmd = buildInstallCommand("CODE123", m, t);
     expect(cmd).toContain("-v captivo_guacd_logs:/guaclog ");
     // guacd 1.6.0's entrypoint swallows a CMD; bypass it so our tee wrapper runs.
     expect(cmd).toContain("--entrypoint /bin/sh guacamole/guacd:1.6.0");
@@ -125,11 +108,6 @@ describe("gateway-host bundles guacd", () => {
     expect(cmd).toContain("captivo_guacd_drive");
     expect(cmd).toContain("chown -R 1000:1000 /rec /log /drive2");
     expect(cmd).toContain("-v captivo_guacd_logs:/guaclog:ro");
-  });
-  it("non-gateway install has no guacd log volume", () => {
-    const cmd = buildInstallCommand("CODE123", m, t, false);
-    expect(cmd).not.toContain("captivo_guacd_logs");
-    expect(cmd).not.toContain("/guaclog");
   });
 });
 

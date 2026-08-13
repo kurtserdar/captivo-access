@@ -58,7 +58,6 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       version: true,
       lastSeenAt: true,
       remoteAddr: true,
-      gatewayHost: true,
       egressPolicy: true,
       logLevel: true,
       sites: { select: { id: true, name: true, hostname: true, probeOk: true }, orderBy: { name: "asc" } },
@@ -91,7 +90,6 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
           <h1>{connector.name}</h1>
           <p>
             <span className={`pill ${STATUS_PILL[connector.status] ?? "neutral"}`}>{connector.status}</span>
-            {connector.gatewayHost && <span className="pill neutral" style={{ marginLeft: ".4rem" }}>Gateway</span>}
           </p>
         </div>
         <Link href="/admin/connectors" className="btn sm">← All connectors</Link>
@@ -169,22 +167,20 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
         )}
       </div>
 
-      {connector.gatewayHost && (
-        <div className="card">
-          <div className="card-head"><div className="ch-title"><h2>Gateway logs</h2><span className="sub">Last lines from guacd (remote-desktop engine)</span></div></div>
-          {t && t.guacdLogs && t.guacdLogs.length > 0 ? (
-            <div className="term">
-              <div className="term-body" style={{ maxHeight: "18rem" }}>
-                {t.guacdLogs.map((line, i) => (
-                  <div key={i} className={`term-line ${logLineClass(line)}`}>{line}</div>
-                ))}
-              </div>
+      <div className="card">
+        <div className="card-head"><div className="ch-title"><h2>Gateway logs</h2><span className="sub">Last lines from guacd (remote-desktop engine)</span></div></div>
+        {t && t.guacdLogs && t.guacdLogs.length > 0 ? (
+          <div className="term">
+            <div className="term-body" style={{ maxHeight: "18rem" }}>
+              {t.guacdLogs.map((line, i) => (
+                <div key={i} className={`term-line ${logLineClass(line)}`}>{line}</div>
+              ))}
             </div>
-          ) : (
-            <p className="cell-sub">No guacd logs yet — the connector is offline, or hasn&apos;t been updated to report gateway logs (re-run its command).</p>
-          )}
-        </div>
-      )}
+          </div>
+        ) : (
+          <p className="cell-sub">No guacd logs yet — the connector is offline, or hasn&apos;t been updated to report gateway logs (re-run its command).</p>
+        )}
+      </div>
 
       <div className="card">
         <div className="card-head"><div className="ch-title"><h2>Recent activity</h2><span className="sub">Latest access decisions on its resources</span></div></div>

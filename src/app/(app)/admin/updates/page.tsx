@@ -22,15 +22,13 @@ export default async function AdminUpdatesPage() {
   // per-connector command (the token volume is kept, so it's a plain update).
   let outdatedConnectors = 0;
   let connectorCommand: string | null = null;
-  let hasGatewayHost = false;
   if (updateAvailable) {
     const connectors = await db.connector.findMany({
       where: { status: { not: "REVOKED" } },
-      select: { version: true, gatewayHost: true },
+      select: { version: true },
     });
     const outdated = connectors.filter((c) => isConnectorOutdated(c.version, mgr));
     outdatedConnectors = outdated.length;
-    hasGatewayHost = outdated.some((c) => c.gatewayHost);
     if (outdatedConnectors > 0) {
       const managerUrl = process.env.MANAGER_PUBLIC_URL?.replace(/\/+$/, "") || "https://manager.<your-access-domain>";
       connectorCommand = buildConnectorUpdateCommand(managerUrl, connectorTunnelUrl());
@@ -61,7 +59,6 @@ export default async function AdminUpdatesPage() {
           latestUrl={cfg?.latestUrl ?? null}
           connectorCommand={connectorCommand}
           outdatedConnectors={outdatedConnectors}
-          hasGatewayHost={hasGatewayHost}
         />
       )}
     </main>

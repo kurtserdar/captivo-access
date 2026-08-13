@@ -17,7 +17,6 @@ function errorMessage(code: string | undefined): string {
 
 export function ConnectorForm({ onDone }: { onDone?: () => void }) {
   const [name, setName] = useState("");
-  const [gateway, setGateway] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pairing, setPairing] = useState<{ code: string; installCommand: string; managerUrlIsLocal: boolean } | null>(null);
@@ -31,7 +30,7 @@ export function ConnectorForm({ onDone }: { onDone?: () => void }) {
       const res = await fetch("/api/admin/connectors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, gateway }),
+        body: JSON.stringify({ name }),
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok || !result?.code) {
@@ -70,16 +69,10 @@ export function ConnectorForm({ onDone }: { onDone?: () => void }) {
               placeholder="e.g. Customer HQ"
             />
           </div>
-          <div className="field">
-            <label className="form-check">
-              <input type="checkbox" checked={gateway} onChange={(e) => setGateway(e.target.checked)} />
-              <span>This host will also run remote-desktop sessions</span>
-            </label>
-            <p className="cell-sub">
-              The connector command deploys the session engine (guacd) alongside the connector on this host, so
-              remote-desktop resources (RDP/SSH/VNC) can reach it — one command, nothing else to install.
-            </p>
-          </div>
+          <p className="cell-sub">
+            The install command deploys the connector and the session engine (guacd) together, so this host can
+            serve both web apps and remote-desktop resources (RDP/SSH/VNC) — one command, nothing else to install.
+          </p>
           {error && (
             <p className="notice error" role="alert">
               {error}

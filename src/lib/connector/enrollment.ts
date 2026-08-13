@@ -3,7 +3,7 @@ import { generateToken, hashToken, verifyTokenHash } from "@/lib/auth/tokens";
 
 export async function createPairing(
   name: string,
-  opts?: { connectorId?: string; gatewayHost?: boolean },
+  opts?: { connectorId?: string },
   ttlMinutes = 15,
 ): Promise<{ id: string; code: string }> {
   const code = generateToken();
@@ -11,9 +11,6 @@ export async function createPairing(
     data: {
       name,
       codeHash: await hashToken(code),
-      // Carried onto the connector at enroll time so a gateway host is flagged
-      // from the start and its generated command joins the captivo-gateway network.
-      gatewayHost: opts?.gatewayHost ?? false,
       connectorId: opts?.connectorId ?? null,
       expiresAt: new Date(Date.now() + ttlMinutes * 60_000),
     },
@@ -53,7 +50,7 @@ export async function redeemPairing(
             return { id: p.connectorId };
           }
           return tx.connector.create({
-            data: { name: meta.name?.trim() || p.name, tokenHash, status: "PENDING", version: meta.version ?? null, gatewayHost: p.gatewayHost ?? false },
+            data: { name: meta.name?.trim() || p.name, tokenHash, status: "PENDING", version: meta.version ?? null },
           });
         });
       } catch (err) {

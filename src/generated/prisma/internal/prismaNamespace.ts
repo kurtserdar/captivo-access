@@ -410,6 +410,7 @@ export const ModelName = {
   AuditEvent: 'AuditEvent',
   AuditChainState: 'AuditChainState',
   AuditAnchor: 'AuditAnchor',
+  AdminAuditAnchor: 'AdminAuditAnchor',
   SmtpConfig: 'SmtpConfig',
   Notification: 'Notification',
   OidcConfig: 'OidcConfig',
@@ -437,7 +438,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "vaultCredential" | "accessGrant" | "auditEvent" | "auditChainState" | "auditAnchor" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "groupMapping" | "sessionPolicy" | "cronRun" | "platformSettings" | "updateCheckConfig" | "sessionRecording" | "recordingChunk" | "adminAuditEvent"
+    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "vaultCredential" | "accessGrant" | "auditEvent" | "auditChainState" | "auditAnchor" | "adminAuditAnchor" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "groupMapping" | "sessionPolicy" | "cronRun" | "platformSettings" | "updateCheckConfig" | "sessionRecording" | "recordingChunk" | "adminAuditEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1400,6 +1401,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.AuditAnchorCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.AuditAnchorCountAggregateOutputType> | number
+        }
+      }
+    }
+    AdminAuditAnchor: {
+      payload: Prisma.$AdminAuditAnchorPayload<ExtArgs>
+      fields: Prisma.AdminAuditAnchorFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdminAuditAnchorFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditAnchorPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdminAuditAnchorFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditAnchorPayload>
+        }
+        findFirst: {
+          args: Prisma.AdminAuditAnchorFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditAnchorPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdminAuditAnchorFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditAnchorPayload>
+        }
+        findMany: {
+          args: Prisma.AdminAuditAnchorFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditAnchorPayload>[]
+        }
+        create: {
+          args: Prisma.AdminAuditAnchorCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditAnchorPayload>
+        }
+        createMany: {
+          args: Prisma.AdminAuditAnchorCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdminAuditAnchorCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditAnchorPayload>[]
+        }
+        delete: {
+          args: Prisma.AdminAuditAnchorDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditAnchorPayload>
+        }
+        update: {
+          args: Prisma.AdminAuditAnchorUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditAnchorPayload>
+        }
+        deleteMany: {
+          args: Prisma.AdminAuditAnchorDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdminAuditAnchorUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdminAuditAnchorUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditAnchorPayload>[]
+        }
+        upsert: {
+          args: Prisma.AdminAuditAnchorUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminAuditAnchorPayload>
+        }
+        aggregate: {
+          args: Prisma.AdminAuditAnchorAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdminAuditAnchor>
+        }
+        groupBy: {
+          args: Prisma.AdminAuditAnchorGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminAuditAnchorGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdminAuditAnchorCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminAuditAnchorCountAggregateOutputType> | number
         }
       }
     }
@@ -2408,7 +2483,6 @@ export const ConnectorScalarFieldEnum = {
   status: 'status',
   lastSeenAt: 'lastSeenAt',
   version: 'version',
-  gatewayHost: 'gatewayHost',
   remoteAddr: 'remoteAddr',
   egressPolicy: 'egressPolicy',
   logLevel: 'logLevel',
@@ -2422,7 +2496,6 @@ export const ConnectorPairingScalarFieldEnum = {
   id: 'id',
   codeHash: 'codeHash',
   name: 'name',
-  gatewayHost: 'gatewayHost',
   connectorId: 'connectorId',
   expiresAt: 'expiresAt',
   usedAt: 'usedAt',
@@ -2541,6 +2614,19 @@ export const AuditAnchorScalarFieldEnum = {
 } as const
 
 export type AuditAnchorScalarFieldEnum = (typeof AuditAnchorScalarFieldEnum)[keyof typeof AuditAnchorScalarFieldEnum]
+
+
+export const AdminAuditAnchorScalarFieldEnum = {
+  id: 'id',
+  anchoredSeq: 'anchoredSeq',
+  anchoredHash: 'anchoredHash',
+  tsaUrl: 'tsaUrl',
+  token: 'token',
+  genTime: 'genTime',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminAuditAnchorScalarFieldEnum = (typeof AdminAuditAnchorScalarFieldEnum)[keyof typeof AdminAuditAnchorScalarFieldEnum]
 
 
 export const SmtpConfigScalarFieldEnum = {
@@ -3173,6 +3259,7 @@ export type GlobalOmitConfig = {
   auditEvent?: Prisma.AuditEventOmit
   auditChainState?: Prisma.AuditChainStateOmit
   auditAnchor?: Prisma.AuditAnchorOmit
+  adminAuditAnchor?: Prisma.AdminAuditAnchorOmit
   smtpConfig?: Prisma.SmtpConfigOmit
   notification?: Prisma.NotificationOmit
   oidcConfig?: Prisma.OidcConfigOmit

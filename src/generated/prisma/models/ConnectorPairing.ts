@@ -28,7 +28,6 @@ export type ConnectorPairingMinAggregateOutputType = {
   id: string | null
   codeHash: string | null
   name: string | null
-  gatewayHost: boolean | null
   connectorId: string | null
   expiresAt: Date | null
   usedAt: Date | null
@@ -39,7 +38,6 @@ export type ConnectorPairingMaxAggregateOutputType = {
   id: string | null
   codeHash: string | null
   name: string | null
-  gatewayHost: boolean | null
   connectorId: string | null
   expiresAt: Date | null
   usedAt: Date | null
@@ -50,7 +48,6 @@ export type ConnectorPairingCountAggregateOutputType = {
   id: number
   codeHash: number
   name: number
-  gatewayHost: number
   connectorId: number
   expiresAt: number
   usedAt: number
@@ -63,7 +60,6 @@ export type ConnectorPairingMinAggregateInputType = {
   id?: true
   codeHash?: true
   name?: true
-  gatewayHost?: true
   connectorId?: true
   expiresAt?: true
   usedAt?: true
@@ -74,7 +70,6 @@ export type ConnectorPairingMaxAggregateInputType = {
   id?: true
   codeHash?: true
   name?: true
-  gatewayHost?: true
   connectorId?: true
   expiresAt?: true
   usedAt?: true
@@ -85,7 +80,6 @@ export type ConnectorPairingCountAggregateInputType = {
   id?: true
   codeHash?: true
   name?: true
-  gatewayHost?: true
   connectorId?: true
   expiresAt?: true
   usedAt?: true
@@ -169,7 +163,6 @@ export type ConnectorPairingGroupByOutputType = {
   id: string
   codeHash: string
   name: string
-  gatewayHost: boolean
   connectorId: string | null
   expiresAt: Date
   usedAt: Date | null
@@ -201,7 +194,6 @@ export type ConnectorPairingWhereInput = {
   id?: Prisma.StringFilter<"ConnectorPairing"> | string
   codeHash?: Prisma.StringFilter<"ConnectorPairing"> | string
   name?: Prisma.StringFilter<"ConnectorPairing"> | string
-  gatewayHost?: Prisma.BoolFilter<"ConnectorPairing"> | boolean
   connectorId?: Prisma.StringNullableFilter<"ConnectorPairing"> | string | null
   expiresAt?: Prisma.DateTimeFilter<"ConnectorPairing"> | Date | string
   usedAt?: Prisma.DateTimeNullableFilter<"ConnectorPairing"> | Date | string | null
@@ -213,7 +205,6 @@ export type ConnectorPairingOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   codeHash?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  gatewayHost?: Prisma.SortOrder
   connectorId?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   usedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -228,7 +219,6 @@ export type ConnectorPairingWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.ConnectorPairingWhereInput | Prisma.ConnectorPairingWhereInput[]
   codeHash?: Prisma.StringFilter<"ConnectorPairing"> | string
   name?: Prisma.StringFilter<"ConnectorPairing"> | string
-  gatewayHost?: Prisma.BoolFilter<"ConnectorPairing"> | boolean
   connectorId?: Prisma.StringNullableFilter<"ConnectorPairing"> | string | null
   expiresAt?: Prisma.DateTimeFilter<"ConnectorPairing"> | Date | string
   usedAt?: Prisma.DateTimeNullableFilter<"ConnectorPairing"> | Date | string | null
@@ -240,7 +230,6 @@ export type ConnectorPairingOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   codeHash?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  gatewayHost?: Prisma.SortOrder
   connectorId?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   usedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -257,7 +246,6 @@ export type ConnectorPairingScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"ConnectorPairing"> | string
   codeHash?: Prisma.StringWithAggregatesFilter<"ConnectorPairing"> | string
   name?: Prisma.StringWithAggregatesFilter<"ConnectorPairing"> | string
-  gatewayHost?: Prisma.BoolWithAggregatesFilter<"ConnectorPairing"> | boolean
   connectorId?: Prisma.StringNullableWithAggregatesFilter<"ConnectorPairing"> | string | null
   expiresAt?: Prisma.DateTimeWithAggregatesFilter<"ConnectorPairing"> | Date | string
   usedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ConnectorPairing"> | Date | string | null
@@ -268,7 +256,6 @@ export type ConnectorPairingCreateInput = {
   id?: string
   codeHash: string
   name: string
-  gatewayHost?: boolean
   expiresAt: Date | string
   usedAt?: Date | string | null
   createdAt?: Date | string
@@ -279,7 +266,6 @@ export type ConnectorPairingUncheckedCreateInput = {
   id?: string
   codeHash: string
   name: string
-  gatewayHost?: boolean
   connectorId?: string | null
   expiresAt: Date | string
   usedAt?: Date | string | null
@@ -290,7 +276,6 @@ export type ConnectorPairingUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -301,7 +286,6 @@ export type ConnectorPairingUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   connectorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -312,7 +296,6 @@ export type ConnectorPairingCreateManyInput = {
   id?: string
   codeHash: string
   name: string
-  gatewayHost?: boolean
   connectorId?: string | null
   expiresAt: Date | string
   usedAt?: Date | string | null
@@ -323,7 +306,6 @@ export type ConnectorPairingUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -333,7 +315,6 @@ export type ConnectorPairingUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   connectorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -354,7 +335,6 @@ export type ConnectorPairingCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   codeHash?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  gatewayHost?: Prisma.SortOrder
   connectorId?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   usedAt?: Prisma.SortOrder
@@ -365,7 +345,6 @@ export type ConnectorPairingMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   codeHash?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  gatewayHost?: Prisma.SortOrder
   connectorId?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   usedAt?: Prisma.SortOrder
@@ -376,7 +355,6 @@ export type ConnectorPairingMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   codeHash?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  gatewayHost?: Prisma.SortOrder
   connectorId?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   usedAt?: Prisma.SortOrder
@@ -429,7 +407,6 @@ export type ConnectorPairingCreateWithoutConnectorInput = {
   id?: string
   codeHash: string
   name: string
-  gatewayHost?: boolean
   expiresAt: Date | string
   usedAt?: Date | string | null
   createdAt?: Date | string
@@ -439,7 +416,6 @@ export type ConnectorPairingUncheckedCreateWithoutConnectorInput = {
   id?: string
   codeHash: string
   name: string
-  gatewayHost?: boolean
   expiresAt: Date | string
   usedAt?: Date | string | null
   createdAt?: Date | string
@@ -478,7 +454,6 @@ export type ConnectorPairingScalarWhereInput = {
   id?: Prisma.StringFilter<"ConnectorPairing"> | string
   codeHash?: Prisma.StringFilter<"ConnectorPairing"> | string
   name?: Prisma.StringFilter<"ConnectorPairing"> | string
-  gatewayHost?: Prisma.BoolFilter<"ConnectorPairing"> | boolean
   connectorId?: Prisma.StringNullableFilter<"ConnectorPairing"> | string | null
   expiresAt?: Prisma.DateTimeFilter<"ConnectorPairing"> | Date | string
   usedAt?: Prisma.DateTimeNullableFilter<"ConnectorPairing"> | Date | string | null
@@ -489,7 +464,6 @@ export type ConnectorPairingCreateManyConnectorInput = {
   id?: string
   codeHash: string
   name: string
-  gatewayHost?: boolean
   expiresAt: Date | string
   usedAt?: Date | string | null
   createdAt?: Date | string
@@ -499,7 +473,6 @@ export type ConnectorPairingUpdateWithoutConnectorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -509,7 +482,6 @@ export type ConnectorPairingUncheckedUpdateWithoutConnectorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -519,7 +491,6 @@ export type ConnectorPairingUncheckedUpdateManyWithoutConnectorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -531,7 +502,6 @@ export type ConnectorPairingSelect<ExtArgs extends runtime.Types.Extensions.Inte
   id?: boolean
   codeHash?: boolean
   name?: boolean
-  gatewayHost?: boolean
   connectorId?: boolean
   expiresAt?: boolean
   usedAt?: boolean
@@ -543,7 +513,6 @@ export type ConnectorPairingSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   codeHash?: boolean
   name?: boolean
-  gatewayHost?: boolean
   connectorId?: boolean
   expiresAt?: boolean
   usedAt?: boolean
@@ -555,7 +524,6 @@ export type ConnectorPairingSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   codeHash?: boolean
   name?: boolean
-  gatewayHost?: boolean
   connectorId?: boolean
   expiresAt?: boolean
   usedAt?: boolean
@@ -567,14 +535,13 @@ export type ConnectorPairingSelectScalar = {
   id?: boolean
   codeHash?: boolean
   name?: boolean
-  gatewayHost?: boolean
   connectorId?: boolean
   expiresAt?: boolean
   usedAt?: boolean
   createdAt?: boolean
 }
 
-export type ConnectorPairingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "codeHash" | "name" | "gatewayHost" | "connectorId" | "expiresAt" | "usedAt" | "createdAt", ExtArgs["result"]["connectorPairing"]>
+export type ConnectorPairingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "codeHash" | "name" | "connectorId" | "expiresAt" | "usedAt" | "createdAt", ExtArgs["result"]["connectorPairing"]>
 export type ConnectorPairingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   connector?: boolean | Prisma.ConnectorPairing$connectorArgs<ExtArgs>
 }
@@ -594,7 +561,6 @@ export type $ConnectorPairingPayload<ExtArgs extends runtime.Types.Extensions.In
     id: string
     codeHash: string
     name: string
-    gatewayHost: boolean
     connectorId: string | null
     expiresAt: Date
     usedAt: Date | null
@@ -1026,7 +992,6 @@ export interface ConnectorPairingFieldRefs {
   readonly id: Prisma.FieldRef<"ConnectorPairing", 'String'>
   readonly codeHash: Prisma.FieldRef<"ConnectorPairing", 'String'>
   readonly name: Prisma.FieldRef<"ConnectorPairing", 'String'>
-  readonly gatewayHost: Prisma.FieldRef<"ConnectorPairing", 'Boolean'>
   readonly connectorId: Prisma.FieldRef<"ConnectorPairing", 'String'>
   readonly expiresAt: Prisma.FieldRef<"ConnectorPairing", 'DateTime'>
   readonly usedAt: Prisma.FieldRef<"ConnectorPairing", 'DateTime'>

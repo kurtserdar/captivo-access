@@ -107,6 +107,11 @@ export type AuditChainState = Prisma.AuditChainStateModel
  */
 export type AuditAnchor = Prisma.AuditAnchorModel
 /**
+ * Model AdminAuditAnchor
+ * 
+ */
+export type AdminAuditAnchor = Prisma.AdminAuditAnchorModel
+/**
  * Model SmtpConfig
  * 
  */

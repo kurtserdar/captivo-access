@@ -31,7 +31,6 @@ export type ConnectorMinAggregateOutputType = {
   status: $Enums.ConnectorStatus | null
   lastSeenAt: Date | null
   version: string | null
-  gatewayHost: boolean | null
   remoteAddr: string | null
   egressPolicy: string | null
   logLevel: string | null
@@ -45,7 +44,6 @@ export type ConnectorMaxAggregateOutputType = {
   status: $Enums.ConnectorStatus | null
   lastSeenAt: Date | null
   version: string | null
-  gatewayHost: boolean | null
   remoteAddr: string | null
   egressPolicy: string | null
   logLevel: string | null
@@ -59,7 +57,6 @@ export type ConnectorCountAggregateOutputType = {
   status: number
   lastSeenAt: number
   version: number
-  gatewayHost: number
   remoteAddr: number
   egressPolicy: number
   logLevel: number
@@ -75,7 +72,6 @@ export type ConnectorMinAggregateInputType = {
   status?: true
   lastSeenAt?: true
   version?: true
-  gatewayHost?: true
   remoteAddr?: true
   egressPolicy?: true
   logLevel?: true
@@ -89,7 +85,6 @@ export type ConnectorMaxAggregateInputType = {
   status?: true
   lastSeenAt?: true
   version?: true
-  gatewayHost?: true
   remoteAddr?: true
   egressPolicy?: true
   logLevel?: true
@@ -103,7 +98,6 @@ export type ConnectorCountAggregateInputType = {
   status?: true
   lastSeenAt?: true
   version?: true
-  gatewayHost?: true
   remoteAddr?: true
   egressPolicy?: true
   logLevel?: true
@@ -190,7 +184,6 @@ export type ConnectorGroupByOutputType = {
   status: $Enums.ConnectorStatus
   lastSeenAt: Date | null
   version: string | null
-  gatewayHost: boolean
   remoteAddr: string | null
   egressPolicy: string | null
   logLevel: string | null
@@ -225,7 +218,6 @@ export type ConnectorWhereInput = {
   status?: Prisma.EnumConnectorStatusFilter<"Connector"> | $Enums.ConnectorStatus
   lastSeenAt?: Prisma.DateTimeNullableFilter<"Connector"> | Date | string | null
   version?: Prisma.StringNullableFilter<"Connector"> | string | null
-  gatewayHost?: Prisma.BoolFilter<"Connector"> | boolean
   remoteAddr?: Prisma.StringNullableFilter<"Connector"> | string | null
   egressPolicy?: Prisma.StringNullableFilter<"Connector"> | string | null
   logLevel?: Prisma.StringNullableFilter<"Connector"> | string | null
@@ -241,7 +233,6 @@ export type ConnectorOrderByWithRelationInput = {
   status?: Prisma.SortOrder
   lastSeenAt?: Prisma.SortOrderInput | Prisma.SortOrder
   version?: Prisma.SortOrderInput | Prisma.SortOrder
-  gatewayHost?: Prisma.SortOrder
   remoteAddr?: Prisma.SortOrderInput | Prisma.SortOrder
   egressPolicy?: Prisma.SortOrderInput | Prisma.SortOrder
   logLevel?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -260,7 +251,6 @@ export type ConnectorWhereUniqueInput = Prisma.AtLeast<{
   status?: Prisma.EnumConnectorStatusFilter<"Connector"> | $Enums.ConnectorStatus
   lastSeenAt?: Prisma.DateTimeNullableFilter<"Connector"> | Date | string | null
   version?: Prisma.StringNullableFilter<"Connector"> | string | null
-  gatewayHost?: Prisma.BoolFilter<"Connector"> | boolean
   remoteAddr?: Prisma.StringNullableFilter<"Connector"> | string | null
   egressPolicy?: Prisma.StringNullableFilter<"Connector"> | string | null
   logLevel?: Prisma.StringNullableFilter<"Connector"> | string | null
@@ -276,7 +266,6 @@ export type ConnectorOrderByWithAggregationInput = {
   status?: Prisma.SortOrder
   lastSeenAt?: Prisma.SortOrderInput | Prisma.SortOrder
   version?: Prisma.SortOrderInput | Prisma.SortOrder
-  gatewayHost?: Prisma.SortOrder
   remoteAddr?: Prisma.SortOrderInput | Prisma.SortOrder
   egressPolicy?: Prisma.SortOrderInput | Prisma.SortOrder
   logLevel?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -296,7 +285,6 @@ export type ConnectorScalarWhereWithAggregatesInput = {
   status?: Prisma.EnumConnectorStatusWithAggregatesFilter<"Connector"> | $Enums.ConnectorStatus
   lastSeenAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Connector"> | Date | string | null
   version?: Prisma.StringNullableWithAggregatesFilter<"Connector"> | string | null
-  gatewayHost?: Prisma.BoolWithAggregatesFilter<"Connector"> | boolean
   remoteAddr?: Prisma.StringNullableWithAggregatesFilter<"Connector"> | string | null
   egressPolicy?: Prisma.StringNullableWithAggregatesFilter<"Connector"> | string | null
   logLevel?: Prisma.StringNullableWithAggregatesFilter<"Connector"> | string | null
@@ -310,7 +298,6 @@ export type ConnectorCreateInput = {
   status?: $Enums.ConnectorStatus
   lastSeenAt?: Date | string | null
   version?: string | null
-  gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
   logLevel?: string | null
@@ -326,7 +313,6 @@ export type ConnectorUncheckedCreateInput = {
   status?: $Enums.ConnectorStatus
   lastSeenAt?: Date | string | null
   version?: string | null
-  gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
   logLevel?: string | null
@@ -342,7 +328,6 @@ export type ConnectorUpdateInput = {
   status?: Prisma.EnumConnectorStatusFieldUpdateOperationsInput | $Enums.ConnectorStatus
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -358,7 +343,6 @@ export type ConnectorUncheckedUpdateInput = {
   status?: Prisma.EnumConnectorStatusFieldUpdateOperationsInput | $Enums.ConnectorStatus
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -374,7 +358,6 @@ export type ConnectorCreateManyInput = {
   status?: $Enums.ConnectorStatus
   lastSeenAt?: Date | string | null
   version?: string | null
-  gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
   logLevel?: string | null
@@ -388,7 +371,6 @@ export type ConnectorUpdateManyMutationInput = {
   status?: Prisma.EnumConnectorStatusFieldUpdateOperationsInput | $Enums.ConnectorStatus
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -402,7 +384,6 @@ export type ConnectorUncheckedUpdateManyInput = {
   status?: Prisma.EnumConnectorStatusFieldUpdateOperationsInput | $Enums.ConnectorStatus
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -416,7 +397,6 @@ export type ConnectorCountOrderByAggregateInput = {
   status?: Prisma.SortOrder
   lastSeenAt?: Prisma.SortOrder
   version?: Prisma.SortOrder
-  gatewayHost?: Prisma.SortOrder
   remoteAddr?: Prisma.SortOrder
   egressPolicy?: Prisma.SortOrder
   logLevel?: Prisma.SortOrder
@@ -430,7 +410,6 @@ export type ConnectorMaxOrderByAggregateInput = {
   status?: Prisma.SortOrder
   lastSeenAt?: Prisma.SortOrder
   version?: Prisma.SortOrder
-  gatewayHost?: Prisma.SortOrder
   remoteAddr?: Prisma.SortOrder
   egressPolicy?: Prisma.SortOrder
   logLevel?: Prisma.SortOrder
@@ -444,7 +423,6 @@ export type ConnectorMinOrderByAggregateInput = {
   status?: Prisma.SortOrder
   lastSeenAt?: Prisma.SortOrder
   version?: Prisma.SortOrder
-  gatewayHost?: Prisma.SortOrder
   remoteAddr?: Prisma.SortOrder
   egressPolicy?: Prisma.SortOrder
   logLevel?: Prisma.SortOrder
@@ -502,7 +480,6 @@ export type ConnectorCreateWithoutPairingsInput = {
   status?: $Enums.ConnectorStatus
   lastSeenAt?: Date | string | null
   version?: string | null
-  gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
   logLevel?: string | null
@@ -517,7 +494,6 @@ export type ConnectorUncheckedCreateWithoutPairingsInput = {
   status?: $Enums.ConnectorStatus
   lastSeenAt?: Date | string | null
   version?: string | null
-  gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
   logLevel?: string | null
@@ -548,7 +524,6 @@ export type ConnectorUpdateWithoutPairingsInput = {
   status?: Prisma.EnumConnectorStatusFieldUpdateOperationsInput | $Enums.ConnectorStatus
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -563,7 +538,6 @@ export type ConnectorUncheckedUpdateWithoutPairingsInput = {
   status?: Prisma.EnumConnectorStatusFieldUpdateOperationsInput | $Enums.ConnectorStatus
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -578,7 +552,6 @@ export type ConnectorCreateWithoutSitesInput = {
   status?: $Enums.ConnectorStatus
   lastSeenAt?: Date | string | null
   version?: string | null
-  gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
   logLevel?: string | null
@@ -593,7 +566,6 @@ export type ConnectorUncheckedCreateWithoutSitesInput = {
   status?: $Enums.ConnectorStatus
   lastSeenAt?: Date | string | null
   version?: string | null
-  gatewayHost?: boolean
   remoteAddr?: string | null
   egressPolicy?: string | null
   logLevel?: string | null
@@ -624,7 +596,6 @@ export type ConnectorUpdateWithoutSitesInput = {
   status?: Prisma.EnumConnectorStatusFieldUpdateOperationsInput | $Enums.ConnectorStatus
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -639,7 +610,6 @@ export type ConnectorUncheckedUpdateWithoutSitesInput = {
   status?: Prisma.EnumConnectorStatusFieldUpdateOperationsInput | $Enums.ConnectorStatus
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  gatewayHost?: Prisma.BoolFieldUpdateOperationsInput | boolean
   remoteAddr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   egressPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -694,7 +664,6 @@ export type ConnectorSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   status?: boolean
   lastSeenAt?: boolean
   version?: boolean
-  gatewayHost?: boolean
   remoteAddr?: boolean
   egressPolicy?: boolean
   logLevel?: boolean
@@ -711,7 +680,6 @@ export type ConnectorSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   status?: boolean
   lastSeenAt?: boolean
   version?: boolean
-  gatewayHost?: boolean
   remoteAddr?: boolean
   egressPolicy?: boolean
   logLevel?: boolean
@@ -725,7 +693,6 @@ export type ConnectorSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   status?: boolean
   lastSeenAt?: boolean
   version?: boolean
-  gatewayHost?: boolean
   remoteAddr?: boolean
   egressPolicy?: boolean
   logLevel?: boolean
@@ -739,14 +706,13 @@ export type ConnectorSelectScalar = {
   status?: boolean
   lastSeenAt?: boolean
   version?: boolean
-  gatewayHost?: boolean
   remoteAddr?: boolean
   egressPolicy?: boolean
   logLevel?: boolean
   createdAt?: boolean
 }
 
-export type ConnectorOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "tokenHash" | "status" | "lastSeenAt" | "version" | "gatewayHost" | "remoteAddr" | "egressPolicy" | "logLevel" | "createdAt", ExtArgs["result"]["connector"]>
+export type ConnectorOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "tokenHash" | "status" | "lastSeenAt" | "version" | "remoteAddr" | "egressPolicy" | "logLevel" | "createdAt", ExtArgs["result"]["connector"]>
 export type ConnectorInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sites?: boolean | Prisma.Connector$sitesArgs<ExtArgs>
   pairings?: boolean | Prisma.Connector$pairingsArgs<ExtArgs>
@@ -768,7 +734,6 @@ export type $ConnectorPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     status: $Enums.ConnectorStatus
     lastSeenAt: Date | null
     version: string | null
-    gatewayHost: boolean
     remoteAddr: string | null
     egressPolicy: string | null
     logLevel: string | null
@@ -1204,7 +1169,6 @@ export interface ConnectorFieldRefs {
   readonly status: Prisma.FieldRef<"Connector", 'ConnectorStatus'>
   readonly lastSeenAt: Prisma.FieldRef<"Connector", 'DateTime'>
   readonly version: Prisma.FieldRef<"Connector", 'String'>
-  readonly gatewayHost: Prisma.FieldRef<"Connector", 'Boolean'>
   readonly remoteAddr: Prisma.FieldRef<"Connector", 'String'>
   readonly egressPolicy: Prisma.FieldRef<"Connector", 'String'>
   readonly logLevel: Prisma.FieldRef<"Connector", 'String'>

@@ -64,6 +64,7 @@ export const ModelName = {
   AuditEvent: 'AuditEvent',
   AuditChainState: 'AuditChainState',
   AuditAnchor: 'AuditAnchor',
+  AdminAuditAnchor: 'AdminAuditAnchor',
   SmtpConfig: 'SmtpConfig',
   Notification: 'Notification',
   OidcConfig: 'OidcConfig',
@@ -172,7 +173,6 @@ export const ConnectorScalarFieldEnum = {
   status: 'status',
   lastSeenAt: 'lastSeenAt',
   version: 'version',
-  gatewayHost: 'gatewayHost',
   remoteAddr: 'remoteAddr',
   egressPolicy: 'egressPolicy',
   logLevel: 'logLevel',
@@ -186,7 +186,6 @@ export const ConnectorPairingScalarFieldEnum = {
   id: 'id',
   codeHash: 'codeHash',
   name: 'name',
-  gatewayHost: 'gatewayHost',
   connectorId: 'connectorId',
   expiresAt: 'expiresAt',
   usedAt: 'usedAt',
@@ -305,6 +304,19 @@ export const AuditAnchorScalarFieldEnum = {
 } as const
 
 export type AuditAnchorScalarFieldEnum = (typeof AuditAnchorScalarFieldEnum)[keyof typeof AuditAnchorScalarFieldEnum]
+
+
+export const AdminAuditAnchorScalarFieldEnum = {
+  id: 'id',
+  anchoredSeq: 'anchoredSeq',
+  anchoredHash: 'anchoredHash',
+  tsaUrl: 'tsaUrl',
+  token: 'token',
+  genTime: 'genTime',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminAuditAnchorScalarFieldEnum = (typeof AdminAuditAnchorScalarFieldEnum)[keyof typeof AdminAuditAnchorScalarFieldEnum]
 
 
 export const SmtpConfigScalarFieldEnum = {
