@@ -7,8 +7,19 @@ describe("buildNavModel", () => {
     expect(m.primary.map((i) => i.label)).toEqual(["Console", "Access", "Sessions", "Recordings", "Audit", "Insights"]);
     expect(m.primary.find((i) => i.label === "Access")?.badge).toBe(3);
     expect(m.groups.map((g) => g.label)).toEqual(["Infrastructure", "People"]);
-    expect(m.groups[0].items).toHaveLength(8);
-    expect(m.groups[1].items.map((i) => i.href)).toEqual(["/admin/users", "/admin/invites", "/admin/sessions"]);
+    // Infrastructure: 3 labeled columns
+    expect(m.groups[0].columns.map((c) => c.heading)).toEqual(["Connectivity", "Identity & access", "Platform"]);
+    expect(m.groups[0].columns.flatMap((c) => c.items).map((i) => i.href)).toEqual([
+      "/admin/connectors", "/admin/sites", "/admin/domain",
+      "/admin/directory", "/admin/sso", "/admin/policy",
+      "/admin/email", "/admin/updates",
+    ]);
+    // every Infrastructure item carries an icon + description
+    expect(m.groups[0].columns.flatMap((c) => c.items).every((i) => i.icon && i.desc)).toBe(true);
+    // People: 1 column of 3
+    expect(m.groups[1].columns).toHaveLength(1);
+    expect(m.groups[1].columns[0].heading).toBe("Team & sessions");
+    expect(m.groups[1].columns[0].items.map((i) => i.href)).toEqual(["/admin/users", "/admin/invites", "/admin/sessions"]);
     expect(m.showSearch).toBe(true);
     expect(m.showNotifications).toBe(true);
     expect(m.notificationsBadge).toBe(5);
