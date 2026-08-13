@@ -27,6 +27,25 @@ export async function listActiveSessions(): Promise<ActiveSession[]> {
   }
 }
 
+export interface WebSession {
+  userId: string;
+  siteId: string;
+  host: string;
+  startedAt: string;
+  lastSeen: string;
+}
+
+export async function listActiveWebSessions(): Promise<WebSession[]> {
+  try {
+    const res = await fetch(`${BASE()}/web-sessions`, { headers: authHeaders(), cache: "no-store" });
+    if (!res.ok) return [];
+    const data = (await res.json()) as WebSession[] | null;
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function setSessionControl(
   sessionId: string,
   ownerUserId: string,
