@@ -154,14 +154,19 @@ Bring the admin panel to parity with the access `IntegrityPanel`'s anchor sectio
 
 ## Testing
 
-- `src/lib/audit/anchor.test.ts` — extend the existing harness for `runAdminAnchor`:
-  `disabled` (setting off), `skipped` (no admin head / head unchanged since last
-  admin anchor), `anchored` (mocked TSA response → an `adminAuditAnchor` row),
-  `failed` (TSA HTTP error). Reuse the mocking approach already used for
-  `runAnchor`; assert `runAnchor` (access) behavior is unchanged.
-- `shouldAnchor`, `verifyOneAnchor`, `rfc3161` — already covered, reused, not
-  re-tested.
-- `pnpm build` typechecks the new routes + panel prop + schema client.
+Reality check on the existing harness: `src/lib/audit/anchor.test.ts` tests only
+the **pure** helpers (`anchorPreimage`, `anchorDigest`, `shouldAnchor`). There is
+**no db/fetch mock harness** — `runAnchor` itself is not unit-tested today; it is
+validated by `pnpm build` + manual Gate-A. This slice adds no new pure logic (the
+generalization is db-bound plumbing mirroring the already-proven `runAnchor`), so
+it introduces **no new unit tests**, consistent with how `runAnchor` is validated.
+
+- `shouldAnchor`, `anchorDigest`, `verifyOneAnchor`, `rfc3161` — already covered by
+  existing tests, reused unchanged, not re-tested.
+- `pnpm build` typechecks the new routes, the panel prop, the schema client, and
+  the `runAnchorFor` refactor (a regression surfaces as a type error).
+- Correctness of `runAdminAnchor` + the admin verify/token routes is confirmed by
+  **Gate-A** after deploy — the same bar `runAnchor` was held to.
 
 ## Deploy
 
