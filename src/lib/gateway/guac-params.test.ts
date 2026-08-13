@@ -41,6 +41,12 @@ describe("toGuacArgs", () => {
     expect(toGuacArgs({}, "none", "RDP")).toEqual({ "disable-copy": "true", "disable-paste": "true" });
     expect(toGuacArgs({}, "allow", "RDP")).toEqual({});
   });
+  it("VNC clipboard: maps clipboardMode to disable-copy/paste, nothing else", () => {
+    expect(toGuacArgs({}, "allow", "VNC")).toEqual({});
+    expect(toGuacArgs({}, "no_copy", "VNC")).toEqual({ "disable-copy": "true" });
+    expect(toGuacArgs({}, "no_paste", "VNC")).toEqual({ "disable-paste": "true" });
+    expect(toGuacArgs({}, "none", "VNC")).toEqual({ "disable-copy": "true", "disable-paste": "true" });
+  });
 });
 
 describe("toGuacArgs file transfer", () => {

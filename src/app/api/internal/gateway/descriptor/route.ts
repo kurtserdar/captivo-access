@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     if (!isolationEnabled()) return NextResponse.json({ error: "isolation_disabled" }, { status: 404 });
     const [browserHost, browserPort] = (process.env.ISOLATED_BROWSER_ADDR ?? "captivo-browser:5900").split(":");
     return NextResponse.json({
-      protocol: "vnc", params: {},
+      protocol: "vnc", params: toGuacArgs({}, site.clipboardMode, "VNC"),
       targetHost: browserHost, targetPort: Number(browserPort) || 5900,
       username: "", secret: "", secretKind: "NONE",
       navigateUrl: site.upstreamUrl ?? "",
