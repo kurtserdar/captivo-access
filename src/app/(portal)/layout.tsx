@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
 import { LogoutButton } from "../(app)/logout-button";
 import { PortalNav } from "./_nav/portal-nav";
+import { BrandLockup } from "@/components/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +15,7 @@ export default async function PortalLayout({ children }: { children: React.React
       <div className="vp-brandline" />
       <header className="vp-nav">
         <div className="vp-brand">
-          <div className="vp-logo">C</div>
-          <span className="vp-word">Captivo <span className="vp-word-sub">ACCESS</span></span>
+          <BrandLockup size={26} />
         </div>
         <nav className="vp-navlinks">
           <PortalNav />

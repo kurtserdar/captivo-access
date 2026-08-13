@@ -718,9 +718,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .vp-brandline { height: 3px; background: linear-gradient(90deg,#0f766e,#2dd4bf 40%,#0f766e); }
 .vp-nav { display: flex; align-items: center; gap: 24px; height: 64px; padding: 0 48px; border-bottom: 1px solid #eceae6; }
 .vp-brand { display: flex; align-items: center; gap: 10px; }
-.vp-logo { width: 28px; height: 28px; border-radius: 8px; background: #0f766e; color: #fff; display: flex; align-items: center; justify-content: center; font: 700 14px var(--font-plex-mono), monospace; }
-.vp-word { font: 700 15px var(--font-public-sans), sans-serif; color: #1c1917; }
-.vp-word-sub { color: #a8a29e; font-weight: 500; font-size: 11px; letter-spacing: .12em; }
+.vp-brand .brand-word { color: #1c1917; }
+.vp-brand .brand-access { color: #a8a29e; }
 .vp-navlinks { display: flex; gap: 24px; }
 .vp-navlink { font-size: 14px; color: #78716c; text-decoration: none; }
 .vp-navlink-active { color: #1c1917; font-weight: 600; }
