@@ -27,6 +27,15 @@ def _spawn(display, url, profile):
     disp = ":%d" % display
     env = {**os.environ, "DISPLAY": disp}
     os.makedirs(profile, exist_ok=True)
+    # A SIGKILLed predecessor on this (reused) display can leave a stale X lock +
+    # socket, so the new Xvfb refuses to start ("server already active") and x11vnc
+    # then serves a dead/blank display — an intermittent blank-session hang. Clear
+    # both before starting so every reused display slot is clean.
+    for stale in ("/tmp/.X%d-lock" % display, "/tmp/.X11-unix/X%d" % display):
+        try:
+            os.remove(stale)
+        except OSError:
+            pass
     xvfb = subprocess.Popen(["Xvfb", disp, "-screen", "0", "1280x800x24", "-nolisten", "tcp"])
     time.sleep(1.0)
     fbox = subprocess.Popen(["fluxbox"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
