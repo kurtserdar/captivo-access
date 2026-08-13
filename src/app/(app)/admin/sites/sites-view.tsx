@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { textMatch } from "@/lib/table/filter";
 import { EditSiteButton } from "./edit-site-button";
 import { SiteAvatar } from "@/app/(app)/_shell/site-avatar";
 import { TestConnectionButton } from "./test-connection-button";
@@ -83,6 +84,10 @@ export function SitesView({
   recordingEnabled: boolean;
 }) {
   const [view, setView] = useState<View>("cards");
+  const [q, setQ] = useState("");
+  const filtered = sites.filter((s) =>
+    textMatch([s.name, s.hostname, s.connectorName, s.upstreamUrl, s.gatewayTarget, s.description, s.accessMode], q),
+  );
 
   useEffect(() => {
     try {
@@ -106,9 +111,18 @@ export function SitesView({
         </div>
       </div>
 
+      <div className="filter-bar" style={{ marginBottom: "1rem" }}>
+        <div className="field field-search">
+          <label className="field-label" htmlFor="site-q">Search</label>
+          <input id="site-q" className="input" placeholder="name, hostname, connector, address…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+      </div>
+
+      {filtered.length === 0 && <div className="empty">No matching resources.</div>}
+
       {view === "cards" ? (
         <div className="site-grid">
-          {sites.map((s) => (
+          {filtered.map((s) => (
             <div key={s.id} className="card site-card">
               <div className="site-card-head">
                 <SiteAvatar name={s.name} siteId={s.id} hasLogo={s.hasLogo} />
@@ -146,7 +160,7 @@ export function SitesView({
               </tr>
             </thead>
             <tbody>
-              {sites.map((s) => (
+              {filtered.map((s) => (
                 <tr key={s.id}>
                   <td>
                     <span className="cell-inline"><SiteAvatar name={s.name} siteId={s.id} hasLogo={s.hasLogo} /> {s.name} <GatewayPill accessMode={s.accessMode} /></span>

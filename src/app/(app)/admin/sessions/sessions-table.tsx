@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
+import { textMatch } from "@/lib/table/filter";
 import { RevokeSessionButton } from "./revoke-session-button";
 
 export type SessionRow = {
@@ -21,9 +22,12 @@ export function SessionsTable({ sessions, currentSessionId }: { sessions: Sessio
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { confirm, dialog } = useConfirm();
+  const [q, setQ] = useState("");
 
-  // Selectable = every row except the caller's own current session.
-  const selectableIds = sessions.filter((s) => s.id !== currentSessionId).map((s) => s.id);
+  const filtered = sessions.filter((s) => textMatch([s.userName, s.userEmail, s.ip, s.userAgent], q));
+
+  // Selectable = every visible row except the caller's own current session.
+  const selectableIds = filtered.filter((s) => s.id !== currentSessionId).map((s) => s.id);
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
 
   function toggle(id: string) {
@@ -72,6 +76,12 @@ export function SessionsTable({ sessions, currentSessionId }: { sessions: Sessio
         </button>
       </div>
       {error && <p className="notice error" role="alert">{error}</p>}
+      <div className="filter-bar" style={{ margin: ".2rem 0 .8rem" }}>
+        <div className="field field-search">
+          <label className="field-label" htmlFor="sess-q">Search</label>
+          <input id="sess-q" className="input" placeholder="user, email, IP, browser…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+      </div>
       <div className="table-wrap">
         <table className="table">
           <thead>
@@ -87,7 +97,7 @@ export function SessionsTable({ sessions, currentSessionId }: { sessions: Sessio
             </tr>
           </thead>
           <tbody>
-            {sessions.map((s) => {
+            {filtered.map((s) => {
               const isCurrent = s.id === currentSessionId;
               return (
                 <tr key={s.id}>

@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
+import { textMatch } from "@/lib/table/filter";
 import { TerminateButton } from "@/app/(app)/_console/terminate-button";
 import { RevokeAccessButton } from "@/app/(app)/_console/revoke-access-button";
 
@@ -9,8 +11,22 @@ export type LiveRow =
   | { kind: "web"; siteName: string; userLabel: string; host: string; startedAt: string; grantId: string | null };
 
 export function LiveTable({ rows, canTerminate }: { rows: LiveRow[]; canTerminate: boolean }) {
+  const [q, setQ] = useState("");
   if (rows.length === 0) return <div className="empty">No active sessions.</div>;
+  const filtered = rows.filter((r) =>
+    textMatch([r.userLabel, r.siteName, r.kind === "gateway" ? r.protocol : r.host], q),
+  );
   return (
+    <>
+    <div className="filter-bar" style={{ marginBottom: ".8rem" }}>
+      <div className="field field-search">
+        <label className="field-label" htmlFor="live-q">Search</label>
+        <input id="live-q" className="input" placeholder="user, resource, type…" value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
+    </div>
+    {filtered.length === 0 ? (
+      <div className="empty">No matching sessions.</div>
+    ) : (
     <div className="table-wrap">
       <table className="table">
         <thead>
@@ -24,7 +40,7 @@ export function LiveTable({ rows, canTerminate }: { rows: LiveRow[]; canTerminat
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) =>
+          {filtered.map((r) =>
             r.kind === "gateway" ? (
               <tr key={r.sessionId}>
                 <td>{r.userLabel}</td>
@@ -59,5 +75,7 @@ export function LiveTable({ rows, canTerminate }: { rows: LiveRow[]; canTerminat
         </tbody>
       </table>
     </div>
+    )}
+    </>
   );
 }
