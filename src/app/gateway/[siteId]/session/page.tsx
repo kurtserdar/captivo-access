@@ -29,7 +29,9 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
   // High-fidelity ISOLATED streams via KasmVNC — the data-plane reverse-proxies its
   // web client + WS at /kasm-tunnel/. Render it full-viewport instead of the guac client.
   if (site.accessMode === "ISOLATED" && site.isolationHiFi) {
-    return <iframe title="Isolated browser" src="/kasm-tunnel/" style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", border: 0 }} allow="clipboard-read; clipboard-write" />;
+    // ?site pins the session for the data-plane; it sets a cookie so the KasmVNC
+    // client's follow-up asset/WS requests (which carry no ?site) inherit it.
+    return <iframe title="Isolated browser" src={`/kasm-tunnel/?site=${siteId}`} style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", border: 0 }} allow="clipboard-read; clipboard-write" />;
   }
   const recorded = recordingEnabled() && site.recordSessions;
   // Ask for recording consent once per browser session (matches web sessions):
