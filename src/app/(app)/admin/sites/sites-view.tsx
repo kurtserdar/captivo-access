@@ -56,6 +56,12 @@ function HealthPill({ s }: { s: SiteRow }) {
   );
 }
 
+function healthState(s: SiteRow): "up" | "down" | "unknown" {
+  const noAddress = s.accessMode !== "GATEWAY" && s.upstreamUrl == null;
+  if (noAddress || s.probeOk == null) return "unknown";
+  return s.probeOk ? "up" : "down";
+}
+
 function Actions({
   s,
   connectors,
@@ -122,63 +128,61 @@ export function SitesView({
 
       {view === "cards" ? (
         <div className="site-grid">
-          {filtered.map((s) => (
-            <div key={s.id} className="card site-card">
-              <div className="site-card-head">
-                <SiteAvatar name={s.name} siteId={s.id} hasLogo={s.hasLogo} />
-                <div className="site-card-title">
-                  <div className="site-card-name">{s.name} <GatewayPill accessMode={s.accessMode} /></div>
-                  <div className="site-card-host">
-                    <span className="cell-truncate" title={s.hostname}>{s.hostname}</span>
-                    <CopyButton value={s.hostname} label="Copy" />
+          {filtered.map((s) => {
+            const internal = s.upstreamUrl ?? s.gatewayTarget;
+            return (
+              <div key={s.id} className={`card site-card hs-${healthState(s)}`}>
+                <div className="site-card-head">
+                  <SiteAvatar name={s.name} siteId={s.id} hasLogo={s.hasLogo} />
+                  <div className="site-card-title">
+                    <div className="site-card-name">{s.name} <GatewayPill accessMode={s.accessMode} /></div>
+                    <div className="site-card-host">
+                      <span className="cell-truncate" title={s.hostname}>{s.hostname}</span>
+                      <CopyButton value={s.hostname} label="Copy" />
+                    </div>
                   </div>
                 </div>
+                <div className="site-card-addr">
+                  {internal ? (
+                    <span className="cell-sub cell-inline"><span className="cell-truncate" title={internal}>→ {internal}</span><CopyButton value={internal} label="Copy" /></span>
+                  ) : (
+                    <span className="cell-sub">No internal address</span>
+                  )}
+                  <span className="cell-sub">{s.connectorName}{s.grantCount > 0 ? ` · ${s.grantCount} user${s.grantCount === 1 ? "" : "s"}` : ""}</span>
+                </div>
+                <div className="site-card-health"><HealthPill s={s} /></div>
+                {s.description && <div className="cell-sub">{s.description}</div>}
+                <div className="site-card-foot"><Actions s={s} connectors={connectors} recordingEnabled={recordingEnabled} /></div>
               </div>
-              <div className="site-card-meta">
-                <div className="site-card-mrow"><span className="site-card-k">Connector</span><span className="site-card-v">{s.connectorName}</span></div>
-                {(s.upstreamUrl ?? s.gatewayTarget) && (
-                  <div className="site-card-mrow">
-                    <span className="site-card-k">Internal</span>
-                    <span className="site-card-v cell-inline"><span className="cell-truncate" title={(s.upstreamUrl ?? s.gatewayTarget)!}>{s.upstreamUrl ?? s.gatewayTarget}</span><CopyButton value={(s.upstreamUrl ?? s.gatewayTarget)!} label="Copy" /></span>
-                  </div>
-                )}
-                <div className="site-card-mrow"><span className="site-card-k">Health</span><span className="site-card-v"><HealthPill s={s} /></span></div>
-                {s.description && (
-                  <div className="site-card-mrow"><span className="site-card-k">Notes</span><span className="site-card-v">{s.description}</span></div>
-                )}
-              </div>
-              <div className="site-card-foot"><Actions s={s} connectors={connectors} recordingEnabled={recordingEnabled} /></div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th><th>Hostname</th><th>Connector</th><th>Internal address</th><th>Description</th><th>Health</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((s) => (
-                <tr key={s.id}>
-                  <td>
-                    <span className="cell-inline"><SiteAvatar name={s.name} siteId={s.id} hasLogo={s.hasLogo} /> {s.name} <GatewayPill accessMode={s.accessMode} /></span>
-                  </td>
-                  <td className="cell-sub">
-                    <span className="cell-inline"><span className="cell-truncate" title={s.hostname}>{s.hostname}</span><CopyButton value={s.hostname} label="Copy" /></span>
-                  </td>
-                  <td>{s.connectorName}</td>
-                  <td className="cell-sub">
-                    {(s.upstreamUrl ?? s.gatewayTarget) ? (<span className="cell-inline"><span className="cell-truncate" title={(s.upstreamUrl ?? s.gatewayTarget)!}>{s.upstreamUrl ?? s.gatewayTarget}</span><CopyButton value={(s.upstreamUrl ?? s.gatewayTarget)!} label="Copy" /></span>) : "—"}
-                  </td>
-                  <td className="cell-sub">{s.description ?? "—"}</td>
-                  <td><HealthPill s={s} /></td>
-                  <td><Actions s={s} connectors={connectors} recordingEnabled={recordingEnabled} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="site-rowlist">
+          {filtered.map((s) => {
+            const internal = s.upstreamUrl ?? s.gatewayTarget;
+            return (
+              <div key={s.id} className={`card site-rowcard hs-${healthState(s)}`}>
+                <div className="src-id">
+                  <SiteAvatar name={s.name} siteId={s.id} hasLogo={s.hasLogo} />
+                  <div className="src-idtext">
+                    <div className="site-card-name">{s.name} <GatewayPill accessMode={s.accessMode} /></div>
+                    <div className="site-card-host"><span className="cell-truncate" title={s.hostname}>{s.hostname}</span><CopyButton value={s.hostname} label="Copy" /></div>
+                  </div>
+                </div>
+                <div className="src-mid">
+                  {internal ? (
+                    <span className="cell-inline"><span className="cell-truncate" title={internal}>{internal}</span><CopyButton value={internal} label="Copy" /></span>
+                  ) : (
+                    <span className="cell-sub">No internal address</span>
+                  )}
+                  <span className="cell-sub">{s.connectorName}{s.grantCount > 0 ? ` · ${s.grantCount} user${s.grantCount === 1 ? "" : "s"}` : ""}</span>
+                </div>
+                <div className="src-health"><HealthPill s={s} /></div>
+                <div className="src-acts"><Actions s={s} connectors={connectors} recordingEnabled={recordingEnabled} /></div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

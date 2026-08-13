@@ -362,22 +362,39 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 /* ---- sites: card/list view ---- */
 .section-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .view-toggle { display: inline-flex; gap: 0.4rem; }
-.site-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1rem; }
-.site-card { display:flex; flex-direction:column; gap:0.9rem; padding-top:1.05rem; transition:border-color .12s,box-shadow .12s,transform .12s; }
-.site-card:hover { border-color:color-mix(in srgb,var(--accent) 32%,var(--line)); box-shadow:var(--shadow); transform:translateY(-2px); }
-.site-card-name { font-weight:660; }
+.site-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: 1rem; }
+/* Cards + row-cards carry a left status strip (::before) colored by reachability. */
+.site-card, .site-rowcard { position:relative; overflow:hidden; }
+.site-card::before, .site-rowcard::before { content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--faint); }
+.hs-up::before { background:var(--ok); }
+.hs-down::before { background:var(--danger); }
+.hs-unknown::before { background:var(--faint); }
+
+/* --- Cards view (status strip) --- */
+.site-card { display:flex; flex-direction:column; gap:0.7rem; transition:box-shadow .15s,transform .15s; }
+.site-card:hover { box-shadow:var(--shadow); transform:translateY(-2px); }
 .site-card-head { display:flex; align-items:center; gap:0.7rem; }
-.site-card-head > .site-avatar { width:3.75rem; height:3.75rem; border-radius:13px; font-size:1.5rem; }
+.site-card-head > .site-avatar { width:2.6rem; height:2.6rem; border-radius:11px; font-size:1rem; }
 .site-card-title { min-width:0; }
 .site-card-name { font-weight:650; font-size:1.02rem; display:flex; align-items:center; gap:0.45rem; }
 .site-card-host { display:flex; align-items:center; gap:0.4rem; color:var(--muted); font-size:0.84rem; min-width:0; }
-.site-card-meta { display:flex; flex-direction:column; gap:0.5rem; border-top:1px solid var(--line); padding-top:0.8rem; margin:0; }
-.site-card-mrow { display:flex; justify-content:space-between; gap:0.8rem; align-items:baseline; }
-.site-card-k { color:var(--muted); font-size:0.82rem; flex:0 0 auto; }
-.site-card-v { text-align:right; min-width:0; }
-.site-card-foot { display:flex; border-top:1px solid var(--line); padding-top:0.8rem; }
+.site-card-addr { display:flex; flex-direction:column; gap:0.3rem; min-width:0; }
+.site-card-health { display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; }
+.site-card-foot { display:flex; margin-top:auto; border-top:1px solid var(--line-soft); padding-top:0.7rem; }
 .site-card-foot .row-actions { width:100%; }
 .site-card-foot .row-actions > :last-child { margin-left:auto; }
+
+/* --- List view (compact row-cards) --- */
+.site-rowlist { display:flex; flex-direction:column; gap:0.6rem; }
+.site-rowcard { display:flex; align-items:center; gap:1rem; padding:0.7rem 1rem 0.7rem 1.15rem; transition:background .12s; }
+.site-rowcard:hover { background:var(--surface-hover); }
+.site-rowcard .site-avatar { width:2.2rem; height:2.2rem; border-radius:8px; font-size:0.85rem; }
+.src-id { display:flex; align-items:center; gap:0.7rem; flex:1 1 15rem; min-width:0; }
+.src-idtext { min-width:0; }
+.src-mid { flex:1.3 1 13rem; min-width:0; display:flex; flex-direction:column; gap:0.15rem; font-size:0.85rem; }
+.src-health { flex:0 0 auto; }
+.src-acts { flex:0 0 auto; }
+@media (max-width:760px){ .site-rowcard{ flex-wrap:wrap; } .src-mid,.src-health{ flex-basis:100%; } }
 .access-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(17rem,1fr)); gap:0.8rem; margin-top:0.5rem; }
 .access-card { display:flex; flex-direction:column; gap:0.55rem; padding:0.95rem 1.05rem; }
 .access-card-head { display:flex; align-items:center; gap:0.55rem; }
