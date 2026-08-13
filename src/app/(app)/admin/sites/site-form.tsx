@@ -280,23 +280,35 @@ export function SiteForm({
       </>
       )}
       {accessMode === "ISOLATED" && (
-        <div className="field">
-          <label className="field-label" htmlFor="site-iso-url">Internal URL</label>
-          <input
-            id="site-iso-url"
-            type="text"
-            className="input"
-            value={upstreamUrl}
-            onChange={(e) => setUpstreamUrl(e.target.value)}
-            required
-            placeholder="https://wiki.internal"
-          />
-          <p className="hint">
-            The internal web app the throwaway browser opens (e.g. <code>https://wiki.internal</code>). It&apos;s
-            reached from the connector&apos;s network, next to the isolated browser.
-          </p>
-          {tlsPortWarning && <p className="notice warn" role="alert">{tlsPortWarning}</p>}
-        </div>
+        <>
+          <div className="field">
+            <label className="field-label" htmlFor="site-iso-url">Internal URL</label>
+            <input
+              id="site-iso-url"
+              type="text"
+              className="input"
+              value={upstreamUrl}
+              onChange={(e) => setUpstreamUrl(e.target.value)}
+              required
+              placeholder="https://wiki.internal"
+            />
+            <p className="hint">
+              The internal web app the throwaway browser opens (e.g. <code>https://wiki.internal</code>). It&apos;s
+              reached from the connector&apos;s network, next to the isolated browser.
+            </p>
+            {tlsPortWarning && <p className="notice warn" role="alert">{tlsPortWarning}</p>}
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="site-clipboard-iso">Clipboard</label>
+            <select id="site-clipboard-iso" className="select" value={clipboardMode} onChange={(e) => setClipboardMode(e.target.value)}>
+              <option value="allow">Allow copy &amp; paste</option>
+              <option value="no_copy">Block copy out (no exfil)</option>
+              <option value="no_paste">Block paste in</option>
+              <option value="none">Block both</option>
+            </select>
+            <span className="hint">Enforced by the session engine (guacd) — copy out of the isolated browser is disabled server-side, a real control.</span>
+          </div>
+        </>
       )}
       {accessMode === "GATEWAY" && (
         <>
