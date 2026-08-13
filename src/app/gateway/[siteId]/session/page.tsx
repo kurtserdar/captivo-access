@@ -31,7 +31,10 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
   if (site.accessMode === "ISOLATED" && site.isolationHiFi) {
     // ?site pins the session for the data-plane; it sets a cookie so the KasmVNC
     // client's follow-up asset/WS requests (which carry no ?site) inherit it.
-    return <iframe title="Isolated browser" src={`/kasm-tunnel/?site=${siteId}`} style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", border: 0 }} allow="clipboard-read; clipboard-write" />;
+    // path= keeps the client's RFB WebSocket under /kasm-tunnel/ (its default is
+    // an absolute /websockify, which nginx would route to the manager, not the
+    // data-plane, leaving the client stuck on "Connecting…").
+    return <iframe title="Isolated browser" src={`/kasm-tunnel/?site=${siteId}&path=kasm-tunnel/websockify`} style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", border: 0 }} allow="clipboard-read; clipboard-write" />;
   }
   const recorded = recordingEnabled() && site.recordSessions;
   // Ask for recording consent once per browser session (matches web sessions):
