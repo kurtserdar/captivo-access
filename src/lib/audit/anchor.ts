@@ -33,24 +33,37 @@ export type AnchorRunResult =
   | { status: "anchored"; anchoredSeq: string; genTime: string }
   | { status: "failed"; error: string };
 
-// runAnchor is fail-open: it returns a result object and never throws, so the
+// A chain-specific binding for the shared anchoring runner: which chain-state
+// singleton to read the head from, and where its anchors are stored.
+type AnchorTarget = {
+  chainStateId: string; // "singleton" | "admin-singleton"
+  findLastAnchor: () => Promise<{ anchoredSeq: bigint; anchoredHash: string } | null>;
+  // Positional args so each binding writes the Prisma `create` object literal
+  // inline (Prisma's XOR create-input type rejects a non-literal object).
+  createAnchor: (
+    anchoredSeq: bigint,
+    anchoredHash: string,
+    tsaUrl: string,
+    token: Uint8Array<ArrayBuffer>,
+    genTime: Date,
+  ) => Promise<unknown>;
+};
+
+// runAnchorFor is fail-open: it returns a result object and never throws, so the
 // cron handler always responds 200 and the next run retries.
-export async function runAnchor(): Promise<AnchorRunResult> {
+async function runAnchorFor(target: AnchorTarget): Promise<AnchorRunResult> {
   try {
     if (!(await resolvedExternalAnchorEnabled())) return { status: "disabled" };
     const tsaUrl = await resolvedAnchorTsaUrl();
     if (tsaUrl === "") return { status: "disabled" };
 
     const head = await db.auditChainState.findUnique({
-      where: { id: "singleton" },
+      where: { id: target.chainStateId },
       select: { lastSeq: true, lastHash: true },
     });
     if (!head) return { status: "skipped" };
 
-    const last = await db.auditAnchor.findFirst({
-      orderBy: { anchoredSeq: "desc" },
-      select: { anchoredSeq: true, anchoredHash: true },
-    });
+    const last = await target.findLastAnchor();
     if (!shouldAnchor(head, last)) return { status: "skipped" };
 
     const digest = anchorDigest(head.lastSeq, head.lastHash);
@@ -77,13 +90,34 @@ export async function runAnchor(): Promise<AnchorRunResult> {
     }
 
     const { token, genTime } = parseTimeStampResponse(der);
-    await db.auditAnchor.create({
-      // Prisma's Bytes wants a Uint8Array over a plain ArrayBuffer; a Node Buffer's
-      // backing buffer is ArrayBufferLike, so copy into a fresh Uint8Array.
-      data: { anchoredSeq: head.lastSeq, anchoredHash: head.lastHash, tsaUrl, token: new Uint8Array(token), genTime },
-    });
+    // Prisma's Bytes wants a Uint8Array over a plain ArrayBuffer; a Node Buffer's
+    // backing buffer is ArrayBufferLike, so copy into a fresh Uint8Array.
+    await target.createAnchor(head.lastSeq, head.lastHash, tsaUrl, new Uint8Array(token), genTime);
     return { status: "anchored", anchoredSeq: head.lastSeq.toString(), genTime: genTime.toISOString() };
   } catch (e) {
     return { status: "failed", error: e instanceof Error ? e.message : "unknown" };
   }
+}
+
+// Anchors the access (proxy) audit chain. Behavior-identical to before the
+// runAnchorFor extraction.
+export async function runAnchor(): Promise<AnchorRunResult> {
+  return runAnchorFor({
+    chainStateId: "singleton",
+    findLastAnchor: () =>
+      db.auditAnchor.findFirst({ orderBy: { anchoredSeq: "desc" }, select: { anchoredSeq: true, anchoredHash: true } }),
+    createAnchor: (anchoredSeq, anchoredHash, tsaUrl, token, genTime) =>
+      db.auditAnchor.create({ data: { anchoredSeq, anchoredHash, tsaUrl, token, genTime } }),
+  });
+}
+
+// Anchors the admin-audit chain (head under "admin-singleton").
+export async function runAdminAnchor(): Promise<AnchorRunResult> {
+  return runAnchorFor({
+    chainStateId: "admin-singleton",
+    findLastAnchor: () =>
+      db.adminAuditAnchor.findFirst({ orderBy: { anchoredSeq: "desc" }, select: { anchoredSeq: true, anchoredHash: true } }),
+    createAnchor: (anchoredSeq, anchoredHash, tsaUrl, token, genTime) =>
+      db.adminAuditAnchor.create({ data: { anchoredSeq, anchoredHash, tsaUrl, token, genTime } }),
+  });
 }

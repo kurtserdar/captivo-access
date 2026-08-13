@@ -283,6 +283,22 @@ model AuditAnchor {
   @@index([createdAt])
 }
 
+// AdminAuditAnchor mirrors AuditAnchor for the admin-audit chain (head stored in
+// AuditChainState under id = "admin-singleton"). Kept a separate table so the
+// working, externally-notarized access anchor path stays untouched.
+model AdminAuditAnchor {
+  id           String   @id @default(cuid())
+  anchoredSeq  BigInt
+  anchoredHash String
+  tsaUrl       String
+  token        Bytes
+  genTime      DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([anchoredSeq])
+  @@index([createdAt])
+}
+
 // Singleton (id = "singleton") holding the outbound SMTP relay configuration.
 model SmtpConfig {
   id        String   @id
