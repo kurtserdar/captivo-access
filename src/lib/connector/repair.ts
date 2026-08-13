@@ -12,9 +12,10 @@ export const GATEWAY_NETWORK = "captivo-gateway";
 // The `docker run` invocation for the connector container. Pass `code` to enroll
 // a connector (install / re-pair); omit it to update an already-paired connector
 // in place (the token already in /data re-authenticates). Every connector bundles
-// guacd (the RDP/SSH/VNC engine for native remote desktops) on the shared
-// GATEWAY_NETWORK, idempotently — baked in so it survives every recreate/update
-// and every connector can serve remote-desktop resources. Pure + db-free.
+// guacd (the RDP/SSH/VNC engine for native remote desktops) and the isolated
+// browser (RBI — an isolated-web-app resource opens inside it) on the shared
+// GATEWAY_NETWORK, idempotently — baked in so it survives every recreate/update.
+// Pure + db-free.
 function runCommand(managerUrl: string, tunnelUrl: string, code?: string, pull = true): string {
   const guacd =
     `docker network inspect ${GATEWAY_NETWORK} >/dev/null 2>&1 || docker network create ${GATEWAY_NETWORK} && ` +
@@ -25,7 +26,11 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, pull =
     // guacd 1.6.0's entrypoint execs guacd directly and appends "$@" as guacd args,
     // so a `/bin/sh -c '…|tee…'` CMD would be swallowed. Bypass the entrypoint to run
     // our own shell wrapper that tees guacd's output into the shared log volume.
-    `--entrypoint /bin/sh guacamole/guacd:1.6.0 -c '/opt/guacamole/sbin/guacd -b 0.0.0.0 -L info -f 2>&1 | tee /guaclog/guacd.log' && `;
+    `--entrypoint /bin/sh guacamole/guacd:1.6.0 -c '/opt/guacamole/sbin/guacd -b 0.0.0.0 -L info -f 2>&1 | tee /guaclog/guacd.log' && ` +
+    // Isolated browser (RBI): guacd VNC-connects to it at captivo-browser:5900;
+    // the data-plane navigates it via captivo-browser:7900. Ports stay internal.
+    `docker rm -f captivo-browser >/dev/null 2>&1; ` +
+    `docker run -d --name captivo-browser --restart unless-stopped --network ${GATEWAY_NETWORK} --shm-size=1g ghcr.io/kurtserdar/captivo-access-browser:latest && `;
   // Pull the connector image right before running it. `docker run <img>:latest`
   // reuses a locally-cached `latest` and will NOT fetch a newer build — a fresh
   // install on a host that ran an older connector would silently start the stale

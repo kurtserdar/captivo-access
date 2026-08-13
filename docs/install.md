@@ -144,7 +144,11 @@ Now edit `.env`. Every variable, with an example value:
 
 Leave the optional/commented ones (`DNS_API_TOKEN`, `CADDY_DNS_MODULE`,
 `RECORDING_ENABLED` (Pro session recording — gates the per-Resource "Record
-sessions" toggle), `CONNECTOR_TUNNEL_URL` (overrides the default
+sessions" toggle), `ISOLATED_ENABLED` (Pro isolated browser — gates the
+"Isolated browser" Resource type; the `captivo-browser` container is bundled with
+every gateway connector, and if you set the connector's `ALLOWED_TARGETS` it must
+include `captivo-browser:5900` and `captivo-browser:7900`, like `captivo-guacd:4822`),
+`CONNECTOR_TUNNEL_URL` (overrides the default
 `wss://connect.<ACCESS_DOMAIN>` endpoint)) alone unless you know you need them. `DNS_API_TOKEN` is **only** for the large-scale wildcard-certificate escape
 hatch — you do not need it for a normal install.
 
