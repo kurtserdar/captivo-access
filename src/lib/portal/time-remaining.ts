@@ -1,6 +1,6 @@
 export interface Remaining {
   text: string;
-  pct: number; // 0–100, percentage of the window elapsed
+  pct: number; // 0–100, percentage of the window REMAINING (bar depletes toward expiry)
   tone: "urgent" | "ok" | "schedule";
 }
 
@@ -18,16 +18,19 @@ function humanize(ms: number): string {
 // `schedule` is only used as a "has a recurring schedule?" flag, so it accepts
 // any truthy value (the grant's schedule is stored as JSON).
 export function remaining(startISO: string | null, endISO: string | null, schedule: unknown, now: Date): Remaining {
+  // No end date → no depleting window; show a full bar (always/recurring available).
   if (!endISO) {
-    if (schedule) return { text: "Scheduled window", pct: 0, tone: "schedule" };
-    return { text: "Permanent", pct: 0, tone: "ok" };
+    if (schedule) return { text: "Scheduled window", pct: 100, tone: "schedule" };
+    return { text: "Permanent", pct: 100, tone: "ok" };
   }
   const end = new Date(endISO).getTime();
   const start = startISO ? new Date(startISO).getTime() : now.getTime();
   const n = now.getTime();
   const total = Math.max(1, end - start);
   const elapsed = Math.min(total, Math.max(0, n - start));
-  const pct = Math.round((elapsed / total) * 100);
+  // Percentage of the window REMAINING: full when lots of time is left, empty at
+  // expiry, so the bar depletes as the window is consumed.
+  const pct = Math.round(((total - elapsed) / total) * 100);
   const msLeft = end - n;
   const tone: Remaining["tone"] = msLeft < 24 * 3600 * 1000 ? "urgent" : "ok";
   return { text: humanize(msLeft), pct, tone };
