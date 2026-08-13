@@ -58,10 +58,7 @@ export default async function AdminPolicyPage() {
         <SessionPolicyForm initial={policy} />
       </div>
 
-      <div className="card">
-        <div className="card-head"><h2>Grants, retention, network &amp; notifications</h2></div>
-        <PlatformSettingsForm initial={platform} consentEffective={consentEffective} guacDefaults={guacDefaults} />
-      </div>
+      <PlatformSettingsForm initial={platform} consentEffective={consentEffective} guacDefaults={guacDefaults} />
     </main>
   );
 }
