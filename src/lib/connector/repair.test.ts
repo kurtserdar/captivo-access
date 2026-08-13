@@ -102,6 +102,11 @@ describe("every connector bundles guacd on the shared network", () => {
     expect(buildInstallCommand("CODE123", m, t)).toContain("docker pull ghcr.io/kurtserdar/captivo-access-browser:latest");
     expect(buildConnectorUpdateCommand(m, t)).toContain("docker pull ghcr.io/kurtserdar/captivo-access-browser:latest");
   });
+  it("install/update bundle the KasmVNC (hi-fi) browser, pulled fresh", () => {
+    expect(buildInstallCommand("CODE123", m, t)).toContain("--name captivo-kasm");
+    expect(buildInstallCommand("CODE123", m, t)).toContain("docker pull ghcr.io/kurtserdar/captivo-access-kasm-browser:latest");
+    expect(buildConnectorUpdateCommand(m, t)).toContain("--name captivo-kasm");
+  });
   it("captures guacd logs to a shared volume", () => {
     const cmd = buildInstallCommand("CODE123", m, t);
     expect(cmd).toContain("-v captivo_guacd_logs:/guaclog ");

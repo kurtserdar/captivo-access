@@ -147,7 +147,11 @@ Leave the optional/commented ones (`DNS_API_TOKEN`, `CADDY_DNS_MODULE`,
 sessions" toggle), `ISOLATED_ENABLED` (Pro isolated browser — gates the
 "Isolated browser" Resource type; the `captivo-browser` container is bundled with
 every gateway connector, and if you set the connector's `ALLOWED_TARGETS` it must
-include `captivo-browser:5900` and `captivo-browser:7900`, like `captivo-guacd:4822`),
+include `captivo-browser:5900` and `captivo-browser:7900`, like `captivo-guacd:4822`.
+The **High-fidelity** streaming option additionally uses the bundled `captivo-kasm`
+container — reverse-proxied at `/kasm-tunnel`, so host-nginx deployments must route
+`/kasm-tunnel` (and `/kasm-tunnel/`) to the data-plane like `/guac-tunnel`, and
+`ALLOWED_TARGETS` must also include `captivo-kasm:6901` and `captivo-kasm:7900`),
 `CONNECTOR_TUNNEL_URL` (overrides the default
 `wss://connect.<ACCESS_DOMAIN>` endpoint)) alone unless you know you need them. `DNS_API_TOKEN` is **only** for the large-scale wildcard-certificate escape
 hatch — you do not need it for a normal install.

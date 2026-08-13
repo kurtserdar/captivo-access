@@ -35,7 +35,12 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, pull =
     // is pulled below.)
     `docker pull ghcr.io/kurtserdar/captivo-access-browser:latest && ` +
     `docker rm -f captivo-browser >/dev/null 2>&1; ` +
-    `docker run -d --name captivo-browser --restart unless-stopped --network ${GATEWAY_NETWORK} --shm-size=1g ghcr.io/kurtserdar/captivo-access-browser:latest && `;
+    `docker run -d --name captivo-browser --restart unless-stopped --network ${GATEWAY_NETWORK} --shm-size=1g ghcr.io/kurtserdar/captivo-access-browser:latest && ` +
+    // High-fidelity isolated browser (KasmVNC): the data-plane reverse-proxies its
+    // client + WS at captivo-kasm:6901; navigate via captivo-kasm:7900. Internal ports.
+    `docker pull ghcr.io/kurtserdar/captivo-access-kasm-browser:latest && ` +
+    `docker rm -f captivo-kasm >/dev/null 2>&1; ` +
+    `docker run -d --name captivo-kasm --restart unless-stopped --network ${GATEWAY_NETWORK} --shm-size=1g ghcr.io/kurtserdar/captivo-access-kasm-browser:latest && `;
   // Pull the connector image right before running it. `docker run <img>:latest`
   // reuses a locally-cached `latest` and will NOT fetch a newer build — a fresh
   // install on a host that ran an older connector would silently start the stale
