@@ -29,6 +29,11 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, pull =
     `--entrypoint /bin/sh guacamole/guacd:1.6.0 -c '/opt/guacamole/sbin/guacd -b 0.0.0.0 -L info -f 2>&1 | tee /guaclog/guacd.log' && ` +
     // Isolated browser (RBI): guacd VNC-connects to it at captivo-browser:5900;
     // the data-plane navigates it via captivo-browser:7900. Ports stay internal.
+    // Pull first — `docker run <img>:latest` reuses a cached (stale) `latest`, so
+    // without this an update would keep running an old browser build. (guacd is a
+    // pinned tag, so `docker run` auto-pulls it when missing; the connector image
+    // is pulled below.)
+    `docker pull ghcr.io/kurtserdar/captivo-access-browser:latest && ` +
     `docker rm -f captivo-browser >/dev/null 2>&1; ` +
     `docker run -d --name captivo-browser --restart unless-stopped --network ${GATEWAY_NETWORK} --shm-size=1g ghcr.io/kurtserdar/captivo-access-browser:latest && `;
   // Pull the connector image right before running it. `docker run <img>:latest`
