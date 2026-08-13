@@ -11,7 +11,7 @@ export function Heatmap({ heatmap }: { heatmap: Insights["heatmap"] }) {
   const max = Math.max(1, heatmap.max);
   return (
     <>
-      <div className="card-head"><div className="ch-title"><h2>When vendors connect</h2><span className="sub">day × hour (UTC), last 30 days</span></div></div>
+      <div className="card-head"><div className="ch-title"><h2>Traffic by hour</h2><span className="sub">day × hour (UTC), last 30 days</span></div></div>
       <div className="heatmap-wrap" onMouseLeave={() => setHov(null)}>
         <div className="heatmap">
           {heatmap.grid.map((rowVals, dow) => (
