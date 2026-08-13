@@ -13,6 +13,7 @@ import { DeleteConnectorButton } from "./delete-connector-button";
 import { RepairConnectorButton } from "./repair-connector-button";
 import { RevokeConnectorButton } from "./revoke-connector-button";
 import { UpdateConnectorButton } from "./update-connector-button";
+import { DeletePairingButton } from "./delete-pairing-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Connectors" };
@@ -38,6 +39,16 @@ export default async function AdminConnectorsPage() {
     select: { id: true, name: true, status: true, lastSeenAt: true, version: true, _count: { select: { sites: true } } },
     orderBy: { createdAt: "desc" },
   });
+
+  // Fresh-install pairings created but not yet redeemed (the connector hasn't
+  // connected). Re-pair pairings (connectorId set) belong to a connector already
+  // in the list above, so they're excluded here.
+  const pendingPairings = await db.connectorPairing.findMany({
+    where: { usedAt: null, connectorId: null },
+    select: { id: true, name: true, createdAt: true, expiresAt: true },
+    orderBy: { createdAt: "desc" },
+  });
+  const now = Date.now();
 
   const mgr = managerVersion();
   const managerUrl = process.env.MANAGER_PUBLIC_URL?.replace(/\/+$/, "") || "https://manager.<your-access-domain>";
@@ -112,6 +123,43 @@ export default async function AdminConnectorsPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {pendingPairings.length > 0 && (
+        <section style={{ marginTop: "1.5rem" }}>
+          <div className="card-head"><div className="ch-title"><h2>Pending pairings</h2><span className="sub">Created but not yet connected — the connector appears above once it runs its install command.</span></div></div>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Created</th>
+                  <th>Expires</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingPairings.map((p) => {
+                  const expired = p.expiresAt.getTime() < now;
+                  return (
+                    <tr key={p.id}>
+                      <td>{p.name}</td>
+                      <td className="cell-sub"><LocalTime iso={p.createdAt.toISOString()} /></td>
+                      <td className="cell-sub">
+                        {expired ? (
+                          <span className="pill warn">Expired</span>
+                        ) : (
+                          <LocalTime iso={p.expiresAt.toISOString()} />
+                        )}
+                      </td>
+                      <td><DeletePairingButton id={p.id} name={p.name} /></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
     </main>
   );
