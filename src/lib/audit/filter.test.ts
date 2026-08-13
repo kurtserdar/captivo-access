@@ -1,5 +1,28 @@
 import { describe, it, expect } from "vitest";
 import { buildAuditWhere, parseAuditFilter } from "./filter";
+import { TRANSFER_VERBS } from "./access-format";
+
+describe("buildAuditWhere kind", () => {
+  it("kind=file filters method to the four transfer verbs", () => {
+    const where = buildAuditWhere({ kind: "file", limit: 50, offset: 0 });
+    expect(where.method).toEqual({ in: [...TRANSFER_VERBS] });
+  });
+  it("no kind means no method filter", () => {
+    const where = buildAuditWhere({ limit: 50, offset: 0 });
+    expect(where.method).toBeUndefined();
+  });
+});
+
+describe("parseAuditFilter kind", () => {
+  it("reads kind=file", () => {
+    const f = parseAuditFilter(new URLSearchParams("kind=file"), { defaultLimit: 50, maxLimit: 500 });
+    expect(f.kind).toBe("file");
+  });
+  it("ignores other kind values", () => {
+    const f = parseAuditFilter(new URLSearchParams("kind=bogus"), { defaultLimit: 50, maxLimit: 500 });
+    expect(f.kind).toBeUndefined();
+  });
+});
 
 describe("buildAuditWhere", () => {
   it("adds no OR block when q is empty/whitespace", () => {

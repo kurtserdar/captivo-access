@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client";
 import type { AuditFilter } from "./query";
+import { TRANSFER_VERBS } from "./access-format";
 
 // Pure + db-free: builds the Prisma `where` and parses query params so the two
 // audit routes (list + CSV export) share one definition and unit-test in node.
@@ -8,6 +9,7 @@ export function buildAuditWhere(filter: AuditFilter): Prisma.AuditEventWhereInpu
   if (filter.userId) where.userId = filter.userId;
   if (filter.siteId) where.siteId = filter.siteId;
   if (filter.decision) where.decision = filter.decision;
+  if (filter.kind === "file") where.method = { in: [...TRANSFER_VERBS] };
   if (filter.from || filter.to) {
     where.timestamp = {
       ...(filter.from ? { gte: filter.from } : {}),
@@ -42,11 +44,12 @@ export function parseAuditFilter(
   const siteId = sp.get("siteId")?.trim() || undefined;
   const decisionParam = sp.get("decision");
   const decision = decisionParam === "ALLOW" || decisionParam === "DENY" ? decisionParam : undefined;
+  const kind = sp.get("kind") === "file" ? "file" : undefined;
   const from = parseDate(sp.get("from"));
   const to = parseDate(sp.get("to"));
   const limitParam = Number(sp.get("limit"));
   const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(Math.floor(limitParam), opts.maxLimit) : opts.defaultLimit;
   const offsetParam = Number(sp.get("offset"));
   const offset = Number.isFinite(offsetParam) && offsetParam >= 0 ? Math.floor(offsetParam) : 0;
-  return { q, userId, siteId, decision, from, to, limit, offset };
+  return { q, userId, siteId, decision, kind, from, to, limit, offset };
 }

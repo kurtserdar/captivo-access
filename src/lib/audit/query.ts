@@ -6,6 +6,7 @@ export type AuditFilter = {
   userId?: string;
   siteId?: string;
   decision?: "ALLOW" | "DENY";
+  kind?: "file";
   from?: Date;
   to?: Date;
   limit: number;
