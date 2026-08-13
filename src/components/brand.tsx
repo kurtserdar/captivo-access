@@ -1,18 +1,36 @@
+// Captivo Access brand mark: the parent "orbit" symbol (open C-arc) with the
+// product-specific keyhole dot at the gap, in the cyan→violet brand gradient.
+// The functional UI accent stays teal; this gradient is used only for the mark.
 export function BrandMark({ size = 22, className }: { size?: number; className?: string }) {
-  // Shield + aperture "gate": the security-vault silhouette with a keyhole-like
-  // opening — the Zero-Trust "controlled gateway" motif, in the signature teal.
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" className={className} aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" className={className} aria-hidden="true">
       <defs>
-        <linearGradient id="ca-mark" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#2ee6c9" />
-          <stop offset="1" stopColor="#0e9488" />
+        <linearGradient id="ca-orbit" x1="16" y1="12" x2="84" y2="88" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#16C7F0" />
+          <stop offset="0.52" stopColor="#2E84F5" />
+          <stop offset="1" stopColor="#7A5AF5" />
         </linearGradient>
       </defs>
-      <path d="M24 3 L42 13 V27 C42 37 34 43 24 46 C14 43 6 37 6 27 V13 Z" fill="url(#ca-mark)" opacity="0.16" />
-      <path d="M24 3 L42 13 V27 C42 37 34 43 24 46 C14 43 6 37 6 27 V13 Z" stroke="url(#ca-mark)" strokeWidth="2" />
-      <circle cx="24" cy="23" r="6.5" stroke="#2ee6c9" strokeWidth="2.4" />
-      <path d="M24 29.5 V37" stroke="#2ee6c9" strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M77.98 67.49 A33 33 0 1 1 77.98 32.51" stroke="url(#ca-orbit)" strokeWidth="7.5" strokeLinecap="round" />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M83 41.6 a8.4 8.4 0 1 1 0 16.8 a8.4 8.4 0 0 1 0 -16.8 Z M83 44.8 a3.1 3.1 0 0 0 -1.25 5.94 l -0.85 4.06 h 4.2 l -0.85 -4.06 A3.1 3.1 0 0 0 83 44.8 Z"
+        fill="url(#ca-orbit)"
+      />
     </svg>
+  );
+}
+
+// Full compact lockup: symbol + "Captivo" (Space Grotesk) + bordered ACCESS chip.
+// Theme/context styling comes from CSS (.brand-word / .brand-access), so the same
+// lockup works on the dark nav bar and the auth screens.
+export function BrandLockup({ size = 26, className }: { size?: number; className?: string }) {
+  return (
+    <span className={className ? `brand-lockup ${className}` : "brand-lockup"}>
+      <BrandMark size={size} />
+      <span className="brand-word">Captivo</span>
+      <span className="brand-access">Access</span>
+    </span>
   );
 }

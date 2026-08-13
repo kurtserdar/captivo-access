@@ -48,7 +48,8 @@ export function TopNav({ model, records, role, userName, roleLabel, showLive }: 
       </button>
       <Link href="/" className="tn-brand">
         <BrandMark size={26} />
-        <span className="tn-word"><b>Captivo</b> <span className="tn-sub">Access</span></span>
+        <span className="brand-word">Captivo</span>
+        <span className="brand-access">Access</span>
       </Link>
 
       <nav className="tn-primary">

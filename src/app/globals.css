@@ -15,6 +15,7 @@
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --display:var(--font-plex-sans),"Segoe UI",system-ui,-apple-system,sans-serif;
   --mono:var(--font-plex-mono),ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+  --grotesk:var(--font-grotesk),"Space Grotesk",system-ui,-apple-system,sans-serif;
   color-scheme:light;
 }
 :root[data-theme="dark"]{
@@ -639,7 +640,16 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .app { display: flex; flex-direction: column; min-height: 100vh; min-width: 0; }
 .topnav { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 1rem; height: 56px; padding: 0 20px; background: linear-gradient(180deg,var(--nav-bg),var(--nav-bg-2)); border-bottom: 1px solid var(--nav-line); }
 .tn-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; flex: 0 0 auto; }
-.tn-word { font-size: .95rem; color: var(--nav-fg); } .tn-word b { font-weight: 700; } .tn-sub { color: var(--nav-fg-dim); font-weight: 500; }
+
+/* Brand lockup — Captivo wordmark (Space Grotesk) + bordered ACCESS chip. Used on
+   the dark nav bar and the auth screens; only the colors change per surface. */
+.brand-lockup { display: inline-flex; align-items: center; gap: 10px; }
+.brand-word { font-family: var(--grotesk); font-weight: 600; letter-spacing: -.02em; font-size: 1.05rem; color: var(--fg); }
+.brand-access { font-family: var(--grotesk); font-weight: 600; font-size: .62rem; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); border: 1px solid #2E84F5; border-radius: 6px; padding: 2px 7px; }
+.tn-brand .brand-word { color: #fff; }
+.tn-brand .brand-access { color: var(--nav-fg-dim); }
+.auth-panel .brand-word { color: #fff; }
+.auth-panel .brand-access { color: #c7d2e0; }
 .tn-primary { display: flex; align-items: center; gap: 2px; }
 .tn-menuwrap { position: relative; }
 .tn-link { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px; font-size: .86rem; color: var(--nav-fg-dim); text-decoration: none; background: none; border: 0; cursor: pointer; font-family: inherit; white-space: nowrap; }
