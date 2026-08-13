@@ -11,10 +11,6 @@ import (
 	"github.com/coder/websocket"
 )
 
-// isoSession is the A1 single-flight lock for ISOLATED (isolated-browser)
-// sessions: only one at a time (Slice A2 adds a per-session broker).
-var isoSession isoGuard
-
 // qInt reads an integer query param, clamped to [lo,hi], defaulting to def.
 func qInt(r *http.Request, key string, def, lo, hi int) string {
 	n, err := strconv.Atoi(r.URL.Query().Get(key))
@@ -65,28 +61,33 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 		return
 	}
 
-	if navigateUrl != "" { // ISOLATED: navigate the on-prem browser to the site URL
-		if !isoSession.tryAcquire() {
-			log.Printf("guac-tunnel site=%s: isolated browser in use", siteID)
-			http.Error(w, "isolated browser in use", http.StatusServiceUnavailable)
+	if navigateUrl != "" { // ISOLATED: ask the broker for a fresh browser session
+		cs, derr := dialGuacd(sess, browserControlAddr)
+		if derr != nil {
+			log.Printf("guac-tunnel site=%s: broker dial failed err=%v", siteID, derr)
+			http.Error(w, "isolated browser unavailable", http.StatusBadGateway)
 			return
 		}
-		defer isoSession.release()
-		// Fresh profile, then open the target URL. Best-effort (control calls
-		// ride the same connector relay as guacd).
-		if st, derr := dialGuacd(sess, browserControlAddr); derr == nil {
-			_, _ = st.Write([]byte(buildResetRequest(browserControlAddr)))
-			_ = st.Close()
+		bid, vncPort, status, oerr := openBrowserSession(cs, browserControlAddr, navigateUrl)
+		_ = cs.Close()
+		if oerr != nil {
+			log.Printf("guac-tunnel site=%s: open session err=%v", siteID, oerr)
+			http.Error(w, "isolated browser unavailable", http.StatusBadGateway)
+			return
 		}
-		if st, derr := dialGuacd(sess, browserControlAddr); derr == nil {
-			_, _ = st.Write([]byte(buildNavigateRequest(browserControlAddr, navigateUrl)))
-			_ = st.Close()
-		} else {
-			log.Printf("guac-tunnel site=%s: navigate dial failed err=%v", siteID, derr)
+		if status == http.StatusServiceUnavailable {
+			http.Error(w, "isolated browser at capacity", http.StatusServiceUnavailable)
+			return
 		}
-		defer func() { // wipe the browser after the session so the next one starts clean
-			if st, derr := dialGuacd(sess, browserControlAddr); derr == nil {
-				_, _ = st.Write([]byte(buildResetRequest(browserControlAddr)))
+		if status/100 != 2 || vncPort == 0 {
+			http.Error(w, "isolated browser error", http.StatusBadGateway)
+			return
+		}
+		conn.Port = strconv.Itoa(vncPort) // guacd VNC-connects to this per-session port
+		log.Printf("guac-tunnel site=%s: isolated session %s on vnc port %d", siteID, bid, vncPort)
+		defer func() {
+			if st, cerr := dialGuacd(sess, browserControlAddr); cerr == nil {
+				_, _ = st.Write([]byte(buildCloseRequest(browserControlAddr, bid)))
 				_ = st.Close()
 			}
 		}()

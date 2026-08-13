@@ -1,27 +1,54 @@
 package main
 
 import (
-	"net/url"
-	"sync/atomic"
+	"bufio"
+	"encoding/json"
+	"io"
+	"net/http"
+	"strconv"
 )
 
-// buildNavigateRequest formats a minimal HTTP/1.0 GET to the browser control
-// server's /navigate endpoint. The URL is query-escaped.
-func buildNavigateRequest(host, target string) string {
-	return "GET /navigate?url=" + url.QueryEscape(target) + " HTTP/1.0\r\n" +
+// openBrowserSession asks the in-container broker to start an isolated browser at
+// url and returns the assigned VNC port. It writes an HTTP/1.0 POST /session and
+// reads the response over the same relay stream. status is the HTTP status (so the
+// caller can surface 503 capacity); err is set only on transport/parse failure.
+func openBrowserSession(rw io.ReadWriter, host, url string) (id string, vncPort, status int, err error) {
+	body := `{"url":` + jsonQuote(url) + `}`
+	req := "POST /session HTTP/1.0\r\n" +
 		"Host: " + host + "\r\n" +
-		"Connection: close\r\n\r\n"
+		"Content-Type: application/json\r\n" +
+		"Content-Length: " + strconv.Itoa(len(body)) + "\r\n" +
+		"Connection: close\r\n\r\n" + body
+	if _, err = io.WriteString(rw, req); err != nil {
+		return "", 0, 0, err
+	}
+	resp, rerr := http.ReadResponse(bufio.NewReader(rw), nil)
+	if rerr != nil {
+		return "", 0, 0, rerr
+	}
+	defer resp.Body.Close()
+	status = resp.StatusCode
+	if status/100 != 2 {
+		return "", 0, status, nil
+	}
+	var out struct {
+		ID      string `json:"id"`
+		VncPort int    `json:"vncPort"`
+	}
+	if derr := json.NewDecoder(resp.Body).Decode(&out); derr != nil {
+		return "", 0, status, derr
+	}
+	return out.ID, out.VncPort, status, nil
 }
 
-// buildResetRequest formats the POST /reset control call.
-func buildResetRequest(host string) string {
-	return "POST /reset HTTP/1.0\r\nHost: " + host + "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+// buildCloseRequest formats the broker POST /session/<id>/close call.
+func buildCloseRequest(host, id string) string {
+	return "POST /session/" + id + "/close HTTP/1.0\r\nHost: " + host +
+		"\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
 }
 
-// isoGuard is the A1 single-flight lock: only one ISOLATED session at a time
-// (a 2nd concurrent x11vnc viewer would share the same display = data leak).
-// Concurrency arrives in Slice A2 (per-session broker).
-type isoGuard struct{ busy int32 }
-
-func (g *isoGuard) tryAcquire() bool { return atomic.CompareAndSwapInt32(&g.busy, 0, 1) }
-func (g *isoGuard) release()         { atomic.StoreInt32(&g.busy, 0) }
+// jsonQuote JSON-quotes a string (safe against embedded quotes/backslashes).
+func jsonQuote(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
