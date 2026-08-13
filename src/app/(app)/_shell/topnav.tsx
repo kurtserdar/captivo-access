@@ -6,6 +6,7 @@ import type { Role } from "@/generated/prisma/enums";
 import type { SearchRecord } from "@/lib/search";
 import type { NavModel, NavGroup } from "@/lib/nav/model";
 import { BrandMark } from "@/components/brand";
+import { NavIcon } from "./nav-icons";
 import { CommandPalette } from "./command-palette";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LogoutButton } from "../logout-button";
@@ -20,7 +21,7 @@ export function TopNav({ model, records, role, userName, roleLabel, showLive }: 
   const rootRef = useRef<HTMLElement>(null);
 
   const isActive = (href: string) => href === "/" ? pathname === "/" : (pathname === href || pathname.startsWith(`${href}/`));
-  const groupActive = (g: NavGroup) => g.items.some((it) => isActive(it.href));
+  const groupActive = (g: NavGroup) => g.columns.some((c) => c.items.some((it) => isActive(it.href)));
 
   // Close menus + drawer on navigation.
   useEffect(() => { setOpen(null); setDrawer(false); }, [pathname]);
@@ -64,10 +65,21 @@ export function TopNav({ model, records, role, userName, roleLabel, showLive }: 
               {g.label} <span className="tn-caret" aria-hidden="true">▾</span>
             </button>
             {open === g.label && (
-              <div className="tn-menu" role="menu">
-                {g.items.map((it) => (
-                  <Link key={it.href} href={it.href} role="menuitem" className={isActive(it.href) ? "tn-menuitem active" : "tn-menuitem"}>{it.label}</Link>
-                ))}
+              <div className="tn-mega" role="menu">
+                <div className="tn-mega-cols" data-cols={g.columns.length}>
+                  {g.columns.map((col) => (
+                    <div key={col.heading} className="tn-mega-col">
+                      <p className="tn-mega-h">{col.heading}</p>
+                      {col.items.map((it) => (
+                        <Link key={it.href} href={it.href} role="menuitem" className={isActive(it.href) ? "tn-mega-card active" : "tn-mega-card"}>
+                          <span className="tn-mega-ic">{it.icon ? <NavIcon name={it.icon} /> : null}</span>
+                          <span className="tn-mega-nm">{it.label}</span>
+                          <span className="tn-mega-ds">{it.desc}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -108,8 +120,13 @@ export function TopNav({ model, records, role, userName, roleLabel, showLive }: 
         {model.groups.map((g) => (
           <div key={g.label} className="tn-dgroup">
             <div className="tn-dgroup-label">{g.label}</div>
-            {g.items.map((it) => (
-              <Link key={it.href} href={it.href} className={isActive(it.href) ? "tn-dlink sub active" : "tn-dlink sub"}>{it.label}</Link>
+            {g.columns.map((col) => (
+              <div key={col.heading} className="tn-dcol">
+                <div className="tn-dcol-label">{col.heading}</div>
+                {col.items.map((it) => (
+                  <Link key={it.href} href={it.href} className={isActive(it.href) ? "tn-dlink sub active" : "tn-dlink sub"}>{it.label}</Link>
+                ))}
+              </div>
             ))}
           </div>
         ))}
