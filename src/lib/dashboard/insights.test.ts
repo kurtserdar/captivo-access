@@ -1,144 +1,99 @@
 import { describe, it, expect } from "vitest";
-import { buildTrend, buildHeatmap, topBy, denyReasons, ipFlags, activeVendors, typeMix, sessionStats, topRef, type AuditRow } from "./insights";
+import {
+  zeroFillDays, buildTrend, seriesFor, buildHeatmap,
+  toRefCounts, buildTypeMix, toDenyReasons, toIpFlags, sessionStats,
+} from "./insights";
 
-function row(p: Partial<AuditRow> & { timestamp: Date; decision: "ALLOW" | "DENY" }): AuditRow {
-  return { siteName: null, siteId: null, userId: null, userEmail: null, clientIp: null, reason: null, ...p };
-}
+describe("zeroFillDays", () => {
+  it("returns `days` UTC keys oldest→newest ending today", () => {
+    const now = new Date("2026-08-11T12:00:00Z");
+    const keys = zeroFillDays(now, 30);
+    expect(keys.length).toBe(30);
+    expect(keys[29]).toBe("2026-08-11");
+    expect(keys[28]).toBe("2026-08-10");
+    expect(keys[0]).toBe("2026-07-13");
+  });
+});
 
 describe("buildTrend", () => {
-  it("zero-fills 30 UTC days oldest→newest and buckets allow/deny", () => {
+  it("maps allow/deny distinct-vendor day counts onto the zero-filled window", () => {
     const now = new Date("2026-08-11T12:00:00Z");
-    const rows = [
-      row({ timestamp: new Date("2026-08-11T09:00:00Z"), decision: "ALLOW" }),
-      row({ timestamp: new Date("2026-08-11T10:00:00Z"), decision: "DENY" }),
-      row({ timestamp: new Date("2026-08-10T10:00:00Z"), decision: "ALLOW" }),
-      row({ timestamp: new Date("2026-07-01T10:00:00Z"), decision: "ALLOW" }), // outside 30d
-    ];
-    const t = buildTrend(rows, now);
+    const allow = [{ day: "2026-08-11", count: 3 }, { day: "2026-08-10", count: 1 }, { day: "2000-01-01", count: 9 }];
+    const deny = [{ day: "2026-08-11", count: 2 }];
+    const t = buildTrend(allow, deny, now);
     expect(t.length).toBe(30);
-    expect(t[29]).toEqual({ date: "2026-08-11", allow: 1, deny: 1 });
+    expect(t[29]).toEqual({ date: "2026-08-11", allow: 3, deny: 2 });
     expect(t[28]).toEqual({ date: "2026-08-10", allow: 1, deny: 0 });
-    expect(t.reduce((s, d) => s + d.allow, 0)).toBe(2); // the 07-01 row is out of window
+    expect(t[27]).toEqual({ date: "2026-08-09", allow: 0, deny: 0 }); // no data → 0
+    expect(t.some((d) => d.allow === 9)).toBe(false); // out-of-window key ignored
+  });
+});
+
+describe("seriesFor", () => {
+  it("aligns allow day-counts to the given day keys", () => {
+    const days = ["2026-08-09", "2026-08-10", "2026-08-11"];
+    const allow = [{ day: "2026-08-11", count: 3 }, { day: "2026-08-09", count: 5 }];
+    expect(seriesFor(days, allow)).toEqual([5, 0, 3]);
   });
 });
 
 describe("buildHeatmap", () => {
-  it("increments the correct UTC day×hour cell and reports max", () => {
-    const ts = new Date("2026-08-11T09:00:00Z");
-    const { grid, max } = buildHeatmap([row({ timestamp: ts, decision: "ALLOW" }), row({ timestamp: ts, decision: "DENY" })]);
-    expect(grid[ts.getUTCDay()][9]).toBe(2);
-    expect(max).toBe(2);
-  });
-});
-
-describe("topBy", () => {
-  it("counts ALLOW by field, skips nulls, sorts desc, limits", () => {
-    const rows = [
-      row({ timestamp: new Date(), decision: "ALLOW", siteName: "A" }),
-      row({ timestamp: new Date(), decision: "ALLOW", siteName: "A" }),
-      row({ timestamp: new Date(), decision: "ALLOW", siteName: "B" }),
-      row({ timestamp: new Date(), decision: "DENY", siteName: "A" }),
-      row({ timestamp: new Date(), decision: "ALLOW", siteName: null }),
-    ];
-    expect(topBy(rows, "siteName", 5)).toEqual([{ label: "A", count: 2 }, { label: "B", count: 1 }]);
-  });
-});
-
-describe("denyReasons", () => {
-  it("groups DENY reasons, maps null→unspecified, totals + top N", () => {
-    const rows = [
-      row({ timestamp: new Date(), decision: "DENY", reason: "no grant" }),
-      row({ timestamp: new Date(), decision: "DENY", reason: "no grant" }),
-      row({ timestamp: new Date(), decision: "DENY", reason: null }),
-      row({ timestamp: new Date(), decision: "ALLOW", reason: "x" }),
-    ];
-    const d = denyReasons(rows, 5);
-    expect(d.total).toBe(3);
-    expect(d.reasons).toEqual([{ label: "no grant", count: 2 }, { label: "unspecified", count: 1 }]);
-  });
-});
-
-describe("ipFlags", () => {
-  it("flags vendors with >= threshold distinct IPs", () => {
-    const rows = [
-      row({ timestamp: new Date(), decision: "ALLOW", userEmail: "u", clientIp: "1.1.1.1" }),
-      row({ timestamp: new Date(), decision: "ALLOW", userEmail: "u", clientIp: "2.2.2.2" }),
-      row({ timestamp: new Date(), decision: "ALLOW", userEmail: "u", clientIp: "3.3.3.3" }),
-      row({ timestamp: new Date(), decision: "ALLOW", userEmail: "v", clientIp: "1.1.1.1" }),
-    ];
-    expect(ipFlags(rows, 3)).toEqual([{ userEmail: "u", ipCount: 3 }]);
-  });
-});
-
-describe("topBy with decision", () => {
-  it("groups DENY by field when decision is DENY", () => {
-    const rows = [
-      row({ timestamp: new Date(), decision: "DENY", userEmail: "u" }),
-      row({ timestamp: new Date(), decision: "DENY", userEmail: "u" }),
-      row({ timestamp: new Date(), decision: "ALLOW", userEmail: "u" }),
-      row({ timestamp: new Date(), decision: "DENY", userEmail: "v" }),
-    ];
-    expect(topBy(rows, "userEmail", 5, "DENY")).toEqual([{ label: "u", count: 2 }, { label: "v", count: 1 }]);
-  });
-});
-
-describe("activeVendors", () => {
-  it("counts distinct ALLOW vendors and builds a 30-day daily-distinct series", () => {
-    const now = new Date("2026-08-11T12:00:00Z");
-    const rows = [
-      row({ timestamp: new Date("2026-08-11T09:00:00Z"), decision: "ALLOW", userEmail: "a" }),
-      row({ timestamp: new Date("2026-08-11T10:00:00Z"), decision: "ALLOW", userEmail: "b" }),
-      row({ timestamp: new Date("2026-08-11T11:00:00Z"), decision: "ALLOW", userEmail: "a" }), // dup same day
-      row({ timestamp: new Date("2026-08-10T10:00:00Z"), decision: "ALLOW", userEmail: "a" }),
-      row({ timestamp: new Date("2026-08-11T10:00:00Z"), decision: "DENY", userEmail: "c" }),  // deny ignored
-    ];
-    const r = activeVendors(rows, now);
-    expect(r.count).toBe(2);            // a, b
-    expect(r.series.length).toBe(30);
-    expect(r.series[29]).toBe(2);       // 08-11: a, b
-    expect(r.series[28]).toBe(1);       // 08-10: a
-  });
-});
-
-describe("typeMix", () => {
-  it("buckets ALLOW events web/remote via the site-type map, skipping unmatched", () => {
-    const map = new Map<string, "web" | "remote">([["s1", "web"], ["s2", "remote"]]);
-    const rows = [
-      row({ timestamp: new Date(), decision: "ALLOW", siteId: "s1" }),
-      row({ timestamp: new Date(), decision: "ALLOW", siteId: "s2" }),
-      row({ timestamp: new Date(), decision: "ALLOW", siteId: "s1" }),
-      row({ timestamp: new Date(), decision: "DENY", siteId: "s1" }),  // deny ignored
-      row({ timestamp: new Date(), decision: "ALLOW", siteId: "x" }),  // unmatched
-      row({ timestamp: new Date(), decision: "ALLOW", siteId: null }), // null
-    ];
-    expect(typeMix(rows, map)).toEqual({ web: 2, remote: 1 });
-  });
-});
-
-describe("topRef", () => {
-  it("groups by id, labels by name, falls back to id, skips null id, sorts desc, honors decision", () => {
-    const rows = [
-      row({ timestamp: new Date(), decision: "ALLOW", siteId: "s1", siteName: "Alpha" }),
-      row({ timestamp: new Date(), decision: "ALLOW", siteId: "s1", siteName: "Alpha" }),
-      row({ timestamp: new Date(), decision: "ALLOW", siteId: "s2", siteName: null }),   // name null → id fallback
-      row({ timestamp: new Date(), decision: "DENY",  siteId: "s1", siteName: "Alpha" }), // deny ignored
-      row({ timestamp: new Date(), decision: "ALLOW", siteId: null, siteName: "X" }),     // null id skipped
-    ];
-    expect(topRef(rows, "siteId", "siteName", 5)).toEqual([
-      { id: "s1", label: "Alpha", count: 2 },
-      { id: "s2", label: "s2", count: 1 },
+  it("fills the right dow×hour cell and reports max, skipping out-of-range", () => {
+    const { grid, max } = buildHeatmap([
+      { dow: 2, hour: 9, count: 5 },
+      { dow: 0, hour: 23, count: 8 },
+      { dow: 9, hour: 0, count: 99 }, // out of range → skipped
     ]);
+    expect(grid[2][9]).toBe(5);
+    expect(grid[0][23]).toBe(8);
+    expect(max).toBe(8);
+  });
+});
+
+describe("toRefCounts", () => {
+  it("maps rows and falls back label→id", () => {
+    expect(toRefCounts([{ id: "s1", label: "App", count: 4 }, { id: "s2", label: null, count: 2 }]))
+      .toEqual([{ id: "s1", label: "App", count: 4 }, { id: "s2", label: "s2", count: 2 }]);
+  });
+});
+
+describe("buildTypeMix", () => {
+  it("sums GATEWAY→remote and everything else→web", () => {
+    expect(buildTypeMix([{ accessMode: "GATEWAY", count: 3 }, { accessMode: "TRANSPARENT", count: 5 }]))
+      .toEqual({ web: 5, remote: 3 });
+  });
+});
+
+describe("toDenyReasons", () => {
+  it("totals all rows then returns the top `limit`", () => {
+    const rows = [
+      { reason: "not_a_member", count: 5 },
+      { reason: "expired", count: 3 },
+      { reason: "unspecified", count: 1 },
+    ];
+    const out = toDenyReasons(rows, 2);
+    expect(out.total).toBe(9);
+    expect(out.reasons).toEqual([{ label: "not_a_member", count: 5 }, { label: "expired", count: 3 }]);
+  });
+});
+
+describe("toIpFlags", () => {
+  it("passes through the SQL-filtered rows", () => {
+    expect(toIpFlags([{ userEmail: "a@x.io", ipCount: 4 }])).toEqual([{ userEmail: "a@x.io", ipCount: 4 }]);
   });
 });
 
 describe("sessionStats", () => {
-  it("computes recordings, total hours, avg minutes; empty → zeros", () => {
-    const base = new Date("2026-08-11T10:00:00Z").getTime();
-    const recs = [
-      { startedAt: new Date(base), lastEventAt: new Date(base + 30 * 60000) },      // 30m
-      { startedAt: new Date(base), lastEventAt: new Date(base + 90 * 60000) },      // 90m
-    ];
-    expect(sessionStats(recs)).toEqual({ recordings: 2, totalHours: 2, avgMinutes: 60 });
+  it("returns zeros for no recordings", () => {
     expect(sessionStats([])).toEqual({ recordings: 0, totalHours: 0, avgMinutes: 0 });
+  });
+  it("computes count, total hours, average minutes", () => {
+    const s = sessionStats([
+      { startedAt: new Date("2026-08-11T10:00:00Z"), lastEventAt: new Date("2026-08-11T11:00:00Z") }, // 60m
+      { startedAt: new Date("2026-08-11T10:00:00Z"), lastEventAt: new Date("2026-08-11T10:30:00Z") }, // 30m
+    ]);
+    expect(s.recordings).toBe(2);
+    expect(s.totalHours).toBe(2); // 90m → round(1.5h)=2
+    expect(s.avgMinutes).toBe(45);
   });
 });

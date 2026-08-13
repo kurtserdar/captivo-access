@@ -4,164 +4,79 @@ import { listActiveSessions } from "@/lib/dataplane/client";
 export interface TrendDay { date: string; allow: number; deny: number }
 export interface Labeled { label: string; count: number }
 export interface IpFlag { userEmail: string; ipCount: number }
+export interface RefCount { id: string; label: string; count: number }
 
-export interface AuditRow {
-  timestamp: Date;
-  decision: "ALLOW" | "DENY";
-  siteName: string | null;
-  siteId: string | null;
-  userId: string | null;
-  userEmail: string | null;
-  clientIp: string | null;
-  reason: string | null;
-}
+export type DailyCount = { day: string; count: number };
+export type HourCell = { dow: number; hour: number; count: number };
 
 export const IP_FLAG_THRESHOLD = 3;
 
-function dayKey(d: Date): string {
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
-}
-
-// 30 zero-filled UTC days, oldest→newest, allow/deny counted per day.
-export function buildTrend(rows: AuditRow[], now: Date, days = 30): TrendDay[] {
+// UTC YYYY-MM-DD keys, oldest→newest, ending on `now`'s UTC day.
+export function zeroFillDays(now: Date, days = 30): string[] {
   const keys: string[] = [];
-  const counts = new Map<string, { allow: number; deny: number }>();
   const base = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(base);
     d.setUTCDate(base.getUTCDate() - i);
-    const k = dayKey(d);
-    keys.push(k);
-    counts.set(k, { allow: 0, deny: 0 });
+    keys.push(d.toISOString().slice(0, 10));
   }
-  for (const r of rows) {
-    const c = counts.get(dayKey(r.timestamp));
-    if (!c) continue;
-    if (r.decision === "ALLOW") c.allow++;
-    else c.deny++;
-  }
-  return keys.map((k) => ({ date: k, allow: counts.get(k)!.allow, deny: counts.get(k)!.deny }));
+  return keys;
 }
 
-// 7×24 counts by UTC weekday (0=Sun) × hour, plus the busiest cell.
-export function buildHeatmap(rows: AuditRow[]): { grid: number[][]; max: number } {
+// Distinct-vendor allow/deny day-counts mapped onto the zero-filled window.
+export function buildTrend(allow: DailyCount[], deny: DailyCount[], now: Date, days = 30): TrendDay[] {
+  const keys = zeroFillDays(now, days);
+  const a = new Map(allow.map((r) => [r.day, r.count]));
+  const d = new Map(deny.map((r) => [r.day, r.count]));
+  return keys.map((k) => ({ date: k, allow: a.get(k) ?? 0, deny: d.get(k) ?? 0 }));
+}
+
+// Per-day allow (distinct vendors) series aligned to the given day keys.
+export function seriesFor(days: string[], allow: DailyCount[]): number[] {
+  const a = new Map(allow.map((r) => [r.day, r.count]));
+  return days.map((k) => a.get(k) ?? 0);
+}
+
+// 7×24 grid from (dow,hour,count) cells; out-of-range cells skipped; reports max.
+export function buildHeatmap(cells: HourCell[]): { grid: number[][]; max: number } {
   const grid: number[][] = Array.from({ length: 7 }, () => new Array<number>(24).fill(0));
   let max = 0;
-  for (const r of rows) {
-    const v = ++grid[r.timestamp.getUTCDay()][r.timestamp.getUTCHours()];
-    if (v > max) max = v;
+  for (const c of cells) {
+    if (c.dow < 0 || c.dow > 6 || c.hour < 0 || c.hour > 23) continue;
+    grid[c.dow][c.hour] = c.count;
+    if (c.count > max) max = c.count;
   }
   return { grid, max };
 }
 
-// ALLOW-only counts by a label field, nulls skipped, desc, top `limit`.
-export function topBy(rows: AuditRow[], field: "siteName" | "userEmail", limit: number, decision: "ALLOW" | "DENY" = "ALLOW"): Labeled[] {
-  const counts = new Map<string, number>();
-  for (const r of rows) {
-    if (r.decision !== decision) continue;
-    const label = r[field];
-    if (!label) continue;
-    counts.set(label, (counts.get(label) ?? 0) + 1);
-  }
-  return [...counts.entries()]
-    .map(([label, count]) => ({ label, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, limit);
+// id/label/count rows (already sorted+limited by SQL) → RefCount; label falls back to id.
+export function toRefCounts(rows: { id: string; label: string | null; count: number }[]): RefCount[] {
+  return rows.map((r) => ({ id: r.id, label: r.label ?? r.id, count: r.count }));
 }
 
-export interface RefCount { id: string; label: string; count: number }
-
-// Group by an id field, label by a name field (fallback to id), desc, top `limit`.
-export function topRef(
-  rows: AuditRow[],
-  idField: "siteId" | "userId",
-  nameField: "siteName" | "userEmail",
-  limit: number,
-  decision: "ALLOW" | "DENY" = "ALLOW",
-): RefCount[] {
-  const counts = new Map<string, number>();
-  const names = new Map<string, string>();
+// accessMode/count rows → web/remote totals (GATEWAY = remote, else web).
+export function buildTypeMix(rows: { accessMode: string; count: number }[]): { web: number; remote: number } {
+  let web = 0, remote = 0;
   for (const r of rows) {
-    if (r.decision !== decision) continue;
-    const id = r[idField];
-    if (!id) continue;
-    counts.set(id, (counts.get(id) ?? 0) + 1);
-    const nm = r[nameField];
-    if (nm && !names.has(id)) names.set(id, nm);
+    if (r.accessMode === "GATEWAY") remote += r.count;
+    else web += r.count;
   }
-  return [...counts.entries()]
-    .map(([id, count]) => ({ id, label: names.get(id) ?? id, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, limit);
+  return { web, remote };
 }
 
-// DENY-only reason breakdown (null → "unspecified"), total + top `limit`.
-export function denyReasons(rows: AuditRow[], limit: number): { total: number; reasons: Labeled[] } {
-  const counts = new Map<string, number>();
-  let total = 0;
-  for (const r of rows) {
-    if (r.decision !== "DENY") continue;
-    total++;
-    const reason = r.reason ?? "unspecified";
-    counts.set(reason, (counts.get(reason) ?? 0) + 1);
-  }
-  const reasons = [...counts.entries()]
-    .map(([label, count]) => ({ label, count }))
+// All DENY reason/count rows → total (sum of all) + top `limit` as Labeled.
+export function toDenyReasons(rows: { reason: string; count: number }[], limit: number): { total: number; reasons: Labeled[] } {
+  const total = rows.reduce((s, r) => s + r.count, 0);
+  const reasons = [...rows]
     .sort((a, b) => b.count - a.count)
-    .slice(0, limit);
+    .slice(0, limit)
+    .map((r) => ({ label: r.reason, count: r.count }));
   return { total, reasons };
 }
 
-// Vendors seen from >= `threshold` distinct client IPs, desc by IP count.
-export function ipFlags(rows: AuditRow[], threshold: number): IpFlag[] {
-  const byUser = new Map<string, Set<string>>();
-  for (const r of rows) {
-    if (!r.userEmail || !r.clientIp) continue;
-    let set = byUser.get(r.userEmail);
-    if (!set) {
-      set = new Set();
-      byUser.set(r.userEmail, set);
-    }
-    set.add(r.clientIp);
-  }
-  return [...byUser.entries()]
-    .map(([userEmail, ips]) => ({ userEmail, ipCount: ips.size }))
-    .filter((f) => f.ipCount >= threshold)
-    .sort((a, b) => b.ipCount - a.ipCount);
-}
-
-// Distinct ALLOW vendors over the window + a 30-day daily-distinct series (UTC, oldest→newest).
-export function activeVendors(rows: AuditRow[], now: Date, days = 30): { count: number; series: number[] } {
-  const keys: string[] = [];
-  const perDay = new Map<string, Set<string>>();
-  const base = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(base);
-    d.setUTCDate(base.getUTCDate() - i);
-    const k = dayKey(d);
-    keys.push(k);
-    perDay.set(k, new Set());
-  }
-  const all = new Set<string>();
-  for (const r of rows) {
-    if (r.decision !== "ALLOW" || !r.userEmail) continue;
-    all.add(r.userEmail);
-    const set = perDay.get(dayKey(r.timestamp));
-    if (set) set.add(r.userEmail);
-  }
-  return { count: all.size, series: keys.map((k) => perDay.get(k)!.size) };
-}
-
-// ALLOW events bucketed web/remote via a siteId→type map; null/unmatched skipped.
-export function typeMix(rows: AuditRow[], siteType: Map<string, "web" | "remote">): { web: number; remote: number } {
-  let web = 0, remote = 0;
-  for (const r of rows) {
-    if (r.decision !== "ALLOW" || !r.siteId) continue;
-    const t = siteType.get(r.siteId);
-    if (t === "web") web++;
-    else if (t === "remote") remote++;
-  }
-  return { web, remote };
+// Pass-through shape guard (SQL already applied the threshold + ordering).
+export function toIpFlags(rows: { userEmail: string; ipCount: number }[]): IpFlag[] {
+  return rows.map((r) => ({ userEmail: r.userEmail, ipCount: r.ipCount }));
 }
 
 // Recording volume in the window: count, total hours, average minutes.
@@ -198,11 +113,55 @@ export async function getInsights(now = new Date()): Promise<Insights> {
   const in7d = new Date(now.getTime() + 7 * DAY_MS);
   const expiringWhere = { status: "ACTIVE" as const, endsAt: { gte: now, lte: in7d } };
 
-  const [rows, expiringRows, expiringCount, active, sites, recordings] = await Promise.all([
-    db.auditEvent.findMany({
-      where: { timestamp: { gte: since } },
-      select: { timestamp: true, decision: true, siteName: true, siteId: true, userId: true, userEmail: true, clientIp: true, reason: true },
-    }),
+  const [
+    vendorsByDay, totalVendorsRows, topResRows, topVenRows, typeMixRows,
+    denyReasonRows, heatmapRows, ipFlagRows, topDeniedRows,
+    expiringRows, expiringCount, active, recordings,
+  ] = await Promise.all([
+    db.$queryRaw<{ day: string; decision: string; n: bigint }[]>`
+      SELECT to_char("timestamp", 'YYYY-MM-DD') AS day, "decision"::text AS decision, COUNT(DISTINCT "userId") AS n
+      FROM "AuditEvent"
+      WHERE "timestamp" >= ${since} AND "userId" IS NOT NULL
+      GROUP BY day, "decision"`,
+    db.$queryRaw<{ n: bigint }[]>`
+      SELECT COUNT(DISTINCT "userId") AS n FROM "AuditEvent"
+      WHERE "timestamp" >= ${since} AND "decision" = 'ALLOW' AND "userId" IS NOT NULL`,
+    db.$queryRaw<{ id: string; label: string | null; n: bigint }[]>`
+      SELECT "siteId" AS id, MAX("siteName") AS label, COUNT(DISTINCT to_char("timestamp", 'YYYY-MM-DD')) AS n
+      FROM "AuditEvent"
+      WHERE "timestamp" >= ${since} AND "decision" = 'ALLOW' AND "siteId" IS NOT NULL
+      GROUP BY "siteId" ORDER BY n DESC LIMIT 5`,
+    db.$queryRaw<{ id: string; label: string | null; n: bigint }[]>`
+      SELECT "userId" AS id, MAX("userEmail") AS label, COUNT(DISTINCT to_char("timestamp", 'YYYY-MM-DD')) AS n
+      FROM "AuditEvent"
+      WHERE "timestamp" >= ${since} AND "decision" = 'ALLOW' AND "userId" IS NOT NULL
+      GROUP BY "userId" ORDER BY n DESC LIMIT 5`,
+    db.$queryRaw<{ accessMode: string; n: bigint }[]>`
+      SELECT s."accessMode"::text AS "accessMode", COUNT(DISTINCT ("a"."userId", "a"."siteId")) AS n
+      FROM "AuditEvent" a JOIN "Site" s ON s."id" = "a"."siteId"
+      WHERE "a"."timestamp" >= ${since} AND "a"."decision" = 'ALLOW' AND "a"."userId" IS NOT NULL
+      GROUP BY s."accessMode"`,
+    db.$queryRaw<{ reason: string | null; n: bigint }[]>`
+      SELECT COALESCE("reason", 'unspecified') AS reason, COUNT(*) AS n
+      FROM "AuditEvent"
+      WHERE "timestamp" >= ${since} AND "decision" = 'DENY'
+      GROUP BY reason ORDER BY n DESC`,
+    db.$queryRaw<{ dow: number; hour: number; n: bigint }[]>`
+      SELECT EXTRACT(DOW FROM "timestamp")::int AS dow, EXTRACT(HOUR FROM "timestamp")::int AS hour, COUNT(*) AS n
+      FROM "AuditEvent"
+      WHERE "timestamp" >= ${since}
+      GROUP BY dow, hour`,
+    db.$queryRaw<{ userEmail: string; n: bigint }[]>`
+      SELECT "userEmail", COUNT(DISTINCT "clientIp") AS n
+      FROM "AuditEvent"
+      WHERE "timestamp" >= ${since} AND "userEmail" IS NOT NULL AND "clientIp" IS NOT NULL
+      GROUP BY "userEmail" HAVING COUNT(DISTINCT "clientIp") >= ${IP_FLAG_THRESHOLD}
+      ORDER BY n DESC`,
+    db.$queryRaw<{ userEmail: string; n: bigint }[]>`
+      SELECT "userEmail", COUNT(*) AS n
+      FROM "AuditEvent"
+      WHERE "timestamp" >= ${since} AND "decision" = 'DENY' AND "userEmail" IS NOT NULL
+      GROUP BY "userEmail" ORDER BY n DESC LIMIT 3`,
     db.accessGrant.findMany({
       where: expiringWhere,
       select: { endsAt: true, user: { select: { email: true } }, site: { select: { name: true } } },
@@ -211,24 +170,21 @@ export async function getInsights(now = new Date()): Promise<Insights> {
     }),
     db.accessGrant.count({ where: expiringWhere }),
     listActiveSessions(),
-    db.site.findMany({ select: { id: true, accessMode: true } }),
     db.sessionRecording.findMany({ where: { startedAt: { gte: since } }, select: { startedAt: true, lastEventAt: true } }),
   ]);
 
-  // `rows` already matches AuditRow (decision is the AuditDecision "ALLOW"|"DENY").
-  const auditRows: AuditRow[] = rows;
-  const siteType = new Map<string, "web" | "remote">(
-    sites.map((s) => [s.id, s.accessMode === "GATEWAY" ? "remote" : "web"] as const),
-  );
+  const days = zeroFillDays(now);
+  const allowByDay: DailyCount[] = vendorsByDay.filter((r) => r.decision === "ALLOW").map((r) => ({ day: r.day, count: Number(r.n) }));
+  const denyByDay: DailyCount[] = vendorsByDay.filter((r) => r.decision === "DENY").map((r) => ({ day: r.day, count: Number(r.n) }));
   const longestStartedAt = active.length ? [...active].map((a) => a.startedAt).sort()[0] : null;
 
   return {
-    trend: buildTrend(auditRows, now),
-    heatmap: buildHeatmap(auditRows),
-    topResources: topRef(auditRows, "siteId", "siteName", 5),
-    topVendors: topRef(auditRows, "userId", "userEmail", 5),
-    deny: denyReasons(auditRows, 5),
-    ipFlags: ipFlags(auditRows, IP_FLAG_THRESHOLD),
+    trend: buildTrend(allowByDay, denyByDay, now),
+    heatmap: buildHeatmap(heatmapRows.map((r) => ({ dow: r.dow, hour: r.hour, count: Number(r.n) }))),
+    topResources: toRefCounts(topResRows.map((r) => ({ id: r.id, label: r.label, count: Number(r.n) }))),
+    topVendors: toRefCounts(topVenRows.map((r) => ({ id: r.id, label: r.label, count: Number(r.n) }))),
+    deny: toDenyReasons(denyReasonRows.map((r) => ({ reason: r.reason ?? "unspecified", count: Number(r.n) })), 5),
+    ipFlags: toIpFlags(ipFlagRows.map((r) => ({ userEmail: r.userEmail, ipCount: Number(r.n) }))),
     expiring: {
       count: expiringCount,
       soonest: expiringRows.map((g) => ({
@@ -238,9 +194,9 @@ export async function getInsights(now = new Date()): Promise<Insights> {
       })),
     },
     activeSessions: { count: active.length, longestStartedAt },
-    activeVendors: activeVendors(auditRows, now),
-    typeMix: typeMix(auditRows, siteType),
+    activeVendors: { count: totalVendorsRows.length ? Number(totalVendorsRows[0].n) : 0, series: seriesFor(days, allowByDay) },
+    typeMix: buildTypeMix(typeMixRows.map((r) => ({ accessMode: r.accessMode, count: Number(r.n) }))),
     sessionStats: sessionStats(recordings),
-    topDenied: topBy(auditRows, "userEmail", 3, "DENY"),
+    topDenied: topDeniedRows.map((r) => ({ label: r.userEmail, count: Number(r.n) })),
   };
 }
