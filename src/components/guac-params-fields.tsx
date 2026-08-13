@@ -13,11 +13,12 @@ export interface GuacFields {
   fileTransfer: string;
   blockUpload: string;
   blockDownload: string;
+  sftpRoot: string;
 }
 
 export const EMPTY_GUAC_FIELDS: GuacFields = {
   serverLayout: "", colorDepth: "", enableWallpaper: "", enableTheming: "", enableFontSmoothing: "", enableFullWindowDrag: "",
-  fileTransfer: "", blockUpload: "", blockDownload: "",
+  fileTransfer: "", blockUpload: "", blockDownload: "", sftpRoot: "",
 };
 
 const TOGGLES: { key: keyof GuacFields; label: string }[] = [
@@ -39,6 +40,7 @@ export function paramsToGuacFields(p: GuacParams): GuacFields {
     fileTransfer: tri(p.enableFileTransfer),
     blockUpload: tri(p.blockUpload),
     blockDownload: tri(p.blockDownload),
+    sftpRoot: p.sftpRoot ?? "",
   };
 }
 
@@ -57,6 +59,7 @@ export function guacFieldsToParams(f: GuacFields): GuacParams {
   triToBool(f.fileTransfer, "enableFileTransfer");
   triToBool(f.blockUpload, "blockUpload");
   triToBool(f.blockDownload, "blockDownload");
+  if (f.sftpRoot.trim()) p.sftpRoot = f.sftpRoot.trim();
   return p;
 }
 
@@ -67,6 +70,7 @@ export function GuacParamsFields({ value, onChange, protocol }: { value: GuacFie
   const showDepth = !protocol || protocol === "RDP" || protocol === "VNC";
   const showPerf = !protocol || protocol === "RDP";
   const showFt = !protocol || protocol === "RDP" || protocol === "SSH";
+  const showSftpRoot = !protocol || protocol === "SSH";
   return (
     <div className="guac-fields">
       {showLayout && (
@@ -114,6 +118,13 @@ export function GuacParamsFields({ value, onChange, protocol }: { value: GuacFie
           <select className="select" value={value.blockDownload} onChange={(e) => set("blockDownload", e.target.value)}>
             <option value="">Default</option><option value="on">On</option><option value="off">Off</option>
           </select>
+        </label>
+      )}
+      {showSftpRoot && value.fileTransfer !== "off" && (
+        <label className="field"><span className="field-label">SFTP upload folder {protocol ? "" : "(SSH)"}</span>
+          <input className="input" type="text" value={value.sftpRoot} placeholder="Auto (the user's home directory)"
+            onChange={(e) => set("sftpRoot", e.target.value)} />
+          <span className="field-hint">Absolute path on the target where uploaded files are written. Leave blank to use the login user&apos;s home.</span>
         </label>
       )}
     </div>
