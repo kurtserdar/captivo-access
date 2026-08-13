@@ -1,0 +1,8 @@
+network:
+  protocol: http
+  ssl:
+    require_ssl: false
+  udp:
+    public_ip: 127.0.0.1
+runtime_configuration:
+  allow_client_to_override_kasm_server_settings: true

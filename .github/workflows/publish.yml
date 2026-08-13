@@ -35,6 +35,9 @@ jobs:
           - image: browser
             dockerfile: browser/Dockerfile
             platforms: linux/amd64
+          - image: kasm-browser
+            dockerfile: kasm-browser/Dockerfile
+            platforms: linux/amd64
     steps:
       - uses: actions/checkout@v4
 
