@@ -732,3 +732,9 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .aa-integrity { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; }
 .aa-ok { color: var(--ok); font-size: .85rem; }
 .aa-bad { color: var(--danger); font-size: .85rem; font-weight: 600; }
+
+.ft-badge { font-size: .72rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.ft-badge.download { color: var(--accent); background: var(--accent-soft, rgba(60,130,246,.12)); }
+.ft-badge.upload { color: var(--ok); background: var(--ok-soft); }
+.ft-badge.partial { color: var(--danger); background: var(--danger-soft); }
+.checkbox-inline { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; }

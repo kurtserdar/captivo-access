@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { CopyButton } from "@/app/(app)/_shell/copy-button";
+import { transferBadge } from "@/lib/audit/access-format";
 
 export type AuditRowJSON = {
   id: string;
@@ -29,6 +30,7 @@ type Filters = {
   userId: string;
   siteId: string;
   decision: "" | "ALLOW" | "DENY";
+  kind: "" | "file";
   from: string;
   to: string;
 };
@@ -47,6 +49,7 @@ function buildParams(filters: Filters, limit: number, offset: number): URLSearch
   if (filters.userId) params.set("userId", filters.userId);
   if (filters.siteId) params.set("siteId", filters.siteId);
   if (filters.decision) params.set("decision", filters.decision);
+  if (filters.kind) params.set("kind", filters.kind);
   const fromIso = toIso(filters.from);
   if (fromIso) params.set("from", fromIso);
   const toIsoValue = toIso(filters.to);
@@ -63,6 +66,7 @@ function filtersFromParams(sp: URLSearchParams): Filters {
     userId: sp.get("userId") ?? "",
     siteId: sp.get("siteId") ?? "",
     decision: decision === "ALLOW" || decision === "DENY" ? decision : "",
+    kind: sp.get("kind") === "file" ? "file" : "",
     from: sp.get("from") ?? "",
     to: sp.get("to") ?? "",
   };
@@ -203,6 +207,18 @@ export function AuditTable({
           </select>
         </div>
         <div className="field">
+          <label className="field-label" htmlFor="audit-filter-kind">Type</label>
+          <label className="checkbox-inline">
+            <input
+              id="audit-filter-kind"
+              type="checkbox"
+              checked={filters.kind === "file"}
+              onChange={(e) => updateFilter("kind", e.target.checked ? "file" : "")}
+            />
+            File transfers only
+          </label>
+        </div>
+        <div className="field">
           <label className="field-label" htmlFor="audit-filter-from">
             From
           </label>
@@ -272,10 +288,26 @@ export function AuditTable({
                   <td className="cell-sub">{r.company ?? "—"}</td>
                   <td>{r.siteName ?? r.host}</td>
                   <td className="cell-sub">
-                    <span className="cell-inline">
-                      <span className="cell-truncate" title={`${r.method} ${r.path}`}>{r.method} {r.path}</span>
-                      <CopyButton value={`${r.method} ${r.path}`} label="Copy" />
-                    </span>
+                    {(() => {
+                      const b = transferBadge(r.method);
+                      if (b.isTransfer) {
+                        return (
+                          <span className="cell-inline">
+                            <span className={`ft-badge ${b.direction}${b.partial ? " partial" : ""}`}>
+                              {b.direction === "download" ? "↓" : "↑"} {b.label}
+                            </span>
+                            <span className="cell-truncate" title={r.path}>{r.path}</span>
+                            <CopyButton value={`${b.label}: ${r.path}`} label="Copy" />
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="cell-inline">
+                          <span className="cell-truncate" title={`${r.method} ${r.path}`}>{r.method} {r.path}</span>
+                          <CopyButton value={`${r.method} ${r.path}`} label="Copy" />
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="cell-sub">{r.status}</td>
                   <td>
