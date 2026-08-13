@@ -11,6 +11,10 @@ import (
 	"github.com/coder/websocket"
 )
 
+// isoSession is the A1 single-flight lock for ISOLATED (isolated-browser)
+// sessions: only one at a time (Slice A2 adds a per-session broker).
+var isoSession isoGuard
+
 // qInt reads an integer query param, clamped to [lo,hi], defaulting to def.
 func qInt(r *http.Request, key string, def, lo, hi int) string {
 	n, err := strconv.Atoi(r.URL.Query().Get(key))
@@ -46,7 +50,7 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 		return
 	}
 
-	conn, guacdAddr, connectorID, record, err := ctrl.GatewayDescriptor(userID, siteID)
+	conn, guacdAddr, connectorID, record, navigateUrl, browserControlAddr, err := ctrl.GatewayDescriptor(userID, siteID)
 	if err != nil {
 		log.Printf("guac-tunnel site=%s user=%s: descriptor failed err=%v", siteID, userID, err)
 		http.Error(w, "forbidden", http.StatusForbidden)
@@ -60,6 +64,34 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 		http.Error(w, "connector offline", http.StatusBadGateway)
 		return
 	}
+
+	if navigateUrl != "" { // ISOLATED: navigate the on-prem browser to the site URL
+		if !isoSession.tryAcquire() {
+			log.Printf("guac-tunnel site=%s: isolated browser in use", siteID)
+			http.Error(w, "isolated browser in use", http.StatusServiceUnavailable)
+			return
+		}
+		defer isoSession.release()
+		// Fresh profile, then open the target URL. Best-effort (control calls
+		// ride the same connector relay as guacd).
+		if st, derr := dialGuacd(sess, browserControlAddr); derr == nil {
+			_, _ = st.Write([]byte(buildResetRequest(browserControlAddr)))
+			_ = st.Close()
+		}
+		if st, derr := dialGuacd(sess, browserControlAddr); derr == nil {
+			_, _ = st.Write([]byte(buildNavigateRequest(browserControlAddr, navigateUrl)))
+			_ = st.Close()
+		} else {
+			log.Printf("guac-tunnel site=%s: navigate dial failed err=%v", siteID, derr)
+		}
+		defer func() { // wipe the browser after the session so the next one starts clean
+			if st, derr := dialGuacd(sess, browserControlAddr); derr == nil {
+				_, _ = st.Write([]byte(buildResetRequest(browserControlAddr)))
+				_ = st.Close()
+			}
+		}()
+	}
+
 	guac, err := dialGuacd(sess, guacdAddr)
 	if err != nil {
 		log.Printf("guac-tunnel site=%s: dialGuacd(%s) failed err=%v", siteID, guacdAddr, err)
