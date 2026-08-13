@@ -7,10 +7,12 @@ export function AddSiteButton({
   connectors,
   recordingEnabled,
   nativeGateway,
+  isolationEnabled,
 }: {
   connectors: { id: string; name: string }[];
   recordingEnabled: boolean;
   nativeGateway: boolean;
+  isolationEnabled: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -19,7 +21,7 @@ export function AddSiteButton({
         Add site
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title="Add site" size="lg">
-        <SiteForm connectors={connectors} recordingEnabled={recordingEnabled} nativeGateway={nativeGateway} onDone={() => setOpen(false)} />
+        <SiteForm connectors={connectors} recordingEnabled={recordingEnabled} nativeGateway={nativeGateway} isolationEnabled={isolationEnabled} onDone={() => setOpen(false)} />
       </Modal>
     </>
   );

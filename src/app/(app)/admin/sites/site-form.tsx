@@ -44,7 +44,7 @@ type SiteInitial = {
   insecureSkipVerify: boolean;
   recordSessions: boolean;
   clipboardMode: string;
-  accessMode: "TRANSPARENT" | "GATEWAY";
+  accessMode: "TRANSPARENT" | "GATEWAY" | "ISOLATED";
   hasLogo?: boolean;
 };
 
@@ -59,6 +59,7 @@ export function SiteForm({
   site,
   recordingEnabled = false,
   nativeGateway = false,
+  isolationEnabled = false,
   vault,
   onDone,
 }: {
@@ -66,6 +67,7 @@ export function SiteForm({
   site?: SiteInitial;
   recordingEnabled?: boolean;
   nativeGateway?: boolean;
+  isolationEnabled?: boolean;
   vault?: { protocol: string; targetHost: string; targetPort: number; username: string; hasSecret: boolean; guacParams?: unknown };
   onDone?: () => void;
 }) {
@@ -78,7 +80,7 @@ export function SiteForm({
   const [insecureSkipVerify, setInsecureSkipVerify] = useState(site?.insecureSkipVerify ?? false);
   const [recordSessions, setRecordSessions] = useState(site?.recordSessions ?? false);
   const [clipboardMode, setClipboardMode] = useState(site?.clipboardMode ?? "allow");
-  const [accessMode, setAccessMode] = useState<"TRANSPARENT" | "GATEWAY">(site?.accessMode ?? "TRANSPARENT");
+  const [accessMode, setAccessMode] = useState<"TRANSPARENT" | "GATEWAY" | "ISOLATED">(site?.accessMode ?? "TRANSPARENT");
   // Remote-desktop (GATEWAY) target — seeded from the site's vault credential; the
   // secret is always blank (write-only).
   const [protocol, setProtocol] = useState(vault?.protocol ?? "RDP");
@@ -223,14 +225,17 @@ export function SiteForm({
           id="site-access-mode"
           className="select"
           value={accessMode}
-          onChange={(e) => setAccessMode(e.target.value === "GATEWAY" ? "GATEWAY" : "TRANSPARENT")}
+          onChange={(e) => setAccessMode(e.target.value === "GATEWAY" ? "GATEWAY" : e.target.value === "ISOLATED" ? "ISOLATED" : "TRANSPARENT")}
         >
           <option value="TRANSPARENT">Web app</option>
           {nativeGateway && <option value="GATEWAY">Remote session (RDP / SSH / VNC)</option>}
+          {isolationEnabled && <option value="ISOLATED">Isolated browser (Pro)</option>}
         </select>
         <p className="hint">
           {accessMode === "GATEWAY"
             ? "A native RDP/SSH/VNC session, rendered inside Captivo. The vendor never sees the target password."
+            : accessMode === "ISOLATED"
+            ? "Open an internal web app inside a throwaway browser that runs next to the connector — only its screen reaches the vendor; nothing lands on their device."
             : "Proxy an internal web app; the vendor opens it in their browser."}
         </p>
       </div>
@@ -273,6 +278,25 @@ export function SiteForm({
         )}
       </div>
       </>
+      )}
+      {accessMode === "ISOLATED" && (
+        <div className="field">
+          <label className="field-label" htmlFor="site-iso-url">Internal URL</label>
+          <input
+            id="site-iso-url"
+            type="text"
+            className="input"
+            value={upstreamUrl}
+            onChange={(e) => setUpstreamUrl(e.target.value)}
+            required
+            placeholder="https://wiki.internal"
+          />
+          <p className="hint">
+            The internal web app the throwaway browser opens (e.g. <code>https://wiki.internal</code>). It&apos;s
+            reached from the connector&apos;s network, next to the isolated browser.
+          </p>
+          {tlsPortWarning && <p className="notice warn" role="alert">{tlsPortWarning}</p>}
+        </div>
       )}
       {accessMode === "GATEWAY" && (
         <>

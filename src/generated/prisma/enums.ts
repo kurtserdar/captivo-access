@@ -40,7 +40,8 @@ export type ConnectorStatus = (typeof ConnectorStatus)[keyof typeof ConnectorSta
 
 export const SiteAccessMode = {
   TRANSPARENT: 'TRANSPARENT',
-  GATEWAY: 'GATEWAY'
+  GATEWAY: 'GATEWAY',
+  ISOLATED: 'ISOLATED'
 } as const
 
 export type SiteAccessMode = (typeof SiteAccessMode)[keyof typeof SiteAccessMode]

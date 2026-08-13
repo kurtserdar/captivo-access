@@ -3,6 +3,7 @@ import { evaluateAccess } from "@/lib/access/evaluate";
 import { getVaultCredential } from "@/lib/vault/store";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { parseGuacParams, resolveGuacParams, toGuacArgs } from "@/lib/gateway/guac-params";
+import { isolationEnabled } from "@/lib/isolation/enabled";
 import { resolvedGuacParamDefaults } from "@/lib/settings/platform";
 import { db } from "@/lib/db";
 
@@ -25,11 +26,26 @@ export async function POST(req: NextRequest) {
   const siteId = typeof b.siteId === "string" ? b.siteId : "";
   if (!userId || !siteId) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true, recordSessions: true, clipboardMode: true } });
-  if (!site || site.accessMode !== "GATEWAY") return NextResponse.json({ error: "not_gateway" }, { status: 404 });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true, recordSessions: true, clipboardMode: true, upstreamUrl: true } });
+  if (!site || (site.accessMode !== "GATEWAY" && site.accessMode !== "ISOLATED")) return NextResponse.json({ error: "not_gateway" }, { status: 404 });
 
   const decision = await evaluateAccess(userId, siteId, new Date());
   if (!decision.allow) return NextResponse.json({ error: "forbidden", reason: decision.reason }, { status: 403 });
+
+  if (site.accessMode === "ISOLATED") {
+    if (!isolationEnabled()) return NextResponse.json({ error: "isolation_disabled" }, { status: 404 });
+    const [browserHost, browserPort] = (process.env.ISOLATED_BROWSER_ADDR ?? "captivo-browser:5900").split(":");
+    return NextResponse.json({
+      protocol: "vnc", params: {},
+      targetHost: browserHost, targetPort: Number(browserPort) || 5900,
+      username: "", secret: "", secretKind: "NONE",
+      navigateUrl: site.upstreamUrl ?? "",
+      browserControlAddr: (process.env.ISOLATED_BROWSER_CONTROL_ADDR ?? "captivo-browser:7900").trim(),
+      guacdAddress: (process.env.GUACD_ADDR ?? "captivo-guacd:4822").trim(),
+      connectorId: site.connectorId,
+      record: recordingEnabled() && site.recordSessions,
+    });
+  }
 
   const cred = await getVaultCredential(siteId);
   if (!cred) return NextResponse.json({ error: "no_credential" }, { status: 404 });

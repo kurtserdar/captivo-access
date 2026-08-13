@@ -6,7 +6,7 @@ import { LocalTime } from "@/app/(app)/_shell/local-time";
 
 const GENERIC_ERROR = "No passkey found or verification failed.";
 
-type Grant = { id: string; siteName: string; accessMode: "TRANSPARENT" | "GATEWAY"; endsAt: string | null; scheduled: boolean };
+type Grant = { id: string; siteName: string; accessMode: "TRANSPARENT" | "GATEWAY" | "ISOLATED"; endsAt: string | null; scheduled: boolean };
 type State = "rest" | "ceremony" | "ready";
 
 export function LoginForm({

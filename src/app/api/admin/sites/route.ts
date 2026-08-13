@@ -4,6 +4,7 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
+import { isolationEnabled } from "@/lib/isolation/enabled";
 import { encrypt } from "@/lib/crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { validateSiteInput } from "@/lib/site/validate";
@@ -21,8 +22,8 @@ export async function POST(req: NextRequest) {
   }
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled(), requireSecret: true, recordingEnabled: recordingEnabled() });
-  if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.error === "native_gateway_disabled" ? 403 : 400 });
+  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled(), requireSecret: true, recordingEnabled: recordingEnabled(), isolationEnabled: isolationEnabled() });
+  if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.error === "native_gateway_disabled" || v.error === "isolation_disabled" ? 403 : 400 });
 
   const connector = await db.connector.findUnique({ where: { id: v.connectorId }, select: { id: true } });
   if (!connector) {
@@ -40,6 +41,25 @@ export async function POST(req: NextRequest) {
       data: {
         connectorId: v.connectorId, name: v.name, hostname: v.hostname, upstreamUrl: v.upstreamUrl, description: v.description,
         insecureSkipVerify: v.insecureSkipVerify, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "TRANSPARENT", ...logoData,
+      },
+      select: { id: true },
+    });
+    await recordAdminAction({
+      actor: { id: admin.id, email: admin.email },
+      action: "resource.create",
+      targetType: "resource", targetId: site.id,
+      summary: `Created resource "${v.name}"`,
+      clientIp: clientIp(req.headers) ?? null,
+    });
+    return NextResponse.json({ id: site.id });
+  }
+
+  if (v.mode === "ISOLATED") {
+    // Isolated browser: a site with the internal URL to open; no VaultCredential.
+    const site = await db.site.create({
+      data: {
+        connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: v.upstreamUrl, description: v.description,
+        recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "ISOLATED", ...logoData,
       },
       select: { id: true },
     });

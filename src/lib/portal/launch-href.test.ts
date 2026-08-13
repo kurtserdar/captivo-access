@@ -8,4 +8,7 @@ describe("launchHref", () => {
   it("web (TRANSPARENT) → https host", () => {
     expect(launchHref("TRANSPARENT", "site123", "app.internal")).toBe("https://app.internal");
   });
+  it("ISOLATED → native session page like GATEWAY", () => {
+    expect(launchHref("ISOLATED", "s1", "")).toBe("/gateway/s1/session");
+  });
 });

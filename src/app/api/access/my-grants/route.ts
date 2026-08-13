@@ -16,7 +16,7 @@ export async function GET() {
     .map((g) => ({
       id: g.id,
       siteName: g.site.name,
-      accessMode: g.site.accessMode as "TRANSPARENT" | "GATEWAY",
+      accessMode: g.site.accessMode as "TRANSPARENT" | "GATEWAY" | "ISOLATED",
       endsAt: g.endsAt ? g.endsAt.toISOString() : null,
       scheduled: g.schedule != null,
     }));

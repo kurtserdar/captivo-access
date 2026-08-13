@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
+import { isolationEnabled } from "@/lib/isolation/enabled";
 import { getVaultCredentialMeta } from "@/lib/vault/store";
 import { SiteForm } from "../../site-form";
 
@@ -39,6 +40,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
             connectors={connectors}
             recordingEnabled={recordingEnabled()}
             nativeGateway={nativeGatewayEnabled()}
+            isolationEnabled={isolationEnabled()}
             vault={vault ?? undefined}
             site={{
               id: site.id,

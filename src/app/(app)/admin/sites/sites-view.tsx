@@ -14,7 +14,7 @@ export interface SiteRow {
   upstreamUrl: string | null;
   gatewayTarget: string | null;
   description: string | null;
-  accessMode: "TRANSPARENT" | "GATEWAY";
+  accessMode: "TRANSPARENT" | "GATEWAY" | "ISOLATED";
   hasLogo: boolean;
   connectorId: string;
   insecureSkipVerify: boolean;

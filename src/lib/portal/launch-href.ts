@@ -1,6 +1,6 @@
-// Where the "Open" button on an access card points. GATEWAY resources open the
-// in-Captivo native session page; web (TRANSPARENT) resources open directly.
-// Extracted verbatim from the retired access-view.tsx.
+// Where the "Open" button on an access card points. GATEWAY and ISOLATED
+// resources open the in-Captivo native session page (screen stream); web
+// (TRANSPARENT) resources open directly.
 export function launchHref(accessMode: string, siteId: string, hostname: string): string {
-  return accessMode === "GATEWAY" ? `/gateway/${siteId}/session` : `https://${hostname}`;
+  return accessMode === "GATEWAY" || accessMode === "ISOLATED" ? `/gateway/${siteId}/session` : `https://${hostname}`;
 }

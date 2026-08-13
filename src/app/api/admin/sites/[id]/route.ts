@@ -4,6 +4,7 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
+import { isolationEnabled } from "@/lib/isolation/enabled";
 import { encrypt } from "@/lib/crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { validateSiteInput } from "@/lib/site/validate";
@@ -18,8 +19,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const { id } = await ctx.params;
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled(), requireSecret: false, recordingEnabled: recordingEnabled() });
-  if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.error === "native_gateway_disabled" ? 403 : 400 });
+  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled(), requireSecret: false, recordingEnabled: recordingEnabled(), isolationEnabled: isolationEnabled() });
+  if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.error === "native_gateway_disabled" || v.error === "isolation_disabled" ? 403 : 400 });
 
   const connector = await db.connector.findUnique({ where: { id: v.connectorId }, select: { id: true } });
   if (!connector) return NextResponse.json({ error: "connector_not_found" }, { status: 400 });
@@ -43,6 +44,21 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       }
       throw e;
     }
+    await recordAdminAction({
+      actor: { id: admin.id, email: admin.email },
+      action: "resource.update", targetType: "resource", targetId: id,
+      summary: `Updated resource "${v.name}"`,
+      clientIp: clientIp(req.headers) ?? null,
+    });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (v.mode === "ISOLATED") {
+    // Isolated browser: URL-only site, no credential. Drop any stale vault from a GATEWAY→ISOLATED switch.
+    await db.$transaction(async (tx) => {
+      await tx.site.update({ where: { id }, data: { connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: v.upstreamUrl, description: v.description, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "ISOLATED", ...logoData } });
+      await tx.vaultCredential.deleteMany({ where: { siteId: id } });
+    });
     await recordAdminAction({
       actor: { id: admin.id, email: admin.email },
       action: "resource.update", targetType: "resource", targetId: id,
