@@ -15,6 +15,12 @@ describe("parseGuacParams", () => {
     expect(parseGuacParams(null)).toEqual({});
     expect(parseGuacParams("nope")).toEqual({});
   });
+  it("keeps a valid absolute sftpRoot (hyphens/spaces ok), drops relative / control-char / over-long", () => {
+    expect(parseGuacParams({ sftpRoot: "/srv/my-incoming dir" })).toEqual({ sftpRoot: "/srv/my-incoming dir" });
+    expect(parseGuacParams({ sftpRoot: "relative/path" })).toEqual({});
+    expect(parseGuacParams({ sftpRoot: "/bad\tnull" })).toEqual({});
+    expect(parseGuacParams({ sftpRoot: "/" + "a".repeat(1100) })).toEqual({});
+  });
 });
 
 describe("resolveGuacParams", () => {
@@ -45,7 +51,7 @@ describe("toGuacArgs file transfer", () => {
   });
   it("SSH on emits enable-sftp; blocks map to sftp-disable-*", () => {
     expect(toGuacArgs({ enableFileTransfer: true, blockDownload: true }, "allow", "SSH")).toEqual({
-      "enable-sftp": "true", "sftp-disable-download": "true",
+      "enable-sftp": "true", "sftp-root-directory": "/", "sftp-disable-download": "true",
     });
   });
   it("VNC emits no file-transfer args", () => {
@@ -53,5 +59,36 @@ describe("toGuacArgs file transfer", () => {
   });
   it("off emits nothing", () => {
     expect(toGuacArgs({ blockUpload: true }, "allow", "RDP")).toEqual({});
+  });
+  it("SSH derives sftp-root-directory from the username's home", () => {
+    expect(toGuacArgs({ enableFileTransfer: true }, "allow", "SSH", "deploy")).toEqual({
+      "enable-sftp": "true", "sftp-root-directory": "/home/deploy",
+    });
+  });
+  it("SSH root user maps to /root", () => {
+    expect(toGuacArgs({ enableFileTransfer: true }, "allow", "SSH", "root")).toEqual({
+      "enable-sftp": "true", "sftp-root-directory": "/root",
+    });
+  });
+  it("SSH with no username falls back to /", () => {
+    expect(toGuacArgs({ enableFileTransfer: true }, "allow", "SSH")).toEqual({
+      "enable-sftp": "true", "sftp-root-directory": "/",
+    });
+  });
+  it("SSH explicit sftpRoot override wins (including /)", () => {
+    expect(toGuacArgs({ enableFileTransfer: true, sftpRoot: "/data/up" }, "allow", "SSH", "deploy")).toEqual({
+      "enable-sftp": "true", "sftp-root-directory": "/data/up",
+    });
+    expect(toGuacArgs({ enableFileTransfer: true, sftpRoot: "/" }, "allow", "SSH", "deploy")).toEqual({
+      "enable-sftp": "true", "sftp-root-directory": "/",
+    });
+  });
+  it("SSH file transfer off emits no sftp args", () => {
+    expect(toGuacArgs({ sftpRoot: "/data" }, "allow", "SSH", "deploy")).toEqual({});
+  });
+  it("RDP/VNC never emit sftp-root-directory", () => {
+    expect(toGuacArgs({ enableFileTransfer: true, sftpRoot: "/data" }, "allow", "RDP", "deploy"))
+      .not.toHaveProperty("sftp-root-directory");
+    expect(toGuacArgs({ enableFileTransfer: true, sftpRoot: "/data" }, "allow", "VNC", "deploy")).toEqual({});
   });
 });

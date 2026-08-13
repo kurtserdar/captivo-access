@@ -8,6 +8,7 @@ export interface GuacParams {
   enableFileTransfer?: boolean;
   blockUpload?: boolean;
   blockDownload?: boolean;
+  sftpRoot?: string;
 }
 
 export const KEYBOARD_LAYOUTS: { value: string; label: string }[] = [
@@ -42,6 +43,11 @@ export function parseGuacParams(input: unknown): GuacParams {
   if (typeof o.serverLayout === "string" && LAYOUTS.has(o.serverLayout)) out.serverLayout = o.serverLayout;
   if (typeof o.colorDepth === "number" && DEPTHS.has(o.colorDepth)) out.colorDepth = o.colorDepth as 8 | 16 | 24;
   for (const k of BOOL_KEYS) if (typeof o[k] === "boolean") out[k] = o[k] as boolean;
+  if (typeof o.sftpRoot === "string") {
+    const v = o.sftpRoot.trim();
+    // Absolute path only (guacd rejects relative SFTP roots), bounded, no control chars.
+    if (v.startsWith("/") && v.length <= 1024 && !/[\x00-\x1f]/.test(v)) out.sftpRoot = v;
+  }
   return out;
 }
 
@@ -57,11 +63,21 @@ export function resolveGuacParams(resource: GuacParams, policy: GuacParams): Gua
     enableFileTransfer: resource.enableFileTransfer ?? policy.enableFileTransfer,
     blockUpload: resource.blockUpload ?? policy.blockUpload,
     blockDownload: resource.blockDownload ?? policy.blockDownload,
+    sftpRoot: resource.sftpRoot ?? policy.sftpRoot,
   };
 }
 
+// The writable SFTP root for an SSH target: the login user's home. guacd defaults
+// sftp-root-directory to "/", which non-root users can't write to → "Unable to
+// write to file". Absolute path required (guacd rejects relative roots).
+export function sshHome(username?: string): string {
+  if (username === "root") return "/root";
+  if (username && username.length > 0) return "/home/" + username;
+  return "/";
+}
+
 // Map resolved params + clipboardMode → guacd arg-name→value (only set/true fields).
-export function toGuacArgs(p: GuacParams, clipboardMode: string, protocol: "RDP" | "SSH" | "VNC"): Record<string, string> {
+export function toGuacArgs(p: GuacParams, clipboardMode: string, protocol: "RDP" | "SSH" | "VNC", username?: string): Record<string, string> {
   const a: Record<string, string> = {};
   if (p.serverLayout) a["server-layout"] = p.serverLayout;
   if (p.colorDepth) a["color-depth"] = String(p.colorDepth);
@@ -80,6 +96,7 @@ export function toGuacArgs(p: GuacParams, clipboardMode: string, protocol: "RDP"
       if (p.blockDownload) a["disable-download"] = "true";
     } else if (protocol === "SSH") {
       a["enable-sftp"] = "true";
+      a["sftp-root-directory"] = (p.sftpRoot && p.sftpRoot.trim()) || sshHome(username);
       if (p.blockUpload) a["sftp-disable-upload"] = "true";
       if (p.blockDownload) a["sftp-disable-download"] = "true";
     }
