@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
+import { isolationEnabled } from "@/lib/isolation/enabled";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { resolvedRecordingConsentRequired } from "@/lib/settings/platform";
 import { GatewaySession } from "./session-client";
@@ -17,9 +18,12 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
   await requireUser();
   const { siteId } = await params;
   const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, recordSessions: true, clipboardMode: true } });
-  // Native is the only gateway now — a non-native / disabled / non-gateway site
-  // has no session here.
-  if (!nativeGatewayEnabled() || !site || site.accessMode !== "GATEWAY") {
+  // This full-screen session page serves native GATEWAY (RDP/SSH/VNC) and ISOLATED
+  // (remote browser) resources — both stream a screen via guacd. Everything else
+  // (or a disabled capability) has no session here.
+  const okGateway = nativeGatewayEnabled() && site?.accessMode === "GATEWAY";
+  const okIsolated = isolationEnabled() && site?.accessMode === "ISOLATED";
+  if (!site || (!okGateway && !okIsolated)) {
     notFound();
   }
   const recorded = recordingEnabled() && site.recordSessions;
