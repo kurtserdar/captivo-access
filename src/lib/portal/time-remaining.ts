@@ -32,6 +32,9 @@ export function remaining(startISO: string | null, endISO: string | null, schedu
   // expiry, so the bar depletes as the window is consumed.
   const pct = Math.round(((total - elapsed) / total) * 100);
   const msLeft = end - n;
-  const tone: Remaining["tone"] = msLeft < 24 * 3600 * 1000 ? "urgent" : "ok";
+  // "urgent" only in the final stretch — an amber bar should mean "about to
+  // expire", not merely "under a day left" (a 24h grant would otherwise be amber
+  // its whole life).
+  const tone: Remaining["tone"] = msLeft < 60 * 60 * 1000 ? "urgent" : "ok";
   return { text: humanize(msLeft), pct, tone };
 }

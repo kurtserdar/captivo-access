@@ -12,13 +12,18 @@ describe("remaining", () => {
     expect(r.tone).toBe("schedule");
     expect(r.pct).toBe(100);
   });
-  it("ends in <24h: urgent, bar shows remaining", () => {
+  it("half the window left: pct 50, ok (not urgent at 12h)", () => {
     const start = new Date("2026-08-12T00:00:00Z").toISOString(); // 12h ago
     const end = new Date("2026-08-13T00:00:00Z").toISOString();   // in 12h
     const r = remaining(start, end, null, NOW);
-    expect(r.tone).toBe("urgent");
+    expect(r.tone).toBe("ok");
     expect(r.pct).toBe(50);            // half the 24h window remaining
     expect(r.text).toContain("left");
+  });
+  it("ends within the hour: urgent", () => {
+    const start = new Date("2026-08-11T12:00:00Z").toISOString(); // 24h ago
+    const end = new Date("2026-08-12T12:30:00Z").toISOString();   // in 30m
+    expect(remaining(start, end, null, NOW).tone).toBe("urgent");
   });
   it("ends in >24h: ok, bar mostly full", () => {
     const start = new Date("2026-08-12T00:00:00Z").toISOString();
