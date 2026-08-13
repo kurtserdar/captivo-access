@@ -1,7 +1,7 @@
 export interface Remaining {
   text: string;
   pct: number; // 0–100, percentage of the window REMAINING (bar depletes toward expiry)
-  tone: "urgent" | "ok" | "schedule";
+  tone: "urgent" | "soon" | "ok" | "schedule";
 }
 
 // Humanizes a millisecond span, e.g. "14h 16m left", "2d 20h left".
@@ -32,9 +32,9 @@ export function remaining(startISO: string | null, endISO: string | null, schedu
   // expiry, so the bar depletes as the window is consumed.
   const pct = Math.round(((total - elapsed) / total) * 100);
   const msLeft = end - n;
-  // "urgent" only in the final stretch — an amber bar should mean "about to
-  // expire", not merely "under a day left" (a 24h grant would otherwise be amber
-  // its whole life).
-  const tone: Remaining["tone"] = msLeft < 60 * 60 * 1000 ? "urgent" : "ok";
+  // Three tiers so the bar eases from green → amber → red instead of jumping:
+  // red in the final hour, amber within six hours, green otherwise.
+  const H = 60 * 60 * 1000;
+  const tone: Remaining["tone"] = msLeft < H ? "urgent" : msLeft < 6 * H ? "soon" : "ok";
   return { text: humanize(msLeft), pct, tone };
 }

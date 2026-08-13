@@ -25,6 +25,11 @@ describe("remaining", () => {
     const end = new Date("2026-08-12T12:30:00Z").toISOString();   // in 30m
     expect(remaining(start, end, null, NOW).tone).toBe("urgent");
   });
+  it("ends within a few hours: soon (amber)", () => {
+    const start = new Date("2026-08-11T12:00:00Z").toISOString(); // 24h ago
+    const end = new Date("2026-08-12T15:00:00Z").toISOString();   // in 3h
+    expect(remaining(start, end, null, NOW).tone).toBe("soon");
+  });
   it("ends in >24h: ok, bar mostly full", () => {
     const start = new Date("2026-08-12T00:00:00Z").toISOString();
     const end = new Date("2026-08-15T00:00:00Z").toISOString();   // in 3d

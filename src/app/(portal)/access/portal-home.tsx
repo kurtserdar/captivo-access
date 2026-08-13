@@ -18,7 +18,7 @@ export interface CardVM {
 }
 export interface RecentVM { id: string; name: string; protocol: string; durationText: string; }
 
-const TONE_COLOR: Record<Remaining["tone"], string> = { urgent: "#b45309", ok: "#0f766e", schedule: "#78716c" };
+const TONE_COLOR: Record<Remaining["tone"], string> = { urgent: "#dc2626", soon: "#d97706", ok: "#0f766e", schedule: "#78716c" };
 const STATUS_DOT: Record<StatusLine["tone"], string> = { good: "#0f766e", info: "#dc2626", muted: "#a8a29e" };
 
 export function PortalHome(props: {
