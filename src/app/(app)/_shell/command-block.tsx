@@ -26,7 +26,7 @@ export function CommandBlock({
 
   const lines = (display ?? command).split("\n");
   return (
-    <div className="term">
+    <div className="term cmd">
       <div className="term-bar">
         <span className="term-dots" aria-hidden="true">
           <i style={{ background: "#ff5f57" }} />

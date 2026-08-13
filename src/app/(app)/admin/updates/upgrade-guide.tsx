@@ -1,5 +1,5 @@
 import { CommandBlock } from "@/app/(app)/_shell/command-block";
-import { formatDockerRun } from "@/lib/format/docker-command";
+import { formatShellCommand } from "@/lib/format/docker-command";
 
 // The documented server-side upgrade command (manager + data-plane + auto
 // migration). Kept as a single copy-pasteable line.
@@ -62,7 +62,7 @@ export function UpgradeGuide({
           </p>
           <CommandBlock
             command={connectorCommand}
-            display={formatDockerRun(connectorCommand)}
+            display={formatShellCommand(connectorCommand)}
             title="connector-update"
           />
         </div>

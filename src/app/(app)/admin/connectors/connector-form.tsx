@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CommandBlock } from "@/app/(app)/_shell/command-block";
-import { formatDockerRun } from "@/lib/format/docker-command";
+import { formatShellCommand } from "@/lib/format/docker-command";
 
 function errorMessage(code: string | undefined): string {
   switch (code) {
@@ -94,7 +94,7 @@ export function ConnectorForm({ onDone }: { onDone?: () => void }) {
           </p>
           <CommandBlock
             command={pairing.installCommand}
-            display={formatDockerRun(pairing.installCommand)}
+            display={formatShellCommand(pairing.installCommand)}
             title="connector-install"
           />
           {pairing.managerUrlIsLocal && (

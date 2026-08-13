@@ -761,3 +761,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .tn-right .live-pill { color: var(--nav-fg-dim); background: var(--nav-active); border-color: var(--nav-line); }
 .tn-right .live-pill:hover { background: var(--nav-line); }
 .tn-right .live-pill.on { color: var(--nav-accent); background: var(--nav-active); border-color: transparent; }
+
+/* Command blocks wrap long lines instead of scrolling horizontally (compound
+   connector commands can be long). Log terminals keep nowrap+scroll. */
+.term.cmd .term-body { overflow-x: visible; }
+.term.cmd .term-line { white-space: pre-wrap; overflow-wrap: anywhere; }

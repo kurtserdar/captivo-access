@@ -32,3 +32,27 @@ export function formatDockerRun(oneLiner: string): string {
   }
   return groups.join(" \\\n  ");
 }
+
+// Pretty-prints a compound shell one-liner (multiple commands joined by `&&`,
+// `||`, or `;`) into one step per line, with each `docker run` step's flags
+// expanded via formatDockerRun. Steps containing a quoted argument (e.g. the
+// guacd `-c '… | tee …'` wrapper) are left as a single line — the naive flag
+// tokenizer can't preserve quoted whitespace. Pure + display-only; callers copy
+// the original one-liner, never this. A separator sequence never appears inside
+// our generated commands' quotes, so the split is safe for them.
+export function formatShellCommand(oneLiner: string): string {
+  const trimmed = oneLiner.trim();
+  if (trimmed === "") return oneLiner;
+  // Capturing split keeps separators: [cmd, sep, cmd, sep, …]. `;` needs no
+  // leading space (our commands emit `… 2>&1; docker run …`).
+  const parts = trimmed.split(/(\s+&&\s+|\s+\|\|\s+|;\s+)/);
+  const lines: string[] = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    const cmd = parts[i]?.trim();
+    if (!cmd) continue;
+    const sep = parts[i + 1]?.trim() ?? ""; // "&&" | "||" | ";" | ""
+    const formatted = cmd.startsWith("docker run") && !cmd.includes("'") ? formatDockerRun(cmd) : cmd;
+    lines.push(sep ? `${formatted} ${sep}` : formatted);
+  }
+  return lines.join("\n");
+}

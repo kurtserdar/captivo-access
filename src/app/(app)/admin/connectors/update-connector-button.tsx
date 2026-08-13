@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Modal } from "@/app/(app)/_shell/modal";
 import { CommandBlock } from "@/app/(app)/_shell/command-block";
-import { formatDockerRun } from "@/lib/format/docker-command";
+import { formatShellCommand } from "@/lib/format/docker-command";
 
 export function UpdateConnectorButton({
   command,
@@ -19,7 +19,7 @@ export function UpdateConnectorButton({
       <button type="button" className="btn sm" onClick={() => setOpen(true)}>Update</button>
       <Modal open={open} onClose={() => setOpen(false)} title="Update connector">
         <p className="cell-sub" style={{ marginTop: 0 }}>Run this on the connector&apos;s host. It keeps the connector&apos;s token, so no re-pairing.</p>
-        <CommandBlock command={command} display={formatDockerRun(command)} title="connector-update" />
+        <CommandBlock command={command} display={formatShellCommand(command)} title="connector-update" />
         <div className="row-actions">
           <button type="button" className="btn sm" onClick={() => setOpen(false)}>Close</button>
         </div>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Modal } from "@/app/(app)/_shell/modal";
 import { CommandBlock } from "@/app/(app)/_shell/command-block";
-import { formatDockerRun } from "@/lib/format/docker-command";
+import { formatShellCommand } from "@/lib/format/docker-command";
 
 type Repaired = { code: string; reconfigureCommand: string; managerUrlIsLocal: boolean };
 
@@ -53,7 +53,7 @@ export function RepairConnectorButton({ id }: { id: string }) {
               This re-pair code is shown only once — it&apos;s embedded in the command below. Run it on the
               connector&apos;s host to rotate its token; the connector keeps its identity and its resources.
             </p>
-            <CommandBlock command={result.reconfigureCommand} display={formatDockerRun(result.reconfigureCommand)} title="connector-repair" />
+            <CommandBlock command={result.reconfigureCommand} display={formatShellCommand(result.reconfigureCommand)} title="connector-repair" />
             {result.managerUrlIsLocal && (
               <p className="notice error">
                 <code>MANAGER_URL</code> points at <code>localhost</code> — replace it with the manager&apos;s
