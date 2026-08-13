@@ -1,36 +1,16 @@
-import Link from "next/link";
 import { ConnectorsIcon } from "@/components/icons";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { managerVersion } from "@/lib/version";
-import { isConnectorOutdated } from "@/lib/updates/semver";
 import { buildConnectorUpdateCommand } from "@/lib/connector/repair";
 import { connectorTunnelUrl, isLocalManagerUrl } from "@/lib/url";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { AddConnectorButton } from "./add-connector-button";
-import { ConnectorName } from "./connector-name";
-import { DeleteConnectorButton } from "./delete-connector-button";
-import { RepairConnectorButton } from "./repair-connector-button";
-import { RevokeConnectorButton } from "./revoke-connector-button";
-import { UpdateConnectorButton } from "./update-connector-button";
+import { ConnectorsTable, type ConnectorRow } from "./connectors-table";
 import { DeletePairingButton } from "./delete-pairing-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Connectors" };
-
-const STATUS_LABEL: Record<string, string> = {
-  PENDING: "Pending",
-  ONLINE: "Online",
-  OFFLINE: "Offline",
-  REVOKED: "Revoked",
-};
-
-const STATUS_PILL: Record<string, string> = {
-  PENDING: "warn",
-  ONLINE: "ok",
-  OFFLINE: "neutral",
-  REVOKED: "danger",
-};
 
 export default async function AdminConnectorsPage() {
   await requireAdmin();
@@ -53,6 +33,15 @@ export default async function AdminConnectorsPage() {
   const mgr = managerVersion();
   const managerUrl = process.env.MANAGER_PUBLIC_URL?.replace(/\/+$/, "") || "https://manager.<your-access-domain>";
   const managerUrlIsLocal = isLocalManagerUrl(managerUrl);
+  const updateCommand = buildConnectorUpdateCommand(managerUrl, connectorTunnelUrl());
+  const rows: ConnectorRow[] = connectors.map((c) => ({
+    id: c.id,
+    name: c.name,
+    status: c.status,
+    lastSeenAt: c.lastSeenAt ? c.lastSeenAt.toISOString() : null,
+    version: c.version,
+    sitesCount: c._count.sites,
+  }));
 
   return (
     <main>
@@ -72,57 +61,7 @@ export default async function AdminConnectorsPage() {
       {connectors.length === 0 ? (
         <div className="empty">No connectors yet — use &quot;Add connector&quot; to reach an internal app.</div>
       ) : (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Last seen</th>
-                <th>Version</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {connectors.map((c) => {
-                const updateCommand = buildConnectorUpdateCommand(managerUrl, connectorTunnelUrl());
-                return (
-                  <tr key={c.id}>
-                    <td><ConnectorName id={c.id} name={c.name} /></td>
-                    <td>
-                      <span className={`pill ${STATUS_PILL[c.status] ?? "neutral"}`}>
-                        {STATUS_LABEL[c.status] ?? c.status}
-                      </span>
-                    </td>
-                    <td className="cell-sub">{c.lastSeenAt ? <LocalTime iso={c.lastSeenAt.toISOString()} /> : "Never"}</td>
-                    <td className="cell-sub">
-                      {c.version ?? "—"}
-                      {isConnectorOutdated(c.version, mgr) && (
-                        <span className="pill warn" style={{ marginLeft: ".4rem" }}>Outdated</span>
-                      )}
-                    </td>
-                    <td>
-                      {c.status !== "REVOKED" ? (
-                        <div className="row-actions">
-                          <Link href={`/admin/connectors/${c.id}`} className="btn sm">Details</Link>
-                          {isConnectorOutdated(c.version, mgr) && (
-                            <UpdateConnectorButton command={updateCommand} managerUrlIsLocal={managerUrlIsLocal} />
-                          )}
-                          <RepairConnectorButton id={c.id} />
-                          <RevokeConnectorButton id={c.id} />
-                        </div>
-                      ) : c._count.sites === 0 ? (
-                        <DeleteConnectorButton id={c.id} name={c.name} />
-                      ) : (
-                        <span className="cell-sub">Revoked · remove its {c._count.sites} resource{c._count.sites === 1 ? "" : "s"} under Resources to delete this connector</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ConnectorsTable rows={rows} mgr={mgr} updateCommand={updateCommand} managerUrlIsLocal={managerUrlIsLocal} />
       )}
 
       {pendingPairings.length > 0 && (
