@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (v.mode === "ISOLATED") {
     // Isolated browser: URL-only site, no credential. Drop any stale vault from a GATEWAY→ISOLATED switch.
     await db.$transaction(async (tx) => {
-      await tx.site.update({ where: { id }, data: { connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: v.upstreamUrl, description: v.description, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "ISOLATED", ...logoData } });
+      await tx.site.update({ where: { id }, data: { connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: v.upstreamUrl, description: v.description, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "ISOLATED", isolationHiFi: v.isolationHiFi, ...logoData } });
       await tx.vaultCredential.deleteMany({ where: { siteId: id } });
     });
     await recordAdminAction({

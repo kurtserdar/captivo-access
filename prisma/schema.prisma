@@ -153,6 +153,7 @@ model Site {
   recordSessions     Boolean       @default(false)
   clipboardMode      String        @default("allow") // allow | no_copy | no_paste | none (web via proxy; gateway via guacd disable-copy/disable-paste)
   accessMode         SiteAccessMode @default(TRANSPARENT)
+  isolationHiFi      Boolean        @default(false) // ISOLATED transport: false = Standard (guacd/VNC), true = High-fidelity (KasmVNC)
   logo               Bytes?
   logoType           String?
   createdAt          DateTime      @default(now())

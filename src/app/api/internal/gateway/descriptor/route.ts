@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   const siteId = typeof b.siteId === "string" ? b.siteId : "";
   if (!userId || !siteId) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true, recordSessions: true, clipboardMode: true, upstreamUrl: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true, recordSessions: true, clipboardMode: true, upstreamUrl: true, isolationHiFi: true } });
   if (!site || (site.accessMode !== "GATEWAY" && site.accessMode !== "ISOLATED")) return NextResponse.json({ error: "not_gateway" }, { status: 404 });
 
   const decision = await evaluateAccess(userId, siteId, new Date());
@@ -34,6 +34,16 @@ export async function POST(req: NextRequest) {
 
   if (site.accessMode === "ISOLATED") {
     if (!isolationEnabled()) return NextResponse.json({ error: "isolation_disabled" }, { status: 404 });
+    if (site.isolationHiFi) {
+      return NextResponse.json({
+        transport: "kasm",
+        navigateUrl: site.upstreamUrl ?? "",
+        kasmAddr: (process.env.ISOLATED_KASM_ADDR ?? "captivo-kasm:6901").trim(),
+        kasmControlAddr: (process.env.ISOLATED_KASM_CONTROL_ADDR ?? "captivo-kasm:7900").trim(),
+        connectorId: site.connectorId,
+        record: false, // hi-fi recording = B3
+      });
+    }
     const [browserHost, browserPort] = (process.env.ISOLATED_BROWSER_ADDR ?? "captivo-browser:5900").split(":");
     return NextResponse.json({
       protocol: "vnc", params: toGuacArgs({}, site.clipboardMode, "VNC"),

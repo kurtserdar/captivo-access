@@ -45,6 +45,7 @@ type SiteInitial = {
   recordSessions: boolean;
   clipboardMode: string;
   accessMode: "TRANSPARENT" | "GATEWAY" | "ISOLATED";
+  isolationHiFi?: boolean;
   hasLogo?: boolean;
 };
 
@@ -81,6 +82,7 @@ export function SiteForm({
   const [recordSessions, setRecordSessions] = useState(site?.recordSessions ?? false);
   const [clipboardMode, setClipboardMode] = useState(site?.clipboardMode ?? "allow");
   const [accessMode, setAccessMode] = useState<"TRANSPARENT" | "GATEWAY" | "ISOLATED">(site?.accessMode ?? "TRANSPARENT");
+  const [isolationHiFi, setIsolationHiFi] = useState(site?.isolationHiFi ?? false);
   // Remote-desktop (GATEWAY) target — seeded from the site's vault credential; the
   // secret is always blank (write-only).
   const [protocol, setProtocol] = useState(vault?.protocol ?? "RDP");
@@ -155,6 +157,7 @@ export function SiteForm({
           insecureSkipVerify,
           recordSessions,
           clipboardMode,
+          isolationHiFi,
           ...(accessMode === "GATEWAY"
             ? { protocol, targetHost, targetPort: Number(targetPort), username, secret, guacParams: guacFieldsToParams(guac) }
             : {}),
@@ -307,6 +310,14 @@ export function SiteForm({
               <option value="none">Block both</option>
             </select>
             <span className="hint">Enforced by the session engine (guacd) — copy out of the isolated browser is disabled server-side, a real control.</span>
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="site-iso-fidelity">Streaming quality</label>
+            <select id="site-iso-fidelity" className="select" value={isolationHiFi ? "hi" : "std"} onChange={(e) => setIsolationHiFi(e.target.value === "hi")}>
+              <option value="std">Standard (works everywhere)</option>
+              <option value="hi">High-fidelity — smoother (beta)</option>
+            </select>
+            <span className="hint">High-fidelity uses a modern codec for smoother scrolling and video. Beta — not yet recorded.</span>
           </div>
         </>
       )}

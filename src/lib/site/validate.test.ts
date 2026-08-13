@@ -48,5 +48,7 @@ describe("validateSiteInput", () => {
       .toEqual({ ok: false, error: "invalid_upstream_url" });
     expect(validateSiteInput({ ...b, upstreamUrl: "" }, { ...base, isolationEnabled: true }))
       .toEqual({ ok: false, error: "isolated_url_required" });
+    expect(validateSiteInput({ ...b, isolationHiFi: true }, { ...base, isolationEnabled: true }))
+      .toMatchObject({ ok: true, mode: "ISOLATED", isolationHiFi: true });
   });
 });

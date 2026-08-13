@@ -17,7 +17,7 @@ export const metadata = { title: "Session" };
 export default async function GatewaySessionPage({ params }: { params: Promise<{ siteId: string }> }) {
   await requireUser();
   const { siteId } = await params;
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, recordSessions: true, clipboardMode: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, recordSessions: true, clipboardMode: true, isolationHiFi: true } });
   // This full-screen session page serves native GATEWAY (RDP/SSH/VNC) and ISOLATED
   // (remote browser) resources — both stream a screen via guacd. Everything else
   // (or a disabled capability) has no session here.
@@ -25,6 +25,11 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
   const okIsolated = isolationEnabled() && site?.accessMode === "ISOLATED";
   if (!site || (!okGateway && !okIsolated)) {
     notFound();
+  }
+  // High-fidelity ISOLATED streams via KasmVNC — the data-plane reverse-proxies its
+  // web client + WS at /kasm-tunnel/. Render it full-viewport instead of the guac client.
+  if (site.accessMode === "ISOLATED" && site.isolationHiFi) {
+    return <iframe title="Isolated browser" src="/kasm-tunnel/" style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", border: 0 }} allow="clipboard-read; clipboard-write" />;
   }
   const recorded = recordingEnabled() && site.recordSessions;
   // Ask for recording consent once per browser session (matches web sessions):
