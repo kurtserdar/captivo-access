@@ -39,6 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         role={user.role}
         userName={user.name}
         roleLabel={ROLE_LABELS[user.role] ?? user.role}
+        showLive={showRead}
       />
       {showConfig && (
         <UpdateBanner

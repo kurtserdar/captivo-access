@@ -9,9 +9,10 @@ import { BrandMark } from "@/components/brand";
 import { CommandPalette } from "./command-palette";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LogoutButton } from "../logout-button";
+import { LivePill } from "./live-pill";
 
-export function TopNav({ model, records, role, userName, roleLabel }: {
-  model: NavModel; records: SearchRecord[]; role: Role; userName: string; roleLabel: string;
+export function TopNav({ model, records, role, userName, roleLabel, showLive }: {
+  model: NavModel; records: SearchRecord[]; role: Role; userName: string; roleLabel: string; showLive: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState<string | null>(null); // open dropdown label | "account" | null
@@ -73,6 +74,7 @@ export function TopNav({ model, records, role, userName, roleLabel }: {
       </nav>
 
       <div className="tn-right">
+        {showLive && <LivePill />}
         {model.showSearch && <CommandPalette records={records} role={role} />}
         {model.showNotifications && (
           <Link href="/admin/notifications" className="tn-icon" aria-label="Notifications">
