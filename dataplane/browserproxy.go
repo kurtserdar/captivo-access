@@ -242,6 +242,7 @@ type BrowserProxy struct {
 	ctrl       proxyControl
 	managerURL string
 	audit      *AuditQueue
+	web        *WebActivityTracker
 }
 
 func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -384,6 +385,7 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	written := p.writeProxyResponse(w, resp, body, recordSessions, clipboardMode)
 	accessLog(userID, siteID, host, r.Method, r.URL.Path, resp.Status, written)
 	p.audit.Enqueue(auditEvent("ALLOW", "", userID, siteID, host, r, resp.Status, written))
+	p.web.Touch(userID, siteID, host)
 }
 
 // writeProxyResponse writes the upstream response (status, already-copied

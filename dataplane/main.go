@@ -30,6 +30,8 @@ func main() {
 
 	// Internal API (compose-internal only; guarded by x-dataplane-secret).
 	hub := NewSessionHub()
+	web := NewWebActivityTracker()
+	webIdle := time.Duration(envInt("WEB_SESSION_IDLE_SECS", 120)) * time.Second
 	in := http.NewServeMux()
 	in.HandleFunc("/proxy", func(w http.ResponseWriter, r *http.Request) {
 		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
@@ -203,6 +205,13 @@ func main() {
 		}
 		writeJSON(w, http.StatusOK, hub.List())
 	})
+	in.HandleFunc("/web-sessions", func(w http.ResponseWriter, r *http.Request) {
+		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		writeJSON(w, http.StatusOK, web.List(webIdle))
+	})
 	in.HandleFunc("/sessions/control", func(w http.ResponseWriter, r *http.Request) {
 		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
 			http.Error(w, "forbidden", http.StatusForbidden)
@@ -254,7 +263,7 @@ func main() {
 		return err
 	}, 5*time.Second, 200)
 
-	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: managerURL, audit: audit}
+	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: managerURL, audit: audit, web: web}
 	// Native gateway WebSocket tunnel (guacamole-common-js <-> guacd). The front
 	// nginx forwards /guac-tunnel here; everything else is the browser proxy.
 	mux := http.NewServeMux()

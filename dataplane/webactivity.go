@@ -36,7 +36,7 @@ const webKeySep = "\x1f"
 // touch (or one after the entry was pruned) starts a new span; a touch within the
 // window advances LastSeen and refreshes the host, keeping StartedAt.
 func (t *WebActivityTracker) Touch(userID, siteID, host string) {
-	if userID == "" || siteID == "" {
+	if t == nil || userID == "" || siteID == "" {
 		return
 	}
 	now := t.now()
