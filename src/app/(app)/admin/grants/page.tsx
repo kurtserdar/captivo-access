@@ -3,44 +3,16 @@ import { GrantsIcon } from "@/components/icons";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { listGrants, listPendingGrants } from "@/lib/access/grants";
-import { classifyGrant, type DecisionReason } from "@/lib/access/evaluate";
+import { classifyGrant } from "@/lib/access/evaluate";
 import { parseSchedule, formatSchedule } from "@/lib/access/schedule";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { AddGrantButton } from "./add-grant-button";
-import { RevokeGrantButton } from "./revoke-grant-button";
-import { EditGrantButton } from "./edit-grant-button";
 import { TestAccessWidget } from "./test-access-widget";
 import { DecisionButtons } from "./decision-buttons";
+import { GrantsTable, type GrantRow } from "./grants-table";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Grants" };
-
-// classifyGrant only ever returns these six reasons for a single grant window;
-// user_disabled/no_grant are evaluateAccess-level (multi-grant + user status),
-// never produced here, but included so the Record stays exhaustive over the type.
-const REASON_LABEL: Record<DecisionReason, string> = {
-  allow: "Active",
-  not_yet: "Upcoming",
-  off_schedule: "Outside hours",
-  expired: "Expired",
-  revoked: "Revoked",
-  denied: "Denied",
-  pending_approval: "Awaiting approval",
-  user_disabled: "Active",
-  no_grant: "Active",
-};
-
-const REASON_PILL: Record<DecisionReason, string> = {
-  allow: "ok",
-  not_yet: "warn",
-  off_schedule: "warn",
-  expired: "neutral",
-  revoked: "danger",
-  denied: "danger",
-  pending_approval: "warn",
-  user_disabled: "ok",
-  no_grant: "ok",
-};
 
 export default async function AdminGrantsPage() {
   const user = await requireCapability("read_console");
@@ -58,6 +30,22 @@ export default async function AdminGrantsPage() {
   ]);
 
   const now = new Date();
+  const grantRows: GrantRow[] = grants.map((g) => {
+    const s = parseSchedule(g.schedule);
+    return {
+      id: g.id,
+      userName: g.user.name,
+      userEmail: g.user.email,
+      siteName: g.site.name,
+      startsAt: g.startsAt ? g.startsAt.toISOString() : null,
+      endsAt: g.endsAt ? g.endsAt.toISOString() : null,
+      scheduleText: s ? formatSchedule(s) : null,
+      note: g.note,
+      reason: classifyGrant(g, now),
+      denyReason: g.denyReason,
+      active: g.status === "ACTIVE",
+    };
+  });
 
   return (
     <main>
@@ -98,57 +86,7 @@ export default async function AdminGrantsPage() {
       {grants.length === 0 ? (
         <div className="empty">No grants yet.</div>
       ) : (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Resource</th>
-                <th>Window</th>
-                <th>Note</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {grants.map((g) => {
-                const reason = classifyGrant(g, now);
-                const status = REASON_LABEL[reason];
-                return (
-                  <tr key={g.id}>
-                    <td>
-                      {g.user.name}
-                      <div className="cell-sub">{g.user.email}</div>
-                    </td>
-                    <td>{g.site.name}</td>
-                    <td className="cell-sub">
-                      {g.startsAt ? <LocalTime iso={g.startsAt.toISOString()} /> : "Immediately"} → {g.endsAt ? <LocalTime iso={g.endsAt.toISOString()} /> : "Permanent"}
-                      {(() => { const s = parseSchedule(g.schedule); return s ? <div>{formatSchedule(s)}</div> : null; })()}
-                    </td>
-                    <td className="cell-sub">{g.note ?? "—"}</td>
-                    <td>
-                      <span className={`pill ${REASON_PILL[reason]}`}>{status}</span>
-                      {reason === "denied" && g.denyReason && <div className="cell-sub">{g.denyReason}</div>}
-                    </td>
-                    <td>
-                      <div className="row-actions">
-                        {canConfigure && g.status === "ACTIVE" && (
-                          <EditGrantButton id={g.id} endsAt={g.endsAt ? g.endsAt.toISOString() : null} note={g.note} />
-                        )}
-                        {/* A revoked or denied grant is terminal — no Revoke action. */}
-                        {!canApprove || reason === "revoked" || reason === "denied" ? (
-                          <span className="cell-sub">{status}</span>
-                        ) : (
-                          <RevokeGrantButton id={g.id} />
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <GrantsTable rows={grantRows} canApprove={canApprove} canConfigure={canConfigure} />
       )}
 
       {users.length > 0 && sites.length > 0 && <TestAccessWidget users={users} sites={sites} />}
