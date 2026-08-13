@@ -738,3 +738,11 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .ft-badge.upload { color: var(--ok); background: var(--ok-soft); }
 .ft-badge.partial { color: var(--danger); background: var(--danger-soft); }
 .checkbox-inline { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; }
+
+.live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; color: var(--muted); background: var(--surface-2, rgba(127,127,127,.10)); border: 1px solid var(--line); text-decoration: none; white-space: nowrap; }
+.live-pill:hover { background: var(--surface-hover); }
+.live-pill .live-dot { width: 7px; height: 7px; border-radius: 999px; background: currentColor; opacity: .55; }
+.live-pill.on { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+.live-pill.on .live-dot { opacity: 1; animation: live-pulse 1.8s ease-in-out infinite; }
+@keyframes live-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .live-pill.on .live-dot { animation: none; } }
