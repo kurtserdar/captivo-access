@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"strings"
 	"sync"
 	"time"
 )
@@ -142,7 +143,9 @@ func (o *ftObserver) event(dir xferDir, st *ftStream, partial bool) AuditEvent {
 		status = 499
 		reason = "file-transfer-aborted"
 	}
-	name := st.filename
+	// Normalize to exactly one leading slash: guac `put` filenames already carry a
+	// leading "/" (the client sends "/"+name) while `file`/`body` downloads do not.
+	name := strings.TrimLeft(st.filename, "/")
 	if len(name) > maxFilenameLen {
 		name = name[:maxFilenameLen]
 	}

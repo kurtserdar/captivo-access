@@ -44,6 +44,16 @@ func TestObserveUploadPutComplete(t *testing.T) {
 	}
 }
 
+func TestObserveUploadLeadingSlashPath(t *testing.T) {
+	o := fixedObs()
+	// The client sends "/"+name for uploads; the stored path must not double the slash.
+	o.observe(dirUpload, encodeInstruction("put", "0", "2", "text/markdown", "/README.md"))
+	evs := o.observe(dirUpload, encodeInstruction("end", "2"))
+	if len(evs) != 1 || evs[0].Path != "/README.md" {
+		t.Fatalf("expected single-slash path, got %+v", evs)
+	}
+}
+
 func TestObserveBodyDownload(t *testing.T) {
 	o := fixedObs()
 	// body,<fsIdx>,<idx>,<mime>,<name>  (download out of a filesystem)
