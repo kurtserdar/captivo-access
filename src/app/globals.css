@@ -746,3 +746,18 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .live-pill.on .live-dot { opacity: 1; animation: live-pulse 1.8s ease-in-out infinite; }
 @keyframes live-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: .5; } }
 @media (prefers-reduced-motion: reduce) { .live-pill.on .live-dot { animation: none; } }
+
+/* Header chips ride the fixed dark-navy nav bar in BOTH themes, so they must use
+   nav tokens — app-surface tokens (--surface/--surface-2) go near-white in the
+   light theme and clashed as white blobs on the navy bar (search/theme/live-pill). */
+.tn-right .cmd-trigger { color: var(--nav-fg-dim); background: var(--nav-active); border-color: var(--nav-line); }
+.tn-right .cmd-trigger:hover { background: var(--nav-line); color: var(--nav-fg); }
+.tn-right .cmd-trigger kbd { background: var(--nav-bg-2); border-color: var(--nav-line); color: var(--nav-fg-dim); }
+.tn-right .theme-switch { background: var(--nav-active); border-color: var(--nav-line); }
+.tn-right .theme-opt { color: var(--nav-fg-dim); }
+.tn-right .theme-opt + .theme-opt { border-left-color: var(--nav-line); }
+.tn-right .theme-opt:hover { color: var(--nav-fg); background: var(--nav-line); }
+.tn-right .theme-opt.on { color: var(--nav-accent); background: var(--nav-line); }
+.tn-right .live-pill { color: var(--nav-fg-dim); background: var(--nav-active); border-color: var(--nav-line); }
+.tn-right .live-pill:hover { background: var(--nav-line); }
+.tn-right .live-pill.on { color: var(--nav-accent); background: var(--nav-active); border-color: transparent; }
