@@ -7,7 +7,7 @@ import type { Schedule } from "@/lib/access/schedule";
 
 type Site = { id: string; name: string };
 
-export function RequestAccessForm({ onDone }: { onDone?: () => void }) {
+export function RequestAccessForm({ onDone, requireJustification = true }: { onDone?: () => void; requireJustification?: boolean }) {
   const router = useRouter();
   const [sites, setSites] = useState<Site[]>([]);
   const [siteId, setSiteId] = useState("");
@@ -81,11 +81,11 @@ export function RequestAccessForm({ onDone }: { onDone?: () => void }) {
         <input id="req-end" className="input" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
       </div>
       <div className="field">
-        <label className="field-label" htmlFor="req-note">Justification</label>
-        <textarea id="req-note" className="textarea" required value={note} placeholder="Explain why you need access to this app" onChange={(e) => setNote(e.target.value)} />
+        <label className="field-label" htmlFor="req-note">Justification{requireJustification ? "" : " (optional)"}</label>
+        <textarea id="req-note" className="textarea" required={requireJustification} value={note} placeholder="Explain why you need access to this app" onChange={(e) => setNote(e.target.value)} />
       </div>
       <ScheduleBuilder onChange={setSchedule} />
-      <button className="btn primary" type="submit" disabled={busy || !siteId || !note.trim()}>
+      <button className="btn primary" type="submit" disabled={busy || !siteId || (requireJustification && !note.trim())}>
         {busy ? "Submitting…" : "Request access"}
       </button>
     </form>

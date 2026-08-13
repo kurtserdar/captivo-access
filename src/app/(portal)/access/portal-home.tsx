@@ -24,8 +24,9 @@ const STATUS_DOT: Record<StatusLine["tone"], string> = { good: "#0f766e", info: 
 export function PortalHome(props: {
   firstName: string; activeCount: number; anyRecorded: boolean;
   cards: CardVM[]; upcoming: CardVM[]; recent: RecentVM[]; security: StatusLine[];
+  requireJustification: boolean;
 }) {
-  const { firstName, activeCount, anyRecorded, cards, upcoming, recent, security } = props;
+  const { firstName, activeCount, anyRecorded, cards, upcoming, recent, security, requireJustification } = props;
   return (
     <div className="vp-home">
       <div className="vp-head">
@@ -33,7 +34,7 @@ export function PortalHome(props: {
           <h1 className="vp-greet">Welcome back, {firstName}</h1>
           <p className="vp-sub">{activeCount} active grant{activeCount === 1 ? "" : "s"}{anyRecorded ? " · all sessions on this workspace are recorded" : ""}</p>
         </div>
-        <RequestAccessButton />
+        <RequestAccessButton requireJustification={requireJustification} />
       </div>
 
       <div className="vp-grid">

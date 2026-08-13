@@ -412,6 +412,7 @@ model PlatformSettings {
   notifySiteHealth      Boolean? // email admins on site up/down; null = default on
   notifyAccessRequests  Boolean? // email admins on new access requests; null = default on
   notifyAccessDecisions Boolean? // email the vendor on approve/deny; null = default on
+  requireRequestJustification Boolean? // require a justification on access requests; null = default on (required)
   guacParamDefaults     Json? // global default Guacamole connection params (validated allowlist)
   updatedAt              DateTime @updatedAt
 }

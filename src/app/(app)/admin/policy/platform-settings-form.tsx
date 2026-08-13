@@ -15,6 +15,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
   const [webhook, setWebhook] = useState(initial.notificationWebhookUrl ?? "");
   const [ipAllow, setIpAllow] = useState(initial.vendorIpAllowlist ?? "");
   const [maxGrant, setMaxGrant] = useState(str(initial.maxGrantDays));
+  const [requireJustif, setRequireJustif] = useState(initial.requireRequestJustification !== false);
   const [consent, setConsent] = useState(consentEffective);
   const [recRetention, setRecRetention] = useState(str(initial.recordingRetentionDays));
   const [connLog, setConnLog] = useState(initial.defaultConnectorLogLevel ?? "info");
@@ -55,6 +56,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
         notificationWebhookUrl: webhook,
         vendorIpAllowlist: ipAllow,
         maxGrantDays: maxGrant,
+        requireRequestJustification: requireJustif,
         recordingConsentRequired: consent,
         recordingRetentionDays: recRetention,
         defaultConnectorLogLevel: connLog,
@@ -109,6 +111,15 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
             <div className="setting-ctl">
               <input type="number" min={1} className="input" style={{ width: "5rem" }} value={invite} onChange={(e) => setInvite(e.target.value)} placeholder="48" aria-label="Invite lifetime hours" />
               <span className="unit">hours</span>
+            </div>
+          </div>
+          <div className="setting">
+            <div className="setting-main">
+              <div className="setting-label">Require justification on access requests</div>
+              <div className="setting-hint">When on, a vendor must explain why they need access before requesting it. Off makes the justification field optional.</div>
+            </div>
+            <div className="setting-ctl">
+              <label className="switch"><input type="checkbox" checked={requireJustif} onChange={(e) => setRequireJustif(e.target.checked)} /><span className="track" /></label>
             </div>
           </div>
         </div>

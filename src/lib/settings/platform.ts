@@ -22,6 +22,7 @@ export interface PlatformSettings {
   notifySiteHealth: boolean | null;
   notifyAccessRequests: boolean | null;
   notifyAccessDecisions: boolean | null;
+  requireRequestJustification: boolean | null;
 }
 
 const ID = "singleton";
@@ -40,6 +41,7 @@ const EMPTY: PlatformSettings = {
   notifySiteHealth: null,
   notifyAccessRequests: null,
   notifyAccessDecisions: null,
+  requireRequestJustification: null,
 };
 
 let cache: { s: PlatformSettings; at: number } | null = null;
@@ -67,6 +69,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     notifySiteHealth: c?.notifySiteHealth ?? null,
     notifyAccessRequests: c?.notifyAccessRequests ?? null,
     notifyAccessDecisions: c?.notifyAccessDecisions ?? null,
+    requireRequestJustification: c?.requireRequestJustification ?? null,
   };
   cache = { s, at: Date.now() };
   return s;
@@ -176,6 +179,12 @@ export async function resolvedConnectorLogLevel(own: string | null): Promise<str
 export async function resolvedExternalAnchorEnabled(): Promise<boolean> {
   const s = await getPlatformSettings();
   return s.externalAnchorEnabled === true;
+}
+
+// Default ON: a justification is required unless an admin explicitly turns it off.
+export async function resolvedRequireRequestJustification(): Promise<boolean> {
+  const s = await getPlatformSettings();
+  return s.requireRequestJustification !== false;
 }
 
 export async function resolvedAnchorTsaUrl(): Promise<string> {

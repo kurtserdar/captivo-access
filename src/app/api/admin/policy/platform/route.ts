@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
     notifySiteHealth: body.notifySiteHealth !== false,
     notifyAccessRequests: body.notifyAccessRequests !== false,
     notifyAccessDecisions: body.notifyAccessDecisions !== false,
+    requireRequestJustification: body.requireRequestJustification !== false,
   });
   await saveGuacParamDefaults(parseGuacParams(body.guacParamDefaults));
   await recordAdminAction({

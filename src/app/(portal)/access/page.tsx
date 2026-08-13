@@ -7,6 +7,7 @@ import { listRecordings } from "@/lib/recording/query";
 import { remaining } from "@/lib/portal/time-remaining";
 import { securityStatus } from "@/lib/portal/security-status";
 import { launchHref } from "@/lib/portal/launch-href";
+import { resolvedRequireRequestJustification } from "@/lib/settings/platform";
 import { PortalHome, type CardVM, type RecentVM } from "./portal-home";
 
 export const dynamic = "force-dynamic";
@@ -73,6 +74,8 @@ export default async function AccessPage() {
   const security = securityStatus({ hasPasskey: passkeyCount > 0, anyRecorded });
   const activeCount = cards.filter((c) => c.status === "active").length;
 
+  const requireJustification = await resolvedRequireRequestJustification();
+
   return (
     <PortalHome
       firstName={(user.name ?? "").split(" ")[0] || "there"}
@@ -82,6 +85,7 @@ export default async function AccessPage() {
       upcoming={upcoming}
       recent={recent}
       security={security}
+      requireJustification={requireJustification}
     />
   );
 }

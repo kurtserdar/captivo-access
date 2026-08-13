@@ -439,6 +439,7 @@ export const PlatformSettingsScalarFieldEnum = {
   notifySiteHealth: 'notifySiteHealth',
   notifyAccessRequests: 'notifyAccessRequests',
   notifyAccessDecisions: 'notifyAccessDecisions',
+  requireRequestJustification: 'requireRequestJustification',
   guacParamDefaults: 'guacParamDefaults',
   updatedAt: 'updatedAt'
 } as const

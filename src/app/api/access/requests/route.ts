@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { createAccessRequest } from "@/lib/access/grants";
 import { validateSchedule, type Schedule } from "@/lib/access/schedule";
 import { grantCapError } from "@/lib/access/grant-edit";
-import { resolvedMaxGrantDays } from "@/lib/settings/platform";
+import { resolvedMaxGrantDays, resolvedRequireRequestJustification } from "@/lib/settings/platform";
 import { sendMail, getAdminEmails } from "@/lib/email/mailer";
 import { approvalRequestEmail } from "@/lib/email/templates";
 import { notifyEmailEnabled } from "@/lib/notifications/gate";
@@ -26,7 +26,9 @@ export async function POST(req: NextRequest) {
   if (!siteId) return NextResponse.json({ error: "site_required" }, { status: 400 });
 
   const note = typeof body.note === "string" ? body.note.trim() : "";
-  if (!note) return NextResponse.json({ error: "note_required" }, { status: 400 });
+  if (!note && (await resolvedRequireRequestJustification())) {
+    return NextResponse.json({ error: "note_required" }, { status: 400 });
+  }
 
   const startsAt = parseDate(body.startsAt);
   const endsAt = parseDate(body.endsAt);

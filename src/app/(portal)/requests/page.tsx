@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/current-user";
 import { listUserRequests } from "@/lib/access/grants";
 import { requestStatus, type RequestState } from "@/lib/portal/request-status";
+import { resolvedRequireRequestJustification } from "@/lib/settings/platform";
 import { RequestAccessButton } from "../access/request-access-button";
 import { WithdrawRequestButton } from "../access/withdraw-request-button";
 
@@ -23,6 +24,7 @@ export default async function RequestsPage() {
   const user = await requireUser();
   const now = new Date();
   const rows = await listUserRequests(user.id);
+  const requireJustification = await resolvedRequireRequestJustification();
   return (
     <div className="vp-home">
       <div className="vp-head">
@@ -30,7 +32,7 @@ export default async function RequestsPage() {
           <h1 className="vp-greet">Access requests</h1>
           <p className="vp-sub">Your access requests and their status.</p>
         </div>
-        <RequestAccessButton />
+        <RequestAccessButton requireJustification={requireJustification} />
       </div>
       {rows.length === 0 ? (
         <div className="vp-empty">You haven&apos;t requested any access yet.</div>
