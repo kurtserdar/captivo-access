@@ -281,29 +281,15 @@ external access at a glance.
 
 ## Step 12 — Schedule the maintenance jobs (cron)
 
-> **If you used `./setup.sh`, this is already done** — it installs these cron
-> jobs for you (idempotently) and the console warns on the Policy page if a job
-> stops running. The manual steps below are for a hand-rolled
-> `docker-compose.prod.yml` deploy.
+Scheduling is **automatic**: the `access-cron` container in the Compose stack POSTs
+the four cron endpoints on the internal network with the `CRON_SECRET` bearer
+token (`site-health` every 5 minutes; `audit-retention`, `recording-retention`,
+and `audit-anchor` once a day). `./setup.sh` and `docker compose … up -d` start it
+for you — no host crontab required. Watch it with `docker logs access-cron`.
 
-The Manager has no built-in scheduler; the endpoints are triggered by the host's
-cron with the `CRON_SECRET` bearer token. On the server's crontab:
-
-```cron
-# Probe each Resource's reachability through its connector every 5 minutes:
-*/5 * * * * curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.access.acme.com/api/cron/site-health >/dev/null
-
-# Trim the audit log past its retention window, once a day:
-17 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.access.acme.com/api/cron/audit-retention >/dev/null
-
-# Delete session recordings past their retention window, once a day (no-op
-# unless Policy → Session recording retention is set):
-23 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.access.acme.com/api/cron/recording-retention >/dev/null
-
-# Timestamp the audit-log chain head with the configured TSA, once a day (no-op
-# unless Policy → External anchor is enabled):
-36 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.access.acme.com/api/cron/audit-anchor >/dev/null
-```
+If you run the Manager outside the provided `docker-compose.prod.yml`, trigger the
+same endpoints yourself from the host's cron, POSTing
+`https://manager.<your-domain>/api/cron/<name>` with the `CRON_SECRET` bearer token.
 
 Resource-health records reachability and raises an in-console notification (and an
 optional `NOTIFICATION_WEBHOOK_URL` alert) when a Resource goes up or down.

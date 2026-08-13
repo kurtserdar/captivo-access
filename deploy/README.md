@@ -256,27 +256,18 @@ configuration; the only thing you can set on it is an optional
 
 ## Scheduled jobs (cron)
 
-The Manager doesn't run its own scheduler — cron endpoints are triggered from
-outside via HTTP POST with the `CRON_SECRET` Bearer token (see `.env`).
-**`./setup.sh` installs these for you** (idempotently), and the console warns on
-the Policy page if a job stops running. If you deploy by hand instead, add these
-to the host's crontab:
+The Manager doesn't run its own scheduler — the cron endpoints are triggered by
+the **`access-cron`** container in the Compose stack, which POSTs them on the
+internal network with the `CRON_SECRET` Bearer token (health every 5 minutes;
+audit + recording retention and the audit-anchor once a day). `./setup.sh` (and
+`docker compose … up -d`) start it automatically — **no host crontab needed**.
+Check it with `docker logs access-cron`; the console also warns on the Policy page
+if a job stops running.
 
-```cron
-# Probe each Resource's reachability through its connector every 5 minutes:
-*/5 * * * * curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/site-health >/dev/null
-
-# Trim the audit log past its retention window, once a day:
-17 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/audit-retention >/dev/null
-
-# Delete session recordings past their retention window, once a day (no-op
-# unless Policy → Session recording retention is set):
-23 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/recording-retention >/dev/null
-
-# Timestamp the audit-log chain head with the configured TSA, once a day (no-op
-# unless Policy → External anchor is enabled):
-36 3 * * *  curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" https://manager.<ACCESS_DOMAIN>/api/cron/audit-anchor >/dev/null
-```
+If you run the Manager **outside** the provided compose, trigger the same four
+endpoints yourself (`site-health`, `audit-retention`, `recording-retention`,
+`audit-anchor`) — e.g. from a host crontab POSTing
+`https://manager.<ACCESS_DOMAIN>/api/cron/<name>` with the `CRON_SECRET` bearer.
 
 `POST /api/cron/site-health` opens a **TCP connection** through the connector to
 each configured Resource's target — a web-app Resource's internal address, or a
