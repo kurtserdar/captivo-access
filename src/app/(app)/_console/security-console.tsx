@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ConsoleData } from "@/lib/console/data";
-import { duration, expiresIn } from "@/lib/console/format";
+import { duration, expiresIn, activeAgo } from "@/lib/console/format";
+import { RevokeAccessButton } from "./revoke-access-button";
 import { DecisionButtons } from "@/app/(app)/admin/grants/decision-buttons";
 import { TerminateButton } from "./terminate-button";
 import { ExtendButton } from "./extend-button";
@@ -42,21 +43,40 @@ export function SecurityConsole({ data }: { data: ConsoleData }) {
           <div className="sc-empty">No live sessions.</div>
         ) : (
           <div className="sc-live">
-            {live.map((s) => (
-              <div key={s.sessionId} className="sc-card">
-                <div className="sc-card-top">
-                  <span className="sc-chip">{s.protocol.toUpperCase()}</span>
-                  {s.recorded && <span className="sc-rec"><span className="sc-dot" />REC {duration(s.startedAt, now)}</span>}
+            {live.map((s) =>
+              s.kind === "gateway" ? (
+                <div key={s.sessionId} className="sc-card">
+                  <div className="sc-card-top">
+                    <span className="sc-chip">{s.protocol.toUpperCase()}</span>
+                    {s.recorded && <span className="sc-rec"><span className="sc-dot" />REC {duration(s.startedAt, now)}</span>}
+                  </div>
+                  <div className="sc-card-name">{s.host}</div>
+                  <div className="sc-card-sub">{s.userLabel}{s.viewerCount > 0 ? ` · ${s.viewerCount} watching` : ""}</div>
+                  <div className="sc-thumb">live session</div>
+                  <div className="sc-card-actions">
+                    <Link href={`/live/${s.sessionId}`} className="sc-watch">Watch live</Link>
+                    <TerminateButton sessionId={s.sessionId} className="btn sm danger" />
+                  </div>
                 </div>
-                <div className="sc-card-name">{s.host}</div>
-                <div className="sc-card-sub">{s.userLabel}{s.viewerCount > 0 ? ` · ${s.viewerCount} watching` : ""}</div>
-                <div className="sc-thumb">live session</div>
-                <div className="sc-card-actions">
-                  <Link href={`/live/${s.sessionId}`} className="sc-watch">Watch live</Link>
-                  <TerminateButton sessionId={s.sessionId} className="btn sm danger" />
+              ) : (
+                <div key={`web:${s.userLabel}:${s.siteName}:${s.host}`} className="sc-card">
+                  <div className="sc-card-top">
+                    <span className="sc-chip">WEB APP</span>
+                    <span className="sc-card-sub">active {activeAgo(s.lastSeen, now)}</span>
+                  </div>
+                  <div className="sc-card-name">{s.siteName}</div>
+                  <div className="sc-card-sub">{s.userLabel} · {s.host}</div>
+                  <div className="sc-thumb">web session</div>
+                  <div className="sc-card-actions">
+                    {s.grantId ? (
+                      <RevokeAccessButton grantId={s.grantId} label={s.userLabel} />
+                    ) : (
+                      <span className="cell-sub">No active grant</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         )}
       </section>
