@@ -32,6 +32,9 @@ jobs:
           - image: migrate
             dockerfile: migrate/Dockerfile
             platforms: linux/amd64
+          - image: browser
+            dockerfile: browser/Dockerfile
+            platforms: linux/amd64
     steps:
       - uses: actions/checkout@v4
 
