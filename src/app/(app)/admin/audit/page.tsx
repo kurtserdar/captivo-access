@@ -34,6 +34,21 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
       id: r.id, timestamp: r.timestamp.toISOString(), actorEmail: r.actorEmail,
       action: r.action, targetType: r.targetType, targetId: r.targetId, summary: r.summary,
     }));
+    const [adminAnchorEnabled, adminAnchorCount, adminLastAnchor] = await Promise.all([
+      resolvedExternalAnchorEnabled(),
+      db.adminAuditAnchor.count(),
+      db.adminAuditAnchor.findFirst({
+        orderBy: { anchoredSeq: "desc" },
+        select: { anchoredSeq: true, genTime: true, tsaUrl: true },
+      }),
+    ]);
+    const adminAnchor = {
+      enabled: adminAnchorEnabled,
+      count: adminAnchorCount,
+      last: adminLastAnchor
+        ? { anchoredSeq: adminLastAnchor.anchoredSeq.toString(), genTime: adminLastAnchor.genTime.toISOString(), tsaUrl: adminLastAnchor.tsaUrl }
+        : null,
+    };
     return (
       <main>
         <div className="page-head">
@@ -43,7 +58,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
           </div>
         </div>
         <AuditTabs admin />
-        <AdminIntegrityPanel />
+        <AdminIntegrityPanel anchor={adminAnchor} />
         <AdminAuditTable rows={adminRows} />
       </main>
     );
