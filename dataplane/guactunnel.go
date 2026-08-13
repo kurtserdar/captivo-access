@@ -27,7 +27,7 @@ func qInt(r *http.Request, key string, def, lo, hi int) string {
 // the server does select/args/connect; the browser only renders + sends input),
 // and then relays the Guacamole protocol both ways. The credential appears only
 // inside the server-side `connect` instruction and never reaches the browser.
-func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http.ResponseWriter, r *http.Request) {
+func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit *AuditQueue, w http.ResponseWriter, r *http.Request) {
 	siteID := r.URL.Query().Get("site")
 	if siteID == "" {
 		http.Error(w, "missing site", http.StatusBadRequest)
@@ -53,6 +53,7 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 		return
 	}
 	log.Printf("guac-tunnel site=%s user=%s: descriptor ok protocol=%s target=%s:%s guacd=%s connector=%s", siteID, userID, conn.Protocol, conn.Hostname, conn.Port, guacdAddr, connectorID)
+	ft := newFTObserver(userID, siteID, conn.Hostname, firstHop(r.Header.Get("X-Forwarded-For")), r.UserAgent())
 	sess := reg.Get(connectorID)
 	if sess == nil {
 		log.Printf("guac-tunnel site=%s: connector %s offline", siteID, connectorID)
@@ -153,6 +154,9 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 			if rec != nil {
 				rec.Write(inst)
 			}
+			for _, ev := range ft.observe(dirDownload, inst) {
+				audit.Enqueue(ev)
+			}
 			if werr := c.Write(ctx, websocket.MessageText, inst); werr != nil {
 				errc <- werr
 				return
@@ -170,6 +174,9 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 			if !ls.vendorInputAllowed() {
 				continue // an admin has taken control; drop vendor input
 			}
+			for _, ev := range ft.observe(dirUpload, data) {
+				audit.Enqueue(ev)
+			}
 			if _, werr := guac.Write(data); werr != nil {
 				errc <- werr
 				return
@@ -177,4 +184,7 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 		}
 	}()
 	<-errc
+	for _, ev := range ft.flush() {
+		audit.Enqueue(ev)
+	}
 }
