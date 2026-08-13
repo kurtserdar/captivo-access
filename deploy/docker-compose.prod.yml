@@ -139,6 +139,23 @@ services:
       - "3101"
       - "3103"
 
+  # In-stack scheduler: POSTs the manager's cron endpoints on the internal
+  # network (health every 5 min; retention + audit-anchor daily). Replaces the
+  # old host-crontab install — works on any host with zero host configuration.
+  access-cron:
+    image: curlimages/curl:latest
+    container_name: access-cron
+    restart: unless-stopped
+    depends_on:
+      access-manager:
+        condition: service_started
+    environment:
+      CRON_SECRET: ${CRON_SECRET:?required}
+      MANAGER_URL: http://access-manager:3100
+    entrypoint: ["/bin/sh", "/scheduler.sh"]
+    volumes:
+      - ./cron/scheduler.sh:/scheduler.sh:ro
+
   caddy:
     image: caddy:2-alpine
     container_name: access-caddy
