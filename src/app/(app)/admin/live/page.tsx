@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
-import { listActiveSessions } from "@/lib/dataplane/client";
+import { listActiveSessions, listActiveWebSessions } from "@/lib/dataplane/client";
 import { LiveTable, type LiveRow } from "./live-table";
 
 export const dynamic = "force-dynamic";
@@ -12,32 +12,53 @@ export default async function AdminLivePage() {
   const user = await getCurrentUser();
   if (!user || !can(user.role, "read_console")) notFound();
 
-  const sessions = await listActiveSessions();
-  const userIds = [...new Set(sessions.map((s) => s.userId))];
-  const siteIds = [...new Set(sessions.map((s) => s.siteId))];
-  const users = new Map(
-    (await db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true, email: true } })).map((u) => [u.id, u]),
-  );
-  const sites = new Map(
-    (await db.site.findMany({ where: { id: { in: siteIds } }, select: { id: true, name: true } })).map((s) => [s.id, s]),
-  );
+  const [sessions, webSessions] = await Promise.all([listActiveSessions(), listActiveWebSessions()]);
+  const webUserIds = webSessions.map((s) => s.userId);
+  const webSiteIds = webSessions.map((s) => s.siteId);
+  const userIds = [...new Set([...sessions.map((s) => s.userId), ...webUserIds])];
+  const siteIds = [...new Set([...sessions.map((s) => s.siteId), ...webSiteIds])];
 
-  const rows: LiveRow[] = sessions.map((s) => ({
+  const [userList, siteList, webGrants] = await Promise.all([
+    userIds.length ? db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true, email: true } }) : Promise.resolve([]),
+    siteIds.length ? db.site.findMany({ where: { id: { in: siteIds } }, select: { id: true, name: true } }) : Promise.resolve([]),
+    webSessions.length
+      ? db.accessGrant.findMany({
+          where: { status: "ACTIVE", userId: { in: [...new Set(webUserIds)] }, siteId: { in: [...new Set(webSiteIds)] } },
+          select: { id: true, userId: true, siteId: true },
+        })
+      : Promise.resolve([]),
+  ]);
+  const users = new Map(userList.map((u) => [u.id, u]));
+  const sites = new Map(siteList.map((s) => [s.id, s]));
+  const grantMap = new Map(webGrants.map((g) => [g.userId + "\x1f" + g.siteId, g.id]));
+  const label = (userId: string) => users.get(userId)?.name ?? users.get(userId)?.email ?? userId;
+
+  const gatewayRows: LiveRow[] = sessions.map((s) => ({
+    kind: "gateway" as const,
     sessionId: s.sessionId,
     siteName: sites.get(s.siteId)?.name ?? s.host,
-    userLabel: users.get(s.userId)?.name ?? users.get(s.userId)?.email ?? s.userId,
+    userLabel: label(s.userId),
     protocol: s.protocol,
     startedAt: s.startedAt,
     viewerCount: s.viewerCount,
     controlled: s.controlOwner !== "",
   }));
+  const webRows: LiveRow[] = webSessions.map((s) => ({
+    kind: "web" as const,
+    siteName: sites.get(s.siteId)?.name ?? s.host,
+    userLabel: label(s.userId),
+    host: s.host,
+    startedAt: s.startedAt,
+    grantId: grantMap.get(s.userId + "\x1f" + s.siteId) ?? null,
+  }));
+  const rows = [...gatewayRows, ...webRows];
 
   return (
     <main>
       <div className="page-head">
         <div>
           <h1>Live sessions</h1>
-          <p>Watch in-progress remote-desktop sessions in real time.</p>
+          <p>In-progress remote-desktop and web-app sessions.</p>
         </div>
       </div>
       <LiveTable rows={rows} canTerminate={can(user!.role, "configure")} />
