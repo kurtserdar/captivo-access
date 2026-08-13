@@ -1,36 +1,75 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
+	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
-	"sync/atomic"
 )
 
-// isoGuard is a single-flight lock. buildNavigateRequest/buildResetRequest are the
-// minimal HTTP calls to a browser container's control server (:7900). (The A-path
-// broker in isolated.go uses a different, per-session request set.)
-type isoGuard struct{ busy int32 }
-
-func (g *isoGuard) tryAcquire() bool { return atomic.CompareAndSwapInt32(&g.busy, 0, 1) }
-func (g *isoGuard) release()         { atomic.StoreInt32(&g.busy, 0) }
-
-func buildNavigateRequest(host, target string) string {
-	return "GET /navigate?url=" + url.QueryEscape(target) + " HTTP/1.0\r\n" +
-		"Host: " + host + "\r\nConnection: close\r\n\r\n"
+// openKasmSession asks the in-container broker to start an isolated KasmVNC
+// session at url and returns the assigned per-session port. It writes an HTTP/1.0
+// POST /session and reads the response over the same relay stream. status is the
+// HTTP status (so the caller can surface 503 capacity); err is set only on
+// transport/parse failure. This is deliberately self-contained (not shared with
+// transport A's isolated.go, which is retired after B3).
+func openKasmSession(rw io.ReadWriter, host, target string) (id string, port, status int, err error) {
+	body := `{"url":` + jsonQuoteKasm(target) + `}`
+	req := "POST /session HTTP/1.0\r\n" +
+		"Host: " + host + "\r\n" +
+		"Content-Type: application/json\r\n" +
+		"Content-Length: " + strconv.Itoa(len(body)) + "\r\n" +
+		"Connection: close\r\n\r\n" + body
+	if _, err = io.WriteString(rw, req); err != nil {
+		return "", 0, 0, err
+	}
+	resp, rerr := http.ReadResponse(bufio.NewReader(rw), nil)
+	if rerr != nil {
+		return "", 0, 0, rerr
+	}
+	defer resp.Body.Close()
+	status = resp.StatusCode
+	if status/100 != 2 {
+		return "", 0, status, nil
+	}
+	var out struct {
+		ID   string `json:"id"`
+		Port int    `json:"port"`
+	}
+	if derr := json.NewDecoder(resp.Body).Decode(&out); derr != nil {
+		return "", 0, status, derr
+	}
+	return out.ID, out.Port, status, nil
 }
 
-func buildResetRequest(host string) string {
-	return "POST /reset HTTP/1.0\r\nHost: " + host + "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+// buildKasmCloseRequest formats the broker POST /session/<id>/close call.
+func buildKasmCloseRequest(host, id string) string {
+	return "POST /session/" + id + "/close HTTP/1.0\r\nHost: " + host +
+		"\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
 }
 
-// kasmSession is B1's single-flight lock (one hi-fi session at a time; a broker
-// for concurrency is a follow-up, mirroring A1→A2).
-var kasmSession isoGuard
+// kasmSessionAddr keeps the host of kasmAddr (host[:port]) and swaps in the
+// per-session port, so the reverse-proxy dials the right per-session backend.
+func kasmSessionAddr(kasmAddr string, port int) string {
+	host := kasmAddr
+	if i := strings.LastIndex(kasmAddr, ":"); i >= 0 {
+		host = kasmAddr[:i]
+	}
+	return host + ":" + strconv.Itoa(port)
+}
+
+// jsonQuoteKasm JSON-quotes a string (safe against embedded quotes/backslashes).
+func jsonQuoteKasm(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
 
 // kasmDesc is the ISOLATED-hi-fi connection descriptor from the control plane.
 type kasmDesc struct {
@@ -43,9 +82,10 @@ type kasmDesc struct {
 }
 
 // serveKasmTunnel reverse-proxies the vendor's HTTP/WebSocket request to a KasmVNC
-// backend (web client + RFB-over-WS on one port) THROUGH the connector. The browser
-// is navigated to the site URL on the WebSocket-upgrade request (the session
-// boundary); HTML/asset requests just serve the client. The credential/target never
+// backend (web client + RFB-over-WS) THROUGH the connector. The web client
+// (HTML/assets) is static and served by an always-on hub; each WebSocket upgrade
+// opens a fresh per-session browser via the in-container broker and is proxied to
+// that session's port, closed when the WebSocket ends. The credential/target never
 // leaves the customer network — the data-plane only relays.
 func serveKasmTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, r *http.Request) {
 	ck, err := r.Cookie("ca_session")
@@ -80,31 +120,51 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 		return
 	}
 
-	// The guard + navigate live on the WebSocket-upgrade request — the real session
-	// boundary (one long-lived RFB WS). A 2nd concurrent WS is rejected (would share
-	// the same KasmVNC display = data leak); concurrency is a later slice.
+	// Non-WebSocket requests (the KasmVNC web client HTML + assets) are static and
+	// identical for every session, so they go to the always-on hub. Only the live
+	// RFB-over-WebSocket needs a per-session Xvnc.
+	backendAddr := d.KasmAddr
 	if strings.EqualFold(r.Header.Get("Upgrade"), "websocket") {
-		if !kasmSession.tryAcquire() {
+		// A WebSocket upgrade IS the session boundary. Open a fresh per-session
+		// browser via the broker and proxy this WS to its port; close it when the
+		// WS ends. Concurrency is capped by the broker (503 capacity).
+		var id string
+		var port, status int
+		if st, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
+			id, port, status, e = openKasmSession(st, d.KasmControlAddr, d.NavigateUrl)
+			st.Close()
+			if e != nil {
+				http.Error(w, "isolated browser unavailable", http.StatusBadGateway)
+				return
+			}
+		} else {
+			http.Error(w, "isolated browser unavailable", http.StatusBadGateway)
+			return
+		}
+		if status == 503 {
 			http.Error(w, "isolated browser at capacity", http.StatusServiceUnavailable)
 			return
 		}
-		defer kasmSession.release()
-		if st, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
-			_, _ = st.Write([]byte(buildResetRequest(d.KasmControlAddr)))
-			_ = st.Close()
+		if status/100 != 2 || port == 0 {
+			http.Error(w, "isolated browser unavailable", http.StatusBadGateway)
+			return
 		}
-		if st, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
-			_, _ = st.Write([]byte(buildNavigateRequest(d.KasmControlAddr, d.NavigateUrl)))
-			_ = st.Close()
-		}
-		log.Printf("kasm-tunnel site=%s: hi-fi session started", siteID)
+		backendAddr = kasmSessionAddr(d.KasmAddr, port)
+		log.Printf("kasm-tunnel site=%s: hi-fi session %s started on port %d", siteID, id, port)
+		defer func() {
+			if st, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
+				_, _ = st.Write([]byte(buildKasmCloseRequest(d.KasmControlAddr, id)))
+				_ = st.Close()
+			}
+			log.Printf("kasm-tunnel site=%s: hi-fi session %s closed", siteID, id)
+		}()
 	}
 
-	target, _ := url.Parse("http://" + d.KasmAddr)
+	target, _ := url.Parse("http://" + backendAddr)
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	proxy.Transport = &http.Transport{
 		DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-			return dialGuacd(sess, d.KasmAddr) // relay to KasmVNC through the connector
+			return dialGuacd(sess, backendAddr) // relay to KasmVNC through the connector
 		},
 	}
 	r.URL.Path = strings.TrimPrefix(r.URL.Path, "/kasm-tunnel")
