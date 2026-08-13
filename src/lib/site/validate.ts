@@ -30,6 +30,16 @@ export type SiteValidation =
       recordSessions: boolean;
       guacParams: GuacParams;
     }
+  | {
+      ok: true;
+      mode: "ISOLATED";
+      connectorId: string;
+      name: string;
+      description: string | null;
+      upstreamUrl: string;
+      recordSessions: boolean;
+      clipboardMode: string;
+    }
   | { ok: false; error: string };
 
 function str(v: unknown): string {
@@ -40,13 +50,29 @@ function str(v: unknown): string {
 // (no DB/env) so it is unit-tested; the routes do the DB writes with its output.
 export function validateSiteInput(
   body: Record<string, unknown>,
-  opts: { nativeGateway: boolean; requireSecret: boolean; recordingEnabled: boolean },
+  opts: { nativeGateway: boolean; requireSecret: boolean; recordingEnabled: boolean; isolationEnabled: boolean },
 ): SiteValidation {
   const connectorId = str(body.connectorId);
   const name = str(body.name);
   const description = str(body.description) || null;
-  const mode = body.accessMode === "GATEWAY" ? "GATEWAY" : "TRANSPARENT";
+  const mode = body.accessMode === "GATEWAY" ? "GATEWAY" : body.accessMode === "ISOLATED" ? "ISOLATED" : "TRANSPARENT";
   if (!connectorId || !name) return { ok: false, error: "connector_name_required" };
+
+  if (mode === "ISOLATED") {
+    if (!opts.isolationEnabled) return { ok: false, error: "isolation_disabled" };
+    const upstreamUrl = str(body.upstreamUrl);
+    if (!upstreamUrl) return { ok: false, error: "isolated_url_required" };
+    try {
+      const u = new URL(upstreamUrl);
+      if (u.protocol !== "http:" && u.protocol !== "https:") return { ok: false, error: "invalid_upstream_url" };
+    } catch { return { ok: false, error: "invalid_upstream_url" }; }
+    const clip = str(body.clipboardMode);
+    return {
+      ok: true, mode: "ISOLATED", connectorId, name, description, upstreamUrl,
+      recordSessions: opts.recordingEnabled && body.recordSessions === true,
+      clipboardMode: CLIP.includes(clip) ? clip : "allow",
+    };
+  }
 
   if (mode === "GATEWAY") {
     if (!opts.nativeGateway) return { ok: false, error: "native_gateway_disabled" };

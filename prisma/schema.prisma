@@ -108,6 +108,7 @@ enum ConnectorStatus {
 enum SiteAccessMode {
   TRANSPARENT
   GATEWAY
+  ISOLATED
 }
 
 model Connector {

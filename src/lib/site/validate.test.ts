@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { validateSiteInput } from "./validate";
 
-const base = { nativeGateway: true, requireSecret: true, recordingEnabled: true };
+const base = { nativeGateway: true, requireSecret: true, recordingEnabled: true, isolationEnabled: true };
 
 describe("validateSiteInput", () => {
   it("web app needs hostname + upstream", () => {
@@ -37,5 +37,16 @@ describe("validateSiteInput", () => {
   it("remote desktop update may omit the secret (requireSecret false)", () => {
     const r = validateSiteInput({ accessMode: "GATEWAY", connectorId: "c", name: "n", protocol: "SSH", targetHost: "h", targetPort: 22, username: "u", secret: "" }, { ...base, requireSecret: false });
     expect(r).toMatchObject({ ok: true, secret: null });
+  });
+  it("ISOLATED: requires upstreamUrl, no hostname/vault, gated", () => {
+    const b = { connectorId: "c1", name: "Wiki", accessMode: "ISOLATED", upstreamUrl: "https://wiki.internal" };
+    expect(validateSiteInput(b, { ...base, isolationEnabled: false }))
+      .toEqual({ ok: false, error: "isolation_disabled" });
+    expect(validateSiteInput(b, { ...base, isolationEnabled: true }))
+      .toMatchObject({ ok: true, mode: "ISOLATED", connectorId: "c1", name: "Wiki", upstreamUrl: "https://wiki.internal" });
+    expect(validateSiteInput({ ...b, upstreamUrl: "ftp://x" }, { ...base, isolationEnabled: true }))
+      .toEqual({ ok: false, error: "invalid_upstream_url" });
+    expect(validateSiteInput({ ...b, upstreamUrl: "" }, { ...base, isolationEnabled: true }))
+      .toEqual({ ok: false, error: "isolated_url_required" });
   });
 });
