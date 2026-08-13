@@ -5,6 +5,7 @@ import { RevokeAccessButton } from "./revoke-access-button";
 import { DecisionButtons } from "@/app/(app)/admin/grants/decision-buttons";
 import { TerminateButton } from "./terminate-button";
 import { ExtendButton } from "./extend-button";
+import { AutoRefresh } from "@/app/(app)/_shell/auto-refresh";
 
 function hhmm(ts: Date | string): string {
   return new Date(ts).toISOString().slice(11, 16);
@@ -28,6 +29,7 @@ export function SecurityConsole({ data }: { data: ConsoleData }) {
 
   return (
     <div className="sc">
+      <AutoRefresh />
       <div className="sc-kpis">
         {cells.map((c) => (
           <div key={c.label} className="sc-kpi">

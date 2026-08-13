@@ -4,6 +4,7 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { listActiveSessions, listActiveWebSessions } from "@/lib/dataplane/client";
 import { LiveTable, type LiveRow } from "./live-table";
+import { AutoRefresh } from "@/app/(app)/_shell/auto-refresh";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Live sessions" };
@@ -55,6 +56,7 @@ export default async function AdminLivePage() {
 
   return (
     <main>
+      <AutoRefresh />
       <div className="page-head">
         <div>
           <h1>Live sessions</h1>
