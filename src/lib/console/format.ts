@@ -12,3 +12,12 @@ export function expiresIn(endISO: string, now: Date): string {
   const h = Math.floor(mins / 60), m = mins % 60;
   return `${h}h ${String(m).padStart(2, "0")}m`;
 }
+
+// "just now" / "45s ago" / "2m ago" — how long since the last request in a
+// web-app activity span.
+export function activeAgo(lastSeenISO: string, now: Date): string {
+  const secs = Math.floor((now.getTime() - new Date(lastSeenISO).getTime()) / 1000);
+  if (secs < 5) return "just now";
+  if (secs < 60) return `${secs}s ago`;
+  return `${Math.floor(secs / 60)}m ago`;
+}
