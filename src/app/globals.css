@@ -305,28 +305,54 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .notice.warn{color:var(--warn);background:var(--warn-soft);border-color:transparent;}
 
 /* ---- auth screens ---- */
-.auth{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;}
-.auth-panel{padding:2.6rem 2.4rem;color:#fff;display:flex;flex-direction:column;gap:1.15rem;position:relative;overflow:hidden;background:linear-gradient(150deg,#0b1424,#0a1830 55%,#0b2320);}
-.auth-panel::before{content:"";position:absolute;inset:-30% -12% auto auto;width:340px;height:340px;background:radial-gradient(circle,var(--brand-glow),transparent 70%);opacity:.55;}
-.auth-panel::after{content:"";position:absolute;inset:0;opacity:.10;background-image:radial-gradient(#fff 1.1px,transparent 1.1px);background-size:22px 22px;}
-.auth-panel>*{position:relative;}
-.auth-panel-top{display:flex;align-items:center;gap:.6rem;}
-.auth-panel-mark{width:34px;height:34px;border-radius:10px;background:var(--brand-glow);display:grid;place-items:center;flex:0 0 auto;}
-.auth-panel-word{font-weight:700;font-size:1.05rem;letter-spacing:-.01em;}
-.auth-panel-title{font-size:1.55rem;line-height:1.18;margin:.5rem 0 0;max-width:15ch;font-weight:700;}
-.auth-panel-lede{color:rgba(255,255,255,.85);font-size:.92rem;margin:0;max-width:34ch;}
-.auth-panel-list{list-style:none;margin:.3rem 0 0;padding:0;display:flex;flex-direction:column;gap:.55rem;}
-.auth-panel-list li{display:flex;align-items:center;gap:.55rem;font-size:.88rem;color:rgba(255,255,255,.92);}
-.auth-panel-list li::before{content:"\2713";font-weight:700;display:grid;place-items:center;width:1.15rem;height:1.15rem;border-radius:50%;background:rgba(46,230,201,.18);color:var(--nav-accent);font-size:.7rem;flex:0 0 auto;}
-.auth-panel-foot{margin-top:auto;color:rgba(255,255,255,.7);font-size:.76rem;}
-.auth-main{display:grid;place-items:center;padding:2.6rem 2rem;background:var(--surface);}
-.auth-card{width:min(92vw,23rem);text-align:center;}
+/* ---- pre-login auth frame: fixed-dark centered card ---- */
+.authx{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;padding:2rem 1.2rem;
+  background:radial-gradient(900px 500px at 50% -10%, #0f2a26 0%, #0a0f1a 60%), #0a0f1a;position:relative;}
+.authx::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle,#1b2436 1px,transparent 1px);background-size:28px 28px;opacity:.5;pointer-events:none;}
+.authx>*{position:relative;}
+.authx-lockup .brand-word{color:#f1f5f9;} .authx-lockup .brand-access{color:#7c8aa5;}
+.authx-card{width:min(92vw,440px);background:#0d1424;border:1px solid #1b2436;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;}
+.authx-bar{display:flex;align-items:center;justify-content:space-between;padding:.5rem .8rem;background:#0b111f;border-bottom:1px solid #1b2436;}
+.authx-dots{display:inline-flex;gap:6px;} .authx-dots i{width:9px;height:9px;border-radius:99px;background:#1b2436;display:block;}
+.authx-host{font-family:var(--mono);font-size:.62rem;color:#4a5872;}
+.authx-body{padding:2rem 2.2rem;color:#e2e8f0;}
+.authx-body h1{font-size:1.3rem;font-weight:700;color:#f1f5f9;margin:0 0 .3rem;}
+.authx-body p{color:#94a3b8;font-size:.9rem;margin:0 0 1.2rem;}
+.authx-body .field-label{color:#4a5872;}
+.authx-body .input,.authx-body .select{background:#0a0f1a;border:1px solid #1b2436;color:#e2e8f0;}
+.authx-body .btn.primary{width:100%;justify-content:center;padding:.65rem;background:#2dd4bf;border-color:#2dd4bf;color:#04211c;}
+.authx-body .btn.primary:hover{background:#5eead4;border-color:#5eead4;}
+.authx-body .btn{background:transparent;border-color:#1b2436;color:#94a3b8;}
+.authx-body .btn:hover{border-color:#134e4a;color:#e2e8f0;}
+.authx-tag{font-family:var(--mono);font-size:.72rem;color:#33415e;letter-spacing:.04em;}
 .auth-mark{display:none;}
-@media(max-width:680px){.auth{grid-template-columns:1fr;}.auth-panel{display:none;}.auth-main{padding:2rem 1.4rem;}.auth-mark{display:block;}}
-.auth-card h1{font-size:1.35rem;margin-bottom:.4rem;}
-.auth-card p{color:var(--muted);margin:0 0 1.3rem;font-size:.9rem;}
-.auth-card .field{text-align:left;}
-.auth-card .btn.primary{width:100%;justify-content:center;padding:.6rem;}
+
+/* step indicator */
+.authx-steps{display:flex;gap:8px;margin-bottom:1.3rem;}
+.authx-steps i{height:3px;flex:1;border-radius:99px;background:#1b2436;display:block;}
+.authx-steps i.on{background:#2dd4bf;}
+
+/* trust line */
+.authx-trust{margin-top:1rem;font-family:var(--mono);font-size:.68rem;color:#4a5872;display:flex;align-items:center;gap:.4rem;}
+.authx-trust .dot{width:6px;height:6px;border-radius:99px;background:#2dd4bf;display:inline-block;}
+
+/* passkey ceremony zone */
+.authx-zone{border:1px dashed #1b2436;border-radius:12px;background:#0a0f1a;padding:1.6rem;display:flex;flex-direction:column;align-items:center;gap:.9rem;text-align:center;color:#94a3b8;font-size:.88rem;}
+.authx-ring{width:64px;height:64px;border-radius:99px;background:#0f2a26;border:1px solid #134e4a;display:grid;place-items:center;}
+.authx-spin{width:28px;height:28px;border-radius:99px;border:3px solid #2dd4bf;border-top-color:transparent;animation:authx-rot .8s linear infinite;}
+@keyframes authx-rot{to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion:reduce){.authx-spin{animation:none;}}
+
+/* access-ready */
+.authx-check{width:36px;height:36px;border-radius:99px;background:#0f2a26;border:1px solid #134e4a;color:#2dd4bf;display:grid;place-items:center;font-size:1.1rem;margin-bottom:.6rem;}
+.authx-grants{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0 1.3rem;}
+.authx-grant{display:flex;align-items:center;gap:.6rem;border:1px solid #1b2436;border-radius:10px;padding:.55rem .7rem;}
+.authx-grant .chip{font-family:var(--mono);font-size:.62rem;color:#94a3b8;background:#1b2436;border-radius:5px;padding:.1rem .4rem;flex:0 0 auto;}
+.authx-grant .nm{font-size:.85rem;color:#f1f5f9;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.authx-grant .win{font-family:var(--mono);font-size:.68rem;color:#4a5872;flex:0 0 auto;}
+.authx-empty{color:#94a3b8;font-size:.85rem;margin:1rem 0 1.3rem;}
+.auth-or{display:flex;align-items:center;gap:.6rem;color:#4a5872;font-size:.75rem;}
+.auth-or::before,.auth-or::after{content:"";height:1px;flex:1;background:#1b2436;}
 /* Login actions: stack the passkey (primary) and SSO (secondary) buttons with
    clear separation and an "or" divider between them. */
 .auth-actions{display:flex;flex-direction:column;gap:.75rem;}
