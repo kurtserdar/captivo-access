@@ -2,20 +2,12 @@ import { requireAdmin } from "@/lib/current-user";
 import { InviteIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { getSmtpConfig } from "@/lib/email/mailer";
-import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { AddInviteButton } from "./add-invite-button";
-import { ResendInviteButton } from "./resend-invite-button";
-import { CancelInviteButton } from "./cancel-invite-button";
+import { InvitesTable, type InviteRow } from "./invites-table";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Invites" };
-
-const STATUS_PILL: Record<string, string> = {
-  Used: "ok",
-  Expired: "danger",
-  Pending: "warn",
-};
 
 function inviteStatus(inv: { usedAt: Date | null; expiresAt: Date }): string {
   if (inv.usedAt) return "Used";
@@ -30,6 +22,16 @@ export default async function AdminInvitesPage() {
   const smtpEnabled = !!smtp?.enabled;
 
   const invites = await db.invite.findMany({ orderBy: { createdAt: "desc" } });
+  const rows: InviteRow[] = invites.map((inv) => ({
+    id: inv.id,
+    name: inv.name,
+    email: inv.email,
+    company: inv.company,
+    phone: inv.phone,
+    roleLabel: ROLE_LABELS[inv.role] ?? inv.role,
+    status: inviteStatus(inv),
+    expiresAt: inv.expiresAt.toISOString(),
+  }));
 
   return (
     <main>
@@ -45,49 +47,7 @@ export default async function AdminInvitesPage() {
       {invites.length === 0 ? (
         <div className="empty">No invites have been sent yet.</div>
       ) : (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Company</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Expires</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {invites.map((inv) => {
-                const status = inviteStatus(inv);
-                return (
-                  <tr key={inv.id}>
-                    <td>{inv.name}</td>
-                    <td className="cell-sub">{inv.email}</td>
-                    <td>
-                      <div>{inv.company ?? "—"}</div>
-                      {inv.phone && <div className="cell-sub">{inv.phone}</div>}
-                    </td>
-                    <td>{ROLE_LABELS[inv.role] ?? inv.role}</td>
-                    <td>
-                      <span className={`pill ${STATUS_PILL[status] ?? "neutral"}`}>{status}</span>
-                    </td>
-                    <td className="cell-sub"><LocalTime iso={inv.expiresAt.toISOString()} /></td>
-                    <td>
-                      {status !== "Used" && (
-                        <div className="row-actions">
-                          <ResendInviteButton id={inv.id} email={inv.email} />
-                          <CancelInviteButton id={inv.id} email={inv.email} />
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <InvitesTable rows={rows} />
       )}
     </main>
   );
