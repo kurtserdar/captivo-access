@@ -30,6 +30,7 @@ model User {
   name           String
   phone          String?
   company        String?
+  timezone       String? // per-user display timezone override (IANA); null = inherit
   role           Role
   status         UserStatus    @default(ACTIVE)
   createdAt      DateTime      @default(now())
@@ -407,6 +408,7 @@ model PlatformSettings {
   maxGrantDays           Int? // cap on a grant's duration; 0/null = no cap (permanent grants allowed)
   recordingConsentRequired Boolean? // was RECORDING_CONSENT_REQUIRED; null = env fallback → false
   watermarkDefault         Boolean? // global isolated-session watermark default; null = env/default → false
+  displayTimezone          String? // global display timezone (IANA); null = viewer's browser
   recordingRetentionDays Int? // auto-delete recordings older than N days; 0/null = keep forever
   defaultConnectorLogLevel String? // fleet default log level for connectors set to "use default"; null → info
   externalAnchorEnabled Boolean? // opt-in; null/false = anchoring off
