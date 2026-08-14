@@ -30,7 +30,7 @@ export async function getActivityFeed(limit = 8): Promise<ActivityItem[]> {
   const [access, admin, recs] = await Promise.all([
     db.auditEvent.findMany({
       orderBy: { timestamp: "desc" }, take: limit,
-      select: { id: true, timestamp: true, decision: true, userEmail: true, siteName: true, host: true },
+      select: { id: true, timestamp: true, decision: true, userEmail: true, siteName: true, host: true, reason: true },
     }),
     db.adminAuditEvent.findMany({
       orderBy: { timestamp: "desc" }, take: limit,
@@ -42,13 +42,25 @@ export async function getActivityFeed(limit = 8): Promise<ActivityItem[]> {
     }),
   ]);
 
-  const accessItems: ActivityItem[] = access.map((e) => ({
-    id: `a:${e.id}`,
-    at: e.timestamp,
-    kind: e.decision === "ALLOW" ? "access.allow" : "access.deny",
-    text: `${e.userEmail ?? "someone"} ${e.decision === "ALLOW" ? "accessed" : "blocked at"} ${e.siteName ?? e.host}`,
-    tone: e.decision === "ALLOW" ? "ok" : "deny",
-  }));
+  const accessItems: ActivityItem[] = access.map((e) => {
+    const reason = e.reason ?? "";
+    const who = e.userEmail ?? "someone";
+    const where = e.siteName ?? e.host;
+    if (reason.startsWith("session_open")) {
+      return { id: `a:${e.id}`, at: e.timestamp, kind: "session.connect", text: `${who} connected to ${where}`, tone: "ok" };
+    }
+    if (reason.startsWith("session_close")) {
+      const dur = reason.slice("session_close".length).trim();
+      return { id: `a:${e.id}`, at: e.timestamp, kind: "session.disconnect", text: `${who} disconnected from ${where}${dur ? ` · ${dur}` : ""}`, tone: "muted" };
+    }
+    return {
+      id: `a:${e.id}`,
+      at: e.timestamp,
+      kind: e.decision === "ALLOW" ? "access.allow" : "access.deny",
+      text: `${who} ${e.decision === "ALLOW" ? "accessed" : "blocked at"} ${where}`,
+      tone: e.decision === "ALLOW" ? "ok" : "deny",
+    };
+  });
 
   const adminItems: ActivityItem[] = admin.map((e) => ({
     id: `m:${e.id}`,
