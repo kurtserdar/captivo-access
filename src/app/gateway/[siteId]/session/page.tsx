@@ -34,7 +34,14 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
     // path= keeps the client's RFB WebSocket under /kasm-tunnel/ (its default is
     // an absolute /websockify, which nginx would route to the manager, not the
     // data-plane, leaving the client stuck on "Connecting…").
-    return <iframe title="Isolated browser" src={`/kasm-tunnel/?site=${siteId}&path=kasm-tunnel/websockify`} style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", border: 0 }} allow="clipboard-read; clipboard-write" />;
+    // clipboard_seamless/up/down turn ON the KasmVNC client's automatic
+    // (Ctrl+C/Ctrl+V) clipboard — it is OFF by default, so without these the
+    // clipboard never works at all. This only ENABLES the feature client-side; the
+    // actual per-direction policy is enforced server-side by the per-session DLP
+    // config the broker writes (data_loss_prevention.clipboard.*). Note: KasmVNC
+    // force-disables seamless on Safari, so seamless clipboard needs Chrome/Edge.
+    const kasmParams = "path=kasm-tunnel/websockify&clipboard_seamless=true&clipboard_up=true&clipboard_down=true";
+    return <iframe title="Isolated browser" src={`/kasm-tunnel/?site=${siteId}&${kasmParams}`} style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", border: 0 }} allow="clipboard-read; clipboard-write" />;
   }
   const recorded = recordingEnabled() && site.recordSessions;
   // Ask for recording consent once per browser session (matches web sessions):
