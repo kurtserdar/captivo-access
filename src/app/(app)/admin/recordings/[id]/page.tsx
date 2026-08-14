@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { RecordingPlayer } from "./recording-player";
 import { GuacRecordingPlayer } from "./guac-recording-player";
+import { VideoRecordingPlayer } from "./video-recording-player";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Recording" };
@@ -29,6 +30,8 @@ export default async function RecordingPage({ params }: { params: Promise<{ id: 
       <div className="card">
         {rec.format === "GUAC"
           ? <GuacRecordingPlayer recordingId={rec.id} />
+          : rec.format === "VIDEO"
+          ? <VideoRecordingPlayer id={rec.id} />
           : <RecordingPlayer id={rec.id} />}
       </div>
     </main>
