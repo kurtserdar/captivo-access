@@ -412,6 +412,7 @@ export const ModelName = {
   AuditAnchor: 'AuditAnchor',
   AdminAuditAnchor: 'AdminAuditAnchor',
   SmtpConfig: 'SmtpConfig',
+  BrandingConfig: 'BrandingConfig',
   Notification: 'Notification',
   OidcConfig: 'OidcConfig',
   DirectoryConfig: 'DirectoryConfig',
@@ -438,7 +439,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "vaultCredential" | "accessGrant" | "auditEvent" | "auditChainState" | "auditAnchor" | "adminAuditAnchor" | "smtpConfig" | "notification" | "oidcConfig" | "directoryConfig" | "groupMapping" | "sessionPolicy" | "cronRun" | "platformSettings" | "updateCheckConfig" | "sessionRecording" | "recordingChunk" | "adminAuditEvent"
+    modelProps: "user" | "passkey" | "totpSecret" | "invite" | "session" | "connector" | "connectorPairing" | "site" | "vaultCredential" | "accessGrant" | "auditEvent" | "auditChainState" | "auditAnchor" | "adminAuditAnchor" | "smtpConfig" | "brandingConfig" | "notification" | "oidcConfig" | "directoryConfig" | "groupMapping" | "sessionPolicy" | "cronRun" | "platformSettings" | "updateCheckConfig" | "sessionRecording" | "recordingChunk" | "adminAuditEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1552,6 +1553,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    BrandingConfig: {
+      payload: Prisma.$BrandingConfigPayload<ExtArgs>
+      fields: Prisma.BrandingConfigFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BrandingConfigFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BrandingConfigPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BrandingConfigFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BrandingConfigPayload>
+        }
+        findFirst: {
+          args: Prisma.BrandingConfigFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BrandingConfigPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BrandingConfigFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BrandingConfigPayload>
+        }
+        findMany: {
+          args: Prisma.BrandingConfigFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BrandingConfigPayload>[]
+        }
+        create: {
+          args: Prisma.BrandingConfigCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BrandingConfigPayload>
+        }
+        createMany: {
+          args: Prisma.BrandingConfigCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BrandingConfigCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BrandingConfigPayload>[]
+        }
+        delete: {
+          args: Prisma.BrandingConfigDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BrandingConfigPayload>
+        }
+        update: {
+          args: Prisma.BrandingConfigUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BrandingConfigPayload>
+        }
+        deleteMany: {
+          args: Prisma.BrandingConfigDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BrandingConfigUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BrandingConfigUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BrandingConfigPayload>[]
+        }
+        upsert: {
+          args: Prisma.BrandingConfigUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BrandingConfigPayload>
+        }
+        aggregate: {
+          args: Prisma.BrandingConfigAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBrandingConfig>
+        }
+        groupBy: {
+          args: Prisma.BrandingConfigGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BrandingConfigGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BrandingConfigCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BrandingConfigCountAggregateOutputType> | number
+        }
+      }
+    }
     Notification: {
       payload: Prisma.$NotificationPayload<ExtArgs>
       fields: Prisma.NotificationFieldRefs
@@ -2411,6 +2486,7 @@ export const UserScalarFieldEnum = {
   name: 'name',
   phone: 'phone',
   company: 'company',
+  timezone: 'timezone',
   role: 'role',
   status: 'status',
   createdAt: 'createdAt',
@@ -2519,6 +2595,7 @@ export const SiteScalarFieldEnum = {
   probeLatencyMs: 'probeLatencyMs',
   recordSessions: 'recordSessions',
   clipboardMode: 'clipboardMode',
+  watermark: 'watermark',
   accessMode: 'accessMode',
   logo: 'logo',
   logoType: 'logoType',
@@ -2648,6 +2725,16 @@ export const SmtpConfigScalarFieldEnum = {
 export type SmtpConfigScalarFieldEnum = (typeof SmtpConfigScalarFieldEnum)[keyof typeof SmtpConfigScalarFieldEnum]
 
 
+export const BrandingConfigScalarFieldEnum = {
+  id: 'id',
+  splashImage: 'splashImage',
+  splashImageType: 'splashImageType',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BrandingConfigScalarFieldEnum = (typeof BrandingConfigScalarFieldEnum)[keyof typeof BrandingConfigScalarFieldEnum]
+
+
 export const NotificationScalarFieldEnum = {
   id: 'id',
   type: 'type',
@@ -2741,6 +2828,8 @@ export const PlatformSettingsScalarFieldEnum = {
   vendorIpAllowlist: 'vendorIpAllowlist',
   maxGrantDays: 'maxGrantDays',
   recordingConsentRequired: 'recordingConsentRequired',
+  watermarkDefault: 'watermarkDefault',
+  displayTimezone: 'displayTimezone',
   recordingRetentionDays: 'recordingRetentionDays',
   defaultConnectorLogLevel: 'defaultConnectorLogLevel',
   externalAnchorEnabled: 'externalAnchorEnabled',
@@ -3262,6 +3351,7 @@ export type GlobalOmitConfig = {
   auditAnchor?: Prisma.AuditAnchorOmit
   adminAuditAnchor?: Prisma.AdminAuditAnchorOmit
   smtpConfig?: Prisma.SmtpConfigOmit
+  brandingConfig?: Prisma.BrandingConfigOmit
   notification?: Prisma.NotificationOmit
   oidcConfig?: Prisma.OidcConfigOmit
   directoryConfig?: Prisma.DirectoryConfigOmit

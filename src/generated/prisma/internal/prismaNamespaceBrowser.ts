@@ -66,6 +66,7 @@ export const ModelName = {
   AuditAnchor: 'AuditAnchor',
   AdminAuditAnchor: 'AdminAuditAnchor',
   SmtpConfig: 'SmtpConfig',
+  BrandingConfig: 'BrandingConfig',
   Notification: 'Notification',
   OidcConfig: 'OidcConfig',
   DirectoryConfig: 'DirectoryConfig',
@@ -101,6 +102,7 @@ export const UserScalarFieldEnum = {
   name: 'name',
   phone: 'phone',
   company: 'company',
+  timezone: 'timezone',
   role: 'role',
   status: 'status',
   createdAt: 'createdAt',
@@ -209,6 +211,7 @@ export const SiteScalarFieldEnum = {
   probeLatencyMs: 'probeLatencyMs',
   recordSessions: 'recordSessions',
   clipboardMode: 'clipboardMode',
+  watermark: 'watermark',
   accessMode: 'accessMode',
   logo: 'logo',
   logoType: 'logoType',
@@ -338,6 +341,16 @@ export const SmtpConfigScalarFieldEnum = {
 export type SmtpConfigScalarFieldEnum = (typeof SmtpConfigScalarFieldEnum)[keyof typeof SmtpConfigScalarFieldEnum]
 
 
+export const BrandingConfigScalarFieldEnum = {
+  id: 'id',
+  splashImage: 'splashImage',
+  splashImageType: 'splashImageType',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BrandingConfigScalarFieldEnum = (typeof BrandingConfigScalarFieldEnum)[keyof typeof BrandingConfigScalarFieldEnum]
+
+
 export const NotificationScalarFieldEnum = {
   id: 'id',
   type: 'type',
@@ -431,6 +444,8 @@ export const PlatformSettingsScalarFieldEnum = {
   vendorIpAllowlist: 'vendorIpAllowlist',
   maxGrantDays: 'maxGrantDays',
   recordingConsentRequired: 'recordingConsentRequired',
+  watermarkDefault: 'watermarkDefault',
+  displayTimezone: 'displayTimezone',
   recordingRetentionDays: 'recordingRetentionDays',
   defaultConnectorLogLevel: 'defaultConnectorLogLevel',
   externalAnchorEnabled: 'externalAnchorEnabled',

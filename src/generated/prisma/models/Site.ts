@@ -48,6 +48,7 @@ export type SiteMinAggregateOutputType = {
   probeLatencyMs: number | null
   recordSessions: boolean | null
   clipboardMode: string | null
+  watermark: boolean | null
   accessMode: $Enums.SiteAccessMode | null
   logo: runtime.Bytes | null
   logoType: string | null
@@ -68,6 +69,7 @@ export type SiteMaxAggregateOutputType = {
   probeLatencyMs: number | null
   recordSessions: boolean | null
   clipboardMode: string | null
+  watermark: boolean | null
   accessMode: $Enums.SiteAccessMode | null
   logo: runtime.Bytes | null
   logoType: string | null
@@ -88,6 +90,7 @@ export type SiteCountAggregateOutputType = {
   probeLatencyMs: number
   recordSessions: number
   clipboardMode: number
+  watermark: number
   accessMode: number
   logo: number
   logoType: number
@@ -118,6 +121,7 @@ export type SiteMinAggregateInputType = {
   probeLatencyMs?: true
   recordSessions?: true
   clipboardMode?: true
+  watermark?: true
   accessMode?: true
   logo?: true
   logoType?: true
@@ -138,6 +142,7 @@ export type SiteMaxAggregateInputType = {
   probeLatencyMs?: true
   recordSessions?: true
   clipboardMode?: true
+  watermark?: true
   accessMode?: true
   logo?: true
   logoType?: true
@@ -158,6 +163,7 @@ export type SiteCountAggregateInputType = {
   probeLatencyMs?: true
   recordSessions?: true
   clipboardMode?: true
+  watermark?: true
   accessMode?: true
   logo?: true
   logoType?: true
@@ -265,6 +271,7 @@ export type SiteGroupByOutputType = {
   probeLatencyMs: number | null
   recordSessions: boolean
   clipboardMode: string
+  watermark: boolean | null
   accessMode: $Enums.SiteAccessMode
   logo: runtime.Bytes | null
   logoType: string | null
@@ -308,6 +315,7 @@ export type SiteWhereInput = {
   probeLatencyMs?: Prisma.IntNullableFilter<"Site"> | number | null
   recordSessions?: Prisma.BoolFilter<"Site"> | boolean
   clipboardMode?: Prisma.StringFilter<"Site"> | string
+  watermark?: Prisma.BoolNullableFilter<"Site"> | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFilter<"Site"> | $Enums.SiteAccessMode
   logo?: Prisma.BytesNullableFilter<"Site"> | runtime.Bytes | null
   logoType?: Prisma.StringNullableFilter<"Site"> | string | null
@@ -332,6 +340,7 @@ export type SiteOrderByWithRelationInput = {
   probeLatencyMs?: Prisma.SortOrderInput | Prisma.SortOrder
   recordSessions?: Prisma.SortOrder
   clipboardMode?: Prisma.SortOrder
+  watermark?: Prisma.SortOrderInput | Prisma.SortOrder
   accessMode?: Prisma.SortOrder
   logo?: Prisma.SortOrderInput | Prisma.SortOrder
   logoType?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -359,6 +368,7 @@ export type SiteWhereUniqueInput = Prisma.AtLeast<{
   probeLatencyMs?: Prisma.IntNullableFilter<"Site"> | number | null
   recordSessions?: Prisma.BoolFilter<"Site"> | boolean
   clipboardMode?: Prisma.StringFilter<"Site"> | string
+  watermark?: Prisma.BoolNullableFilter<"Site"> | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFilter<"Site"> | $Enums.SiteAccessMode
   logo?: Prisma.BytesNullableFilter<"Site"> | runtime.Bytes | null
   logoType?: Prisma.StringNullableFilter<"Site"> | string | null
@@ -383,6 +393,7 @@ export type SiteOrderByWithAggregationInput = {
   probeLatencyMs?: Prisma.SortOrderInput | Prisma.SortOrder
   recordSessions?: Prisma.SortOrder
   clipboardMode?: Prisma.SortOrder
+  watermark?: Prisma.SortOrderInput | Prisma.SortOrder
   accessMode?: Prisma.SortOrder
   logo?: Prisma.SortOrderInput | Prisma.SortOrder
   logoType?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -411,6 +422,7 @@ export type SiteScalarWhereWithAggregatesInput = {
   probeLatencyMs?: Prisma.IntNullableWithAggregatesFilter<"Site"> | number | null
   recordSessions?: Prisma.BoolWithAggregatesFilter<"Site"> | boolean
   clipboardMode?: Prisma.StringWithAggregatesFilter<"Site"> | string
+  watermark?: Prisma.BoolNullableWithAggregatesFilter<"Site"> | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeWithAggregatesFilter<"Site"> | $Enums.SiteAccessMode
   logo?: Prisma.BytesNullableWithAggregatesFilter<"Site"> | runtime.Bytes | null
   logoType?: Prisma.StringNullableWithAggregatesFilter<"Site"> | string | null
@@ -430,6 +442,7 @@ export type SiteCreateInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -454,6 +467,7 @@ export type SiteUncheckedCreateInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -476,6 +490,7 @@ export type SiteUpdateInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -500,6 +515,7 @@ export type SiteUncheckedUpdateInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -523,6 +539,7 @@ export type SiteCreateManyInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -542,6 +559,7 @@ export type SiteUpdateManyMutationInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -562,6 +580,7 @@ export type SiteUncheckedUpdateManyInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -592,6 +611,7 @@ export type SiteCountOrderByAggregateInput = {
   probeLatencyMs?: Prisma.SortOrder
   recordSessions?: Prisma.SortOrder
   clipboardMode?: Prisma.SortOrder
+  watermark?: Prisma.SortOrder
   accessMode?: Prisma.SortOrder
   logo?: Prisma.SortOrder
   logoType?: Prisma.SortOrder
@@ -616,6 +636,7 @@ export type SiteMaxOrderByAggregateInput = {
   probeLatencyMs?: Prisma.SortOrder
   recordSessions?: Prisma.SortOrder
   clipboardMode?: Prisma.SortOrder
+  watermark?: Prisma.SortOrder
   accessMode?: Prisma.SortOrder
   logo?: Prisma.SortOrder
   logoType?: Prisma.SortOrder
@@ -636,6 +657,7 @@ export type SiteMinOrderByAggregateInput = {
   probeLatencyMs?: Prisma.SortOrder
   recordSessions?: Prisma.SortOrder
   clipboardMode?: Prisma.SortOrder
+  watermark?: Prisma.SortOrder
   accessMode?: Prisma.SortOrder
   logo?: Prisma.SortOrder
   logoType?: Prisma.SortOrder
@@ -775,6 +797,7 @@ export type SiteCreateWithoutConnectorInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -797,6 +820,7 @@ export type SiteUncheckedCreateWithoutConnectorInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -849,6 +873,7 @@ export type SiteScalarWhereInput = {
   probeLatencyMs?: Prisma.IntNullableFilter<"Site"> | number | null
   recordSessions?: Prisma.BoolFilter<"Site"> | boolean
   clipboardMode?: Prisma.StringFilter<"Site"> | string
+  watermark?: Prisma.BoolNullableFilter<"Site"> | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFilter<"Site"> | $Enums.SiteAccessMode
   logo?: Prisma.BytesNullableFilter<"Site"> | runtime.Bytes | null
   logoType?: Prisma.StringNullableFilter<"Site"> | string | null
@@ -868,6 +893,7 @@ export type SiteCreateWithoutVaultCredentialInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -891,6 +917,7 @@ export type SiteUncheckedCreateWithoutVaultCredentialInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -928,6 +955,7 @@ export type SiteUpdateWithoutVaultCredentialInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -951,6 +979,7 @@ export type SiteUncheckedUpdateWithoutVaultCredentialInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -972,6 +1001,7 @@ export type SiteCreateWithoutGrantsInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -995,6 +1025,7 @@ export type SiteUncheckedCreateWithoutGrantsInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -1032,6 +1063,7 @@ export type SiteUpdateWithoutGrantsInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1055,6 +1087,7 @@ export type SiteUncheckedUpdateWithoutGrantsInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1076,6 +1109,7 @@ export type SiteCreateWithoutGroupMappingsInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -1099,6 +1133,7 @@ export type SiteUncheckedCreateWithoutGroupMappingsInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -1136,6 +1171,7 @@ export type SiteUpdateWithoutGroupMappingsInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1159,6 +1195,7 @@ export type SiteUncheckedUpdateWithoutGroupMappingsInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1180,6 +1217,7 @@ export type SiteCreateManyConnectorInput = {
   probeLatencyMs?: number | null
   recordSessions?: boolean
   clipboardMode?: string
+  watermark?: boolean | null
   accessMode?: $Enums.SiteAccessMode
   logo?: runtime.Bytes | null
   logoType?: string | null
@@ -1199,6 +1237,7 @@ export type SiteUpdateWithoutConnectorInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1221,6 +1260,7 @@ export type SiteUncheckedUpdateWithoutConnectorInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1243,6 +1283,7 @@ export type SiteUncheckedUpdateManyWithoutConnectorInput = {
   probeLatencyMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSessions?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clipboardMode?: Prisma.StringFieldUpdateOperationsInput | string
+  watermark?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accessMode?: Prisma.EnumSiteAccessModeFieldUpdateOperationsInput | $Enums.SiteAccessMode
   logo?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
   logoType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1303,6 +1344,7 @@ export type SiteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   probeLatencyMs?: boolean
   recordSessions?: boolean
   clipboardMode?: boolean
+  watermark?: boolean
   accessMode?: boolean
   logo?: boolean
   logoType?: boolean
@@ -1328,6 +1370,7 @@ export type SiteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   probeLatencyMs?: boolean
   recordSessions?: boolean
   clipboardMode?: boolean
+  watermark?: boolean
   accessMode?: boolean
   logo?: boolean
   logoType?: boolean
@@ -1349,6 +1392,7 @@ export type SiteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   probeLatencyMs?: boolean
   recordSessions?: boolean
   clipboardMode?: boolean
+  watermark?: boolean
   accessMode?: boolean
   logo?: boolean
   logoType?: boolean
@@ -1370,13 +1414,14 @@ export type SiteSelectScalar = {
   probeLatencyMs?: boolean
   recordSessions?: boolean
   clipboardMode?: boolean
+  watermark?: boolean
   accessMode?: boolean
   logo?: boolean
   logoType?: boolean
   createdAt?: boolean
 }
 
-export type SiteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "connectorId" | "name" | "hostname" | "upstreamUrl" | "insecureSkipVerify" | "description" | "probedAt" | "probeOk" | "probeDetail" | "probeLatencyMs" | "recordSessions" | "clipboardMode" | "accessMode" | "logo" | "logoType" | "createdAt", ExtArgs["result"]["site"]>
+export type SiteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "connectorId" | "name" | "hostname" | "upstreamUrl" | "insecureSkipVerify" | "description" | "probedAt" | "probeOk" | "probeDetail" | "probeLatencyMs" | "recordSessions" | "clipboardMode" | "watermark" | "accessMode" | "logo" | "logoType" | "createdAt", ExtArgs["result"]["site"]>
 export type SiteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   connector?: boolean | Prisma.ConnectorDefaultArgs<ExtArgs>
   grants?: boolean | Prisma.Site$grantsArgs<ExtArgs>
@@ -1413,6 +1458,7 @@ export type $SitePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     probeLatencyMs: number | null
     recordSessions: boolean
     clipboardMode: string
+    watermark: boolean | null
     accessMode: $Enums.SiteAccessMode
     logo: runtime.Bytes | null
     logoType: string | null
@@ -1857,6 +1903,7 @@ export interface SiteFieldRefs {
   readonly probeLatencyMs: Prisma.FieldRef<"Site", 'Int'>
   readonly recordSessions: Prisma.FieldRef<"Site", 'Boolean'>
   readonly clipboardMode: Prisma.FieldRef<"Site", 'String'>
+  readonly watermark: Prisma.FieldRef<"Site", 'Boolean'>
   readonly accessMode: Prisma.FieldRef<"Site", 'SiteAccessMode'>
   readonly logo: Prisma.FieldRef<"Site", 'Bytes'>
   readonly logoType: Prisma.FieldRef<"Site", 'String'>

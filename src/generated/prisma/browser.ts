@@ -93,6 +93,11 @@ export type AdminAuditAnchor = Prisma.AdminAuditAnchorModel
  */
 export type SmtpConfig = Prisma.SmtpConfigModel
 /**
+ * Model BrandingConfig
+ * 
+ */
+export type BrandingConfig = Prisma.BrandingConfigModel
+/**
  * Model Notification
  * 
  */
