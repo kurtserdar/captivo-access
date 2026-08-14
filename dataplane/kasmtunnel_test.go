@@ -67,7 +67,7 @@ func TestOpenKasmSessionOK(t *testing.T) {
 		strconv.Itoa(len(body)) + "\r\n\r\n" + body
 	var out strings.Builder
 	rw := rwPair{Reader: bufio.NewReader(strings.NewReader(resp)), Writer: &out}
-	id, port, status, err := openKasmSession(rw, "captivo-kasm:7900", "https://example.com", false, true)
+	id, port, status, err := openKasmSession(rw, "captivo-kasm:7900", "https://example.com", false, true, 1280, 800)
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -87,7 +87,7 @@ func TestOpenKasmSessionCapacity(t *testing.T) {
 	resp := "HTTP/1.0 503 Service Unavailable\r\nContent-Length: " +
 		strconv.Itoa(len(body)) + "\r\n\r\n" + body
 	rw := rwPair{Reader: bufio.NewReader(strings.NewReader(resp)), Writer: &strings.Builder{}}
-	_, _, status, err := openKasmSession(rw, "captivo-kasm:7900", "https://example.com", true, true)
+	_, _, status, err := openKasmSession(rw, "captivo-kasm:7900", "https://example.com", true, true, 1280, 800)
 	if err != nil {
 		t.Fatalf("capacity should not be a transport error: %v", err)
 	}

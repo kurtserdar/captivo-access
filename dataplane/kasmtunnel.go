@@ -22,10 +22,49 @@ import (
 // HTTP status (so the caller can surface 503 capacity); err is set only on
 // transport/parse failure. This is deliberately self-contained (not shared with
 // the former transport A, now removed).
-func openKasmSession(rw io.ReadWriter, host, target string, copyOut, pasteIn bool) (id string, port, status int, err error) {
+func parseKasmDim(s string) int {
+	if s == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil || n < 0 {
+		return 0
+	}
+	return n
+}
+
+func splitKasmSize(s string) (int, int, bool) {
+	i := strings.IndexByte(s, 'x')
+	if i <= 0 {
+		return 0, 0, false
+	}
+	w, e1 := strconv.Atoi(s[:i])
+	h, e2 := strconv.Atoi(s[i+1:])
+	if e1 != nil || e2 != nil {
+		return 0, 0, false
+	}
+	return w, h, true
+}
+
+func clampKasmDim(v, lo, hi, def int) int {
+	if v <= 0 {
+		return def
+	}
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
+}
+
+func openKasmSession(rw io.ReadWriter, host, target string, copyOut, pasteIn bool, w, h int) (id string, port, status int, err error) {
 	body := `{"url":` + jsonQuoteKasm(target) +
 		`,"copyOut":` + strconv.FormatBool(copyOut) +
-		`,"pasteIn":` + strconv.FormatBool(pasteIn) + `}`
+		`,"pasteIn":` + strconv.FormatBool(pasteIn) +
+		`,"w":` + strconv.Itoa(w) +
+		`,"h":` + strconv.Itoa(h) + `}`
 	req := "POST /session HTTP/1.0\r\n" +
 		"Host: " + host + "\r\n" +
 		"Content-Type: application/json\r\n" +
@@ -142,6 +181,25 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 	if r.URL.Query().Get("site") != "" {
 		http.SetCookie(w, &http.Cookie{Name: "ca_kasm_site", Value: siteID, Path: "/kasm-tunnel", HttpOnly: true, SameSite: http.SameSiteLaxMode})
 	}
+	// Client-reported screen size for a full-screen desktop: query on the HTML load,
+	// cookie for the query-less websockify upgrade (same pattern as ca_kasm_site).
+	kasmW := parseKasmDim(r.URL.Query().Get("w"))
+	kasmH := parseKasmDim(r.URL.Query().Get("h"))
+	if kasmW == 0 || kasmH == 0 {
+		if c, e := r.Cookie("ca_kasm_size"); e == nil {
+			if cw, ch, ok := splitKasmSize(c.Value); ok {
+				if kasmW == 0 {
+					kasmW = cw
+				}
+				if kasmH == 0 {
+					kasmH = ch
+				}
+			}
+		}
+	}
+	if r.URL.Query().Get("w") != "" && r.URL.Query().Get("h") != "" {
+		http.SetCookie(w, &http.Cookie{Name: "ca_kasm_size", Value: strconv.Itoa(kasmW) + "x" + strconv.Itoa(kasmH), Path: "/kasm-tunnel", HttpOnly: true, SameSite: http.SameSiteLaxMode})
+	}
 	sess := reg.Get(d.ConnectorID)
 	if sess == nil {
 		http.Error(w, "connector offline", http.StatusBadGateway)
@@ -160,7 +218,9 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 		var port, status int
 		co, pi := clipboardToKasm(d.ClipboardMode)
 		if st, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
-			id, port, status, e = openKasmSession(st, d.KasmControlAddr, d.NavigateUrl, co, pi)
+			cw := clampKasmDim(kasmW, 1024, 2560, 1280)
+			ch := clampKasmDim(kasmH, 640, 1600, 800)
+			id, port, status, e = openKasmSession(st, d.KasmControlAddr, d.NavigateUrl, co, pi, cw, ch)
 			st.Close()
 			if e != nil {
 				http.Error(w, "isolated browser unavailable", http.StatusBadGateway)
