@@ -32,7 +32,6 @@ jobs:
           - image: migrate
             dockerfile: migrate/Dockerfile
             platforms: linux/amd64
-            platforms: linux/amd64
           - image: kasm-browser
             dockerfile: kasm-browser/Dockerfile
             platforms: linux/amd64
