@@ -17,6 +17,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
   const [maxGrant, setMaxGrant] = useState(str(initial.maxGrantDays));
   const [requireJustif, setRequireJustif] = useState(initial.requireRequestJustification !== false);
   const [consent, setConsent] = useState(consentEffective);
+  const [watermark, setWatermark] = useState(initial.watermarkDefault === true);
   const [recRetention, setRecRetention] = useState(str(initial.recordingRetentionDays));
   const [connLog, setConnLog] = useState(initial.defaultConnectorLogLevel ?? "info");
   const [anchorOn, setAnchorOn] = useState(initial.externalAnchorEnabled === true);
@@ -58,6 +59,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
         maxGrantDays: maxGrant,
         requireRequestJustification: requireJustif,
         recordingConsentRequired: consent,
+        watermarkDefault: watermark,
         recordingRetentionDays: recRetention,
         defaultConnectorLogLevel: connLog,
         externalAnchorEnabled: anchorOn,
@@ -187,6 +189,15 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
             </div>
             <div className="setting-ctl">
               <label className="switch"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span className="track" /></label>
+            </div>
+          </div>
+          <div className="setting">
+            <div className="setting-main">
+              <div className="setting-label">Screen watermark</div>
+              <div className="setting-hint">Default for Isolated Browser sessions: overlay each session with the vendor&apos;s email + a live clock, visible on their screen and in any screenshot or photo (deters + attributes leaks). A resource can override this on its own form.</div>
+            </div>
+            <div className="setting-ctl">
+              <label className="switch"><input type="checkbox" checked={watermark} onChange={(e) => setWatermark(e.target.checked)} /><span className="track" /></label>
             </div>
           </div>
           <div className="setting">
