@@ -28,9 +28,15 @@ def _free_display():
 
 def _session_yaml(copy_out, paste_in):
     # Per-session KasmVNC config: network (plain HTTP, no SSL — access is
-    # grant-checked at the tunnel entry) + clipboard DLP. The clipboard keys are
-    # deliberately absent from allow_override_list so the web client cannot
-    # re-enable a blocked direction.
+    # grant-checked at the tunnel entry) + clipboard DLP.
+    #
+    # allow_client_to_override_kasm_server_settings MUST be false: KasmVNC's shipped
+    # defaults list the clipboard-direction DLP keys in allow_override_list, and it
+    # MERGES that list rather than replacing it, so leaving override enabled lets the
+    # web client re-enable a blocked direction (the vendor's browser must not be able
+    # to override a security policy). With override off, the server-side DLP below is
+    # authoritative; the client's own seamless clipboard still works for whichever
+    # direction the server allows.
     return (
         "network:\n"
         "  protocol: http\n"
@@ -39,9 +45,8 @@ def _session_yaml(copy_out, paste_in):
         "  udp:\n"
         "    public_ip: 127.0.0.1\n"
         "runtime_configuration:\n"
-        "  allow_client_to_override_kasm_server_settings: true\n"
-        "  allow_override_list:\n"
-        "    - pointer.enabled\n"
+        "  allow_client_to_override_kasm_server_settings: false\n"
+        "  allow_override_standard_vnc_server_settings: false\n"
         "data_loss_prevention:\n"
         "  clipboard:\n"
         "    server_to_client:\n"
