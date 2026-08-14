@@ -77,6 +77,25 @@ export async function getWatchStatus(userId: string, siteId: string): Promise<{ 
   }
 }
 
+export interface IsolatedDownload { name: string; size: number; mtime: number }
+
+export async function listIsolatedDownloads(userId: string, siteId: string): Promise<IsolatedDownload[]> {
+  try {
+    const qs = `op=list&userId=${encodeURIComponent(userId)}&siteId=${encodeURIComponent(siteId)}`;
+    const res = await fetch(`${BASE()}/kasm-files?${qs}`, { headers: authHeaders(), cache: "no-store" });
+    if (!res.ok) return [];
+    const data = (await res.json()) as IsolatedDownload[] | null;
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+// Base URL + secret header for the streaming file-transfer routes (upload/download),
+// which proxy raw bodies rather than JSON.
+export function dataplaneFilesUrl(qs: string): string { return `${BASE()}/kasm-files?${qs}`; }
+export function dataplaneSecretHeader(): Record<string, string> { return { "x-dataplane-secret": process.env.DATAPLANE_SECRET ?? "" }; }
+
 export async function terminateSession(sessionId: string): Promise<{ ok: boolean; found: boolean }> {
   try {
     const res = await fetch(`${BASE()}/sessions/terminate`, {
