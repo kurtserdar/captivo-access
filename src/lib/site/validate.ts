@@ -39,6 +39,7 @@ export type SiteValidation =
       upstreamUrl: string;
       recordSessions: boolean;
       clipboardMode: string;
+      watermark: boolean | null;
     }
   | { ok: false; error: string };
 
@@ -71,6 +72,7 @@ export function validateSiteInput(
       ok: true, mode: "ISOLATED", connectorId, name, description, upstreamUrl,
       recordSessions: opts.recordingEnabled && body.recordSessions === true,
       clipboardMode: CLIP.includes(clip) ? clip : "allow",
+      watermark: body.watermark === true ? true : body.watermark === false ? false : null,
     };
   }
 

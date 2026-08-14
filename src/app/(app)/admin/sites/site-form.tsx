@@ -44,6 +44,7 @@ type SiteInitial = {
   insecureSkipVerify: boolean;
   recordSessions: boolean;
   clipboardMode: string;
+  watermark?: boolean | null;
   accessMode: "TRANSPARENT" | "GATEWAY" | "ISOLATED";
   hasLogo?: boolean;
 };
@@ -80,6 +81,9 @@ export function SiteForm({
   const [insecureSkipVerify, setInsecureSkipVerify] = useState(site?.insecureSkipVerify ?? false);
   const [recordSessions, setRecordSessions] = useState(site?.recordSessions ?? false);
   const [clipboardMode, setClipboardMode] = useState(site?.clipboardMode ?? "allow");
+  const [watermark, setWatermark] = useState<"inherit" | "on" | "off">(
+    site?.watermark == null ? "inherit" : site.watermark ? "on" : "off",
+  );
   const [accessMode, setAccessMode] = useState<"TRANSPARENT" | "GATEWAY" | "ISOLATED">(site?.accessMode ?? "TRANSPARENT");
   // Remote-desktop (GATEWAY) target — seeded from the site's vault credential; the
   // secret is always blank (write-only).
@@ -155,6 +159,7 @@ export function SiteForm({
           insecureSkipVerify,
           recordSessions,
           clipboardMode,
+          watermark: watermark === "inherit" ? null : watermark === "on",
           ...(accessMode === "GATEWAY"
             ? { protocol, targetHost, targetPort: Number(targetPort), username, secret, guacParams: guacFieldsToParams(guac) }
             : {}),
@@ -305,6 +310,14 @@ export function SiteForm({
               <option value="no_copy">Block copy out (no exfil)</option>
               <option value="no_paste">Block paste in</option>
               <option value="none">Block both</option>
+            </select>
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="site-watermark">Screen watermark</label>
+            <select id="site-watermark" className="select" value={watermark} onChange={(e) => setWatermark(e.target.value as "inherit" | "on" | "off")}>
+              <option value="inherit">Use global default</option>
+              <option value="on">On (email + live clock)</option>
+              <option value="off">Off</option>
             </select>
             <span className="hint">Enforced by the session engine (guacd) — copy out of the isolated browser is disabled server-side, a real control.</span>
           </div>
