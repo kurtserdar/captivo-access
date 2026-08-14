@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
         kasmAddr: (process.env.ISOLATED_KASM_ADDR ?? "captivo-kasm:6901").trim(),
         kasmControlAddr: (process.env.ISOLATED_KASM_CONTROL_ADDR ?? "captivo-kasm:7900").trim(),
         connectorId: site.connectorId,
+        clipboardMode: site.clipboardMode,
         record: false, // hi-fi recording = B3
       });
     }
