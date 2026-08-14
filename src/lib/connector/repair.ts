@@ -9,69 +9,60 @@ export function canRepairConnector(status: string): boolean {
 // guacd (`captivo-guacd`) by name.
 export const GATEWAY_NETWORK = "captivo-gateway";
 
-// The `docker run` invocation for the connector container. Pass `code` to enroll
-// a connector (install / re-pair); omit it to update an already-paired connector
-// in place (the token already in /data re-authenticates). Every connector bundles
-// guacd (the RDP/SSH/VNC engine for native remote desktops) and the isolated
-// browser (RBI — an isolated-web-app resource opens inside it) on the shared
-// GATEWAY_NETWORK, idempotently — baked in so it survives every recreate/update.
-// Pure + db-free.
-function runCommand(managerUrl: string, tunnelUrl: string, code?: string, pull = true): string {
-  const guacd =
-    // Reclaim disk first: every update re-pulls the :latest browser/kasm/connector
-    // images, leaving the superseded builds as dangling (untagged) images that
-    // otherwise accumulate until the host runs out of space and the next pull fails
-    // mid-extraction (which cascades into a half-updated, connector-down state).
-    // Dangling-only prune never touches tagged/in-use images or named volumes.
-    `docker image prune -f >/dev/null 2>&1; ` +
-    `docker network inspect ${GATEWAY_NETWORK} >/dev/null 2>&1 || docker network create ${GATEWAY_NETWORK} && ` +
-    // Fix ownership of guacd's volumes to uid 1000 (guacd 1.6.0 runs non-root).
-    // Use the pinned guacd image itself (BusyBox-based, ships chown) rather than a
-    // separate `busybox:latest` — that had to be pulled from Docker Hub, so a host
-    // with broken IPv6/Docker-Hub connectivity (or after an aggressive image prune)
-    // could not run the chown at all. guacd:1.6.0 is already needed on the next line
-    // and is cached after the first install, so this never needs an extra pull.
-    `docker run --rm --user 0 --entrypoint chown -v captivo_guacd_recordings:/rec -v captivo_guacd_logs:/log -v captivo_guacd_drive:/drive2 guacamole/guacd:1.6.0 -R 1000:1000 /rec /log /drive2 && ` +
-    `docker rm -f captivo-guacd >/dev/null 2>&1; ` +
-    `docker run -d --name captivo-guacd --restart unless-stopped --network ${GATEWAY_NETWORK} ` +
-    `-v captivo_guacd_recordings:/recordings -v captivo_guacd_logs:/guaclog -v captivo_guacd_drive:/drive ` +
-    // guacd 1.6.0's entrypoint execs guacd directly and appends "$@" as guacd args,
-    // so a `/bin/sh -c '…|tee…'` CMD would be swallowed. Bypass the entrypoint to run
-    // our own shell wrapper that tees guacd's output into the shared log volume.
-    `--entrypoint /bin/sh guacamole/guacd:1.6.0 -c '/opt/guacamole/sbin/guacd -b 0.0.0.0 -L info -f 2>&1 | tee /guaclog/guacd.log' && ` +
-    // Isolated browser (RBI): guacd VNC-connects to it at captivo-browser:5900;
-    // the data-plane navigates it via captivo-browser:7900. Ports stay internal.
-    // Pull first — `docker run <img>:latest` reuses a cached (stale) `latest`, so
-    // without this an update would keep running an old browser build. (guacd is a
-    // pinned tag, so `docker run` auto-pulls it when missing; the connector image
-    // is pulled below.)
-    `docker pull ghcr.io/kurtserdar/captivo-access-browser:latest && ` +
-    `docker rm -f captivo-browser >/dev/null 2>&1; ` +
-    `docker run -d --name captivo-browser --restart unless-stopped --network ${GATEWAY_NETWORK} --shm-size=1g ghcr.io/kurtserdar/captivo-access-browser:latest && ` +
-    // High-fidelity isolated browser (KasmVNC): the data-plane reverse-proxies its
-    // client + WS at captivo-kasm:6901; navigate via captivo-kasm:7900. Internal ports.
-    `docker pull ghcr.io/kurtserdar/captivo-access-kasm-browser:latest && ` +
-    `docker rm -f captivo-kasm >/dev/null 2>&1; ` +
-    `docker run -d --name captivo-kasm --restart unless-stopped --network ${GATEWAY_NETWORK} --shm-size=1g ghcr.io/kurtserdar/captivo-access-kasm-browser:latest && `;
-  // Pull the connector image right before running it. `docker run <img>:latest`
-  // reuses a locally-cached `latest` and will NOT fetch a newer build — a fresh
-  // install on a host that ran an older connector would silently start the stale
-  // image. Gated by `&&` after the (self-contained) guacd block, so the shell
-  // precedence of the guacd block's `||` is unaffected. The update command sets
-  // pull=false because it already pulls first (to minimise connector downtime).
-  const pullCmd = pull ? "docker pull ghcr.io/kurtserdar/captivo-access-connector:latest && " : "";
-  return (
-    guacd +
-    pullCmd +
-    "docker run -d --name access-connector --restart unless-stopped " +
-    `--network ${GATEWAY_NETWORK} ` +
-    `-e MANAGER_URL=${managerUrl} ` +
-    `-e DATAPLANE_URL=${tunnelUrl} ` +
+// The bundle command that brings up a connector host: the connector itself plus
+// guacd (RDP/SSH/VNC engine), the isolated browser, and the high-fidelity isolated
+// browser, all on the shared GATEWAY_NETWORK.
+//
+// Robustness is the whole point of the layout below:
+//   * Every service is an INDEPENDENT, idempotent block (`pull; rm -f; run`)
+//     separated by `;` — never `&&`. A hiccup in one block (a pull failure, a
+//     leftover container name) can no longer cascade into skipping the others.
+//   * The connector (the access lifeline) comes up FIRST, right after the network
+//     and the volume chown, so it is never gated by the heavier guacd/browser/kasm
+//     bundle and its downtime is a single recreate.
+//   * No Docker Hub `busybox` dependency: the volume chown reuses the pinned,
+//     already-cached guacd image (BusyBox-based) so a host with flaky Docker Hub /
+//     IPv6 connectivity can still run it.
+//   * A leading dangling-image prune reclaims disk from superseded :latest builds.
+//
+// One function serves install (PAIR_CODE set), update (no code, token volume kept),
+// and re-pair (clearVolume drops the token volume so the agent re-enrolls). Pure + db-free.
+function runCommand(managerUrl: string, tunnelUrl: string, code?: string, clearVolume = false): string {
+  const NET = GATEWAY_NETWORK;
+  const CONNECTOR = "ghcr.io/kurtserdar/captivo-access-connector:latest";
+  const BROWSER = "ghcr.io/kurtserdar/captivo-access-browser:latest";
+  const KASM = "ghcr.io/kurtserdar/captivo-access-kasm-browser:latest";
+  const GUACD = "guacamole/guacd:1.6.0";
+
+  // Reclaim disk from dangling (untagged) images left by prior :latest pulls; never
+  // touches tagged/in-use images or named volumes.
+  const prune = `docker image prune -f >/dev/null 2>&1; `;
+  const network = `docker network inspect ${NET} >/dev/null 2>&1 || docker network create ${NET} >/dev/null 2>&1; `;
+  // Own guacd's volumes as uid 1000 (guacd runs non-root) using the pinned guacd
+  // image itself (ships chown) — cached after first install, no Docker Hub busybox.
+  // Runs before the connector so the connector mounts already-1000-owned volumes.
+  const chown = `docker run --rm --user 0 --entrypoint chown -v captivo_guacd_recordings:/rec -v captivo_guacd_logs:/log -v captivo_guacd_drive:/drive2 ${GUACD} -R 1000:1000 /rec /log /drive2; `;
+  // Re-pair only: drop the token volume so the Go agent re-enrolls with the new code.
+  const clear = clearVolume
+    ? `docker rm -f access-connector >/dev/null 2>&1; docker volume rm access_connector_data >/dev/null 2>&1; `
+    : "";
+  const connector =
+    `docker pull ${CONNECTOR}; docker rm -f access-connector >/dev/null 2>&1; ` +
+    `docker run -d --name access-connector --restart unless-stopped --network ${NET} ` +
+    `-e MANAGER_URL=${managerUrl} -e DATAPLANE_URL=${tunnelUrl} ` +
     (code ? `-e PAIR_CODE=${code} ` : "") +
-    "-v access_connector_data:/data " +
-    "-v captivo_guacd_logs:/guaclog:ro -v captivo_guacd_drive:/drive:rw " +
-    "ghcr.io/kurtserdar/captivo-access-connector:latest"
-  );
+    `-v access_connector_data:/data -v captivo_guacd_logs:/guaclog:ro -v captivo_guacd_drive:/drive:rw ${CONNECTOR}; `;
+  // guacd: bypass the entrypoint so our shell wrapper tees guacd's log into the volume.
+  const guacd =
+    `docker rm -f captivo-guacd >/dev/null 2>&1; ` +
+    `docker run -d --name captivo-guacd --restart unless-stopped --network ${NET} ` +
+    `-v captivo_guacd_recordings:/recordings -v captivo_guacd_logs:/guaclog -v captivo_guacd_drive:/drive ` +
+    `--entrypoint /bin/sh ${GUACD} -c '/opt/guacamole/sbin/guacd -b 0.0.0.0 -L info -f 2>&1 | tee /guaclog/guacd.log'; `;
+  // Isolated browser (A/VNC via guacd) + high-fidelity isolated browser (B/KasmVNC).
+  const browser = `docker pull ${BROWSER}; docker rm -f captivo-browser >/dev/null 2>&1; docker run -d --name captivo-browser --restart unless-stopped --network ${NET} --shm-size=1g ${BROWSER}; `;
+  const kasm = `docker pull ${KASM}; docker rm -f captivo-kasm >/dev/null 2>&1; docker run -d --name captivo-kasm --restart unless-stopped --network ${NET} --shm-size=1g ${KASM}`;
+
+  return prune + network + chown + clear + connector + guacd + browser + kasm;
 }
 
 export function buildConnectorRunCommand(code: string, managerUrl: string, tunnelUrl: string): string {
@@ -82,23 +73,16 @@ export function buildInstallCommand(code: string, managerUrl: string, tunnelUrl:
   return buildConnectorRunCommand(code, managerUrl, tunnelUrl);
 }
 
-// Re-pair clears the connector's token volume first, so the Go agent (which
-// ignores PAIR_CODE when /data/token is present) re-enrolls with the new code
-// and rebinds to the SAME manager-side connector.
+// Re-pair: clear the token volume so the Go agent (which ignores PAIR_CODE when
+// /data/token is present) re-enrolls with the new code and rebinds to the SAME
+// manager-side connector.
 export function buildReconfigureCommand(code: string, managerUrl: string, tunnelUrl: string): string {
-  return (
-    "docker rm -f access-connector && docker volume rm access_connector_data && " +
-    buildConnectorRunCommand(code, managerUrl, tunnelUrl)
-  );
+  return runCommand(managerUrl, tunnelUrl, code, true);
 }
 
-// Update an already-paired connector in place: pull the new image and recreate
-// the container, KEEPING the token volume (so no re-pairing). No PAIR_CODE — the
+// Update an already-paired connector in place: recreate every container on the
+// latest images, KEEPING the token volume (so no re-pairing). No PAIR_CODE — the
 // existing /data/token re-authenticates against the same manager-side connector.
 export function buildConnectorUpdateCommand(managerUrl: string, tunnelUrl: string): string {
-  return (
-    "docker pull ghcr.io/kurtserdar/captivo-access-connector:latest && " +
-    "docker rm -f access-connector && " +
-    runCommand(managerUrl, tunnelUrl, undefined, false)
-  );
+  return runCommand(managerUrl, tunnelUrl);
 }

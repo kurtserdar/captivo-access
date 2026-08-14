@@ -32,19 +32,26 @@ describe("buildReconfigureCommand", () => {
 });
 
 describe("buildConnectorRunCommand", () => {
-  it("has the run flags and NO volume reset prefix", () => {
+  it("has the run flags and never wipes the token volume", () => {
     const cmd = buildConnectorRunCommand("CODE123", "https://mgr.example.com", "wss://connect.example.com");
     expect(cmd).toContain("docker run -d --name access-connector");
     expect(cmd).toContain("PAIR_CODE=CODE123");
-    // The run command never resets the connector itself (that's re-pair's job).
-    // (It DOES `docker rm -f captivo-guacd` to re-provision the bundled engine.)
-    expect(cmd).not.toContain("docker rm -f access-connector");
+    // Recreating the container idempotently (rm -f before run) is expected; only
+    // re-pair wipes the token volume that holds the connector's identity.
     expect(cmd).not.toContain("docker volume rm");
   });
-  it("buildReconfigureCommand = reset prefix + the run command", () => {
-    const run = buildConnectorRunCommand("C", "M", "T");
-    const reconfigure = buildReconfigureCommand("C", "M", "T");
-    expect(reconfigure).toBe("docker rm -f access-connector && docker volume rm access_connector_data && " + run);
+  it("only re-pair wipes the token volume", () => {
+    expect(buildReconfigureCommand("C", "M", "T")).toContain("docker volume rm access_connector_data");
+    expect(buildConnectorRunCommand("C", "M", "T")).not.toContain("docker volume rm");
+    expect(buildConnectorUpdateCommand("M", "T")).not.toContain("docker volume rm");
+  });
+  it("is resilient: connector comes up before the guacd/browser/kasm bundle, no busybox, prune first", () => {
+    const cmd = buildConnectorUpdateCommand("M", "T");
+    expect(cmd).not.toContain("busybox");
+    expect(cmd).toContain("docker image prune -f");
+    // The connector (access lifeline) is recreated before the heavier bundle so a
+    // bundle failure can't leave it down.
+    expect(cmd.indexOf("--name access-connector")).toBeLessThan(cmd.indexOf("--name captivo-guacd"));
   });
 });
 
@@ -115,7 +122,9 @@ describe("every connector bundles guacd on the shared network", () => {
     expect(cmd).toContain("tee /guaclog/guacd.log");
     // File-transfer drive volume: mounted on guacd + chowned + mounted on the connector for pruning.
     expect(cmd).toContain("captivo_guacd_drive");
-    expect(cmd).toContain("chown -R 1000:1000 /rec /log /drive2");
+    // chown runs via the pinned guacd image (--entrypoint chown), not busybox.
+    expect(cmd).toContain("-R 1000:1000 /rec /log /drive2");
+    expect(cmd).toContain("--entrypoint chown");
     expect(cmd).toContain("-v captivo_guacd_logs:/guaclog:ro");
   });
 });
