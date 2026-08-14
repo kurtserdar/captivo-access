@@ -658,7 +658,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .sc-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; background: var(--danger); }
 .sc-dot.ok { background: var(--nav-accent); } .sc-dot.down { background: var(--warn); }
 .sc-audit { display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line-soft, var(--line)); font: 400 12px var(--mono); }
-.sc-audit-t { color: var(--faint); flex: 0 0 auto; } .sc-audit-k { flex: 0 0 auto; width: 52px; } .sc-audit-k.ok { color: var(--nav-accent); } .sc-audit-k.deny { color: var(--danger); }
+.sc-audit-t { color: var(--faint); flex: 0 0 auto; } .sc-audit-k { flex: 0 0 auto; width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .sc-audit-k.ok { color: var(--nav-accent); } .sc-audit-k.deny { color: var(--danger); } .sc-audit-k.info { color: #60a5fa; } .sc-audit-k.muted { color: var(--faint); }
 .sc-audit-m { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-morefoot { padding-top: 6px; }
 .sc-card-actions { display: flex; gap: 8px; }

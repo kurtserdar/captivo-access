@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
 import { listActiveSessions, listActiveWebSessions } from "@/lib/dataplane/client";
 import { countPendingGrants, listPendingGrants } from "@/lib/access/grants";
-import { getRecentActivity } from "@/lib/dashboard/stats";
+import { getActivityFeed, type ActivityItem } from "@/lib/console/activity-feed";
 import { recordingEnabled } from "@/lib/recording/enabled";
 
-export type ConsoleAuditRow = Awaited<ReturnType<typeof getRecentActivity>>[number];
+export type ConsoleAuditRow = ActivityItem;
 
 export interface ConsoleKpis { grants: number; live: number; pending: number; expiring24h: number; recordings7d: number }
 export type LiveCard =
@@ -44,7 +44,7 @@ export async function getConsoleData(): Promise<ConsoleData> {
       select: { id: true, endsAt: true, user: { select: { name: true, email: true } }, site: { select: { name: true } } },
     }),
     db.connector.findMany({ where: { status: { not: "REVOKED" } }, orderBy: { name: "asc" }, select: { id: true, name: true, status: true } }),
-    getRecentActivity(6),
+    getActivityFeed(8),
   ]);
 
   const webUserIds = webSessions.map((s) => s.userId);
