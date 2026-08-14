@@ -15,6 +15,7 @@ export interface PlatformSettings {
   maxGrantDays: number | null;
   recordingConsentRequired: boolean | null;
   watermarkDefault: boolean | null;
+  displayTimezone: string | null;
   recordingRetentionDays: number | null;
   defaultConnectorLogLevel: string | null;
   externalAnchorEnabled: boolean | null;
@@ -35,6 +36,7 @@ const EMPTY: PlatformSettings = {
   maxGrantDays: null,
   recordingConsentRequired: null,
   watermarkDefault: null,
+  displayTimezone: null,
   recordingRetentionDays: null,
   defaultConnectorLogLevel: null,
   externalAnchorEnabled: null,
@@ -64,6 +66,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     maxGrantDays: c?.maxGrantDays ?? null,
     recordingConsentRequired: c?.recordingConsentRequired ?? null,
     watermarkDefault: c?.watermarkDefault ?? null,
+    displayTimezone: c?.displayTimezone ?? null,
     recordingRetentionDays: c?.recordingRetentionDays ?? null,
     defaultConnectorLogLevel: c?.defaultConnectorLogLevel ?? null,
     externalAnchorEnabled: c?.externalAnchorEnabled ?? null,

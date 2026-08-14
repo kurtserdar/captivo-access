@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
     maxGrantDays: toIntMin(body.maxGrantDays, 1),
     recordingConsentRequired: body.recordingConsentRequired === true,
     watermarkDefault: body.watermarkDefault === true,
+    displayTimezone: typeof body.displayTimezone === "string" && body.displayTimezone ? body.displayTimezone : null,
     recordingRetentionDays: toIntMin(body.recordingRetentionDays, 1),
     defaultConnectorLogLevel: ["debug", "info", "warn", "error"].includes(body.defaultConnectorLogLevel)
       ? (body.defaultConnectorLogLevel as string)
