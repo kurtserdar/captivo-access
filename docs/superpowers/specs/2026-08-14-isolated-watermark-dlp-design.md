@@ -6,9 +6,9 @@
 ## Goal
 
 Overlay an identifying watermark (vendor email + live clock) across an isolated
-browser session so screenshots, photos, and recordings carry who was viewing and when
-— a data-loss-prevention deterrent for sensitive vendor access. Configurable as a
-global default with a per-site override.
+browser session so the vendor's live screen — and any screenshot or photo of it —
+carries who was viewing and when: a data-loss-prevention deterrent for sensitive
+vendor access. Configurable as a global default with a per-site override.
 
 ## Scope
 
