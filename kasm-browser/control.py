@@ -34,7 +34,7 @@ def _clamp_dim(v, lo, hi, default):
     return max(lo, min(hi, v))
 
 
-def _spawn(display, url, profile, home, copy_out, paste_in, w=1280, h=800):
+def _spawn(display, url, profile, home, copy_out, paste_in, w=1280, h=800, watermark_text=""):
     disp = ":%d" % display
     env = {**os.environ, "DISPLAY": disp, "HOME": home}
     os.makedirs(profile, exist_ok=True)
@@ -57,11 +57,20 @@ def _spawn(display, url, profile, home, copy_out, paste_in, w=1280, h=800):
     #   AcceptCutText = client -> server = paste-in (vendor -> isolated desktop)
     send_cut = "-SendCutText=" + ("1" if copy_out else "0")
     accept_cut = "-AcceptCutText=" + ("1" if paste_in else "0")
-    xvnc = subprocess.Popen(
-        ["Xvnc", disp, "-geometry", "%dx%d" % (w, h), "-depth", "24",
-         "-websocketPort", str(port), "-interface", "0.0.0.0",
-         "-httpd", "/usr/share/kasmvnc/www", "-SecurityTypes", "None",
-         "-disableBasicAuth", "-AlwaysShared=1", send_cut, accept_cut], env=env)
+    xvnc_args = ["Xvnc", disp, "-geometry", "%dx%d" % (w, h), "-depth", "24",
+                 "-websocketPort", str(port), "-interface", "0.0.0.0",
+                 "-httpd", "/usr/share/kasmvnc/www", "-SecurityTypes", "None",
+                 "-disableBasicAuth", "-AlwaysShared=1", send_cut, accept_cut]
+    if watermark_text:
+        # DLP watermark rendered by KasmVNC at the RFB/client layer (appears in the
+        # vendor's browser, the admin live view, and any screenshot — NOT the x11grab
+        # recording). strftime in the text gives a live clock. Fixed tiled/diagonal/
+        # translucent appearance.
+        wt = watermark_text[:200]
+        xvnc_args += ["-DLP_WatermarkText=" + wt, "-DLP_WatermarkTextAngle=30",
+                      "-DLP_WatermarkRepeatSpace=380", "-DLP_WatermarkFontSize=28",
+                      "-DLP_WatermarkTint=255,255,255,45"]
+    xvnc = subprocess.Popen(xvnc_args, env=env)
     time.sleep(1.5)
     fbox = subprocess.Popen(["fluxbox"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     # Paint a plain solid background so fluxbox's fbsetbg helper finds a wallpaper
@@ -98,7 +107,7 @@ def _kill(sess):
             pass
 
 
-def open_session(url, copy_out, paste_in, w=1280, h=800):
+def open_session(url, copy_out, paste_in, w=1280, h=800, watermark_text=""):
     with _lock:
         if len(_sessions) >= MAX_SESSIONS:
             return None
@@ -109,7 +118,7 @@ def open_session(url, copy_out, paste_in, w=1280, h=800):
         sid = "s%d-%d" % (int(time.time()), _seq["n"])
         profile = "/profiles/" + sid
         home = "/sess/" + sid
-        procs = _spawn(display, url, profile, home, copy_out, paste_in, w, h)
+        procs = _spawn(display, url, profile, home, copy_out, paste_in, w, h, watermark_text)
         port = BASE_PORT + display
         _sessions[sid] = {"display": display, "port": port, "procs": procs,
                           "profile": profile, "home": home, "started": time.time(),
@@ -255,7 +264,10 @@ class H(BaseHTTPRequestHandler):
             paste_in = data.get("pasteIn", True)
             w = _clamp_dim(data.get("w"), 1024, 2560, 1280)
             h = _clamp_dim(data.get("h"), 640, 1600, 800)
-            res = open_session(url, copy_out, paste_in, w, h)
+            wtext = data.get("watermarkText", "")
+            if not isinstance(wtext, str):
+                wtext = ""
+            res = open_session(url, copy_out, paste_in, w, h, wtext)
             if res is None:
                 return self._json(503, {"error": "capacity"})
             return self._json(201, res)
