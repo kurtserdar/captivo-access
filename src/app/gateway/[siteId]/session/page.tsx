@@ -17,7 +17,7 @@ export const metadata = { title: "Session" };
 export default async function GatewaySessionPage({ params }: { params: Promise<{ siteId: string }> }) {
   await requireUser();
   const { siteId } = await params;
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, recordSessions: true, clipboardMode: true, isolationHiFi: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, recordSessions: true, clipboardMode: true } });
   // This full-screen session page serves native GATEWAY (RDP/SSH/VNC) and ISOLATED
   // (remote browser) resources — both stream a screen via guacd. Everything else
   // (or a disabled capability) has no session here.
@@ -28,7 +28,7 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
   }
   // High-fidelity ISOLATED streams via KasmVNC — the data-plane reverse-proxies its
   // web client + WS at /kasm-tunnel/. Render it full-viewport instead of the guac client.
-  if (site.accessMode === "ISOLATED" && site.isolationHiFi) {
+  if (site.accessMode === "ISOLATED") {
     // ?site pins the session for the data-plane; it sets a cookie so the KasmVNC
     // client's follow-up asset/WS requests (which carry no ?site) inherit it.
     // path= keeps the client's RFB WebSocket under /kasm-tunnel/ (its default is

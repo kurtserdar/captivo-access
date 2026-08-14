@@ -39,7 +39,6 @@ export type SiteValidation =
       upstreamUrl: string;
       recordSessions: boolean;
       clipboardMode: string;
-      isolationHiFi: boolean;
     }
   | { ok: false; error: string };
 
@@ -72,7 +71,6 @@ export function validateSiteInput(
       ok: true, mode: "ISOLATED", connectorId, name, description, upstreamUrl,
       recordSessions: opts.recordingEnabled && body.recordSessions === true,
       clipboardMode: CLIP.includes(clip) ? clip : "allow",
-      isolationHiFi: body.isolationHiFi === true,
     };
   }
 
