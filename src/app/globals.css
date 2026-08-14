@@ -781,7 +781,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .vp-card-title { display: flex; align-items: center; gap: 10px; }
 .vp-card-name { font: 700 17px var(--font-public-sans), sans-serif; color: #1c1917; }
 .vp-chip { font: 600 11px var(--font-plex-mono), monospace; background: #f5f5f4; color: #57534e; border-radius: 5px; padding: 2px 8px; }
-.vp-card-host { font: 400 13px var(--font-plex-mono), monospace; color: #a8a29e; margin-top: 3px; }
+.vp-card-host { font: 400 13px var(--font-plex-mono), monospace; color: #a8a29e; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vp-open { background: #1c1917; color: #fff; font: 600 14px var(--font-public-sans), sans-serif; padding: 9px 20px; border-radius: 9px; text-decoration: none; white-space: nowrap; }
 .vp-open-off { background: #f5f5f4; color: #a8a29e; }
 .vp-meter { display: flex; flex-direction: column; gap: 8px; }
@@ -858,6 +858,27 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 :root[data-theme="dark"] .vp-recent { border-bottom-color: #1b2436; }
 :root[data-theme="dark"] .vp-loadmore { background: #1b2436; color: #e5e7eb; border-color: #1f2937; }
 :root[data-theme="dark"] .vp-loadmore:hover { background: #243044; }
+
+/* Portal responsiveness (the vendor portal was desktop-only). */
+@media (max-width: 860px) {
+  .vp-nav { padding: 0 20px; gap: 16px; }
+  .vp-body { padding: 32px 18px 48px; }
+  .vp-grid { grid-template-columns: 1fr; }
+  .vp-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .vp-greet { font-size: 25px; }
+}
+@media (max-width: 640px) {
+  /* Wrap the header: brand + account on the first row, nav links on a second,
+     scrollable row — no room for one line on a phone. */
+  .vp-nav { flex-wrap: wrap; height: auto; padding: 10px 14px; gap: 10px 16px; }
+  .vp-brand { order: 1; }
+  .vp-navright { order: 2; margin-left: auto; gap: 12px; }
+  .vp-sep { display: none; }
+  .vp-navlinks { order: 3; width: 100%; margin-left: 0; gap: 18px; overflow-x: auto; }
+  .vp-body { padding: 22px 14px 40px; }
+  .vp-card { padding: 18px 18px; }
+  .vp-open { padding: 8px 16px; }
+}
 
 /* Policy settings section headings */
 .settings-group { grid-column: 1 / -1; font: 600 .72rem/1 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 1.4rem 0 .2rem; padding-top: 1rem; border-top: 1px solid var(--line); }
