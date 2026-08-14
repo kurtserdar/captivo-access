@@ -18,6 +18,7 @@ type SessionInfo struct {
 	SessionID    string    `json:"sessionId"`
 	SiteID       string    `json:"siteId"`
 	UserID       string    `json:"userId"`
+	Kind         string    `json:"kind"`
 	Protocol     string    `json:"protocol"`
 	Host         string    `json:"host"`
 	StartedAt    time.Time `json:"startedAt"`
@@ -30,6 +31,7 @@ type SessionInfo struct {
 // holds only what viewers need to dial + join, plus control state.
 type liveSession struct {
 	id, siteID, userID, protocol, host string
+	kind                               string
 	startedAt                          time.Time
 	connID, connectorID, guacdAddr     string
 
@@ -106,7 +108,23 @@ func newSessionID() string {
 func (h *SessionHub) Register(sessionID, siteID, userID, protocol, host string, startedAt time.Time, connID, connectorID, guacdAddr string) *liveSession {
 	ls := &liveSession{
 		id: sessionID, siteID: siteID, userID: userID, protocol: protocol, host: host,
+		kind:      "gateway",
 		startedAt: startedAt, connID: connID, connectorID: connectorID, guacdAddr: guacdAddr,
+	}
+	h.mu.Lock()
+	h.m[sessionID] = ls
+	h.mu.Unlock()
+	return ls
+}
+
+// RegisterIsolated adds an ISOLATED (KasmVNC) session. It has no guacd
+// connID/guacdAddr — viewers attach to the per-session Xvnc instead (Slice 2) — so
+// only the fields the console list + terminate need are set.
+func (h *SessionHub) RegisterIsolated(sessionID, siteID, userID, host string, startedAt time.Time, connectorID string) *liveSession {
+	ls := &liveSession{
+		id: sessionID, siteID: siteID, userID: userID, protocol: "isolated", host: host,
+		kind:      "isolated",
+		startedAt: startedAt, connectorID: connectorID,
 	}
 	h.mu.Lock()
 	h.m[sessionID] = ls
@@ -133,7 +151,7 @@ func (h *SessionHub) List() []SessionInfo {
 	for _, ls := range h.m {
 		ls.mu.Lock()
 		out = append(out, SessionInfo{
-			SessionID: ls.id, SiteID: ls.siteID, UserID: ls.userID, Protocol: ls.protocol,
+			SessionID: ls.id, SiteID: ls.siteID, UserID: ls.userID, Kind: ls.kind, Protocol: ls.protocol,
 			Host: ls.host, StartedAt: ls.startedAt, ViewerCount: ls.viewers, ControlOwner: ls.controlOwner,
 		})
 		ls.mu.Unlock()

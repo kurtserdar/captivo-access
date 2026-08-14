@@ -20,3 +20,17 @@ func TestSessionHubTerminate(t *testing.T) {
 		t.Fatal("Terminate of unknown id should return false")
 	}
 }
+
+func TestRegisterIsolatedKindAndTerminate(t *testing.T) {
+	h := NewSessionHub()
+	h.RegisterIsolated("s1", "site1", "user1", "https://example.com", time.Now(), "conn1")
+	list := h.List()
+	if len(list) != 1 || list[0].Kind != "isolated" || list[0].Protocol != "isolated" {
+		t.Fatalf("expected one isolated session with kind/protocol=isolated, got %+v", list)
+	}
+	called := false
+	h.SetCloser("s1", func() { called = true })
+	if !h.Terminate("s1") || !called {
+		t.Fatalf("terminate did not invoke the closer")
+	}
+}
