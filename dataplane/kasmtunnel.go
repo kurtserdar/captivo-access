@@ -59,12 +59,13 @@ func clampKasmDim(v, lo, hi, def int) int {
 	return v
 }
 
-func openKasmSession(rw io.ReadWriter, host, target string, copyOut, pasteIn bool, w, h int) (id string, port, status int, err error) {
+func openKasmSession(rw io.ReadWriter, host, target string, copyOut, pasteIn bool, w, h int, watermarkText string) (id string, port, status int, err error) {
 	body := `{"url":` + jsonQuoteKasm(target) +
 		`,"copyOut":` + strconv.FormatBool(copyOut) +
 		`,"pasteIn":` + strconv.FormatBool(pasteIn) +
 		`,"w":` + strconv.Itoa(w) +
-		`,"h":` + strconv.Itoa(h) + `}`
+		`,"h":` + strconv.Itoa(h) +
+		`,"watermarkText":` + jsonQuoteKasm(watermarkText) + `}`
 	req := "POST /session HTTP/1.0\r\n" +
 		"Host: " + host + "\r\n" +
 		"Content-Type: application/json\r\n" +
@@ -140,6 +141,7 @@ type kasmDesc struct {
 	ConnectorID     string `json:"connectorId"`
 	ClipboardMode   string `json:"clipboardMode"`
 	Record          bool   `json:"record"`
+	WatermarkText   string `json:"watermarkText"`
 }
 
 // serveKasmTunnel reverse-proxies the vendor's HTTP/WebSocket request to a KasmVNC
@@ -220,7 +222,7 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 		if st, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
 			cw := clampKasmDim(kasmW, 1024, 2560, 1280)
 			ch := clampKasmDim(kasmH, 640, 1600, 800)
-			id, port, status, e = openKasmSession(st, d.KasmControlAddr, d.NavigateUrl, co, pi, cw, ch)
+			id, port, status, e = openKasmSession(st, d.KasmControlAddr, d.NavigateUrl, co, pi, cw, ch, d.WatermarkText)
 			st.Close()
 			if e != nil {
 				http.Error(w, "isolated browser unavailable", http.StatusBadGateway)
