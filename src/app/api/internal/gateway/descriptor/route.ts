@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { getVaultCredential } from "@/lib/vault/store";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { resolvedWatermarkDefault } from "@/lib/settings/platform";
 import { parseGuacParams, resolveGuacParams, toGuacArgs } from "@/lib/gateway/guac-params";
 import { isolationEnabled } from "@/lib/isolation/enabled";
 import { resolvedGuacParamDefaults } from "@/lib/settings/platform";
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
   const siteId = typeof b.siteId === "string" ? b.siteId : "";
   if (!userId || !siteId) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true, recordSessions: true, clipboardMode: true, upstreamUrl: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true, recordSessions: true, clipboardMode: true, upstreamUrl: true, watermark: true } });
   if (!site || (site.accessMode !== "GATEWAY" && site.accessMode !== "ISOLATED")) return NextResponse.json({ error: "not_gateway" }, { status: 404 });
 
   const decision = await evaluateAccess(userId, siteId, new Date());
@@ -34,6 +35,15 @@ export async function POST(req: NextRequest) {
 
   if (site.accessMode === "ISOLATED") {
     if (!isolationEnabled()) return NextResponse.json({ error: "isolation_disabled" }, { status: 404 });
+    // DLP watermark (live-view): vendor email + live UTC clock, rendered by KasmVNC to
+    // every client. Resolve per-site override against the global default.
+    const watermarkOn = site.watermark ?? (await resolvedWatermarkDefault());
+    let watermarkText = "";
+    if (watermarkOn) {
+      const u = await db.user.findUnique({ where: { id: userId }, select: { email: true } });
+      const who = u?.email ?? "";
+      if (who) watermarkText = who + "  %Y-%m-%d %H:%M UTC";
+    }
     return NextResponse.json({
       transport: "kasm",
       navigateUrl: site.upstreamUrl ?? "",
@@ -42,6 +52,7 @@ export async function POST(req: NextRequest) {
       connectorId: site.connectorId,
       clipboardMode: site.clipboardMode,
       record: recordingEnabled() && site.recordSessions,
+      watermarkText,
     });
   }
 
