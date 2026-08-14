@@ -41,13 +41,33 @@ type rwPair struct {
 	io.Writer
 }
 
+func TestClipboardToKasm(t *testing.T) {
+	cases := []struct {
+		mode             string
+		copyOut, pasteIn bool
+	}{
+		{"allow", true, true},
+		{"no_copy", false, true},
+		{"no_paste", true, false},
+		{"none", false, false},
+		{"", true, true},
+		{"bogus", true, true},
+	}
+	for _, c := range cases {
+		co, pi := clipboardToKasm(c.mode)
+		if co != c.copyOut || pi != c.pasteIn {
+			t.Fatalf("%q -> (%v,%v) want (%v,%v)", c.mode, co, pi, c.copyOut, c.pasteIn)
+		}
+	}
+}
+
 func TestOpenKasmSessionOK(t *testing.T) {
 	body := `{"id":"s1-1","port":6902}`
 	resp := "HTTP/1.0 201 Created\r\nContent-Type: application/json\r\nContent-Length: " +
 		strconv.Itoa(len(body)) + "\r\n\r\n" + body
 	var out strings.Builder
 	rw := rwPair{Reader: bufio.NewReader(strings.NewReader(resp)), Writer: &out}
-	id, port, status, err := openKasmSession(rw, "captivo-kasm:7900", "https://example.com")
+	id, port, status, err := openKasmSession(rw, "captivo-kasm:7900", "https://example.com", false, true)
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -57,6 +77,9 @@ func TestOpenKasmSessionOK(t *testing.T) {
 	if !strings.Contains(out.String(), "POST /session HTTP/1.0") {
 		t.Fatalf("request not written: %q", out.String())
 	}
+	if !strings.Contains(out.String(), `"copyOut":false`) || !strings.Contains(out.String(), `"pasteIn":true`) {
+		t.Fatalf("clipboard flags missing from body: %q", out.String())
+	}
 }
 
 func TestOpenKasmSessionCapacity(t *testing.T) {
@@ -64,7 +87,7 @@ func TestOpenKasmSessionCapacity(t *testing.T) {
 	resp := "HTTP/1.0 503 Service Unavailable\r\nContent-Length: " +
 		strconv.Itoa(len(body)) + "\r\n\r\n" + body
 	rw := rwPair{Reader: bufio.NewReader(strings.NewReader(resp)), Writer: &strings.Builder{}}
-	_, _, status, err := openKasmSession(rw, "captivo-kasm:7900", "https://example.com")
+	_, _, status, err := openKasmSession(rw, "captivo-kasm:7900", "https://example.com", true, true)
 	if err != nil {
 		t.Fatalf("capacity should not be a transport error: %v", err)
 	}

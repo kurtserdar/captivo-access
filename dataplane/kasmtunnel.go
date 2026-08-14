@@ -20,8 +20,10 @@ import (
 // HTTP status (so the caller can surface 503 capacity); err is set only on
 // transport/parse failure. This is deliberately self-contained (not shared with
 // transport A's isolated.go, which is retired after B3).
-func openKasmSession(rw io.ReadWriter, host, target string) (id string, port, status int, err error) {
-	body := `{"url":` + jsonQuoteKasm(target) + `}`
+func openKasmSession(rw io.ReadWriter, host, target string, copyOut, pasteIn bool) (id string, port, status int, err error) {
+	body := `{"url":` + jsonQuoteKasm(target) +
+		`,"copyOut":` + strconv.FormatBool(copyOut) +
+		`,"pasteIn":` + strconv.FormatBool(pasteIn) + `}`
 	req := "POST /session HTTP/1.0\r\n" +
 		"Host: " + host + "\r\n" +
 		"Content-Type: application/json\r\n" +
@@ -71,6 +73,23 @@ func jsonQuoteKasm(s string) string {
 	return string(b)
 }
 
+// clipboardToKasm maps the site clipboardMode (allow|no_copy|no_paste|none) to the
+// KasmVNC DLP booleans: copyOut = server_to_client (isolated -> vendor), pasteIn =
+// client_to_server (vendor -> isolated). Unknown/empty defaults to allow (no B1
+// regression); the restrictive values are the ones that must be explicit.
+func clipboardToKasm(mode string) (copyOut, pasteIn bool) {
+	switch mode {
+	case "no_copy":
+		return false, true
+	case "no_paste":
+		return true, false
+	case "none":
+		return false, false
+	default: // "allow" and any unknown value
+		return true, true
+	}
+}
+
 // kasmDesc is the ISOLATED-hi-fi connection descriptor from the control plane.
 type kasmDesc struct {
 	Transport       string `json:"transport"`
@@ -78,6 +97,7 @@ type kasmDesc struct {
 	KasmAddr        string `json:"kasmAddr"`
 	KasmControlAddr string `json:"kasmControlAddr"`
 	ConnectorID     string `json:"connectorId"`
+	ClipboardMode   string `json:"clipboardMode"`
 	Record          bool   `json:"record"`
 }
 
@@ -130,8 +150,9 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 		// WS ends. Concurrency is capped by the broker (503 capacity).
 		var id string
 		var port, status int
+		co, pi := clipboardToKasm(d.ClipboardMode)
 		if st, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
-			id, port, status, e = openKasmSession(st, d.KasmControlAddr, d.NavigateUrl)
+			id, port, status, e = openKasmSession(st, d.KasmControlAddr, d.NavigateUrl, co, pi)
 			st.Close()
 			if e != nil {
 				http.Error(w, "isolated browser unavailable", http.StatusBadGateway)
