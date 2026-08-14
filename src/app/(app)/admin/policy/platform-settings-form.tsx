@@ -4,6 +4,7 @@ import type { PlatformSettings } from "@/lib/settings/platform";
 import type { GuacParams } from "@/lib/gateway/guac-params";
 import { GuacParamsFields, paramsToGuacFields, guacFieldsToParams, type GuacFields } from "@/components/guac-params-fields";
 import { NOTIF_EVENTS, type NotifKey } from "@/lib/notifications/events";
+import { TimezoneSelect } from "@/app/(app)/_shell/timezone-select";
 
 function str(n: number | null): string {
   return n == null ? "" : String(n);
@@ -18,6 +19,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
   const [requireJustif, setRequireJustif] = useState(initial.requireRequestJustification !== false);
   const [consent, setConsent] = useState(consentEffective);
   const [watermark, setWatermark] = useState(initial.watermarkDefault === true);
+  const [tz, setTz] = useState(initial.displayTimezone ?? "");
   const [recRetention, setRecRetention] = useState(str(initial.recordingRetentionDays));
   const [connLog, setConnLog] = useState(initial.defaultConnectorLogLevel ?? "info");
   const [anchorOn, setAnchorOn] = useState(initial.externalAnchorEnabled === true);
@@ -60,6 +62,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
         requireRequestJustification: requireJustif,
         recordingConsentRequired: consent,
         watermarkDefault: watermark,
+        displayTimezone: tz || null,
         recordingRetentionDays: recRetention,
         defaultConnectorLogLevel: connLog,
         externalAnchorEnabled: anchorOn,
@@ -198,6 +201,15 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
             </div>
             <div className="setting-ctl">
               <label className="switch"><input type="checkbox" checked={watermark} onChange={(e) => setWatermark(e.target.checked)} /><span className="track" /></label>
+            </div>
+          </div>
+          <div className="setting">
+            <div className="setting-main">
+              <div className="setting-label">Display timezone</div>
+              <div className="setting-hint">Dates and times across the console and vendor portal display in this timezone. Users can override it in their own settings. Data is always stored in UTC.</div>
+            </div>
+            <div className="setting-ctl">
+              <TimezoneSelect value={tz} onChange={setTz} inheritLabel="Use each viewer's browser timezone" />
             </div>
           </div>
           <div className="setting">
