@@ -9,6 +9,7 @@ export type ConsoleAuditRow = ActivityItem;
 export interface ConsoleKpis { grants: number; live: number; pending: number; expiring24h: number; recordings7d: number }
 export type LiveCard =
   | { kind: "gateway"; sessionId: string; protocol: string; host: string; userLabel: string; startedAt: string; recorded: boolean; viewerCount: number }
+  | { kind: "isolated"; sessionId: string; host: string; userLabel: string; startedAt: string; recorded: boolean; viewerCount: number }
   | { kind: "web"; userLabel: string; siteName: string; host: string; startedAt: string; lastSeen: string; grantId: string | null };
 export interface PendingCard { id: string; userLabel: string; siteName: string; detail: string }
 export interface ExpiringRow { id: string; userLabel: string; siteName: string; endsAt: string }
@@ -67,9 +68,15 @@ export async function getConsoleData(): Promise<ConsoleData> {
   const recMap = new Map(sites.map((s) => [s.id, s.recordSessions]));
   const grantMap = new Map(webGrants.map((g) => [g.userId + "\x1f" + g.siteId, g.id]));
 
-  const gatewayCards: LiveCard[] = sessions.map((s) => ({
+  const gatewayCards: LiveCard[] = sessions.filter((s) => s.kind !== "isolated").map((s) => ({
     kind: "gateway" as const,
     sessionId: s.sessionId, protocol: s.protocol, host: s.host,
+    userLabel: userMap.get(s.userId) ?? "unknown", startedAt: s.startedAt,
+    recorded: recEnabled && (recMap.get(s.siteId) ?? false), viewerCount: s.viewerCount,
+  }));
+  const isolatedCards: LiveCard[] = sessions.filter((s) => s.kind === "isolated").map((s) => ({
+    kind: "isolated" as const,
+    sessionId: s.sessionId, host: s.host,
     userLabel: userMap.get(s.userId) ?? "unknown", startedAt: s.startedAt,
     recorded: recEnabled && (recMap.get(s.siteId) ?? false), viewerCount: s.viewerCount,
   }));
@@ -80,7 +87,7 @@ export async function getConsoleData(): Promise<ConsoleData> {
     host: s.host, startedAt: s.startedAt, lastSeen: s.lastSeen,
     grantId: grantMap.get(s.userId + "\x1f" + s.siteId) ?? null,
   }));
-  const live: LiveCard[] = [...gatewayCards, ...webCards];
+  const live: LiveCard[] = [...gatewayCards, ...isolatedCards, ...webCards];
 
   return {
     kpis: { grants, live: sessions.length + webSessions.length, pending, expiring24h, recordings7d },

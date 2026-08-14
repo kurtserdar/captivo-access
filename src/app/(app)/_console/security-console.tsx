@@ -55,6 +55,19 @@ export function SecurityConsole({ data }: { data: ConsoleData }) {
                     <TerminateButton sessionId={s.sessionId} className="btn sm danger" />
                   </div>
                 </div>
+              ) : s.kind === "isolated" ? (
+                <div key={s.sessionId} className="sc-card">
+                  <div className="sc-card-top">
+                    <span className="sc-chip">ISOLATED</span>
+                    {s.recorded && <span className="sc-rec"><span className="sc-dot" />REC {duration(s.startedAt, now)}</span>}
+                  </div>
+                  <div className="sc-card-name">{s.host}</div>
+                  <div className="sc-card-sub">{s.userLabel}</div>
+                  <div className="sc-thumb">isolated browser</div>
+                  <div className="sc-card-actions">
+                    <TerminateButton sessionId={s.sessionId} className="btn sm danger" />
+                  </div>
+                </div>
               ) : (
                 <div key={`web:${s.userLabel}:${s.siteName}:${s.host}`} className="sc-card">
                   <div className="sc-card-top">

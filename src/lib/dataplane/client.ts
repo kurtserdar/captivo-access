@@ -9,6 +9,7 @@ export interface ActiveSession {
   sessionId: string;
   siteId: string;
   userId: string;
+  kind: "gateway" | "isolated";
   protocol: string;
   host: string;
   startedAt: string;
