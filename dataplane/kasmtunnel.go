@@ -134,14 +134,15 @@ func clipboardToKasm(mode string) (copyOut, pasteIn bool) {
 
 // kasmDesc is the ISOLATED-hi-fi connection descriptor from the control plane.
 type kasmDesc struct {
-	Transport       string `json:"transport"`
-	NavigateUrl     string `json:"navigateUrl"`
-	KasmAddr        string `json:"kasmAddr"`
-	KasmControlAddr string `json:"kasmControlAddr"`
-	ConnectorID     string `json:"connectorId"`
-	ClipboardMode   string `json:"clipboardMode"`
-	Record          bool   `json:"record"`
-	WatermarkText   string `json:"watermarkText"`
+	Transport        string `json:"transport"`
+	NavigateUrl      string `json:"navigateUrl"`
+	KasmAddr         string `json:"kasmAddr"`
+	KasmControlAddr  string `json:"kasmControlAddr"`
+	ConnectorID      string `json:"connectorId"`
+	ClipboardMode    string `json:"clipboardMode"`
+	Record           bool   `json:"record"`
+	WatermarkText    string `json:"watermarkText"`
+	FileTransferMode string `json:"fileTransferMode"`
 }
 
 // serveKasmTunnel reverse-proxies the vendor's HTTP/WebSocket request to a KasmVNC

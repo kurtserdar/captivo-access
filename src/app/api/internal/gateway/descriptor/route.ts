@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const siteId = typeof b.siteId === "string" ? b.siteId : "";
   if (!userId || !siteId) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true, recordSessions: true, clipboardMode: true, upstreamUrl: true, watermark: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, connectorId: true, recordSessions: true, clipboardMode: true, upstreamUrl: true, watermark: true, fileTransferMode: true } });
   if (!site || (site.accessMode !== "GATEWAY" && site.accessMode !== "ISOLATED")) return NextResponse.json({ error: "not_gateway" }, { status: 404 });
 
   const decision = await evaluateAccess(userId, siteId, new Date());
@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       clipboardMode: site.clipboardMode,
       record: recordingEnabled() && site.recordSessions,
       watermarkText,
+      fileTransferMode: site.fileTransferMode,
     });
   }
 
