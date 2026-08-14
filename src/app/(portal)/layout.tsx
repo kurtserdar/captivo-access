@@ -3,6 +3,7 @@ import { isConsoleUser } from "@/lib/auth/roles";
 import { LogoutButton } from "../(app)/logout-button";
 import { PortalNav } from "./_nav/portal-nav";
 import { BrandLockup } from "@/components/brand";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function PortalLayout({ children }: { children: React.React
         </nav>
         <span className="vp-sep" aria-hidden="true">|</span>
         <div className="vp-navright">
+          <ThemeSwitcher />
           <div className="vp-avatar">{initials}</div>
           <LogoutButton />
         </div>
