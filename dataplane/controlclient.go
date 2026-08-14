@@ -91,23 +91,21 @@ func (c *ControlClient) ViewAuthz(userID string) (bool, error) {
 // descriptor with the decrypted credential + the guacd address to reach. On a
 // denied grant / missing credential the control plane returns an HTTP status,
 // surfaced here as an error so the tunnel closes.
-func (c *ControlClient) GatewayDescriptor(userID, siteID string) (conn GuacConn, guacdAddress, connectorID string, record bool, navigateUrl, browserControlAddr string, err error) {
+func (c *ControlClient) GatewayDescriptor(userID, siteID string) (conn GuacConn, guacdAddress, connectorID string, record bool, err error) {
 	var out struct {
-		Protocol           string            `json:"protocol"`
-		TargetHost         string            `json:"targetHost"`
-		TargetPort         int               `json:"targetPort"`
-		Username           string            `json:"username"`
-		Secret             string            `json:"secret"`
-		SecretKind         string            `json:"secretKind"`
-		GuacdAddress       string            `json:"guacdAddress"`
-		ConnectorID        string            `json:"connectorId"`
-		Record             bool              `json:"record"`
-		Params             map[string]string `json:"params"`
-		NavigateUrl        string            `json:"navigateUrl"`
-		BrowserControlAddr string            `json:"browserControlAddr"`
+		Protocol     string            `json:"protocol"`
+		TargetHost   string            `json:"targetHost"`
+		TargetPort   int               `json:"targetPort"`
+		Username     string            `json:"username"`
+		Secret       string            `json:"secret"`
+		SecretKind   string            `json:"secretKind"`
+		GuacdAddress string            `json:"guacdAddress"`
+		ConnectorID  string            `json:"connectorId"`
+		Record       bool              `json:"record"`
+		Params       map[string]string `json:"params"`
 	}
 	if err := c.post("/api/internal/gateway/descriptor", map[string]string{"userId": userID, "siteId": siteID}, &out); err != nil {
-		return GuacConn{}, "", "", false, "", "", err
+		return GuacConn{}, "", "", false, err
 	}
 	return GuacConn{
 		Protocol:   out.Protocol,
@@ -117,7 +115,7 @@ func (c *ControlClient) GatewayDescriptor(userID, siteID string) (conn GuacConn,
 		Secret:     out.Secret,
 		SecretKind: out.SecretKind,
 		Params:     out.Params,
-	}, out.GuacdAddress, out.ConnectorID, out.Record, out.NavigateUrl, out.BrowserControlAddr, nil
+	}, out.GuacdAddress, out.ConnectorID, out.Record, nil
 }
 
 // SiteByHost resolves a browser-facing hostname to the site/connector it's
