@@ -52,7 +52,7 @@ export function SecurityConsole({ data }: { data: ConsoleData }) {
                   <div className="sc-thumb">live session</div>
                   <div className="sc-card-actions">
                     <Link href={`/live/${s.sessionId}`} className="sc-watch">Watch live</Link>
-                    <TerminateButton sessionId={s.sessionId} className="btn sm danger" />
+                    <TerminateButton sessionId={s.sessionId} grantId={s.grantId} vendorLabel={s.userLabel} className="btn sm danger" />
                   </div>
                 </div>
               ) : s.kind === "isolated" ? (
@@ -66,7 +66,7 @@ export function SecurityConsole({ data }: { data: ConsoleData }) {
                   <div className="sc-thumb">isolated browser</div>
                   <div className="sc-card-actions">
                     <Link href={`/live/${s.sessionId}`} className="sc-watch">Watch live</Link>
-                    <TerminateButton sessionId={s.sessionId} className="btn sm danger" />
+                    <TerminateButton sessionId={s.sessionId} grantId={s.grantId} vendorLabel={s.userLabel} className="btn sm danger" />
                   </div>
                 </div>
               ) : (

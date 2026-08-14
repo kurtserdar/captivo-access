@@ -8,8 +8,8 @@ export type ConsoleAuditRow = ActivityItem;
 
 export interface ConsoleKpis { grants: number; live: number; pending: number; expiring24h: number; recordings7d: number }
 export type LiveCard =
-  | { kind: "gateway"; sessionId: string; protocol: string; host: string; userLabel: string; startedAt: string; recorded: boolean; viewerCount: number }
-  | { kind: "isolated"; sessionId: string; host: string; userLabel: string; startedAt: string; recorded: boolean; viewerCount: number }
+  | { kind: "gateway"; sessionId: string; protocol: string; host: string; userLabel: string; startedAt: string; recorded: boolean; viewerCount: number; grantId: string | null }
+  | { kind: "isolated"; sessionId: string; host: string; userLabel: string; startedAt: string; recorded: boolean; viewerCount: number; grantId: string | null }
   | { kind: "web"; userLabel: string; siteName: string; host: string; startedAt: string; lastSeen: string; grantId: string | null };
 export interface PendingCard { id: string; userLabel: string; siteName: string; detail: string }
 export interface ExpiringRow { id: string; userLabel: string; siteName: string; endsAt: string }
@@ -53,12 +53,12 @@ export async function getConsoleData(): Promise<ConsoleData> {
   const userIds = [...new Set([...sessions.map((s) => s.userId), ...webUserIds])];
   const siteIds = [...new Set([...sessions.map((s) => s.siteId), ...webSiteIds])];
 
-  const [users, sites, webGrants] = await Promise.all([
+  const [users, sites, liveGrants] = await Promise.all([
     userIds.length ? db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true, email: true } }) : Promise.resolve([]),
     siteIds.length ? db.site.findMany({ where: { id: { in: siteIds } }, select: { id: true, name: true, recordSessions: true } }) : Promise.resolve([]),
-    webSessions.length
+    userIds.length
       ? db.accessGrant.findMany({
-          where: { status: "ACTIVE", userId: { in: [...new Set(webUserIds)] }, siteId: { in: [...new Set(webSiteIds)] } },
+          where: { status: "ACTIVE", userId: { in: userIds }, siteId: { in: siteIds } },
           select: { id: true, userId: true, siteId: true },
         })
       : Promise.resolve([]),
@@ -66,19 +66,21 @@ export async function getConsoleData(): Promise<ConsoleData> {
   const userMap = new Map(users.map((u) => [u.id, u.name || u.email]));
   const siteNameMap = new Map(sites.map((s) => [s.id, s.name]));
   const recMap = new Map(sites.map((s) => [s.id, s.recordSessions]));
-  const grantMap = new Map(webGrants.map((g) => [g.userId + "\x1f" + g.siteId, g.id]));
+  const grantMap = new Map(liveGrants.map((g) => [g.userId + "\x1f" + g.siteId, g.id]));
 
   const gatewayCards: LiveCard[] = sessions.filter((s) => s.kind !== "isolated").map((s) => ({
     kind: "gateway" as const,
     sessionId: s.sessionId, protocol: s.protocol, host: s.host,
     userLabel: userMap.get(s.userId) ?? "unknown", startedAt: s.startedAt,
     recorded: recEnabled && (recMap.get(s.siteId) ?? false), viewerCount: s.viewerCount,
+    grantId: grantMap.get(s.userId + "\x1f" + s.siteId) ?? null,
   }));
   const isolatedCards: LiveCard[] = sessions.filter((s) => s.kind === "isolated").map((s) => ({
     kind: "isolated" as const,
     sessionId: s.sessionId, host: s.host,
     userLabel: userMap.get(s.userId) ?? "unknown", startedAt: s.startedAt,
     recorded: recEnabled && (recMap.get(s.siteId) ?? false), viewerCount: s.viewerCount,
+    grantId: grantMap.get(s.userId + "\x1f" + s.siteId) ?? null,
   }));
   const webCards: LiveCard[] = webSessions.map((s) => ({
     kind: "web" as const,
