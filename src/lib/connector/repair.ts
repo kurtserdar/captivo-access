@@ -18,6 +18,12 @@ export const GATEWAY_NETWORK = "captivo-gateway";
 // Pure + db-free.
 function runCommand(managerUrl: string, tunnelUrl: string, code?: string, pull = true): string {
   const guacd =
+    // Reclaim disk first: every update re-pulls the :latest browser/kasm/connector
+    // images, leaving the superseded builds as dangling (untagged) images that
+    // otherwise accumulate until the host runs out of space and the next pull fails
+    // mid-extraction (which cascades into a half-updated, connector-down state).
+    // Dangling-only prune never touches tagged/in-use images or named volumes.
+    `docker image prune -f >/dev/null 2>&1; ` +
     `docker network inspect ${GATEWAY_NETWORK} >/dev/null 2>&1 || docker network create ${GATEWAY_NETWORK} && ` +
     `docker run --rm -v captivo_guacd_recordings:/rec -v captivo_guacd_logs:/log -v captivo_guacd_drive:/drive2 busybox chown -R 1000:1000 /rec /log /drive2 && ` +
     `docker rm -f captivo-guacd >/dev/null 2>&1; ` +
