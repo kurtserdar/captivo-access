@@ -32,6 +32,16 @@ func main() {
 	hub := NewSessionHub()
 	web := NewWebActivityTracker()
 	webIdle := time.Duration(envInt("WEB_SESSION_IDLE_SECS", 120)) * time.Second
+	// Audit queue is created here (not just before the browser proxy) so the internal
+	// mux handlers below — e.g. /kasm-files — can enqueue audit events too.
+	audit := NewAuditQueue(envInt("AUDIT_QUEUE_CAP", 10000))
+	go RunAuditFlush(audit, func(evs []AuditEvent) error {
+		err := ctrl.SendAudit(evs)
+		if err != nil {
+			log.Printf("audit flush failed: %v (dropped total=%d)", err, audit.Dropped())
+		}
+		return err
+	}, 5*time.Second, 200)
 	in := http.NewServeMux()
 	in.HandleFunc("/proxy", func(w http.ResponseWriter, r *http.Request) {
 		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
@@ -245,6 +255,13 @@ func main() {
 		watching, controlHeld := hub.WatchStatus(r.URL.Query().Get("userId"), r.URL.Query().Get("siteId"))
 		writeJSON(w, http.StatusOK, map[string]any{"watching": watching, "controlHeld": controlHeld})
 	})
+	in.HandleFunc("/kasm-files", func(w http.ResponseWriter, r *http.Request) {
+		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		serveKasmFiles(hub, reg, audit, w, r)
+	})
 	in.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok")) })
 	go func() { log.Fatal(http.ListenAndServe(env("INTERNAL_ADDR", ":3102"), in)) }()
 
@@ -254,14 +271,6 @@ func main() {
 	if managerURL == "" {
 		log.Printf("WARNING: MANAGER_PUBLIC_URL is empty; unauthenticated proxy requests will redirect to a relative /login on the site host and may loop")
 	}
-	audit := NewAuditQueue(envInt("AUDIT_QUEUE_CAP", 10000))
-	go RunAuditFlush(audit, func(evs []AuditEvent) error {
-		err := ctrl.SendAudit(evs)
-		if err != nil {
-			log.Printf("audit flush failed: %v (dropped total=%d)", err, audit.Dropped())
-		}
-		return err
-	}, 5*time.Second, 200)
 
 	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: managerURL, audit: audit, web: web}
 	// Native gateway WebSocket tunnel (guacamole-common-js <-> guacd). The front
