@@ -172,6 +172,40 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 		}
 		backendAddr = kasmSessionAddr(d.KasmAddr, port)
 		log.Printf("kasm-tunnel site=%s: hi-fi session %s started on port %d", siteID, id, port)
+		if d.Record {
+			// Live-stream the session video to the manager (the video analog of
+			// transport A's recWriter): read the broker's ffmpeg WebM output through
+			// the connector and forward it in chunks. Closing recConn (on WS end)
+			// stops ffmpeg and flushes the tail. Best-effort — never blocks the session.
+			if recConn, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
+				rw := newKasmRecWriter(ctrl.BaseURL, ctrl.Secret,
+					newRecordingKey(siteID, userID), siteID, userID, d.NavigateUrl, recordingMaxBytes())
+				_, _ = io.WriteString(recConn, "GET /session/"+id+"/rec HTTP/1.0\r\nHost: "+d.KasmControlAddr+"\r\nConnection: close\r\n\r\n")
+				go func() {
+					defer recConn.Close()
+					resp, re := http.ReadResponse(bufio.NewReader(recConn), nil)
+					if re != nil {
+						return
+					}
+					defer resp.Body.Close()
+					buf := make([]byte, 65536)
+					for {
+						n, er := resp.Body.Read(buf)
+						if n > 0 {
+							rw.Write(buf[:n])
+						}
+						if er != nil {
+							break
+						}
+					}
+					rw.Close()
+				}()
+				defer recConn.Close() // WS end -> close relay -> ffmpeg stops + tail flush
+				log.Printf("kasm-tunnel site=%s: recording enabled key=%s", siteID, rw.key)
+			} else {
+				log.Printf("kasm-tunnel site=%s: recording dial failed err=%v", siteID, e)
+			}
+		}
 		defer func() {
 			if st, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
 				_, _ = st.Write([]byte(buildKasmCloseRequest(d.KasmControlAddr, id)))
