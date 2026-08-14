@@ -19,19 +19,19 @@ export default async function AdminLivePage() {
   const userIds = [...new Set([...sessions.map((s) => s.userId), ...webUserIds])];
   const siteIds = [...new Set([...sessions.map((s) => s.siteId), ...webSiteIds])];
 
-  const [userList, siteList, webGrants] = await Promise.all([
+  const [userList, siteList, liveGrants] = await Promise.all([
     userIds.length ? db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true, email: true } }) : Promise.resolve([]),
     siteIds.length ? db.site.findMany({ where: { id: { in: siteIds } }, select: { id: true, name: true } }) : Promise.resolve([]),
-    webSessions.length
+    userIds.length
       ? db.accessGrant.findMany({
-          where: { status: "ACTIVE", userId: { in: [...new Set(webUserIds)] }, siteId: { in: [...new Set(webSiteIds)] } },
+          where: { status: "ACTIVE", userId: { in: userIds }, siteId: { in: siteIds } },
           select: { id: true, userId: true, siteId: true },
         })
       : Promise.resolve([]),
   ]);
   const users = new Map(userList.map((u) => [u.id, u]));
   const sites = new Map(siteList.map((s) => [s.id, s]));
-  const grantMap = new Map(webGrants.map((g) => [g.userId + "\x1f" + g.siteId, g.id]));
+  const grantMap = new Map(liveGrants.map((g) => [g.userId + "\x1f" + g.siteId, g.id]));
   const label = (userId: string) => users.get(userId)?.name ?? users.get(userId)?.email ?? userId;
 
   const gatewayRows: LiveRow[] = sessions.filter((s) => s.kind !== "isolated").map((s) => ({
@@ -43,6 +43,7 @@ export default async function AdminLivePage() {
     startedAt: s.startedAt,
     viewerCount: s.viewerCount,
     controlled: s.controlOwner !== "",
+    grantId: grantMap.get(s.userId + "\x1f" + s.siteId) ?? null,
   }));
   const isolatedRows: LiveRow[] = sessions.filter((s) => s.kind === "isolated").map((s) => ({
     kind: "isolated" as const,
@@ -52,6 +53,7 @@ export default async function AdminLivePage() {
     host: s.host,
     startedAt: s.startedAt,
     viewerCount: s.viewerCount,
+    grantId: grantMap.get(s.userId + "\x1f" + s.siteId) ?? null,
   }));
   const webRows: LiveRow[] = webSessions.map((s) => ({
     kind: "web" as const,
