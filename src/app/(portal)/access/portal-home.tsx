@@ -1,4 +1,5 @@
 import { RequestAccessButton } from "./request-access-button";
+import { AccessCards } from "./access-cards";
 import type { Remaining } from "@/lib/portal/time-remaining";
 import type { StatusLine } from "@/lib/portal/security-status";
 
@@ -18,7 +19,6 @@ export interface CardVM {
 }
 export interface RecentVM { id: string; name: string; protocol: string; durationText: string; }
 
-const TONE_COLOR: Record<Remaining["tone"], string> = { urgent: "#dc2626", soon: "#d97706", ok: "#0f766e", schedule: "#78716c" };
 const STATUS_DOT: Record<StatusLine["tone"], string> = { good: "#0f766e", info: "#dc2626", muted: "#a8a29e" };
 
 export function PortalHome(props: {
@@ -38,31 +38,7 @@ export function PortalHome(props: {
       </div>
 
       <div className="vp-grid">
-        <div className="vp-cards">
-          {cards.length === 0 ? (
-            <div className="vp-empty">You don&apos;t have any access yet.</div>
-          ) : cards.map((c) => (
-            <div key={c.id} className="vp-card">
-              <div className="vp-card-top">
-                <div className="vp-icon">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  {c.hasLogo ? <img src={`/api/sites/${c.siteId}/logo`} alt="" width={44} height={44} className="vp-icon-img" /> : c.glyph}
-                </div>
-                <div className="vp-card-id">
-                  <div className="vp-card-title"><span className="vp-card-name">{c.siteName}</span><span className="vp-chip">{c.accessMode === "GATEWAY" ? "REMOTE" : "WEB"}</span></div>
-                  <div className="vp-card-host">{c.hostname}</div>
-                </div>
-                {c.status === "active"
-                  ? <a className="vp-open" href={c.href} target="_blank" rel="noopener noreferrer">Open ↗</a>
-                  : <span className="vp-open vp-open-off">{c.status === "pending" ? "Pending" : c.status === "off_hours" ? "Off hours" : c.status === "denied" ? "Denied" : "—"}</span>}
-              </div>
-              <div className="vp-meter">
-                <div className="vp-meter-row"><span className="vp-meter-label">{c.status === "denied" ? (c.denyReason ?? "Not available") : "Access window"}</span><span className="vp-meter-remain" style={{ color: TONE_COLOR[c.time.tone] }}>{c.time.text}</span></div>
-                <div className="vp-bar"><div className="vp-bar-fill" style={{ width: `${c.time.pct}%`, background: TONE_COLOR[c.time.tone] }} /></div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <AccessCards cards={cards} />
 
         <div className="vp-rail">
           <div className="vp-railcard">
