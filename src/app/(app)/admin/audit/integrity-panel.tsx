@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 
 type Result = {
   ok: boolean;
@@ -125,7 +126,7 @@ export function IntegrityPanel({ anchor }: { anchor: AnchorProp }) {
                   {anchorVerdicts.map((v) => (
                     <tr key={v.id}>
                       <td>{v.anchoredSeq}</td>
-                      <td className="cell-sub">{v.genTime ? new Date(v.genTime).toLocaleString() : "—"}</td>
+                      <td className="cell-sub">{v.genTime ? <LocalTime iso={new Date(v.genTime).toISOString()} /> : "—"}</td>
                       <td>
                         {v.ok ? (
                           <span className="pill ok">{v.beyondRetention ? "Verified (beyond retention)" : "Verified"}</span>

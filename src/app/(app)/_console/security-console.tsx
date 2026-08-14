@@ -6,10 +6,7 @@ import { DecisionButtons } from "@/app/(app)/admin/grants/decision-buttons";
 import { TerminateButton } from "./terminate-button";
 import { ExtendButton } from "./extend-button";
 import { AutoRefresh } from "@/app/(app)/_shell/auto-refresh";
-
-function hhmm(ts: Date | string): string {
-  return new Date(ts).toISOString().slice(11, 16);
-}
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 
 export function SecurityConsole({ data }: { data: ConsoleData }) {
   const now = new Date();
@@ -131,7 +128,7 @@ export function SecurityConsole({ data }: { data: ConsoleData }) {
           <div className="sc-head"><h2>Audit stream</h2></div>
           {audit.length === 0 ? <div className="sc-empty">No recent activity.</div> : audit.map((r) => (
             <div key={r.id} className="sc-audit">
-              <span className="sc-audit-t">{hhmm(r.at)}</span>
+              <span className="sc-audit-t"><LocalTime iso={new Date(r.at).toISOString()} mode="time" /></span>
               <span className={`sc-audit-k ${r.tone}`}>{r.kind}</span>
               <span className="sc-audit-m">{r.text}</span>
             </div>
