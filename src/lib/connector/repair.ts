@@ -25,7 +25,13 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, pull =
     // Dangling-only prune never touches tagged/in-use images or named volumes.
     `docker image prune -f >/dev/null 2>&1; ` +
     `docker network inspect ${GATEWAY_NETWORK} >/dev/null 2>&1 || docker network create ${GATEWAY_NETWORK} && ` +
-    `docker run --rm -v captivo_guacd_recordings:/rec -v captivo_guacd_logs:/log -v captivo_guacd_drive:/drive2 busybox chown -R 1000:1000 /rec /log /drive2 && ` +
+    // Fix ownership of guacd's volumes to uid 1000 (guacd 1.6.0 runs non-root).
+    // Use the pinned guacd image itself (BusyBox-based, ships chown) rather than a
+    // separate `busybox:latest` — that had to be pulled from Docker Hub, so a host
+    // with broken IPv6/Docker-Hub connectivity (or after an aggressive image prune)
+    // could not run the chown at all. guacd:1.6.0 is already needed on the next line
+    // and is cached after the first install, so this never needs an extra pull.
+    `docker run --rm --user 0 --entrypoint chown -v captivo_guacd_recordings:/rec -v captivo_guacd_logs:/log -v captivo_guacd_drive:/drive2 guacamole/guacd:1.6.0 -R 1000:1000 /rec /log /drive2 && ` +
     `docker rm -f captivo-guacd >/dev/null 2>&1; ` +
     `docker run -d --name captivo-guacd --restart unless-stopped --network ${GATEWAY_NETWORK} ` +
     `-v captivo_guacd_recordings:/recordings -v captivo_guacd_logs:/guaclog -v captivo_guacd_drive:/drive ` +
