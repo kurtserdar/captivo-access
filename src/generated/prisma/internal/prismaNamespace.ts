@@ -2520,7 +2520,6 @@ export const SiteScalarFieldEnum = {
   recordSessions: 'recordSessions',
   clipboardMode: 'clipboardMode',
   accessMode: 'accessMode',
-  isolationHiFi: 'isolationHiFi',
   logo: 'logo',
   logoType: 'logoType',
   createdAt: 'createdAt'
