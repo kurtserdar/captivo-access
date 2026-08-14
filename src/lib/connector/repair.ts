@@ -10,15 +10,15 @@ export function canRepairConnector(status: string): boolean {
 export const GATEWAY_NETWORK = "captivo-gateway";
 
 // The bundle command that brings up a connector host: the connector itself plus
-// guacd (RDP/SSH/VNC engine), the isolated browser, and the high-fidelity isolated
-// browser, all on the shared GATEWAY_NETWORK.
+// guacd (the RDP/SSH/VNC engine) and the isolated browser (KasmVNC), all on the
+// shared GATEWAY_NETWORK.
 //
 // Robustness is the whole point of the layout below:
 //   * Every service is an INDEPENDENT, idempotent block (`pull; rm -f; run`)
 //     separated by `;` — never `&&`. A hiccup in one block (a pull failure, a
 //     leftover container name) can no longer cascade into skipping the others.
 //   * The connector (the access lifeline) comes up FIRST, right after the network
-//     and the volume chown, so it is never gated by the heavier guacd/browser/kasm
+//     and the volume chown, so it is never gated by the heavier guacd/kasm
 //     bundle and its downtime is a single recreate.
 //   * No Docker Hub `busybox` dependency: the volume chown reuses the pinned,
 //     already-cached guacd image (BusyBox-based) so a host with flaky Docker Hub /
@@ -30,7 +30,6 @@ export const GATEWAY_NETWORK = "captivo-gateway";
 function runCommand(managerUrl: string, tunnelUrl: string, code?: string, clearVolume = false): string {
   const NET = GATEWAY_NETWORK;
   const CONNECTOR = "ghcr.io/kurtserdar/captivo-access-connector:latest";
-  const BROWSER = "ghcr.io/kurtserdar/captivo-access-browser:latest";
   const KASM = "ghcr.io/kurtserdar/captivo-access-kasm-browser:latest";
   const GUACD = "guacamole/guacd:1.6.0";
 
@@ -58,11 +57,10 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, clearV
     `docker run -d --name captivo-guacd --restart unless-stopped --network ${NET} ` +
     `-v captivo_guacd_recordings:/recordings -v captivo_guacd_logs:/guaclog -v captivo_guacd_drive:/drive ` +
     `--entrypoint /bin/sh ${GUACD} -c '/opt/guacamole/sbin/guacd -b 0.0.0.0 -L info -f 2>&1 | tee /guaclog/guacd.log'; `;
-  // Isolated browser (A/VNC via guacd) + high-fidelity isolated browser (B/KasmVNC).
-  const browser = `docker pull ${BROWSER}; docker rm -f captivo-browser >/dev/null 2>&1; docker run -d --name captivo-browser --restart unless-stopped --network ${NET} --shm-size=1g ${BROWSER}; `;
+  // High-fidelity isolated browser (KasmVNC) — the sole isolated-browser transport.
   const kasm = `docker pull ${KASM}; docker rm -f captivo-kasm >/dev/null 2>&1; docker run -d --name captivo-kasm --restart unless-stopped --network ${NET} --shm-size=1g ${KASM}`;
 
-  return prune + network + chown + clear + connector + guacd + browser + kasm;
+  return prune + network + chown + clear + connector + guacd + kasm;
 }
 
 export function buildConnectorRunCommand(code: string, managerUrl: string, tunnelUrl: string): string {

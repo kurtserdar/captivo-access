@@ -45,7 +45,7 @@ describe("buildConnectorRunCommand", () => {
     expect(buildConnectorRunCommand("C", "M", "T")).not.toContain("docker volume rm");
     expect(buildConnectorUpdateCommand("M", "T")).not.toContain("docker volume rm");
   });
-  it("is resilient: connector comes up before the guacd/browser/kasm bundle, no busybox, prune first", () => {
+  it("is resilient: connector comes up before the guacd/kasm bundle, no busybox, prune first", () => {
     const cmd = buildConnectorUpdateCommand("M", "T");
     expect(cmd).not.toContain("busybox");
     expect(cmd).toContain("docker image prune -f");
@@ -104,10 +104,6 @@ describe("every connector bundles guacd on the shared network", () => {
     const cmd = buildConnectorUpdateCommand(m, t);
     expect(cmd).toContain("--name captivo-guacd");
     expect(cmd).toContain("docker pull ghcr.io/kurtserdar/captivo-access-connector:latest");
-  });
-  it("install/update pull the latest browser image (no stale :latest)", () => {
-    expect(buildInstallCommand("CODE123", m, t)).toContain("docker pull ghcr.io/kurtserdar/captivo-access-browser:latest");
-    expect(buildConnectorUpdateCommand(m, t)).toContain("docker pull ghcr.io/kurtserdar/captivo-access-browser:latest");
   });
   it("install/update bundle the KasmVNC (hi-fi) browser, pulled fresh", () => {
     expect(buildInstallCommand("CODE123", m, t)).toContain("--name captivo-kasm");
