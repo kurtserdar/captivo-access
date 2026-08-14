@@ -15,13 +15,54 @@ import { ConnectSplash } from "./connect-splash";
 // filling the screen (16:10 matches, no letterbox).
 const KASM_PARAMS = "path=kasm-tunnel/websockify&resize=scale&clipboard_seamless=true&clipboard_up=true&clipboard_down=true";
 
-export function IsolatedSession({ siteId, siteName, recorded }: { siteId: string; siteName: string; recorded: boolean }) {
+export function IsolatedSession({ siteId, siteName, recorded, fileTransferMode }: { siteId: string; siteName: string; recorded: boolean; fileTransferMode: string }) {
+  const canUpload = fileTransferMode === "allow" || fileTransferMode === "no_download";
+  const canDownload = fileTransferMode === "allow" || fileTransferMode === "no_upload";
   const [ready, setReady] = useState(false);
   const [watching, setWatching] = useState(false);
   const [controlHeld, setControlHeld] = useState(false);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
   const [fs, setFs] = useState(false);
+  const [downloads, setDownloads] = useState<{ name: string; size: number; mtime: number }[]>([]);
+  const [uploadMsg, setUploadMsg] = useState<string | null>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Poll the isolated browser's Downloads folder so files it downloads surface to
+  // the vendor. Only when the site allows downloads out.
+  useEffect(() => {
+    if (!canDownload) return;
+    let stop = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/isolated/files/downloads?site=${siteId}`, { cache: "no-store" });
+        if (res.ok && !stop) setDownloads((await res.json()) as { name: string; size: number; mtime: number }[]);
+      } catch {
+        /* ignore */
+      }
+    };
+    void poll();
+    const t = setInterval(poll, 3000);
+    return () => { stop = true; clearInterval(t); };
+  }, [siteId, canDownload]);
+
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    setUploadMsg("Uploading…");
+    try {
+      const res = await fetch(`/api/isolated/files/upload?site=${siteId}&name=${encodeURIComponent(f.name)}`, {
+        method: "POST",
+        headers: { "content-type": "application/octet-stream", "content-length": String(f.size) },
+        body: f,
+      });
+      setUploadMsg(res.ok ? `Uploaded ${f.name}` : res.status === 413 ? "File too large" : "Upload failed");
+    } catch {
+      setUploadMsg("Upload failed");
+    }
+    setTimeout(() => setUploadMsg(null), 4000);
+  };
 
   // The macOS green button only maximises the browser window — it keeps the tab/URL
   // chrome, so the screen-sized desktop still letterboxes. The Fullscreen API hides
@@ -140,6 +181,38 @@ export function IsolatedSession({ siteId, siteName, recorded }: { siteId: string
         >
           {fs ? "⤢ Exit full screen" : "⤢ Full screen"}
         </button>
+      )}
+      {ready && dims && (canUpload || canDownload) && (
+        <div style={{ position: "fixed", bottom: 12, left: 12, zIndex: 30, display: "flex", flexDirection: "column", gap: 8, maxWidth: 280 }}>
+          {canUpload && (
+            <div>
+              <input ref={fileRef} type="file" style={{ display: "none" }} onChange={onPick} />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                style={{ background: "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "6px 12px", fontFamily: "sans-serif", fontSize: 12, cursor: "pointer" }}
+              >
+                ↑ Upload file
+              </button>
+              {uploadMsg && <span style={{ marginLeft: 8, color: "#fff", fontFamily: "sans-serif", fontSize: 12 }}>{uploadMsg}</span>}
+            </div>
+          )}
+          {canDownload && downloads.length > 0 && (
+            <div style={{ background: "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "8px 12px", fontFamily: "sans-serif", fontSize: 12 }}>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Downloads ({downloads.length})</div>
+              {downloads.map((d) => (
+                <a
+                  key={d.name}
+                  href={`/api/isolated/files/download?site=${siteId}&name=${encodeURIComponent(d.name)}`}
+                  download={d.name}
+                  style={{ display: "block", color: "#7fd7ff", textDecoration: "none", padding: "2px 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                >
+                  ↓ {d.name}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
       )}
       {(!ready || !dims) && <ConnectSplash siteName={siteName} />}
     </>

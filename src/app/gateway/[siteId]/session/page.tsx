@@ -18,7 +18,7 @@ export const metadata = { title: "Session" };
 export default async function GatewaySessionPage({ params }: { params: Promise<{ siteId: string }> }) {
   await requireUser();
   const { siteId } = await params;
-  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, name: true, recordSessions: true, clipboardMode: true } });
+  const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, name: true, recordSessions: true, clipboardMode: true, fileTransferMode: true } });
   // This full-screen session page serves native GATEWAY (RDP/SSH/VNC) and ISOLATED
   // (remote browser) resources — both stream a screen via guacd. Everything else
   // (or a disabled capability) has no session here.
@@ -36,9 +36,9 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
   // the Prisma enum (which also has TRANSPARENT) to the union the viewers expect.
   const mode = site.accessMode === "ISOLATED" ? "ISOLATED" : "GATEWAY";
   if (consentNeeded) {
-    return <ConsentGate accessMode={mode} siteId={siteId} siteName={site.name} recorded={recorded} clipboardMode={site.clipboardMode} />;
+    return <ConsentGate accessMode={mode} siteId={siteId} siteName={site.name} recorded={recorded} clipboardMode={site.clipboardMode} fileTransferMode={site.fileTransferMode} />;
   }
   return mode === "ISOLATED"
-    ? <IsolatedSession siteId={siteId} siteName={site.name} recorded={recorded} />
+    ? <IsolatedSession siteId={siteId} siteName={site.name} recorded={recorded} fileTransferMode={site.fileTransferMode} />
     : <GatewaySession siteId={siteId} siteName={site.name} recorded={recorded} clipboardMode={site.clipboardMode} />;
 }

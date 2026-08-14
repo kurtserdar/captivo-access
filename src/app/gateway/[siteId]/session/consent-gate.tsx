@@ -3,7 +3,7 @@ import { useState } from "react";
 import { GatewaySession } from "./session-client";
 import { IsolatedSession } from "./isolated-client";
 
-export function ConsentGate({ accessMode, siteId, siteName, recorded, clipboardMode }: { accessMode: "GATEWAY" | "ISOLATED"; siteId: string; siteName: string; recorded: boolean; clipboardMode: string }) {
+export function ConsentGate({ accessMode, siteId, siteName, recorded, clipboardMode, fileTransferMode }: { accessMode: "GATEWAY" | "ISOLATED"; siteId: string; siteName: string; recorded: boolean; clipboardMode: string; fileTransferMode: string }) {
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -19,7 +19,7 @@ export function ConsentGate({ accessMode, siteId, siteName, recorded, clipboardM
 
   if (accepted) {
     return accessMode === "ISOLATED"
-      ? <IsolatedSession siteId={siteId} siteName={siteName} recorded={recorded} />
+      ? <IsolatedSession siteId={siteId} siteName={siteName} recorded={recorded} fileTransferMode={fileTransferMode} />
       : <GatewaySession siteId={siteId} siteName={siteName} recorded={recorded} clipboardMode={clipboardMode} />;
   }
 
