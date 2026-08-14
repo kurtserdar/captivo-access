@@ -12,7 +12,7 @@ import (
 // kasmRecWriter tees a KasmVNC session's live WebM byte stream to the manager's
 // ingest-video endpoint in recFlushBytes / recFlushInterval chunks. It is the video
 // analog of guacrecord.go's recWriter and is deliberately self-contained (transport
-// B must not depend on transport A's isolated.go). Best-effort: a failed POST or a
+// B must not depend on the former transport A). Best-effort: a failed POST or a
 // reached cap never blocks the session. Single-goroutine (the recording relay loop).
 type kasmRecWriter struct {
 	managerURL string

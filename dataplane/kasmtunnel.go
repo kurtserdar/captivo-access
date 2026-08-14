@@ -19,7 +19,7 @@ import (
 // POST /session and reads the response over the same relay stream. status is the
 // HTTP status (so the caller can surface 503 capacity); err is set only on
 // transport/parse failure. This is deliberately self-contained (not shared with
-// transport A's isolated.go, which is retired after B3).
+// the former transport A, now removed).
 func openKasmSession(rw io.ReadWriter, host, target string, copyOut, pasteIn bool) (id string, port, status int, err error) {
 	body := `{"url":` + jsonQuoteKasm(target) +
 		`,"copyOut":` + strconv.FormatBool(copyOut) +
