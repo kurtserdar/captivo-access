@@ -100,6 +100,17 @@ def close_session(sid):
         _kill(sess)
 
 
+def _ffmpeg_capture(display):
+    # Grab the per-session Xvnc display as live WebM (VP8), no audio, ~10 fps.
+    # Output goes to stdout so the /rec handler can stream it to the data-plane.
+    return subprocess.Popen(
+        ["ffmpeg", "-loglevel", "error", "-f", "x11grab",
+         "-video_size", "1280x800", "-framerate", "10", "-i", ":%d" % display,
+         "-an", "-c:v", "libvpx", "-b:v", "1M", "-deadline", "realtime",
+         "-f", "webm", "-"],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+
+
 def _reaper():
     while True:
         time.sleep(60)
@@ -122,7 +133,40 @@ class H(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if urllib.parse.urlparse(self.path).path == "/healthz":
+        u = urllib.parse.urlparse(self.path)
+        # Live session recording: stream the ffmpeg WebM capture of the session's
+        # display until the data-plane disconnects (recording lifecycle = connection
+        # lifecycle). The broker never sees the recordingKey — the data-plane owns it.
+        if u.path.startswith("/session/") and u.path.endswith("/rec"):
+            sid = u.path[len("/session/"):-len("/rec")]
+            with _lock:
+                sess = _sessions.get(sid)
+                display = sess["display"] if sess else None
+            if display is None:
+                return self._json(404, {"error": "not_found"})
+            proc = _ffmpeg_capture(display)
+            self.send_response(200)
+            self.send_header("Content-Type", "video/webm")
+            self.end_headers()
+            try:
+                while True:
+                    # read1: forward whatever ffmpeg has produced so far instead of
+                    # blocking for a full 64 KiB (a static page trickles bytes slowly).
+                    buf = proc.stdout.read1(65536)
+                    if not buf:
+                        break
+                    self.wfile.write(buf)  # raises when the data-plane disconnects
+                    self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                pass
+            finally:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=3)
+                except Exception:
+                    proc.kill()
+            return
+        if u.path == "/healthz":
             return self._json(200, {"ok": True})
         self._json(404, {"error": "not_found"})
 
