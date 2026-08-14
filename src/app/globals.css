@@ -960,6 +960,10 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .connect-splash-brand { transform: scale(1.05); }
 .connect-splash-site { margin-top: 0.75rem; font-size: 1.15rem; font-weight: 600; color: #e8edf5; }
 .connect-splash-note { font-size: 0.9rem; color: #8ea0ba; }
+/* The splash is committed-dark, so force the brand wordmark light regardless of the
+   viewer's theme (in light theme .brand-word is var(--fg) = dark → unreadable here). */
+.connect-splash .brand-word { color: #e8edf5; }
+.connect-splash .brand-access { color: #8ea0ba; }
 @keyframes connect-splash-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
   .connect-splash-ring { animation: none; border-color: rgba(25, 194, 187, 0.35); border-top-color: #19c2bb; }
