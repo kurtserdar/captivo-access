@@ -432,6 +432,7 @@ model UpdateCheckConfig {
 enum RecordingFormat {
   RRWEB
   GUAC
+  VIDEO
 }
 
 model SessionRecording {
