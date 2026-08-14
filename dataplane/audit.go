@@ -1,10 +1,25 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 )
+
+// compactDur renders an elapsed duration for a session_close reason: "45s", "12m",
+// "1h05m".
+func compactDur(d time.Duration) string {
+	s := int(d.Seconds())
+	if s < 60 {
+		return fmt.Sprintf("%ds", s)
+	}
+	m := s / 60
+	if m < 60 {
+		return fmt.Sprintf("%dm", m)
+	}
+	return fmt.Sprintf("%dh%02dm", m/60, m%60)
+}
 
 // AuditEvent is one browser-proxy access decision (allow or authenticated
 // deny), shipped to the control plane's /api/internal/audit/log for

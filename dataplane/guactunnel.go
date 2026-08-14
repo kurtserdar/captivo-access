@@ -117,6 +117,12 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 	// tears down (defer c.CloseNow + hub.Remove). This is how admin Terminate works.
 	hub.SetCloser(sessionID, func() { _ = guac.Close() })
 	defer hub.Remove(sessionID)
+
+	sessStart := time.Now()
+	audit.Enqueue(auditEvent("ALLOW", "session_open", userID, siteID, conn.Hostname, r, http.StatusSwitchingProtocols, 0))
+	defer func() {
+		audit.Enqueue(auditEvent("ALLOW", "session_close "+compactDur(time.Since(sessStart)), userID, siteID, conn.Hostname, r, http.StatusSwitchingProtocols, 0))
+	}()
 	log.Printf("guac-tunnel site=%s: live session id=%s connID=%s", siteID, sessionID, connID)
 
 	// Upgrade the browser WebSocket and bridge. The browser is same-origin behind

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/kurtserdar/captivo-access/tunnel"
 )
@@ -140,19 +141,20 @@ func (p *BrowserProxy) serveWebSocket(w http.ResponseWriter, r *http.Request, co
 		return
 	}
 
-	p.audit.Enqueue(auditEvent("ALLOW", "ws_open", userID, siteID, host, r, http.StatusSwitchingProtocols, 0))
+	wsStart := time.Now()
+	p.audit.Enqueue(auditEvent("ALLOW", "session_open", userID, siteID, host, r, http.StatusSwitchingProtocols, 0))
 
 	// Raw bidirectional relay. brw (its Reader) holds any bytes the browser
 	// already sent past the handshake — read from it, not conn. Count the
 	// tunnel→browser bytes for the close audit.
 	var total int64
 	done := make(chan struct{}, 2)
-	go func() { _, _ = io.Copy(st, brw); done <- struct{}{} }()                  // browser → tunnel
-	go func() { n, _ := io.Copy(conn, st); total = n; done <- struct{}{} }()     // tunnel → browser
+	go func() { _, _ = io.Copy(st, brw); done <- struct{}{} }()              // browser → tunnel
+	go func() { n, _ := io.Copy(conn, st); total = n; done <- struct{}{} }() // tunnel → browser
 	<-done
 	_ = conn.Close()
 	_ = st.Close()
 	<-done
 
-	p.audit.Enqueue(auditEvent("ALLOW", "ws_close", userID, siteID, host, r, http.StatusSwitchingProtocols, total))
+	p.audit.Enqueue(auditEvent("ALLOW", "session_close "+compactDur(time.Since(wsStart)), userID, siteID, host, r, http.StatusSwitchingProtocols, total))
 }
