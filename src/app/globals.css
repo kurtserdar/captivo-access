@@ -346,10 +346,13 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 /* access-ready */
 .authx-check{width:36px;height:36px;border-radius:99px;background:#0f2a26;border:1px solid #134e4a;color:#2dd4bf;display:grid;place-items:center;font-size:1.1rem;margin-bottom:.6rem;}
 .authx-grants{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0 1.3rem;}
-.authx-grant{display:flex;align-items:center;gap:.6rem;border:1px solid #1b2436;border-radius:10px;padding:.55rem .7rem;}
+.authx-grant{display:flex;align-items:center;gap:.6rem;border:1px solid #1b2436;border-radius:10px;padding:.55rem .7rem;text-decoration:none;color:inherit;cursor:pointer;transition:border-color .15s,background .15s;}
+.authx-grant:hover{border-color:#2e84f5;background:#141c2c;}
 .authx-grant .chip{font-family:var(--mono);font-size:.62rem;color:#94a3b8;background:#1b2436;border-radius:5px;padding:.1rem .4rem;flex:0 0 auto;}
 .authx-grant .nm{font-size:.85rem;color:#f1f5f9;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .authx-grant .win{font-family:var(--mono);font-size:.68rem;color:#4a5872;flex:0 0 auto;}
+.authx-grant .go{font-size:.9rem;color:#4a5872;flex:0 0 auto;transition:color .15s;}
+.authx-grant:hover .go{color:#2e84f5;}
 .authx-empty{color:#94a3b8;font-size:.85rem;margin:1rem 0 1.3rem;}
 .auth-or{display:flex;align-items:center;gap:.6rem;color:#4a5872;font-size:.75rem;}
 .auth-or::before,.auth-or::after{content:"";height:1px;flex:1;background:#1b2436;}

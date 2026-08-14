@@ -15,6 +15,8 @@ export async function GET() {
     .filter((g) => classifyGrant(g, now) === "allow")
     .map((g) => ({
       id: g.id,
+      siteId: g.site.id,
+      hostname: g.site.hostname ?? "",
       siteName: g.site.name,
       accessMode: g.site.accessMode as "TRANSPARENT" | "GATEWAY" | "ISOLATED",
       endsAt: g.endsAt ? g.endsAt.toISOString() : null,

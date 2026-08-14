@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
+import { launchHref } from "@/lib/portal/launch-href";
 
 const GENERIC_ERROR = "No passkey found or verification failed.";
 
-type Grant = { id: string; siteName: string; accessMode: "TRANSPARENT" | "GATEWAY" | "ISOLATED"; endsAt: string | null; scheduled: boolean };
+type Grant = { id: string; siteId: string; hostname: string; siteName: string; accessMode: "TRANSPARENT" | "GATEWAY" | "ISOLATED"; endsAt: string | null; scheduled: boolean };
 type State = "rest" | "ceremony" | "ready";
 
 export function LoginForm({
@@ -82,7 +83,6 @@ export function LoginForm({
               </>
             )}
           </div>
-          <div className="authx-trust"><span className="dot" /> MFA enforced · recorded · zero-trust</div>
         </>
       )}
 
@@ -97,7 +97,6 @@ export function LoginForm({
           <div className="auth-actions" style={{ marginTop: "1rem" }}>
             <button type="button" className="btn" onClick={signIn}>Use a different device</button>
           </div>
-          <div className="authx-trust"><span className="dot" /> Phishing-resistant WebAuthn</div>
         </>
       )}
 
@@ -109,11 +108,12 @@ export function LoginForm({
           {grants.length > 0 ? (
             <div className="authx-grants">
               {grants.map((g) => (
-                <div key={g.id} className="authx-grant">
+                <a key={g.id} className="authx-grant" href={launchHref(g.accessMode, g.siteId, g.hostname)}>
                   <span className="chip">{g.accessMode === "GATEWAY" ? "REMOTE" : "WEB"}</span>
                   <span className="nm">{g.siteName}</span>
                   <span className="win">{g.scheduled ? "scheduled" : g.endsAt ? <LocalTime iso={g.endsAt} /> : "permanent"}</span>
-                </div>
+                  <span className="go" aria-hidden="true">↗</span>
+                </a>
               ))}
             </div>
           ) : (

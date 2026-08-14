@@ -10,11 +10,10 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       <div className="authx-card">
         <div className="authx-bar" aria-hidden="true">
           <span className="authx-dots"><i /><i /><i /></span>
-          <span className="authx-host">auth.captivo.io</span>
+          <span className="authx-host">access.captivo.io</span>
         </div>
         <div className="authx-body">{children}</div>
       </div>
-      <div className="authx-tag">open-source · self-hosted · vpn-less</div>
     </div>
   );
 }
