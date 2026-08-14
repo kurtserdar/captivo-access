@@ -45,6 +45,7 @@ type SiteInitial = {
   recordSessions: boolean;
   clipboardMode: string;
   watermark?: boolean | null;
+  fileTransferMode?: string;
   accessMode: "TRANSPARENT" | "GATEWAY" | "ISOLATED";
   hasLogo?: boolean;
 };
@@ -84,6 +85,7 @@ export function SiteForm({
   const [watermark, setWatermark] = useState<"inherit" | "on" | "off">(
     site?.watermark == null ? "inherit" : site.watermark ? "on" : "off",
   );
+  const [fileTransferMode, setFileTransferMode] = useState(site?.fileTransferMode ?? "none");
   const [accessMode, setAccessMode] = useState<"TRANSPARENT" | "GATEWAY" | "ISOLATED">(site?.accessMode ?? "TRANSPARENT");
   // Remote-desktop (GATEWAY) target — seeded from the site's vault credential; the
   // secret is always blank (write-only).
@@ -160,6 +162,7 @@ export function SiteForm({
           recordSessions,
           clipboardMode,
           watermark: watermark === "inherit" ? null : watermark === "on",
+          fileTransferMode,
           ...(accessMode === "GATEWAY"
             ? { protocol, targetHost, targetPort: Number(targetPort), username, secret, guacParams: guacFieldsToParams(guac) }
             : {}),
@@ -320,6 +323,16 @@ export function SiteForm({
               <option value="off">Off</option>
             </select>
             <span className="hint">Enforced by the session engine (guacd) — copy out of the isolated browser is disabled server-side, a real control.</span>
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="site-filetransfer">File transfer</label>
+            <select id="site-filetransfer" className="select" value={fileTransferMode} onChange={(e) => setFileTransferMode(e.target.value)}>
+              <option value="none">Off (no file transfer)</option>
+              <option value="allow">Upload &amp; download</option>
+              <option value="no_download">Upload only</option>
+              <option value="no_upload">Download only</option>
+            </select>
+            <span className="hint">Move files between the vendor and the isolated browser. Off by default; enforced server-side.</span>
           </div>
         </>
       )}
