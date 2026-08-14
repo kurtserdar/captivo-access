@@ -20,7 +20,24 @@ export function IsolatedSession({ siteId, siteName, recorded }: { siteId: string
   const [watching, setWatching] = useState(false);
   const [controlHeld, setControlHeld] = useState(false);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
+  const [fs, setFs] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
+
+  // The macOS green button only maximises the browser window — it keeps the tab/URL
+  // chrome, so the screen-sized desktop still letterboxes. The Fullscreen API hides
+  // ALL chrome, making the viewport equal the screen (= the desktop) for an exact fill.
+  useEffect(() => {
+    const onFs = () => setFs(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+  const toggleFs = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    } else {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    }
+  };
 
   // Size the isolated desktop to the vendor's screen so browser-fullscreen fills
   // exactly (no aspect letterbox). CSS px (logical) keeps resource use reasonable on
@@ -109,6 +126,20 @@ export function IsolatedSession({ siteId, siteName, recorded }: { siteId: string
         >
           {controlHeld ? "An administrator has taken control of this session." : "This session is being monitored live."}
         </div>
+      )}
+      {ready && dims && (
+        <button
+          type="button"
+          onClick={toggleFs}
+          title={fs ? "Exit full screen" : "Full screen"}
+          style={{
+            position: "fixed", bottom: 12, right: 12, zIndex: 30, cursor: "pointer",
+            background: "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)",
+            borderRadius: 8, padding: "6px 12px", fontFamily: "sans-serif", fontSize: 12,
+          }}
+        >
+          {fs ? "⤢ Exit full screen" : "⤢ Full screen"}
+        </button>
       )}
       {(!ready || !dims) && <ConnectSplash siteName={siteName} />}
     </>
