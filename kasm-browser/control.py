@@ -56,6 +56,12 @@ def _spawn(display, url, profile, home, copy_out, paste_in):
          "-disableBasicAuth", send_cut, accept_cut], env=env)
     time.sleep(1.5)
     fbox = subprocess.Popen(["fluxbox"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # Paint a plain solid background so fluxbox's fbsetbg helper finds a wallpaper
+    # setter and stops raising its "I can't find an app to set the wallpaper with"
+    # X dialog (briefly visible in the canvas before Chromium kiosk covers it). No
+    # brand image here — the app-side ConnectSplash carries the branding.
+    subprocess.Popen(["hsetroot", "-solid", "#000000"], env=env,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     chrome = subprocess.Popen(
         [CHROME, "--kiosk", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage",
          "--no-first-run", "--no-default-browser-check", "--disable-translate",

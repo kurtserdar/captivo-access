@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
 ARG KASM_VER=1.5.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      curl ca-certificates chromium fluxbox python3 dumb-init ffmpeg \
+      curl ca-certificates chromium fluxbox python3 dumb-init ffmpeg hsetroot \
       libxfont2 libxtst6 libgl1 libgbm1 libxcb-render0 libxcb-shm0 \
     && curl -fsSL -o /tmp/kasmvnc.deb \
        "https://github.com/kasmtech/KasmVNC/releases/download/v${KASM_VER}/kasmvncserver_bookworm_${KASM_VER}_amd64.deb" \
