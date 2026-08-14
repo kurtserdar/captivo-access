@@ -942,3 +942,25 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
    connector commands can be long). Log terminals keep nowrap+scroll. */
 .term.cmd .term-body { overflow-x: visible; }
 .term.cmd .term-line { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Branded connect splash (session route, theme-independent dark navy) */
+.connect-splash {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem;
+  background: #0b1220; color: #e8edf5;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+.connect-splash-ring {
+  position: absolute; width: 260px; height: 260px; border-radius: 50%;
+  border: 3px solid rgba(25, 194, 187, 0.18);
+  border-top-color: #19c2bb; border-right-color: #19c2bb;
+  animation: connect-splash-spin 1.1s linear infinite;
+}
+.connect-splash-body { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-align: center; }
+.connect-splash-brand { transform: scale(1.05); }
+.connect-splash-site { margin-top: 0.75rem; font-size: 1.15rem; font-weight: 600; color: #e8edf5; }
+.connect-splash-note { font-size: 0.9rem; color: #8ea0ba; }
+@keyframes connect-splash-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .connect-splash-ring { animation: none; border-color: rgba(25, 194, 187, 0.35); border-top-color: #19c2bb; }
+}
