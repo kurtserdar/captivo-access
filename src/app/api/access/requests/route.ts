@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
-import { createAccessRequest } from "@/lib/access/grants";
+import { createAccessRequest, listUserGrants } from "@/lib/access/grants";
+import { classifyGrant } from "@/lib/access/evaluate";
 import { validateSchedule, type Schedule } from "@/lib/access/schedule";
 import { grantCapError } from "@/lib/access/grant-edit";
 import { resolvedMaxGrantDays, resolvedRequireRequestJustification } from "@/lib/settings/platform";
@@ -49,6 +50,13 @@ export async function POST(req: NextRequest) {
 
   const site = await db.site.findUnique({ where: { id: siteId }, select: { id: true, name: true } });
   if (!site) return NextResponse.json({ error: "invalid_site" }, { status: 400 });
+
+  // Guard against requesting a site the user already holds (active/upcoming/pending/
+  // off-hours) — the picker hides these, but block a direct API call too.
+  const held = (await listUserGrants(user.id)).some(
+    (g) => g.site.id === siteId && !["revoked", "denied", "expired"].includes(classifyGrant(g, new Date())),
+  );
+  if (held) return NextResponse.json({ error: "already_have_access" }, { status: 409 });
 
   const result = await createAccessRequest({
     userId: user.id,

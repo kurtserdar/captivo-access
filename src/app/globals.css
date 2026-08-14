@@ -75,10 +75,9 @@ a{color:inherit;}
 .nav-id-text{line-height:1.2;min-width:0;flex:1;}
 .nav-id-text b{color:#fff;font-size:.82rem;font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .nav-id-text span{color:var(--nav-fg-dim);font-size:.72rem;}
-.nav-logout{flex:0 0 auto;width:30px;height:30px;border-radius:7px;background:transparent;border:1px solid var(--nav-line);color:var(--nav-fg-dim);cursor:pointer;display:grid;place-items:center;transition:color .12s,background .12s;}
-.nav-logout:hover{color:#fff;background:rgba(255,255,255,.06);}
+.nav-logout{flex:0 0 auto;padding:.35rem .6rem;border-radius:7px;background:transparent;border:1px solid transparent;color:#ef4444;font-weight:600;font-size:.82rem;line-height:1;cursor:pointer;transition:color .12s,background .12s;}
+.nav-logout:hover{color:#dc2626;background:rgba(239,68,68,.1);}
 .nav-logout:disabled{opacity:.5;cursor:not-allowed;}
-.nav-logout svg{width:16px;height:16px;}
 .content{padding:2rem 2.4rem 3.5rem;}
 .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.6rem;}
 .page-head h1{font-size:1.5rem;letter-spacing:-.02em;}
@@ -746,10 +745,12 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .vp-brand { display: flex; align-items: center; gap: 10px; }
 .vp-brand .brand-word { color: #1c1917; }
 .vp-brand .brand-access { color: #a8a29e; }
-.vp-navlinks { display: flex; gap: 24px; }
+.vp-navlinks { display: flex; gap: 24px; margin-left: auto; align-items: center; }
 .vp-navlink { font-size: 14px; color: #78716c; text-decoration: none; }
 .vp-navlink-active { color: #1c1917; font-weight: 600; }
-.vp-navright { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+.vp-navlink-admin { color: #0f766e; font-weight: 600; }
+.vp-sep { color: #d6d3d1; user-select: none; }
+.vp-navright { display: flex; align-items: center; gap: 16px; }
 .vp-avatar { width: 30px; height: 30px; border-radius: 50%; background: #e7e5e4; color: #57534e; display: flex; align-items: center; justify-content: center; font: 600 12px var(--font-public-sans), sans-serif; }
 .vp-body { max-width: 1080px; margin: 0 auto; padding: 48px 24px 64px; }
 

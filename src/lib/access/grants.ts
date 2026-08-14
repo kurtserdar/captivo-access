@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import type { Schedule } from "@/lib/access/schedule";
+import { classifyGrant } from "@/lib/access/evaluate";
 
 export async function createGrant(input: {
   userId: string;
@@ -110,8 +111,19 @@ export async function createAccessRequest(input: {
   });
 }
 
-export async function listSitesForRequest(): Promise<{ id: string; name: string }[]> {
-  return db.site.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });
+// Sites the user can still request: everything EXCEPT sites they already hold (or
+// are getting) access to — an active/upcoming/pending/off-hours grant hides the
+// site so they can't request a duplicate. Only revoked/denied/expired grants free
+// the site to be requested again.
+export async function listSitesForRequest(userId: string): Promise<{ id: string; name: string }[]> {
+  const [all, grants] = await Promise.all([
+    db.site.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    listUserGrants(userId),
+  ]);
+  const now = new Date();
+  const done = new Set(["revoked", "denied", "expired"]);
+  const held = new Set(grants.filter((g) => !done.has(classifyGrant(g, now))).map((g) => g.site.id));
+  return all.filter((s) => !held.has(s.id));
 }
 
 const PENDING_WHERE = { status: "ACTIVE", requiresApproval: true, approvedAt: null } as const;

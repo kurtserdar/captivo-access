@@ -1,4 +1,5 @@
 import { requireUser } from "@/lib/current-user";
+import { isConsoleUser } from "@/lib/auth/roles";
 import { LogoutButton } from "../(app)/logout-button";
 import { PortalNav } from "./_nav/portal-nav";
 import { BrandLockup } from "@/components/brand";
@@ -19,7 +20,9 @@ export default async function PortalLayout({ children }: { children: React.React
         </div>
         <nav className="vp-navlinks">
           <PortalNav />
+          {isConsoleUser(user.role) && <a href="/" className="vp-navlink vp-navlink-admin">Console →</a>}
         </nav>
+        <span className="vp-sep" aria-hidden="true">|</span>
         <div className="vp-navright">
           <div className="vp-avatar">{initials}</div>
           <LogoutButton />
