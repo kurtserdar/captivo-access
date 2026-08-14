@@ -5,6 +5,8 @@ import { can } from "@/lib/auth/roles";
 import { appendAuditEvents } from "@/lib/audit/append";
 import { clientIp } from "@/lib/request-ip";
 import { LiveViewer } from "./live-viewer";
+import { KasmLiveViewer } from "./kasm-live-viewer";
+import { listActiveSessions } from "@/lib/dataplane/client";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Live session" };
@@ -33,5 +35,10 @@ export default async function LiveSessionPage({ params }: { params: Promise<{ se
     /* best-effort */
   }
 
-  return <LiveViewer sessionId={sessionId} canControl={can(user.role, "configure")} />;
+  const sessions = await listActiveSessions();
+  const isolated = sessions.find((s) => s.sessionId === sessionId)?.kind === "isolated";
+  const canControl = can(user.role, "configure");
+  return isolated
+    ? <KasmLiveViewer sessionId={sessionId} canControl={canControl} />
+    : <LiveViewer sessionId={sessionId} canControl={canControl} />;
 }

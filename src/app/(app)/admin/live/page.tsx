@@ -51,6 +51,7 @@ export default async function AdminLivePage() {
     userLabel: label(s.userId),
     host: s.host,
     startedAt: s.startedAt,
+    viewerCount: s.viewerCount,
   }));
   const webRows: LiveRow[] = webSessions.map((s) => ({
     kind: "web" as const,

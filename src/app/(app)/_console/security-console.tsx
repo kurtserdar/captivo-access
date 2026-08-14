@@ -62,9 +62,10 @@ export function SecurityConsole({ data }: { data: ConsoleData }) {
                     {s.recorded && <span className="sc-rec"><span className="sc-dot" />REC {duration(s.startedAt, now)}</span>}
                   </div>
                   <div className="sc-card-name">{s.host}</div>
-                  <div className="sc-card-sub">{s.userLabel}</div>
+                  <div className="sc-card-sub">{s.userLabel}{s.viewerCount > 0 ? ` · ${s.viewerCount} watching` : ""}</div>
                   <div className="sc-thumb">isolated browser</div>
                   <div className="sc-card-actions">
+                    <Link href={`/live/${s.sessionId}`} className="sc-watch">Watch live</Link>
                     <TerminateButton sessionId={s.sessionId} className="btn sm danger" />
                   </div>
                 </div>
