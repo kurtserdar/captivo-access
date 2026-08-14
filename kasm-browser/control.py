@@ -53,7 +53,7 @@ def _spawn(display, url, profile, home, copy_out, paste_in):
         ["Xvnc", disp, "-geometry", "1280x800", "-depth", "24",
          "-websocketPort", str(port), "-interface", "0.0.0.0",
          "-httpd", "/usr/share/kasmvnc/www", "-SecurityTypes", "None",
-         "-disableBasicAuth", send_cut, accept_cut], env=env)
+         "-disableBasicAuth", "-AlwaysShared=1", send_cut, accept_cut], env=env)
     time.sleep(1.5)
     fbox = subprocess.Popen(["fluxbox"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     # Paint a plain solid background so fluxbox's fbsetbg helper finds a wallpaper
