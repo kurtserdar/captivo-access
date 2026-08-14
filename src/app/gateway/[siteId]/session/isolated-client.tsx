@@ -8,7 +8,11 @@ import { ConnectSplash } from "./connect-splash";
 // /websockify would route to the manager, not the data-plane). clipboard_* turn ON
 // the client's seamless clipboard (OFF by default); per-direction policy is still
 // enforced server-side by the broker's DLP config.
-const KASM_PARAMS = "path=kasm-tunnel/websockify&clipboard_seamless=true&clipboard_up=true&clipboard_down=true";
+// resize=remote: the vendor drives the isolated desktop size — Xvnc resizes to fit
+// the browser viewport (crisp native resolution, fills the screen). The admin viewer
+// uses resize=scale instead so it never resizes the shared desktop out from under the
+// vendor.
+const KASM_PARAMS = "path=kasm-tunnel/websockify&resize=remote&clipboard_seamless=true&clipboard_up=true&clipboard_down=true";
 
 export function IsolatedSession({ siteId, siteName, recorded }: { siteId: string; siteName: string; recorded: boolean }) {
   const [ready, setReady] = useState(false);

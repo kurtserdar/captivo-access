@@ -14,7 +14,9 @@ export function KasmLiveViewer({ sessionId, canControl, label }: { sessionId: st
   const [ready, setReady] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const viewOnly = !controlling;
-  const src = `/kasm-view/?session=${encodeURIComponent(sessionId)}&path=kasm-view/websockify&view_only=${viewOnly}`;
+  // resize=scale: fit the shared desktop into the admin's window WITHOUT resizing it
+  // (resize=remote would fight the vendor, who drives the actual desktop size).
+  const src = `/kasm-view/?session=${encodeURIComponent(sessionId)}&path=kasm-view/websockify&resize=scale&view_only=${viewOnly}`;
 
   // Reset + poll for connection on every (re)connect. The iframe is same-origin
   // (/kasm-view is under the manager host), so we can read its documentElement for
