@@ -19,7 +19,18 @@ export function IsolatedSession({ siteId, siteName, recorded }: { siteId: string
   const [ready, setReady] = useState(false);
   const [watching, setWatching] = useState(false);
   const [controlHeld, setControlHeld] = useState(false);
+  const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
+
+  // Size the isolated desktop to the vendor's screen so browser-fullscreen fills
+  // exactly (no aspect letterbox). CSS px (logical) keeps resource use reasonable on
+  // Retina; clamped to sane bounds. screen (not innerWidth) so the fullscreen viewport
+  // matches. The broker keeps this size fixed for the session, so recordings stay
+  // correct.
+  useEffect(() => {
+    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.round(v)));
+    setDims({ w: clamp(window.screen.width, 1024, 2560), h: clamp(window.screen.height, 640, 1600) });
+  }, []);
 
   // Mirror GatewaySession: poll whether an admin is watching / has taken control so
   // the vendor sees a live-monitoring notice (transparency / KVKK).
@@ -64,13 +75,15 @@ export function IsolatedSession({ siteId, siteName, recorded }: { siteId: string
 
   return (
     <>
-      <iframe
-        ref={frameRef}
-        title="Isolated browser"
-        src={`/kasm-tunnel/?site=${siteId}&${KASM_PARAMS}`}
-        style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", border: 0 }}
-        allow="clipboard-read; clipboard-write"
-      />
+      {dims && (
+        <iframe
+          ref={frameRef}
+          title="Isolated browser"
+          src={`/kasm-tunnel/?site=${siteId}&w=${dims.w}&h=${dims.h}&${KASM_PARAMS}`}
+          style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", border: 0 }}
+          allow="clipboard-read; clipboard-write"
+        />
+      )}
       {recorded && (
         <div
           style={{
@@ -97,7 +110,7 @@ export function IsolatedSession({ siteId, siteName, recorded }: { siteId: string
           {controlHeld ? "An administrator has taken control of this session." : "This session is being monitored live."}
         </div>
       )}
-      {!ready && <ConnectSplash siteName={siteName} />}
+      {(!ready || !dims) && <ConnectSplash siteName={siteName} />}
     </>
   );
 }
