@@ -11,6 +11,7 @@ CHROME = shutil.which("chromium") or shutil.which("chromium-browser") or "chromi
 MAX_SESSIONS = int(os.environ.get("MAX_SESSIONS", "5"))
 MAX_SESSION_SECONDS = int(os.environ.get("MAX_SESSION_SECONDS", "14400"))
 BASE_PORT = 6900  # per-session port = BASE_PORT + display; hub is 6901 (display :1)
+FT_MAX_BYTES = int(os.environ.get("ISOLATED_FT_MAX_BYTES", str(100 * 1024 * 1024)))
 
 _lock = threading.Lock()
 _sessions = {}  # id -> {"display": N, "port": p, "procs": [...], "profile": path, "started": ts}
@@ -39,6 +40,7 @@ def _spawn(display, url, profile, home, copy_out, paste_in, w=1280, h=800, water
     env = {**os.environ, "DISPLAY": disp, "HOME": home}
     os.makedirs(profile, exist_ok=True)
     os.makedirs(home + "/.vnc", exist_ok=True)
+    os.makedirs(home + "/Downloads", exist_ok=True)
     # A SIGKILLed predecessor on this (reused) display can leave a stale X lock +
     # socket, so the new Xvnc refuses to start and then serves a dead/blank display
     # — an intermittent blank-session hang. Clear both before starting.
@@ -161,6 +163,17 @@ def _reaper():
                 threading.Thread(target=_kill, args=(sess,), daemon=True).start()
 
 
+def _safe_name(name):
+    # Reduce any client-supplied name to a single safe path segment. Returns the
+    # basename with directory parts stripped, or None if nothing usable remains.
+    if not isinstance(name, str):
+        return None
+    base = os.path.basename(name.strip().replace("\\", "/"))
+    if base in ("", ".", ".."):
+        return None
+    return base
+
+
 class H(BaseHTTPRequestHandler):
     def _json(self, code, obj):
         body = json.dumps(obj).encode()
@@ -245,6 +258,53 @@ class H(BaseHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError, OSError):
                 pass
             return
+        # File transfer: list finished downloads in the session's Downloads dir.
+        if u.path.startswith("/session/") and u.path.endswith("/downloads"):
+            sid = u.path[len("/session/"):-len("/downloads")]
+            with _lock:
+                sess = _sessions.get(sid)
+                home = sess["home"] if sess else None
+            if home is None:
+                return self._json(404, {"error": "not_found"})
+            ddir = home + "/Downloads"
+            out = []
+            try:
+                for n in os.listdir(ddir):
+                    if n.endswith(".crdownload"):
+                        continue
+                    p = ddir + "/" + n
+                    if os.path.isfile(p):
+                        out.append({"name": n, "size": os.path.getsize(p), "mtime": int(os.path.getmtime(p))})
+            except OSError:
+                pass
+            return self._json(200, out)
+        # File transfer: stream one finished download.
+        if u.path.startswith("/session/") and "/downloads/" in u.path:
+            head, _, raw = u.path.partition("/downloads/")
+            sid = head[len("/session/"):]
+            name = _safe_name(urllib.parse.unquote(raw))
+            with _lock:
+                sess = _sessions.get(sid)
+                home = sess["home"] if sess else None
+            if home is None or name is None:
+                return self._json(404, {"error": "not_found"})
+            p = home + "/Downloads/" + name
+            if not os.path.isfile(p):
+                return self._json(404, {"error": "not_found"})
+            try:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Length", str(os.path.getsize(p)))
+                self.end_headers()
+                with open(p, "rb") as f:
+                    while True:
+                        buf = f.read(65536)
+                        if not buf:
+                            break
+                        self.wfile.write(buf)
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                pass
+            return
         if u.path == "/healthz":
             return self._json(200, {"ok": True})
         self._json(404, {"error": "not_found"})
@@ -275,6 +335,34 @@ class H(BaseHTTPRequestHandler):
             sid = path[len("/session/"):-len("/close")]
             close_session(sid)
             return self._json(200, {"ok": True})
+        # File transfer: write an uploaded file into the session HOME root, where the
+        # isolated Chromium's file picker opens.
+        if path.startswith("/session/") and path.endswith("/upload"):
+            sid = path[len("/session/"):-len("/upload")]
+            with _lock:
+                sess = _sessions.get(sid)
+                home = sess["home"] if sess else None
+            if home is None:
+                return self._json(404, {"error": "not_found"})
+            name = _safe_name(self.headers.get("X-Filename", ""))
+            if name is None:
+                return self._json(400, {"error": "bad_name"})
+            n = int(self.headers.get("Content-Length", "0") or "0")
+            if n > FT_MAX_BYTES:
+                return self._json(413, {"error": "too_large"})
+            dest = home + "/" + name
+            remaining = n
+            try:
+                with open(dest, "wb") as f:
+                    while remaining > 0:
+                        chunk = self.rfile.read(min(65536, remaining))
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        remaining -= len(chunk)
+            except OSError:
+                return self._json(500, {"error": "write_failed"})
+            return self._json(201, {"ok": True, "name": name})
         self._json(404, {"error": "not_found"})
 
     def log_message(self, *a):
