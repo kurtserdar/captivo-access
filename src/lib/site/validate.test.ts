@@ -51,4 +51,11 @@ describe("validateSiteInput", () => {
     expect(validateSiteInput({ ...b }, { ...base, isolationEnabled: true }))
       .toMatchObject({ ok: true, mode: "ISOLATED" });
   });
+  it("ISOLATED: fileTransferMode defaults to none, accepts valid, normalizes invalid", () => {
+    const b = { connectorId: "c1", name: "Wiki", accessMode: "ISOLATED", upstreamUrl: "https://wiki.internal" };
+    expect(validateSiteInput(b, base)).toMatchObject({ ok: true, mode: "ISOLATED", fileTransferMode: "none" });
+    expect(validateSiteInput({ ...b, fileTransferMode: "no_download" }, base)).toMatchObject({ ok: true, fileTransferMode: "no_download" });
+    expect(validateSiteInput({ ...b, fileTransferMode: "allow" }, base)).toMatchObject({ ok: true, fileTransferMode: "allow" });
+    expect(validateSiteInput({ ...b, fileTransferMode: "bogus" }, base)).toMatchObject({ ok: true, fileTransferMode: "none" });
+  });
 });

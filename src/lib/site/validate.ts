@@ -1,6 +1,7 @@
 import { parseGuacParams, type GuacParams } from "@/lib/gateway/guac-params";
 
 const CLIP = ["allow", "no_copy", "no_paste", "none"];
+const FT = ["allow", "no_upload", "no_download", "none"];
 const PROTOCOLS = ["RDP", "SSH", "VNC"] as const;
 
 export type SiteValidation =
@@ -40,6 +41,7 @@ export type SiteValidation =
       recordSessions: boolean;
       clipboardMode: string;
       watermark: boolean | null;
+      fileTransferMode: string;
     }
   | { ok: false; error: string };
 
@@ -68,11 +70,13 @@ export function validateSiteInput(
       if (u.protocol !== "http:" && u.protocol !== "https:") return { ok: false, error: "invalid_upstream_url" };
     } catch { return { ok: false, error: "invalid_upstream_url" }; }
     const clip = str(body.clipboardMode);
+    const ft = str(body.fileTransferMode);
     return {
       ok: true, mode: "ISOLATED", connectorId, name, description, upstreamUrl,
       recordSessions: opts.recordingEnabled && body.recordSessions === true,
       clipboardMode: CLIP.includes(clip) ? clip : "allow",
       watermark: body.watermark === true ? true : body.watermark === false ? false : null,
+      fileTransferMode: FT.includes(ft) ? ft : "none",
     };
   }
 

@@ -154,6 +154,7 @@ model Site {
   recordSessions     Boolean       @default(false)
   clipboardMode      String        @default("allow") // allow | no_copy | no_paste | none (web via proxy; gateway via guacd disable-copy/disable-paste)
   watermark          Boolean?      // isolated DLP watermark; null = inherit the global watermarkDefault
+  fileTransferMode   String        @default("none") // allow | no_upload | no_download | none (ISOLATED only)
   accessMode         SiteAccessMode @default(TRANSPARENT)
   logo               Bytes?
   logoType           String?
