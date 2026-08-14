@@ -26,43 +26,11 @@ def _free_display():
     return None
 
 
-def _session_yaml(copy_out, paste_in):
-    # Per-session KasmVNC config: network (plain HTTP, no SSL — access is
-    # grant-checked at the tunnel entry) + clipboard DLP.
-    #
-    # allow_client_to_override_kasm_server_settings MUST be false: KasmVNC's shipped
-    # defaults list the clipboard-direction DLP keys in allow_override_list, and it
-    # MERGES that list rather than replacing it, so leaving override enabled lets the
-    # web client re-enable a blocked direction (the vendor's browser must not be able
-    # to override a security policy). With override off, the server-side DLP below is
-    # authoritative; the client's own seamless clipboard still works for whichever
-    # direction the server allows.
-    return (
-        "network:\n"
-        "  protocol: http\n"
-        "  ssl:\n"
-        "    require_ssl: false\n"
-        "  udp:\n"
-        "    public_ip: 127.0.0.1\n"
-        "runtime_configuration:\n"
-        "  allow_client_to_override_kasm_server_settings: false\n"
-        "  allow_override_standard_vnc_server_settings: false\n"
-        "data_loss_prevention:\n"
-        "  clipboard:\n"
-        "    server_to_client:\n"
-        "      enabled: " + ("true" if copy_out else "false") + "\n"
-        "      primary_clipboard_enabled: false\n"
-        "    client_to_server:\n"
-        "      enabled: " + ("true" if paste_in else "false") + "\n")
-
-
 def _spawn(display, url, profile, home, copy_out, paste_in):
     disp = ":%d" % display
     env = {**os.environ, "DISPLAY": disp, "HOME": home}
     os.makedirs(profile, exist_ok=True)
     os.makedirs(home + "/.vnc", exist_ok=True)
-    with open(home + "/.vnc/kasmvnc.yaml", "w") as f:
-        f.write(_session_yaml(copy_out, paste_in))
     # A SIGKILLed predecessor on this (reused) display can leave a stale X lock +
     # socket, so the new Xvnc refuses to start and then serves a dead/blank display
     # — an intermittent blank-session hang. Clear both before starting.
@@ -72,11 +40,20 @@ def _spawn(display, url, profile, home, copy_out, paste_in):
         except OSError:
             pass
     port = BASE_PORT + display
+    # Clipboard DLP is applied as Xvnc parameters, NOT via kasmvnc.yaml: KasmVNC's
+    # data_loss_prevention YAML is only read by the kasmvncserver wrapper, which
+    # translates server_to_client.enabled -> SendCutText and client_to_server.enabled
+    # -> AcceptCutText. We launch Xvnc directly (bypassing the wrapper), so a YAML
+    # config is ignored entirely — the flags below are the real, enforced control.
+    #   SendCutText   = server -> client = copy-out (isolated desktop -> vendor)
+    #   AcceptCutText = client -> server = paste-in (vendor -> isolated desktop)
+    send_cut = "-SendCutText=" + ("1" if copy_out else "0")
+    accept_cut = "-AcceptCutText=" + ("1" if paste_in else "0")
     xvnc = subprocess.Popen(
         ["Xvnc", disp, "-geometry", "1280x800", "-depth", "24",
          "-websocketPort", str(port), "-interface", "0.0.0.0",
          "-httpd", "/usr/share/kasmvnc/www", "-SecurityTypes", "None",
-         "-disableBasicAuth"], env=env)
+         "-disableBasicAuth", send_cut, accept_cut], env=env)
     time.sleep(1.5)
     fbox = subprocess.Popen(["fluxbox"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     chrome = subprocess.Popen(
