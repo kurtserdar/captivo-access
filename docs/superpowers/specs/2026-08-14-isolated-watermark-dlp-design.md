@@ -12,7 +12,7 @@ global default with a per-site override.
 
 ## Scope
 
-Watermark only. `DLP_Region` (black out outside a rectangle) is **not** included: the
+Watermark only (live-view / client-layer — see Enforcement). `DLP_Region` (black out outside a rectangle) is **not** included: the
 isolated session is a full-screen kiosk Chromium, so there is nothing meaningful to
 region-restrict. GATEWAY uses guacd (no KasmVNC DLP) and is out of scope.
 
@@ -21,9 +21,18 @@ region-restrict. GATEWAY uses guacd (no KasmVNC DLP) and is out of scope.
 KasmVNC's Xvnc accepts DLP watermark as CLI parameters (same pattern as the B2
 clipboard flags — we launch Xvnc directly, bypassing the yaml wrapper). Verified:
 `DLP_WatermarkText` supports **strftime** formatting, so `"<email>  %Y-%m-%d %H:%M
-UTC"` renders a live clock. The watermark is drawn server-side onto the framebuffer,
-so it appears in the vendor's view, the recording, the admin live view, and any
-screenshot/photo.
+UTC"` renders a live clock.
+
+**Where it appears (spike-corrected):** KasmVNC composites the watermark at the
+**RFB/client-delivery layer**, not into the X11 framebuffer — deliberately, so it
+cannot be stripped server-side. A spike x11grab capture showed NO watermark. So the
+watermark appears to every VNC client — the **vendor's browser**, the **admin live
+view** (`/kasm-view`), and therefore any **screenshot/photo** the vendor takes — which
+is exactly the DLP goal (deter + attribute leaks on the viewer's live screen). It does
+**NOT** appear in our session recording, because the recording uses x11grab (the raw
+framebuffer). That is acceptable: the recording is an internal audit artifact that
+already carries full who/when/what metadata; the watermark's purpose is the vendor's
+live screen.
 
 ## Configuration
 
@@ -109,7 +118,8 @@ Watermark on/off + text flows: descriptor (manager, resolves + builds text) →
    or global default) → builds `"<email>  %Y-%m-%d %H:%M UTC"`.
 2. Dataplane threads `watermarkText` → broker starts Xvnc with the DLP watermark flags.
 3. The vendor sees a tiled, diagonal, translucent watermark with their email + live
-   clock; it is present in the recording and the admin live view.
+   clock; the admin live view (another VNC client) shows it too. It is NOT in the
+   x11grab recording (RFB-layer composite).
 4. Watermark off (site off, or global default off and site inherits) → no flags,
    clean screen (today's behaviour).
 
@@ -127,8 +137,9 @@ Watermark on/off + text flows: descriptor (manager, resolves + builds text) →
 - `go build ./...` + `go test ./...`; `pnpm build`; `python3 ast.parse` on control.py.
 - `prisma db push` (additive, non-destructive) applies the two columns.
 - Manual Gate after deploy: turn on the global default (or a site override) → an
-  isolated session shows the email + live-time watermark; the recording shows it;
-  turning it off → clean screen. Clipboard DLP + sizing + GATEWAY unchanged.
+  isolated session's browser shows the email + live-time watermark, and the admin
+  live view shows it; turning it off → clean screen. (The recording will NOT carry the
+  watermark — expected.) Clipboard DLP + sizing + GATEWAY unchanged.
 
 ## Deploy
 
