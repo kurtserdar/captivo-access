@@ -271,6 +271,8 @@ func main() {
 	mux.HandleFunc("/kasm-tunnel", func(w http.ResponseWriter, r *http.Request) { serveKasmTunnel(ctrl, reg, hub, w, r) })
 	mux.HandleFunc("/kasm-tunnel/", func(w http.ResponseWriter, r *http.Request) { serveKasmTunnel(ctrl, reg, hub, w, r) })
 	mux.HandleFunc("/guac-view", func(w http.ResponseWriter, r *http.Request) { serveGuacView(hub, ctrl, reg, w, r) })
+	mux.HandleFunc("/kasm-view", func(w http.ResponseWriter, r *http.Request) { serveKasmView(hub, ctrl, reg, w, r) })
+	mux.HandleFunc("/kasm-view/", func(w http.ResponseWriter, r *http.Request) { serveKasmView(hub, ctrl, reg, w, r) })
 	mux.Handle("/", proxy)
 	log.Fatal(http.ListenAndServe(env("PROXY_ADDR", ":3103"), mux))
 }
