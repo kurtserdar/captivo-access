@@ -317,6 +317,13 @@ model SmtpConfig {
   updatedAt DateTime @updatedAt
 }
 
+model BrandingConfig {
+  id              String   @id
+  splashImage     Bytes?
+  splashImageType String? // MIME of splashImage
+  updatedAt       DateTime @updatedAt
+}
+
 model Notification {
   id        String    @id @default(cuid())
   type      String // "site_down" | "site_recovered"
