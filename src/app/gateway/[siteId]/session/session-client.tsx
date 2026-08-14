@@ -3,14 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { clipboardCaps } from "@/lib/gateway/clipboard-caps";
 import { createClipboardBridge, type ClipboardBridge } from "./clipboard";
+import { ConnectSplash } from "./connect-splash";
 
 // Fullscreen HTML5 session: embeds guacamole-common-js and points it at the
 // data-plane guac-tunnel (same origin, fronted by nginx). The server drives the
 // guacd handshake + credential injection; this only renders + sends input.
-export function GatewaySession({ siteId, recorded, clipboardMode }: { siteId: string; recorded: boolean; clipboardMode: string }) {
+export function GatewaySession({ siteId, siteName, recorded, clipboardMode }: { siteId: string; siteName: string; recorded: boolean; clipboardMode: string }) {
   const caps = clipboardCaps(clipboardMode);
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const [watching, setWatching] = useState(false);
   const [controlHeld, setControlHeld] = useState(false);
   const guacRef = useRef<any>(null);
@@ -120,6 +122,9 @@ export function GatewaySession({ siteId, recorded, clipboardMode }: { siteId: st
     let onResize: (() => void) | null = null;
     let onFocus: (() => void) | null = null;
     let disposed = false;
+    // Fallback: reveal the real canvas/error if guacd never reaches CONNECTED, so
+    // the vendor is never stuck behind the splash.
+    const readyTimer = window.setTimeout(() => setReady(true), 20000);
 
     (async () => {
       const mod: any = await import("guacamole-common-js");
@@ -131,6 +136,8 @@ export function GatewaySession({ siteId, recorded, clipboardMode }: { siteId: st
       const fail = () => setError("The session ended or could not start.");
       tunnel.onerror = fail;
       client.onerror = fail;
+      // Dismiss the connect splash once guacd reaches CONNECTED (state 3).
+      client.onstatechange = (state: number) => { if (state === 3 && !disposed) setReady(true); };
 
       guacRef.current = Guacamole;
       client.onfile = (stream: any, mimetype: string, filename: string) => {
@@ -222,6 +229,7 @@ export function GatewaySession({ siteId, recorded, clipboardMode }: { siteId: st
 
     return () => {
       disposed = true;
+      window.clearTimeout(readyTimer);
       try {
         if (onResize) window.removeEventListener("resize", onResize);
         if (onFocus) window.removeEventListener("focus", onFocus);
@@ -262,6 +270,7 @@ export function GatewaySession({ siteId, recorded, clipboardMode }: { siteId: st
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "#000", overflow: "hidden", cursor: "none" }} onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
+      {!ready && !error && <ConnectSplash siteName={siteName} />}
       {/* Dedicated display target: the guac client clears this via innerHTML, so the
           overlays below must NOT live inside it (they'd be wiped on connect). */}
       <div ref={ref} style={{ position: "absolute", inset: 0 }} />

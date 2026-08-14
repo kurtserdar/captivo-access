@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
 import { GatewaySession } from "./session-client";
+import { IsolatedSession } from "./isolated-client";
 
-export function ConsentGate({ siteId, recorded, clipboardMode }: { siteId: string; recorded: boolean; clipboardMode: string }) {
+export function ConsentGate({ accessMode, siteId, siteName, recorded, clipboardMode }: { accessMode: "GATEWAY" | "ISOLATED"; siteId: string; siteName: string; recorded: boolean; clipboardMode: string }) {
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -16,7 +17,11 @@ export function ConsentGate({ siteId, recorded, clipboardMode }: { siteId: strin
     setAccepted(true);
   }
 
-  if (accepted) return <GatewaySession siteId={siteId} recorded={recorded} clipboardMode={clipboardMode} />;
+  if (accepted) {
+    return accessMode === "ISOLATED"
+      ? <IsolatedSession siteId={siteId} siteName={siteName} />
+      : <GatewaySession siteId={siteId} siteName={siteName} recorded={recorded} clipboardMode={clipboardMode} />;
+  }
 
   return (
     <div className="consent-gate">
