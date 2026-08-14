@@ -26,7 +26,15 @@ def _free_display():
     return None
 
 
-def _spawn(display, url, profile, home, copy_out, paste_in):
+def _clamp_dim(v, lo, hi, default):
+    try:
+        v = int(v)
+    except (TypeError, ValueError):
+        return default
+    return max(lo, min(hi, v))
+
+
+def _spawn(display, url, profile, home, copy_out, paste_in, w=1280, h=800):
     disp = ":%d" % display
     env = {**os.environ, "DISPLAY": disp, "HOME": home}
     os.makedirs(profile, exist_ok=True)
@@ -50,7 +58,7 @@ def _spawn(display, url, profile, home, copy_out, paste_in):
     send_cut = "-SendCutText=" + ("1" if copy_out else "0")
     accept_cut = "-AcceptCutText=" + ("1" if paste_in else "0")
     xvnc = subprocess.Popen(
-        ["Xvnc", disp, "-geometry", "1280x800", "-depth", "24",
+        ["Xvnc", disp, "-geometry", "%dx%d" % (w, h), "-depth", "24",
          "-websocketPort", str(port), "-interface", "0.0.0.0",
          "-httpd", "/usr/share/kasmvnc/www", "-SecurityTypes", "None",
          "-disableBasicAuth", "-AlwaysShared=1", send_cut, accept_cut], env=env)
@@ -90,7 +98,7 @@ def _kill(sess):
             pass
 
 
-def open_session(url, copy_out, paste_in):
+def open_session(url, copy_out, paste_in, w=1280, h=800):
     with _lock:
         if len(_sessions) >= MAX_SESSIONS:
             return None
@@ -101,10 +109,11 @@ def open_session(url, copy_out, paste_in):
         sid = "s%d-%d" % (int(time.time()), _seq["n"])
         profile = "/profiles/" + sid
         home = "/sess/" + sid
-        procs = _spawn(display, url, profile, home, copy_out, paste_in)
+        procs = _spawn(display, url, profile, home, copy_out, paste_in, w, h)
         port = BASE_PORT + display
         _sessions[sid] = {"display": display, "port": port, "procs": procs,
-                          "profile": profile, "home": home, "started": time.time()}
+                          "profile": profile, "home": home, "started": time.time(),
+                          "w": w, "h": h}
         return {"id": sid, "port": port}
 
 
@@ -115,7 +124,7 @@ def close_session(sid):
         _kill(sess)
 
 
-def _ffmpeg_capture(display, recfile):
+def _ffmpeg_capture(display, recfile, w=1280, h=800):
     # Grab the per-session Xvnc display as WebM (VP8). The tee muxer writes two sinks:
     # the live pipe (stdout, streamed to the data-plane — crash-safe interim recording)
     # and a seekable file (finalized on clean stop for correct duration + seeking).
@@ -124,7 +133,7 @@ def _ffmpeg_capture(display, recfile):
     # timestamps + duration.
     return subprocess.Popen(
         ["ffmpeg", "-loglevel", "error", "-f", "x11grab",
-         "-video_size", "1280x800", "-framerate", "10", "-i", ":%d" % display,
+         "-video_size", "%dx%d" % (w, h), "-framerate", "10", "-i", ":%d" % display,
          "-an", "-c:v", "libvpx", "-b:v", "1M", "-deadline", "realtime",
          "-f", "tee", "-map", "0:v",
          "[f=webm:onfail=ignore]pipe:1|[f=webm]" + recfile],
@@ -162,10 +171,12 @@ class H(BaseHTTPRequestHandler):
             with _lock:
                 sess = _sessions.get(sid)
                 display = sess["display"] if sess else None
+                rec_w = sess.get("w", 1280) if sess else 1280
+                rec_h = sess.get("h", 800) if sess else 800
             if display is None:
                 return self._json(404, {"error": "not_found"})
             recfile = "/rec/" + sid + ".webm"
-            proc = _ffmpeg_capture(display, recfile)
+            proc = _ffmpeg_capture(display, recfile, rec_w, rec_h)
             with _lock:
                 s = _sessions.get(sid)
                 if s is not None:
@@ -242,7 +253,9 @@ class H(BaseHTTPRequestHandler):
                 return self._json(400, {"error": "bad_url"})
             copy_out = data.get("copyOut", True)
             paste_in = data.get("pasteIn", True)
-            res = open_session(url, copy_out, paste_in)
+            w = _clamp_dim(data.get("w"), 1024, 2560, 1280)
+            h = _clamp_dim(data.get("h"), 640, 1600, 800)
+            res = open_session(url, copy_out, paste_in, w, h)
             if res is None:
                 return self._json(503, {"error": "capacity"})
             return self._json(201, res)
