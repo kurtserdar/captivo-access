@@ -77,8 +77,17 @@ def _kill(sess):
     for p in sess["procs"]:
         if p.poll() is None:
             p.kill()
+    rec_proc = sess.get("rec_proc")
+    if rec_proc is not None and rec_proc.poll() is None:
+        rec_proc.kill()
     shutil.rmtree(sess["profile"], ignore_errors=True)
     shutil.rmtree(sess["home"], ignore_errors=True)
+    rec_file = sess.get("rec_file")
+    if rec_file:
+        try:
+            os.remove(rec_file)
+        except OSError:
+            pass
 
 
 def open_session(url, copy_out, paste_in):
@@ -106,14 +115,19 @@ def close_session(sid):
         _kill(sess)
 
 
-def _ffmpeg_capture(display):
-    # Grab the per-session Xvnc display as live WebM (VP8), no audio, ~10 fps.
-    # Output goes to stdout so the /rec handler can stream it to the data-plane.
+def _ffmpeg_capture(display, recfile):
+    # Grab the per-session Xvnc display as WebM (VP8). The tee muxer writes two sinks:
+    # the live pipe (stdout, streamed to the data-plane — crash-safe interim recording)
+    # and a seekable file (finalized on clean stop for correct duration + seeking).
+    # onfail=ignore keeps the file writing even if the pipe reader goes away. x11grab
+    # is real-time paced, so an interrupted (SIGINT) capture still has correct
+    # timestamps + duration.
     return subprocess.Popen(
         ["ffmpeg", "-loglevel", "error", "-f", "x11grab",
          "-video_size", "1280x800", "-framerate", "10", "-i", ":%d" % display,
          "-an", "-c:v", "libvpx", "-b:v", "1M", "-deadline", "realtime",
-         "-f", "webm", "-"],
+         "-f", "tee", "-map", "0:v",
+         "[f=webm:onfail=ignore]pipe:1|[f=webm]" + recfile],
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
 
 
@@ -150,7 +164,13 @@ class H(BaseHTTPRequestHandler):
                 display = sess["display"] if sess else None
             if display is None:
                 return self._json(404, {"error": "not_found"})
-            proc = _ffmpeg_capture(display)
+            recfile = "/rec/" + sid + ".webm"
+            proc = _ffmpeg_capture(display, recfile)
+            with _lock:
+                s = _sessions.get(sid)
+                if s is not None:
+                    s["rec_proc"] = proc
+                    s["rec_file"] = recfile
             self.send_response(200)
             self.send_header("Content-Type", "video/webm")
             self.end_headers()
@@ -166,11 +186,44 @@ class H(BaseHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError, OSError):
                 pass
             finally:
-                proc.terminate()
+                # SIGINT (not terminate/kill) so ffmpeg writes the trailer + Cues +
+                # Duration, leaving /rec/<sid>.webm seekable for the finalize pull.
+                if proc.poll() is None:
+                    proc.send_signal(signal.SIGINT)
+                    try:
+                        proc.wait(timeout=8)
+                    except Exception:
+                        proc.kill()
+            return
+        # Finalized recording: stream the seekable /rec/<sid>.webm (finalizing first if
+        # ffmpeg somehow still runs). The data-plane pulls this on clean session end.
+        if u.path.startswith("/session/") and u.path.endswith("/recording"):
+            sid = u.path[len("/session/"):-len("/recording")]
+            with _lock:
+                s = _sessions.get(sid)
+                recfile = s.get("rec_file") if s else None
+                proc = s.get("rec_proc") if s else None
+            if proc is not None and proc.poll() is None:
+                proc.send_signal(signal.SIGINT)
                 try:
-                    proc.wait(timeout=3)
+                    proc.wait(timeout=8)
                 except Exception:
                     proc.kill()
+            if not recfile or not os.path.exists(recfile):
+                return self._json(404, {"error": "not_found"})
+            try:
+                self.send_response(200)
+                self.send_header("Content-Type", "video/webm")
+                self.send_header("Content-Length", str(os.path.getsize(recfile)))
+                self.end_headers()
+                with open(recfile, "rb") as f:
+                    while True:
+                        buf = f.read(65536)
+                        if not buf:
+                            break
+                        self.wfile.write(buf)
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                pass
             return
         if u.path == "/healthz":
             return self._json(200, {"ok": True})
@@ -205,5 +258,6 @@ class H(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     os.makedirs("/profiles", exist_ok=True)
+    os.makedirs("/rec", exist_ok=True)
     threading.Thread(target=_reaper, daemon=True).start()
     ThreadingHTTPServer(("0.0.0.0", 7900), H).serve_forever()
