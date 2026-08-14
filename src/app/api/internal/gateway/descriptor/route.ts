@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
         kasmControlAddr: (process.env.ISOLATED_KASM_CONTROL_ADDR ?? "captivo-kasm:7900").trim(),
         connectorId: site.connectorId,
         clipboardMode: site.clipboardMode,
-        record: false, // hi-fi recording = B3
+        record: recordingEnabled() && site.recordSessions,
       });
     }
     const [browserHost, browserPort] = (process.env.ISOLATED_BROWSER_ADDR ?? "captivo-browser:5900").split(":");
