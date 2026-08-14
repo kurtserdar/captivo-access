@@ -30,7 +30,7 @@ export function AccessTrend({ data }: { data: TrendDay[] }) {
         }}
       >
         <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted)" }} interval={4} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={TT} cursor={{ fill: "var(--surface-2)" }} />
+        <Tooltip contentStyle={TT} labelStyle={{ color: "var(--fg)", fontWeight: 600 }} itemStyle={{ color: "var(--fg)" }} cursor={{ fill: "var(--surface-2)" }} />
         <Legend onClick={toggle} wrapperStyle={{ fontSize: "12px", cursor: "pointer" }} />
         <Bar dataKey="allow" name="Accessed" fill="var(--ok)" hide={hidden.allow} activeBar={{ opacity: 0.85 }} />
         <Bar dataKey="deny" name="Blocked" fill="var(--danger)" hide={hidden.deny} activeBar={{ opacity: 0.85 }} />
