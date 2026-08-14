@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 // openKasmSession asks the in-container broker to start an isolated KasmVNC
@@ -107,7 +109,7 @@ type kasmDesc struct {
 // opens a fresh per-session browser via the in-container broker and is proxied to
 // that session's port, closed when the WebSocket ends. The credential/target never
 // leaves the customer network — the data-plane only relays.
-func serveKasmTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, r *http.Request) {
+func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http.ResponseWriter, r *http.Request) {
 	ck, err := r.Cookie("ca_session")
 	if err != nil || ck.Value == "" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -118,6 +120,12 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
+	// Captured relay conn for the (WS) isolated session, so the terminate closer can
+	// close it. Populated on the reverse proxy's first dial (below); read under the
+	// mutex by the closer running on another goroutine.
+	var connMu sync.Mutex
+	var backendConn net.Conn
+
 	siteID := r.URL.Query().Get("site")
 	if siteID == "" {
 		if c, e := r.Cookie("ca_kasm_site"); e == nil {
@@ -213,13 +221,35 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, w http.ResponseWriter, 
 			}
 			log.Printf("kasm-tunnel site=%s: hi-fi session %s closed", siteID, id)
 		}()
+
+		// Make this isolated session visible + terminable in the console. The closer
+		// closes the captured relay conn, which ends proxy.ServeHTTP below and unwinds
+		// the deferred broker close above (killing Xvnc/Chromium) — terminate reuses
+		// the normal teardown path.
+		sessionID := newSessionID()
+		hub.RegisterIsolated(sessionID, siteID, userID, d.NavigateUrl, time.Now(), d.ConnectorID)
+		hub.SetCloser(sessionID, func() {
+			connMu.Lock()
+			c := backendConn
+			connMu.Unlock()
+			if c != nil {
+				_ = c.Close()
+			}
+		})
+		defer hub.Remove(sessionID)
 	}
 
 	target, _ := url.Parse("http://" + backendAddr)
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	proxy.Transport = &http.Transport{
 		DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-			return dialGuacd(sess, backendAddr) // relay to KasmVNC through the connector
+			c, e := dialGuacd(sess, backendAddr) // relay to KasmVNC through the connector
+			if e == nil {
+				connMu.Lock()
+				backendConn = c
+				connMu.Unlock()
+			}
+			return c, e
 		},
 	}
 	r.URL.Path = strings.TrimPrefix(r.URL.Path, "/kasm-tunnel")

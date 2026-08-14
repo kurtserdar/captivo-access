@@ -268,8 +268,8 @@ func main() {
 	// nginx forwards /guac-tunnel here; everything else is the browser proxy.
 	mux := http.NewServeMux()
 	mux.HandleFunc("/guac-tunnel", func(w http.ResponseWriter, r *http.Request) { serveGuacTunnel(ctrl, reg, hub, audit, w, r) })
-	mux.HandleFunc("/kasm-tunnel", func(w http.ResponseWriter, r *http.Request) { serveKasmTunnel(ctrl, reg, w, r) })
-	mux.HandleFunc("/kasm-tunnel/", func(w http.ResponseWriter, r *http.Request) { serveKasmTunnel(ctrl, reg, w, r) })
+	mux.HandleFunc("/kasm-tunnel", func(w http.ResponseWriter, r *http.Request) { serveKasmTunnel(ctrl, reg, hub, w, r) })
+	mux.HandleFunc("/kasm-tunnel/", func(w http.ResponseWriter, r *http.Request) { serveKasmTunnel(ctrl, reg, hub, w, r) })
 	mux.HandleFunc("/guac-view", func(w http.ResponseWriter, r *http.Request) { serveGuacView(hub, ctrl, reg, w, r) })
 	mux.Handle("/", proxy)
 	log.Fatal(http.ListenAndServe(env("PROXY_ADDR", ":3103"), mux))
