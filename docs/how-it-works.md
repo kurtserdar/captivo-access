@@ -176,6 +176,24 @@ flowchart TD
   (Resources page + dashboard), and guacd's own logs surface on the connector's
   detail page ("Gateway logs") for troubleshooting.
 
+## The isolated-browser path (isolated)
+
+An **Isolated browser** Resource passes the same first two gates, but its tail
+runs the app inside a **throwaway, server-side browser** (KasmVNC on the gateway
+host) and streams only pixels to the vendor — the app's content never touches the
+vendor's own machine, the strongest isolation of the three methods. It reuses the
+gateway plumbing (a `/kasm-tunnel` data-plane relay through the connector) and adds
+DLP controls that only make sense when we own the browser: **clipboard** direction
+control, an optional **screen watermark** (the vendor's email + a live clock,
+composited onto what they see and any screenshot), a **seekable** video recording,
+and the same **live watch / take-control / terminate** as gateway (a second shared
+client via `/kasm-view`). The isolated desktop sizes to the vendor's screen so it
+fills fullscreen.
+
+A Resource's **access method** — `TRANSPARENT` (web app), `GATEWAY` (remote
+desktop), or `ISOLATED` (isolated browser) — is chosen on its form; all three share
+the identical session + grant gates above and differ only in the tail.
+
 ---
 
 See also: [`deploy/README.md`](../deploy/README.md) for the full production

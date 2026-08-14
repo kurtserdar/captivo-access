@@ -18,8 +18,9 @@ and no traffic that passes through anyone's infrastructure but your own.
 > (web sessions via rrweb, plus native RDP/SSH/VNC remote-desktop sessions
 > streamed in-browser, recorded, and watchable live), an encrypted **credential
 > vault** for remote-desktop targets, and a light/dark/system console are shipped
-> too. Session isolation (remote-browser rendering) — the rest of the "Pro"
-> layer — is **not built yet**; see [Roadmap](#roadmap-not-yet). Not
+> too. **Session isolation** — an isolated remote browser (KasmVNC) for the
+> riskiest access, with live watch/take-control/terminate, seekable video
+> recording, and clipboard + screen-watermark DLP — is now shipped as well. Not
 > production-hardened; review the [Security model](#security-model) yourself
 > before relying on it.
 
@@ -163,7 +164,17 @@ Shipped and working today:
   session in real time from `/admin/live` (the current screen shows on join, via
   guacd connection sharing), and an admin can **take control**; the vendor sees a
   "being monitored" notice and every watch/take/release is written to the audit
-  log.
+  log. Isolated-browser sessions are watchable + controllable the same way (a
+  second shared KasmVNC client).
+- **Isolated browser (session isolation)** — the highest-isolation access method:
+  instead of proxying the app to the vendor's own browser, a Resource can run in a
+  throwaway, server-side **isolated browser** (KasmVNC) streamed to the vendor —
+  nothing but pixels reaches their machine. It sizes to the vendor's screen (fills
+  fullscreen), records to a **seekable** video, enforces **clipboard DLP** (copy/paste
+  direction control), and can overlay a **screen watermark** (the vendor's email + a
+  live clock, on their screen and any screenshot) as a leak deterrent. A Resource's
+  access method is `TRANSPARENT` (web app) / `GATEWAY` (remote desktop) / `ISOLATED`
+  (isolated browser).
 - **Email (SMTP)** — configured from the console (`/admin/email`); sends invite
   emails, access-request/approval emails, and resource down/recovered alerts. (Invites
   can also be copied as a one-time link and sent yourself; all of these events also
@@ -266,7 +277,7 @@ cp .env.prod.example .env   # fill in ACCESS_DOMAIN and secrets
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Images are published to `ghcr.io/kurtserdar/captivo-access-{manager,dataplane,connector,migrate}`
+Images are published to `ghcr.io/kurtserdar/captivo-access-{manager,dataplane,connector,migrate,kasm-browser}`
 on each `vX.Y.Z` release tag (plus `latest`) — see
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml) and the
 [releases](https://github.com/kurtserdar/captivo-access/releases). Pull the
@@ -401,12 +412,10 @@ instead, replicate that routing and forward those headers.
 
 ## Roadmap / not yet
 
-Explicitly **not** built — don't assume these exist:
-
-- **Session isolation / remote-browser rendering** — the rest of the future
-  "Pro" layer, on top of what ships today. (Session *recording*, live view, the
-  encrypted **credential vault**, and the **native RDP/SSH/VNC gateway** are all
-  already here — see [Features](#features).)
+Session isolation (the isolated remote browser) has now shipped — see
+[Features](#features). The remaining "Pro"-tier items (e.g. file transfer into an
+isolated session, a licensing/tier mechanism) are not built yet — don't assume
+they exist.
 
 The console is intentionally **English-only** (Turkish localization is not
 planned for the console itself; the KVKK/5651 framing is about data behavior,

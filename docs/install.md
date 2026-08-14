@@ -147,8 +147,9 @@ Leave the optional/commented ones (`DNS_API_TOKEN`, `CADDY_DNS_MODULE`,
 sessions" toggle), `ISOLATED_ENABLED` (Pro isolated browser — gates the
 "Isolated browser" Resource type; the `captivo-kasm` (KasmVNC) container is bundled
 with every gateway connector and reverse-proxied at `/kasm-tunnel`, so host-nginx
-deployments must route `/kasm-tunnel` (and `/kasm-tunnel/`) to the data-plane like
-`/guac-tunnel`, and if you set the connector's `ALLOWED_TARGETS` it must include
+deployments must route `/kasm-tunnel` (and `/kasm-tunnel/`) and `/kasm-view` (and
+`/kasm-view/`, the admin live-watch relay) to the data-plane like `/guac-tunnel`,
+and if you set the connector's `ALLOWED_TARGETS` it must include
 `captivo-kasm:6901` and `captivo-kasm:7900`, like `captivo-guacd:4822`),
 `CONNECTOR_TUNNEL_URL` (overrides the default
 `wss://connect.<ACCESS_DOMAIN>` endpoint)) alone unless you know you need them. `DNS_API_TOKEN` is **only** for the large-scale wildcard-certificate escape
