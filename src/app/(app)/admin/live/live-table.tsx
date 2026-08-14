@@ -8,6 +8,7 @@ import { RevokeAccessButton } from "@/app/(app)/_console/revoke-access-button";
 
 export type LiveRow =
   | { kind: "gateway"; sessionId: string; siteName: string; userLabel: string; protocol: string; startedAt: string; viewerCount: number; controlled: boolean }
+  | { kind: "isolated"; sessionId: string; siteName: string; userLabel: string; host: string; startedAt: string }
   | { kind: "web"; siteName: string; userLabel: string; host: string; startedAt: string; grantId: string | null };
 
 export function LiveTable({ rows, canTerminate }: { rows: LiveRow[]; canTerminate: boolean }) {
@@ -53,6 +54,17 @@ export function LiveTable({ rows, canTerminate }: { rows: LiveRow[]; canTerminat
                     <Link href={`/live/${r.sessionId}`} className="btn sm">Watch</Link>
                     {canTerminate && <TerminateButton sessionId={r.sessionId} className="btn sm danger" />}
                   </span>
+                </td>
+              </tr>
+            ) : r.kind === "isolated" ? (
+              <tr key={r.sessionId}>
+                <td>{r.userLabel}</td>
+                <td>{r.siteName}</td>
+                <td><span className="pill">ISOLATED</span></td>
+                <td className="cell-sub"><LocalTime iso={r.startedAt} /></td>
+                <td className="cell-sub">—</td>
+                <td className="row-actions">
+                  {canTerminate && <TerminateButton sessionId={r.sessionId} className="btn sm danger" />}
                 </td>
               </tr>
             ) : (

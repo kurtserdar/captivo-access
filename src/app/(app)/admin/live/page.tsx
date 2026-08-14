@@ -34,7 +34,7 @@ export default async function AdminLivePage() {
   const grantMap = new Map(webGrants.map((g) => [g.userId + "\x1f" + g.siteId, g.id]));
   const label = (userId: string) => users.get(userId)?.name ?? users.get(userId)?.email ?? userId;
 
-  const gatewayRows: LiveRow[] = sessions.map((s) => ({
+  const gatewayRows: LiveRow[] = sessions.filter((s) => s.kind !== "isolated").map((s) => ({
     kind: "gateway" as const,
     sessionId: s.sessionId,
     siteName: sites.get(s.siteId)?.name ?? s.host,
@@ -44,6 +44,14 @@ export default async function AdminLivePage() {
     viewerCount: s.viewerCount,
     controlled: s.controlOwner !== "",
   }));
+  const isolatedRows: LiveRow[] = sessions.filter((s) => s.kind === "isolated").map((s) => ({
+    kind: "isolated" as const,
+    sessionId: s.sessionId,
+    siteName: sites.get(s.siteId)?.name ?? s.host,
+    userLabel: label(s.userId),
+    host: s.host,
+    startedAt: s.startedAt,
+  }));
   const webRows: LiveRow[] = webSessions.map((s) => ({
     kind: "web" as const,
     siteName: sites.get(s.siteId)?.name ?? s.host,
@@ -52,7 +60,7 @@ export default async function AdminLivePage() {
     startedAt: s.startedAt,
     grantId: grantMap.get(s.userId + "\x1f" + s.siteId) ?? null,
   }));
-  const rows = [...gatewayRows, ...webRows];
+  const rows = [...gatewayRows, ...isolatedRows, ...webRows];
 
   return (
     <main>
