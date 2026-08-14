@@ -8,13 +8,16 @@ import { getUpdateCheckConfig } from "@/lib/updates/update-check-config";
 import { managerVersion } from "@/lib/version";
 import { isUpdateAvailable } from "@/lib/updates/semver";
 import { buildNavModel } from "@/lib/nav/model";
+import { resolvedDisplayTimezone } from "@/lib/settings/timezone";
 import { TopNav } from "./_shell/topnav";
+import { TimezoneProvider } from "./_shell/timezone-context";
 
 // requireUser() must be read fresh from the DB on every request (session/role changes reflect immediately).
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  const tz = await resolvedDisplayTimezone(user.id);
   const showGrants = can(user.role, "approve_grants");
   const showRead = can(user.role, "read_console");
   const showConfig = can(user.role, "configure");
@@ -32,6 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const model = buildNavModel(user.role, { pending, unread });
 
   return (
+    <TimezoneProvider tz={tz}>
     <div className="app">
       <TopNav
         model={model}
@@ -52,5 +56,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       )}
       <main className="content">{children}</main>
     </div>
+    </TimezoneProvider>
   );
 }
