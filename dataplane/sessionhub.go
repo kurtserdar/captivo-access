@@ -34,6 +34,8 @@ type liveSession struct {
 	kind                               string
 	startedAt                          time.Time
 	connID, connectorID, guacdAddr     string
+	kasmAddr                           string
+	kasmPort                           int
 
 	mu           sync.Mutex
 	controlOwner string // userID holding control, or "" for the vendor
@@ -45,6 +47,12 @@ func (ls *liveSession) shareInfo() (string, string, string) {
 	ls.mu.Lock()
 	defer ls.mu.Unlock()
 	return ls.connID, ls.connectorID, ls.guacdAddr
+}
+
+func (ls *liveSession) kasmAttach() (string, string, int) {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
+	return ls.connectorID, ls.kasmAddr, ls.kasmPort
 }
 
 func (ls *liveSession) addViewer() {
@@ -120,11 +128,11 @@ func (h *SessionHub) Register(sessionID, siteID, userID, protocol, host string, 
 // RegisterIsolated adds an ISOLATED (KasmVNC) session. It has no guacd
 // connID/guacdAddr — viewers attach to the per-session Xvnc instead (Slice 2) — so
 // only the fields the console list + terminate need are set.
-func (h *SessionHub) RegisterIsolated(sessionID, siteID, userID, host string, startedAt time.Time, connectorID string) *liveSession {
+func (h *SessionHub) RegisterIsolated(sessionID, siteID, userID, host string, startedAt time.Time, connectorID, kasmAddr string, kasmPort int) *liveSession {
 	ls := &liveSession{
 		id: sessionID, siteID: siteID, userID: userID, protocol: "isolated", host: host,
 		kind:      "isolated",
-		startedAt: startedAt, connectorID: connectorID,
+		startedAt: startedAt, connectorID: connectorID, kasmAddr: kasmAddr, kasmPort: kasmPort,
 	}
 	h.mu.Lock()
 	h.m[sessionID] = ls

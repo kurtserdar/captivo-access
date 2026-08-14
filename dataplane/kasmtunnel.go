@@ -227,7 +227,7 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 		// the deferred broker close above (killing Xvnc/Chromium) — terminate reuses
 		// the normal teardown path.
 		sessionID := newSessionID()
-		hub.RegisterIsolated(sessionID, siteID, userID, d.NavigateUrl, time.Now(), d.ConnectorID)
+		hub.RegisterIsolated(sessionID, siteID, userID, d.NavigateUrl, time.Now(), d.ConnectorID, d.KasmAddr, port)
 		hub.SetCloser(sessionID, func() {
 			connMu.Lock()
 			c := backendConn

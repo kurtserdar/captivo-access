@@ -23,10 +23,13 @@ func TestSessionHubTerminate(t *testing.T) {
 
 func TestRegisterIsolatedKindAndTerminate(t *testing.T) {
 	h := NewSessionHub()
-	h.RegisterIsolated("s1", "site1", "user1", "https://example.com", time.Now(), "conn1")
+	ls := h.RegisterIsolated("s1", "site1", "user1", "https://example.com", time.Now(), "conn1", "10.0.0.1:6901", 6902)
 	list := h.List()
 	if len(list) != 1 || list[0].Kind != "isolated" || list[0].Protocol != "isolated" {
 		t.Fatalf("expected one isolated session with kind/protocol=isolated, got %+v", list)
+	}
+	if cid, addr, port := ls.kasmAttach(); cid != "conn1" || addr != "10.0.0.1:6901" || port != 6902 {
+		t.Fatalf("kasmAttach mismatch: %s %s %d", cid, addr, port)
 	}
 	called := false
 	h.SetCloser("s1", func() { called = true })
