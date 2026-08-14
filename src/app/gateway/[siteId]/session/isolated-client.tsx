@@ -12,28 +12,35 @@ const KASM_PARAMS = "path=kasm-tunnel/websockify&clipboard_seamless=true&clipboa
 
 export function IsolatedSession({ siteId, siteName }: { siteId: string; siteName: string }) {
   const [ready, setReady] = useState(false);
-  const mounted = useRef(0);
+  const frameRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    mounted.current = Date.now();
-    // Fallback: never leave the vendor stuck behind the splash if the browser
-    // never fires onLoad — reveal the real canvas/error after 20 s.
-    const t = setTimeout(() => setReady(true), 20000);
-    return () => clearTimeout(t);
+    // Keep our branded splash up until the embedded KasmVNC client actually
+    // CONNECTS — it adds `noVNC_connected` to its documentElement then. Dismissing
+    // on iframe onLoad instead (document ready, but not yet connected) would
+    // uncover KasmVNC's own "connecting" splash underneath. The iframe is
+    // same-origin (/kasm-tunnel is under the manager host), so we can read its
+    // document. A 20 s fallback guarantees we never trap the vendor behind it.
+    const isConnected = () => {
+      try {
+        return !!frameRef.current?.contentDocument?.documentElement.classList.contains("noVNC_connected");
+      } catch {
+        return false;
+      }
+    };
+    const poll = window.setInterval(() => {
+      if (isConnected()) { window.clearInterval(poll); setReady(true); }
+    }, 250);
+    const fallback = window.setTimeout(() => { window.clearInterval(poll); setReady(true); }, 20000);
+    return () => { window.clearInterval(poll); window.clearTimeout(fallback); };
   }, []);
-
-  // Keep the splash up for at least 600 ms so a fast load does not flash it.
-  const onLoad = () => {
-    const wait = Math.max(0, 600 - (Date.now() - mounted.current));
-    setTimeout(() => setReady(true), wait);
-  };
 
   return (
     <>
       <iframe
+        ref={frameRef}
         title="Isolated browser"
         src={`/kasm-tunnel/?site=${siteId}&${KASM_PARAMS}`}
-        onLoad={onLoad}
         style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", border: 0 }}
         allow="clipboard-read; clipboard-write"
       />
