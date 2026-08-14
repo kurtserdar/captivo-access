@@ -94,3 +94,29 @@ func (w *kasmRecWriter) flush() {
 
 // Close flushes the tail chunk.
 func (w *kasmRecWriter) Close() { w.flush() }
+
+// postFinalizeVideo sends one chunk of the finalized (seekable) recording to the
+// manager's finalize-video endpoint, which replaces the interim chunks. Best-effort.
+func postFinalizeVideo(managerURL, secret, key string, seq int, data []byte) {
+	payload, err := json.Marshal(map[string]any{
+		"recordingKey": key,
+		"seq":          seq,
+		"data":         base64.StdEncoding.EncodeToString(data),
+	})
+	if err != nil {
+		return
+	}
+	req, err := http.NewRequest(http.MethodPost, managerURL+"/api/internal/recording/finalize-video", bytes.NewReader(payload))
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-dataplane-secret", secret)
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("kasm-recording key=%s: finalize post failed err=%v", key, err)
+		return
+	}
+	resp.Body.Close()
+}

@@ -180,6 +180,7 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 		}
 		backendAddr = kasmSessionAddr(d.KasmAddr, port)
 		log.Printf("kasm-tunnel site=%s: hi-fi session %s started on port %d", siteID, id, port)
+		var recCleanup func()
 		if d.Record {
 			// Live-stream the session video to the manager (the video analog of
 			// transport A's recWriter): read the broker's ffmpeg WebM output through
@@ -189,7 +190,9 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 				rw := newKasmRecWriter(ctrl.BaseURL, ctrl.Secret,
 					newRecordingKey(siteID, userID), siteID, userID, d.NavigateUrl, recordingMaxBytes())
 				_, _ = io.WriteString(recConn, "GET /session/"+id+"/rec HTTP/1.0\r\nHost: "+d.KasmControlAddr+"\r\nConnection: close\r\n\r\n")
+				recDone := make(chan struct{})
 				go func() {
+					defer close(recDone)
 					defer recConn.Close()
 					resp, re := http.ReadResponse(bufio.NewReader(recConn), nil)
 					if re != nil {
@@ -208,13 +211,43 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 					}
 					rw.Close()
 				}()
-				defer recConn.Close() // WS end -> close relay -> ffmpeg stops + tail flush
+				recCleanup = func() {
+					// Stop the live relay -> broker SIGINTs ffmpeg -> /rec/<id>.webm is
+					// finalized; wait for the interim chunks to fully drain, then pull
+					// the seekable file and replace them.
+					recConn.Close()
+					<-recDone
+					if fc, fe := dialGuacd(sess, d.KasmControlAddr); fe == nil {
+						_, _ = io.WriteString(fc, "GET /session/"+id+"/recording HTTP/1.0\r\nHost: "+d.KasmControlAddr+"\r\nConnection: close\r\n\r\n")
+						if fresp, fre := http.ReadResponse(bufio.NewReader(fc), nil); fre == nil && fresp.StatusCode == 200 {
+							seq := 0
+							fbuf := make([]byte, 262144)
+							for {
+								n, er := fresp.Body.Read(fbuf)
+								if n > 0 {
+									postFinalizeVideo(ctrl.BaseURL, ctrl.Secret, rw.key, seq, fbuf[:n])
+									seq++
+								}
+								if er != nil {
+									break
+								}
+							}
+							fresp.Body.Close()
+						}
+						fc.Close()
+					}
+				}
 				log.Printf("kasm-tunnel site=%s: recording enabled key=%s", siteID, rw.key)
 			} else {
 				log.Printf("kasm-tunnel site=%s: recording dial failed err=%v", siteID, e)
 			}
 		}
 		defer func() {
+			// Finalize the seekable recording (drain live relay + pull file) BEFORE
+			// tearing the session down, so the file still exists on the broker.
+			if recCleanup != nil {
+				recCleanup()
+			}
 			if st, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
 				_, _ = st.Write([]byte(buildKasmCloseRequest(d.KasmControlAddr, id)))
 				_ = st.Close()
