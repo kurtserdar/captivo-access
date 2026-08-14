@@ -14,7 +14,7 @@ export default async function SetupPage() {
 
   return (
     <AuthShell>
-      <BrandMark size={34} className="auth-mark" />
+      <BrandMark size={38} className="auth-mark" />
       <h1>Create your account</h1>
       <p>
         Captivo Access hasn&apos;t been set up yet. Enter your name and email

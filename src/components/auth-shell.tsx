@@ -6,7 +6,7 @@ import { BrandLockup } from "@/components/brand";
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="authx">
-      <BrandLockup size={30} className="authx-lockup" />
+      <BrandLockup size={34} className="authx-lockup" />
       <div className="authx-card">
         <div className="authx-bar" aria-hidden="true">
           <span className="authx-dots"><i /><i /><i /></span>

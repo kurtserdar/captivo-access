@@ -12,7 +12,7 @@ export default async function RecoverPage() {
 
   return (
     <AuthShell>
-      <BrandMark size={34} className="auth-mark" />
+      <BrandMark size={38} className="auth-mark" />
       <h1>Recover your account</h1>
       <p>
         Enter your email address and the recovery code from your

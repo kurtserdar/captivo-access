@@ -27,6 +27,38 @@ const GROUP_FOR: Record<SearchRecord["type"], CommandItem["group"]> = {
   user: "Users",
 };
 
+// A small glyph per destination, keyed by page href (records fall back to their
+// group's page icon). Kept here rather than on CommandItem so the shared search
+// types stay presentation-free.
+const CMD_ICONS: Record<string, string[]> = {
+  "/": ["M3 11l9-7 9 7", "M5 10v9h14v-9"],
+  "/access": ["M14 9a4 4 0 1 0-4 4h1v2h2v2h3v-4z"],
+  "/admin/grants": ["M12 3l7 3v6c0 4-3 7-7 8-4-1-7-4-7-8V6z", "M9 12l2 2 4-4"],
+  "/admin/connectors": ["M9 7V4M15 7V4", "M7 7h10v4a5 5 0 0 1-10 0z", "M12 16v4"],
+  "/admin/sites": ["M4 5h16v5H4z", "M4 13h16v6H4z", "M8 7.5h.01M8 16h.01"],
+  "/admin/notifications": ["M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6z", "M10 20a2 2 0 0 0 4 0"],
+  "/admin/live": ["M3 12h4l2 6 4-14 2 8h6"],
+  "/admin/users": ["M16 19v-2a4 4 0 0 0-8 0v2", "M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"],
+  "/admin/invites": ["M4 6h16v12H4z", "M4 7l8 6 8-6"],
+  "/admin/sessions": ["M4 5h16v11H4z", "M9 20h6M12 16v4"],
+  "/admin/audit": ["M6 3h9l4 4v14H6z", "M9 12h6M9 16h6M9 8h3"],
+  "/settings/passkeys": ["M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", "M12 4v2M12 18v2M5 8l1.7 1M17.3 15L19 16M5 16l1.7-1M17.3 9L19 8"],
+};
+const GROUP_ICON: Record<string, string> = { Resources: "/admin/sites", Connectors: "/admin/connectors", Users: "/admin/users" };
+
+function CmdIcon({ href, group }: { href: string; group: string }) {
+  const paths = CMD_ICONS[href] ?? CMD_ICONS[GROUP_ICON[group] ?? ""];
+  return (
+    <span className="cmd-ico" aria-hidden="true">
+      {paths && (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+          {paths.map((d, i) => <path key={i} d={d} />)}
+        </svg>
+      )}
+    </span>
+  );
+}
+
 // No-op subscribe: the Mac/non-Mac platform never changes during a session,
 // so this store never needs to notify listeners of an update.
 function subscribeNever() {
@@ -161,6 +193,7 @@ function PaletteOverlay({ items, onClose }: { items: CommandItem[]; onClose: () 
                     onMouseMove={() => setActive(index)}
                     onClick={() => select(item)}
                   >
+                    <CmdIcon href={item.href} group={item.group} />
                     <span className="cmd-label">{item.label}</span>
                     {item.sub && <span className="cmd-sub">{item.sub}</span>}
                     {item.group !== "Pages" && <span className="cmd-type">{item.group.slice(0, -1)}</span>}

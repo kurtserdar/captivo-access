@@ -13,7 +13,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   if (!invite) {
     return (
       <AuthShell>
-        <BrandMark size={34} className="auth-mark" />
+        <BrandMark size={38} className="auth-mark" />
         <h1>Invalid or expired invitation</h1>
         <p>This invite link is no longer valid. Ask your admin for a new invitation.</p>
       </AuthShell>
@@ -22,7 +22,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   return (
     <AuthShell>
-      <BrandMark size={34} className="auth-mark" />
+      <BrandMark size={38} className="auth-mark" />
       <h1>Complete your invitation</h1>
       <p>
         {invite.name} ({invite.email}) — you&apos;ve been invited as {ROLE_LABELS[invite.role] ?? invite.role}.

@@ -277,6 +277,9 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .cmd-item{display:flex;align-items:center;gap:.6rem;width:100%;text-align:left;font:inherit;font-size:.9rem;cursor:pointer;
   background:transparent;border:0;border-radius:var(--radius);padding:.5rem .6rem;color:var(--fg);}
 .cmd-item.active{background:var(--accent-soft);}
+.cmd-ico{flex:0 0 auto;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);}
+.cmd-ico svg{width:15px;height:15px;}
+.cmd-item.active .cmd-ico{color:var(--accent);}
 .cmd-label{font-weight:500;}
 .cmd-sub{color:var(--muted);font-size:.8rem;}
 .cmd-type{margin-left:auto;font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;

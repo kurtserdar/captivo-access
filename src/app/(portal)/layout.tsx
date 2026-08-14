@@ -17,7 +17,7 @@ export default async function PortalLayout({ children }: { children: React.React
       <div className="vp-brandline" />
       <header className="vp-nav">
         <div className="vp-brand">
-          <BrandLockup size={26} />
+          <BrandLockup size={30} />
         </div>
         <nav className="vp-navlinks">
           <PortalNav />

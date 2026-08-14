@@ -1,7 +1,7 @@
 // Captivo Access brand mark: the parent "orbit" symbol (open C-arc) with the
 // product-specific keyhole dot at the gap, in the cyan→violet brand gradient.
 // The functional UI accent stays teal; this gradient is used only for the mark.
-export function BrandMark({ size = 22, className }: { size?: number; className?: string }) {
+export function BrandMark({ size = 26, className }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none" className={className} aria-hidden="true">
       <defs>
@@ -25,7 +25,7 @@ export function BrandMark({ size = 22, className }: { size?: number; className?:
 // Full compact lockup: symbol + "Captivo" (Space Grotesk) + bordered ACCESS chip.
 // Theme/context styling comes from CSS (.brand-word / .brand-access), so the same
 // lockup works on the dark nav bar and the auth screens.
-export function BrandLockup({ size = 26, className }: { size?: number; className?: string }) {
+export function BrandLockup({ size = 30, className }: { size?: number; className?: string }) {
   return (
     <span className={className ? `brand-lockup ${className}` : "brand-lockup"}>
       <BrandMark size={size} />
