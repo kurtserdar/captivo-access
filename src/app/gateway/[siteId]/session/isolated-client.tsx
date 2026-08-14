@@ -10,9 +10,31 @@ import { ConnectSplash } from "./connect-splash";
 // enforced server-side by the broker's DLP config.
 const KASM_PARAMS = "path=kasm-tunnel/websockify&clipboard_seamless=true&clipboard_up=true&clipboard_down=true";
 
-export function IsolatedSession({ siteId, siteName }: { siteId: string; siteName: string }) {
+export function IsolatedSession({ siteId, siteName, recorded }: { siteId: string; siteName: string; recorded: boolean }) {
   const [ready, setReady] = useState(false);
+  const [watching, setWatching] = useState(false);
+  const [controlHeld, setControlHeld] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
+
+  // Mirror GatewaySession: poll whether an admin is watching / has taken control so
+  // the vendor sees a live-monitoring notice (transparency / KVKK).
+  useEffect(() => {
+    let stop = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/gateway/${siteId}/watch-status`, { cache: "no-store" });
+        if (res.ok) {
+          const s = (await res.json()) as { watching: boolean; controlHeld: boolean };
+          if (!stop) { setWatching(s.watching); setControlHeld(s.controlHeld); }
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    void poll();
+    const t = setInterval(poll, 2000);
+    return () => { stop = true; clearInterval(t); };
+  }, [siteId]);
 
   useEffect(() => {
     // Keep our branded splash up until the embedded KasmVNC client actually
@@ -44,6 +66,32 @@ export function IsolatedSession({ siteId, siteName }: { siteId: string; siteName
         style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", border: 0 }}
         allow="clipboard-read; clipboard-write"
       />
+      {recorded && (
+        <div
+          style={{
+            position: "fixed", top: 12, left: 12, zIndex: 20, pointerEvents: "none",
+            display: "flex", alignItems: "center", gap: 6,
+            background: "rgba(0,0,0,0.6)", color: "#ff4d4f",
+            font: "600 12px/1 sans-serif", letterSpacing: "0.06em",
+            padding: "6px 10px", borderRadius: 6,
+          }}
+        >
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#ff4d4f", display: "inline-block" }} />
+          RECORDED
+        </div>
+      )}
+      {(watching || controlHeld) && (
+        <div
+          style={{
+            position: "fixed", top: 8, left: "50%", transform: "translateX(-50%)", zIndex: 20,
+            pointerEvents: "none",
+            background: controlHeld ? "rgba(180,0,0,0.92)" : "rgba(0,0,0,0.72)",
+            color: "#fff", padding: "6px 14px", borderRadius: 8, fontFamily: "sans-serif", fontSize: "13px", whiteSpace: "nowrap",
+          }}
+        >
+          {controlHeld ? "An administrator has taken control of this session." : "This session is being monitored live."}
+        </div>
+      )}
       {!ready && <ConnectSplash siteName={siteName} />}
     </>
   );

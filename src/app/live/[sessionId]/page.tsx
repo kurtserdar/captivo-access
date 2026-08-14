@@ -36,9 +36,9 @@ export default async function LiveSessionPage({ params }: { params: Promise<{ se
   }
 
   const sessions = await listActiveSessions();
-  const isolated = sessions.find((s) => s.sessionId === sessionId)?.kind === "isolated";
+  const match = sessions.find((s) => s.sessionId === sessionId);
   const canControl = can(user.role, "configure");
-  return isolated
-    ? <KasmLiveViewer sessionId={sessionId} canControl={canControl} />
+  return match?.kind === "isolated"
+    ? <KasmLiveViewer sessionId={sessionId} canControl={canControl} label={match.host} />
     : <LiveViewer sessionId={sessionId} canControl={canControl} />;
 }

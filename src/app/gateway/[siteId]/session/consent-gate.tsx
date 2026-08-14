@@ -19,7 +19,7 @@ export function ConsentGate({ accessMode, siteId, siteName, recorded, clipboardM
 
   if (accepted) {
     return accessMode === "ISOLATED"
-      ? <IsolatedSession siteId={siteId} siteName={siteName} />
+      ? <IsolatedSession siteId={siteId} siteName={siteName} recorded={recorded} />
       : <GatewaySession siteId={siteId} siteName={siteName} recorded={recorded} clipboardMode={clipboardMode} />;
   }
 

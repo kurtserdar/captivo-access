@@ -39,6 +39,6 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
     return <ConsentGate accessMode={mode} siteId={siteId} siteName={site.name} recorded={recorded} clipboardMode={site.clipboardMode} />;
   }
   return mode === "ISOLATED"
-    ? <IsolatedSession siteId={siteId} siteName={site.name} />
+    ? <IsolatedSession siteId={siteId} siteName={site.name} recorded={recorded} />
     : <GatewaySession siteId={siteId} siteName={site.name} recorded={recorded} clipboardMode={site.clipboardMode} />;
 }
