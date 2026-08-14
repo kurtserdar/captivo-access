@@ -33,7 +33,7 @@ export default async function PasskeysPage() {
             remain so your account doesn&apos;t get locked out.
           </p>
           <p className="cell-sub">
-            My passkeys · <Link href="/settings/recovery" className="link-button">Recovery</Link>
+            My passkeys · <Link href="/settings/recovery" className="link-button">Recovery</Link> · <Link href="/settings/preferences" className="link-button">Preferences</Link>
           </p>
         </div>
         <AddPasskeyButton />

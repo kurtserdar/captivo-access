@@ -30,7 +30,7 @@ export default async function RecoveryPage() {
             <Link href="/settings/passkeys" className="link-button">
               My passkeys
             </Link>{" "}
-            · Recovery
+            · Recovery · <Link href="/settings/preferences" className="link-button">Preferences</Link>
           </p>
         </div>
       </div>
