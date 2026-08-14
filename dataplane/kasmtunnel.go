@@ -150,7 +150,7 @@ type kasmDesc struct {
 // opens a fresh per-session browser via the in-container broker and is proxied to
 // that session's port, closed when the WebSocket ends. The credential/target never
 // leaves the customer network — the data-plane only relays.
-func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http.ResponseWriter, r *http.Request) {
+func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit *AuditQueue, w http.ResponseWriter, r *http.Request) {
 	ck, err := r.Cookie("ca_session")
 	if err != nil || ck.Value == "" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -332,6 +332,12 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, w http
 			}
 		})
 		defer hub.Remove(sessionID)
+
+		kStart := time.Now()
+		audit.Enqueue(auditEvent("ALLOW", "session_open", userID, siteID, d.NavigateUrl, r, http.StatusSwitchingProtocols, 0))
+		defer func() {
+			audit.Enqueue(auditEvent("ALLOW", "session_close "+compactDur(time.Since(kStart)), userID, siteID, d.NavigateUrl, r, http.StatusSwitchingProtocols, 0))
+		}()
 	}
 
 	target, _ := url.Parse("http://" + backendAddr)
