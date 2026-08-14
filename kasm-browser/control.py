@@ -26,10 +26,38 @@ def _free_display():
     return None
 
 
-def _spawn(display, url, profile):
+def _session_yaml(copy_out, paste_in):
+    # Per-session KasmVNC config: network (plain HTTP, no SSL — access is
+    # grant-checked at the tunnel entry) + clipboard DLP. The clipboard keys are
+    # deliberately absent from allow_override_list so the web client cannot
+    # re-enable a blocked direction.
+    return (
+        "network:\n"
+        "  protocol: http\n"
+        "  ssl:\n"
+        "    require_ssl: false\n"
+        "  udp:\n"
+        "    public_ip: 127.0.0.1\n"
+        "runtime_configuration:\n"
+        "  allow_client_to_override_kasm_server_settings: true\n"
+        "  allow_override_list:\n"
+        "    - pointer.enabled\n"
+        "data_loss_prevention:\n"
+        "  clipboard:\n"
+        "    server_to_client:\n"
+        "      enabled: " + ("true" if copy_out else "false") + "\n"
+        "      primary_clipboard_enabled: false\n"
+        "    client_to_server:\n"
+        "      enabled: " + ("true" if paste_in else "false") + "\n")
+
+
+def _spawn(display, url, profile, home, copy_out, paste_in):
     disp = ":%d" % display
-    env = {**os.environ, "DISPLAY": disp}
+    env = {**os.environ, "DISPLAY": disp, "HOME": home}
     os.makedirs(profile, exist_ok=True)
+    os.makedirs(home + "/.vnc", exist_ok=True)
+    with open(home + "/.vnc/kasmvnc.yaml", "w") as f:
+        f.write(_session_yaml(copy_out, paste_in))
     # A SIGKILLed predecessor on this (reused) display can leave a stale X lock +
     # socket, so the new Xvnc refuses to start and then serves a dead/blank display
     # — an intermittent blank-session hang. Clear both before starting.
@@ -43,7 +71,7 @@ def _spawn(display, url, profile):
         ["Xvnc", disp, "-geometry", "1280x800", "-depth", "24",
          "-websocketPort", str(port), "-interface", "0.0.0.0",
          "-httpd", "/usr/share/kasmvnc/www", "-SecurityTypes", "None",
-         "-disableBasicAuth"])
+         "-disableBasicAuth"], env=env)
     time.sleep(1.5)
     fbox = subprocess.Popen(["fluxbox"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     chrome = subprocess.Popen(
@@ -62,9 +90,10 @@ def _kill(sess):
         if p.poll() is None:
             p.kill()
     shutil.rmtree(sess["profile"], ignore_errors=True)
+    shutil.rmtree(sess["home"], ignore_errors=True)
 
 
-def open_session(url):
+def open_session(url, copy_out, paste_in):
     with _lock:
         if len(_sessions) >= MAX_SESSIONS:
             return None
@@ -74,10 +103,11 @@ def open_session(url):
         _seq["n"] += 1
         sid = "s%d-%d" % (int(time.time()), _seq["n"])
         profile = "/profiles/" + sid
-        procs = _spawn(display, url, profile)
+        home = "/sess/" + sid
+        procs = _spawn(display, url, profile, home, copy_out, paste_in)
         port = BASE_PORT + display
         _sessions[sid] = {"display": display, "port": port, "procs": procs,
-                          "profile": profile, "started": time.time()}
+                          "profile": profile, "home": home, "started": time.time()}
         return {"id": sid, "port": port}
 
 
@@ -125,7 +155,9 @@ class H(BaseHTTPRequestHandler):
             url = data.get("url", "")
             if not (isinstance(url, str) and (url.startswith("http://") or url.startswith("https://"))):
                 return self._json(400, {"error": "bad_url"})
-            res = open_session(url)
+            copy_out = data.get("copyOut", True)
+            paste_in = data.get("pasteIn", True)
+            res = open_session(url, copy_out, paste_in)
             if res is None:
                 return self._json(503, {"error": "capacity"})
             return self._json(201, res)
