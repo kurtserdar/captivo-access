@@ -4,7 +4,7 @@ import type { Role } from "@/generated/prisma/enums";
 export type NavIconKey =
   | "connectors" | "resources" | "domain"
   | "directory" | "sso" | "policy"
-  | "email" | "updates"
+  | "email" | "updates" | "branding"
   | "users" | "invites" | "opsessions";
 
 export interface NavItem { label: string; href: string; badge?: number; icon?: NavIconKey; desc?: string }
@@ -54,6 +54,7 @@ export function buildNavModel(role: Role, counts: { pending: number; unread: num
       ] },
       { heading: "Platform", items: [
         { label: "Email", href: "/admin/email", icon: "email", desc: "SMTP for invites & notifications" },
+        { label: "Branding", href: "/admin/branding", icon: "branding", desc: "Your logo on the connecting screen" },
         { label: "Updates", href: "/admin/updates", icon: "updates", desc: "New releases & changelog" },
       ] },
     ] });
