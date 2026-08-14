@@ -36,6 +36,7 @@ type liveSession struct {
 	connID, connectorID, guacdAddr     string
 	kasmAddr                           string
 	kasmPort                           int
+	brokerSID, kasmControlAddr, ftMode string
 
 	mu           sync.Mutex
 	controlOwner string // userID holding control, or "" for the vendor
@@ -128,16 +129,30 @@ func (h *SessionHub) Register(sessionID, siteID, userID, protocol, host string, 
 // RegisterIsolated adds an ISOLATED (KasmVNC) session. It has no guacd
 // connID/guacdAddr — viewers attach to the per-session Xvnc instead (Slice 2) — so
 // only the fields the console list + terminate need are set.
-func (h *SessionHub) RegisterIsolated(sessionID, siteID, userID, host string, startedAt time.Time, connectorID, kasmAddr string, kasmPort int) *liveSession {
+func (h *SessionHub) RegisterIsolated(sessionID, siteID, userID, host string, startedAt time.Time, connectorID, kasmAddr string, kasmPort int, brokerSID, kasmControlAddr, fileTransferMode string) *liveSession {
 	ls := &liveSession{
 		id: sessionID, siteID: siteID, userID: userID, protocol: "isolated", host: host,
 		kind:      "isolated",
 		startedAt: startedAt, connectorID: connectorID, kasmAddr: kasmAddr, kasmPort: kasmPort,
+		brokerSID: brokerSID, kasmControlAddr: kasmControlAddr, ftMode: fileTransferMode,
 	}
 	h.mu.Lock()
 	h.m[sessionID] = ls
 	h.mu.Unlock()
 	return ls
+}
+
+// IsolatedFileTarget finds the caller's active isolated session for a site and
+// returns what the file-transfer relay needs. ok=false if none is active.
+func (h *SessionHub) IsolatedFileTarget(userID, siteID string) (connectorID, kasmControlAddr, brokerSID, mode, host string, ok bool) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for _, ls := range h.m {
+		if ls.kind == "isolated" && ls.userID == userID && ls.siteID == siteID {
+			return ls.connectorID, ls.kasmControlAddr, ls.brokerSID, ls.ftMode, ls.host, true
+		}
+	}
+	return "", "", "", "", "", false
 }
 
 func (h *SessionHub) Get(id string) *liveSession {
