@@ -868,17 +868,37 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
   .vp-head { flex-direction: column; align-items: flex-start; gap: 12px; }
   .vp-greet { font-size: 25px; }
 }
+/* Phone header: a hamburger menu (defined always, shown only below 640px). */
+.vp-mnav { display: none; position: relative; margin-left: auto; }
+.vp-burger { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1px solid #eceae6; border-radius: 9px; background: #fff; color: #1c1917; cursor: pointer; }
+.vp-burger svg { width: 20px; height: 20px; }
+.vp-mscrim { position: fixed; inset: 0; z-index: 30; }
+.vp-mmenu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 210px; display: flex; flex-direction: column; gap: 2px; padding: 8px; background: #fff; border: 1px solid #eceae6; border-radius: 12px; box-shadow: 0 20px 50px rgba(28,25,23,.18); z-index: 40; }
+.vp-muser { display: flex; align-items: center; padding: 4px 8px 8px; }
+.vp-mlink { padding: 10px 12px; border-radius: 8px; font-size: 14px; color: #57534e; text-decoration: none; }
+.vp-mlink.active { color: #1c1917; font-weight: 600; background: #f5f5f4; }
+.vp-mlink-admin { color: #0f766e; font-weight: 600; }
+.vp-mdiv { height: 1px; background: #eceae6; margin: 6px 4px; }
+.vp-mrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 8px; }
+.vp-mrow-label { font-size: 13px; color: #78716c; }
+:root[data-theme="dark"] .vp-burger { background: #111827; border-color: #1f2937; color: #e5e7eb; }
+:root[data-theme="dark"] .vp-mmenu { background: #111827; border-color: #1f2937; box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+:root[data-theme="dark"] .vp-mlink { color: #94a3b8; }
+:root[data-theme="dark"] .vp-mlink.active { color: #f1f5f9; background: #1b2436; }
+:root[data-theme="dark"] .vp-mdiv { background: #1f2937; }
+:root[data-theme="dark"] .vp-mrow-label { color: #94a3b8; }
+
 @media (max-width: 640px) {
-  /* Wrap the header: brand + account on the first row, nav links on a second,
-     scrollable row — no room for one line on a phone. */
-  .vp-nav { flex-wrap: wrap; height: auto; padding: 10px 14px; gap: 10px 16px; }
-  .vp-brand { order: 1; }
-  .vp-navright { order: 2; margin-left: auto; gap: 12px; }
-  .vp-sep { display: none; }
-  .vp-navlinks { order: 3; width: 100%; margin-left: 0; gap: 18px; overflow-x: auto; }
+  .vp-nav { height: 56px; padding: 0 16px; }
+  .vp-navlinks, .vp-sep, .vp-navright { display: none; }
+  .vp-mnav { display: block; }
   .vp-body { padding: 22px 14px 40px; }
-  .vp-card { padding: 18px 18px; }
-  .vp-open { padding: 8px 16px; }
+  .vp-card { padding: 18px; }
+  /* The Open button wraps full-width below the icon + name so the card top fits. */
+  .vp-card-top { flex-wrap: wrap; }
+  .vp-card-title { min-width: 0; }
+  .vp-card-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vp-open, .vp-open-off { order: 3; flex-basis: 100%; text-align: center; margin-top: 4px; }
 }
 
 /* Policy settings section headings */
