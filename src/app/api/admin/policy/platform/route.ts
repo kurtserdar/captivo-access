@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
     vendorIpAllowlist: rawAllow.trim() || null,
     maxGrantDays: toIntMin(body.maxGrantDays, 1),
     recordingConsentRequired: body.recordingConsentRequired === true,
+    watermarkDefault: body.watermarkDefault === true,
     recordingRetentionDays: toIntMin(body.recordingRetentionDays, 1),
     defaultConnectorLogLevel: ["debug", "info", "warn", "error"].includes(body.defaultConnectorLogLevel)
       ? (body.defaultConnectorLogLevel as string)

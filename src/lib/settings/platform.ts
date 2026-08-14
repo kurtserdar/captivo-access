@@ -14,6 +14,7 @@ export interface PlatformSettings {
   vendorIpAllowlist: string | null;
   maxGrantDays: number | null;
   recordingConsentRequired: boolean | null;
+  watermarkDefault: boolean | null;
   recordingRetentionDays: number | null;
   defaultConnectorLogLevel: string | null;
   externalAnchorEnabled: boolean | null;
@@ -33,6 +34,7 @@ const EMPTY: PlatformSettings = {
   vendorIpAllowlist: null,
   maxGrantDays: null,
   recordingConsentRequired: null,
+  watermarkDefault: null,
   recordingRetentionDays: null,
   defaultConnectorLogLevel: null,
   externalAnchorEnabled: null,
@@ -61,6 +63,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     vendorIpAllowlist: c?.vendorIpAllowlist ?? null,
     maxGrantDays: c?.maxGrantDays ?? null,
     recordingConsentRequired: c?.recordingConsentRequired ?? null,
+    watermarkDefault: c?.watermarkDefault ?? null,
     recordingRetentionDays: c?.recordingRetentionDays ?? null,
     defaultConnectorLogLevel: c?.defaultConnectorLogLevel ?? null,
     externalAnchorEnabled: c?.externalAnchorEnabled ?? null,
@@ -149,6 +152,15 @@ export async function resolvedRecordingConsentRequired(): Promise<boolean> {
   const s = await getPlatformSettings();
   if (s.recordingConsentRequired !== null) return s.recordingConsentRequired;
   const v = process.env.RECORDING_CONSENT_REQUIRED?.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "on" || v === "yes";
+}
+
+// Isolated-session screen watermark default: DB value first, else the
+// WATERMARK_DEFAULT env (1/true/on/yes), else false.
+export async function resolvedWatermarkDefault(): Promise<boolean> {
+  const s = await getPlatformSettings();
+  if (s.watermarkDefault !== null) return s.watermarkDefault;
+  const v = process.env.WATERMARK_DEFAULT?.trim().toLowerCase();
   return v === "1" || v === "true" || v === "on" || v === "yes";
 }
 
