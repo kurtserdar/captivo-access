@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ConnectSplash } from "./connect-splash";
 import { isolatedDims } from "@/lib/isolated/dims";
+import { OnScreenKeyboard } from "./on-screen-keyboard";
+import { SessionControlPanel } from "./session-control-panel";
 
 // ?site pins the session for the data-plane; it sets a cookie so the KasmVNC
 // client's follow-up asset/WS requests (which carry no ?site) inherit it.
@@ -23,11 +25,9 @@ export function IsolatedSession({ siteId, siteName, recorded, fileTransferMode }
   const [watching, setWatching] = useState(false);
   const [controlHeld, setControlHeld] = useState(false);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
-  const [isTouch, setIsTouch] = useState(false);
   const [fs, setFs] = useState(false);
   const [downloads, setDownloads] = useState<{ name: string; size: number; mtime: number }[]>([]);
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
-  const [ctrlHeld, setCtrlHeld] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -75,33 +75,19 @@ export function IsolatedSession({ siteId, siteName, recorded, fileTransferMode }
       ?? (doc?.querySelector("textarea, input[type=text]") as HTMLElement | null);
   };
 
-  const toggleKeyboard = () => {
-    const el = kbInput();
-    if (!el) return;
-    if (frameRef.current?.contentDocument?.activeElement === el) el.blur();
-    else el.focus();
-  };
-
-  // Send one special key to the remote. Prefer the RFB API if the bundle exposes it;
-  // otherwise dispatch a KeyboardEvent on the focused keyboard input.
-  const sendKey = (key: string, code: string, keysym: number) => {
+  // Send a raw X11 keysym to the isolated session for the shared OnScreenKeyboard:
+  // prefer the RFB API if the bundle exposes it, else a synthetic KeyboardEvent on
+  // the hidden keyboard input (best-effort — the embed may ignore synthetic events).
+  const sendKeysym = (keysym: number, pressed: boolean) => {
     const el = kbInput();
     if (!el) return;
     el.focus();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rfb: any = (frameRef.current?.contentWindow as any)?.rfb;
-    const ctrlSym = 0xffe3, ctrlCode = "ControlLeft";
-    if (rfb?.sendKey) {
-      if (ctrlHeld) rfb.sendKey(ctrlSym, ctrlCode, true);
-      rfb.sendKey(keysym, code, true);
-      rfb.sendKey(keysym, code, false);
-      if (ctrlHeld) rfb.sendKey(ctrlSym, ctrlCode, false);
-    } else {
-      const opts: KeyboardEventInit = { key, code, bubbles: true, ctrlKey: ctrlHeld };
-      el.dispatchEvent(new KeyboardEvent("keydown", opts));
-      el.dispatchEvent(new KeyboardEvent("keyup", opts));
-    }
-    if (ctrlHeld) setCtrlHeld(false);
+    if (rfb?.sendKey) { rfb.sendKey(keysym, null, pressed); return; }
+    if (!pressed) return; // synthetic path fires on the down edge only
+    const ch = keysym >= 0x20 && keysym <= 0x7e ? String.fromCharCode(keysym) : "";
+    el.dispatchEvent(new KeyboardEvent("keydown", { key: ch || " ", bubbles: true }));
   };
 
   // The macOS green button only maximises the browser window — it keeps the tab/URL
@@ -126,7 +112,6 @@ export function IsolatedSession({ siteId, siteName, recorded, fileTransferMode }
   // usable. The broker keeps this size fixed for the session, so recordings stay correct.
   useEffect(() => {
     const touch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
-    setIsTouch(touch);
     setDims(isolatedDims(touch, window.screen.width, window.screen.height, window.innerWidth, window.innerHeight));
   }, []);
 
@@ -209,71 +194,27 @@ export function IsolatedSession({ siteId, siteName, recorded, fileTransferMode }
         </div>
       )}
       {ready && dims && (
-        <button
-          type="button"
-          onClick={toggleFs}
-          title={fs ? "Exit full screen" : "Full screen"}
-          style={{
-            position: "fixed", bottom: 12, right: 12, zIndex: 30, cursor: "pointer",
-            background: "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)",
-            borderRadius: 8, padding: "6px 12px", fontFamily: "sans-serif", fontSize: 12,
-          }}
-        >
-          {fs ? "⤢ Exit full screen" : "⤢ Full screen"}
-        </button>
+        <>
+          {canUpload && <input ref={fileRef} type="file" style={{ display: "none" }} onChange={onPick} />}
+          <SessionControlPanel
+            actions={[
+              { key: "fs", label: "Full screen", sublabel: fs ? "Exit full screen" : "Fill the screen", onClick: toggleFs },
+              ...(canUpload ? [{ key: "up", label: "Upload file", sublabel: uploadMsg ?? "Send a file into the browser", onClick: () => fileRef.current?.click() }] : []),
+              { key: "leave", label: "Leave session", sublabel: "Return to My access", onClick: () => { window.location.href = "/access"; } },
+            ]}
+          />
+          <OnScreenKeyboard sendKey={sendKeysym} />
+        </>
       )}
-      {ready && dims && (canUpload || canDownload) && (
-        <div style={{ position: "fixed", bottom: 12, left: 12, zIndex: 30, display: "flex", flexDirection: "column", gap: 8, maxWidth: 280 }}>
-          {canUpload && (
-            <div>
-              <input ref={fileRef} type="file" style={{ display: "none" }} onChange={onPick} />
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                style={{ background: "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "6px 12px", fontFamily: "sans-serif", fontSize: 12, cursor: "pointer" }}
-              >
-                ↑ Upload file
-              </button>
-              {uploadMsg && <span style={{ marginLeft: 8, color: "#fff", fontFamily: "sans-serif", fontSize: 12 }}>{uploadMsg}</span>}
-            </div>
-          )}
-          {canDownload && downloads.length > 0 && (
-            <div style={{ background: "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "8px 12px", fontFamily: "sans-serif", fontSize: 12 }}>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Downloads ({downloads.length})</div>
-              {downloads.map((d) => (
-                <a
-                  key={d.name}
-                  href={`/api/isolated/files/download?site=${siteId}&name=${encodeURIComponent(d.name)}`}
-                  download={d.name}
-                  style={{ display: "block", color: "#7fd7ff", textDecoration: "none", padding: "2px 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                >
-                  ↓ {d.name}
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      {isTouch && ready && dims && (
-        <div style={{ position: "fixed", bottom: 12, left: "50%", transform: "translateX(-50%)", zIndex: 30, display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center", maxWidth: "96vw" }}>
-          {[
-            { label: "⌨", title: "Keyboard", on: toggleKeyboard },
-            { label: "Esc", title: "Escape", on: () => sendKey("Escape", "Escape", 0xff1b) },
-            { label: "Tab", title: "Tab", on: () => sendKey("Tab", "Tab", 0xff09) },
-            { label: "←", title: "Left", on: () => sendKey("ArrowLeft", "ArrowLeft", 0xff51) },
-            { label: "↑", title: "Up", on: () => sendKey("ArrowUp", "ArrowUp", 0xff52) },
-            { label: "↓", title: "Down", on: () => sendKey("ArrowDown", "ArrowDown", 0xff54) },
-            { label: "→", title: "Right", on: () => sendKey("ArrowRight", "ArrowRight", 0xff53) },
-          ].map((b) => (
-            <button key={b.title} type="button" title={b.title} onClick={b.on}
-              style={{ background: "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "8px 12px", fontFamily: "sans-serif", fontSize: 13, cursor: "pointer", minWidth: 40 }}>
-              {b.label}
-            </button>
+      {ready && dims && canDownload && downloads.length > 0 && (
+        <div style={{ position: "fixed", bottom: 12, left: 12, zIndex: 30, maxWidth: 280, background: "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "8px 12px", fontFamily: "sans-serif", fontSize: 12 }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>Downloads ({downloads.length})</div>
+          {downloads.map((d) => (
+            <a key={d.name} href={`/api/isolated/files/download?site=${siteId}&name=${encodeURIComponent(d.name)}`} download={d.name}
+              style={{ display: "block", color: "#7fd7ff", textDecoration: "none", padding: "2px 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              ↓ {d.name}
+            </a>
           ))}
-          <button type="button" title="Ctrl" onClick={() => setCtrlHeld((v) => !v)}
-            style={{ background: ctrlHeld ? "rgba(80,160,255,0.85)" : "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "8px 12px", fontFamily: "sans-serif", fontSize: 13, cursor: "pointer", minWidth: 44 }}>
-            Ctrl
-          </button>
         </div>
       )}
       {(!ready || !dims) && <ConnectSplash siteName={siteName} />}
