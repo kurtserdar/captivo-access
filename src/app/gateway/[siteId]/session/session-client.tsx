@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { clipboardCaps } from "@/lib/gateway/clipboard-caps";
 import { createClipboardBridge, type ClipboardBridge } from "./clipboard";
 import { ConnectSplash } from "./connect-splash";
+import { OnScreenKeyboard } from "./on-screen-keyboard";
+import { SessionControlPanel } from "./session-control-panel";
 
 // Fullscreen HTML5 session: embeds guacamole-common-js and points it at the
 // data-plane guac-tunnel (same origin, fronted by nginx). The server drives the
@@ -17,6 +19,7 @@ export function GatewaySession({ siteId, siteName, recorded, clipboardMode }: { 
   const [controlHeld, setControlHeld] = useState(false);
   const guacRef = useRef<any>(null);
   const fsRef = useRef<any>(null);
+  const clientRef = useRef<any>(null);
   const clipRef = useRef<ClipboardBridge | null>(null);
   const keyboardRef = useRef<any>(null);
   const keyHandlersRef = useRef<{ kd: (k: number) => void; ku: (k: number) => void } | null>(null);
@@ -47,6 +50,10 @@ export function GatewaySession({ siteId, siteName, recorded, clipboardMode }: { 
     if (kb && h) { kb.onkeydown = h.kd; kb.onkeyup = h.ku; }
   };
   const closeClipboard = () => { clipboardOpenRef.current = false; setClipboardOpen(false); };
+  const toggleFs = () => {
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    else document.documentElement.requestFullscreen?.().catch(() => {});
+  };
 
   useEffect(() => {
     if (clipboardOpen) {
@@ -133,6 +140,7 @@ export function GatewaySession({ siteId, siteName, recorded, clipboardMode }: { 
       // The tunnel URL must carry NO query — guacamole-common-js appends "?"+data.
       const tunnel = new Guacamole.WebSocketTunnel(`${proto}://${window.location.host}/guac-tunnel`);
       client = new Guacamole.Client(tunnel);
+      clientRef.current = client;
       const fail = () => setError("The session ended or could not start.");
       tunnel.onerror = fail;
       client.onerror = fail;
@@ -274,6 +282,18 @@ export function GatewaySession({ siteId, siteName, recorded, clipboardMode }: { 
       {/* Dedicated display target: the guac client clears this via innerHTML, so the
           overlays below must NOT live inside it (they'd be wiped on connect). */}
       <div ref={ref} style={{ position: "absolute", inset: 0 }} />
+      {ready && (
+        <>
+          <SessionControlPanel
+            actions={[
+              { key: "fs", label: "Full screen", sublabel: "Fill the screen", onClick: toggleFs },
+              { key: "clip", label: "Clipboard", status: `${caps.allowCopyOut ? "copy" : "no-copy"} · ${caps.allowPasteIn ? "paste" : "no-paste"}`, onClick: () => setClipboardOpen(true) },
+              { key: "leave", label: "Leave session", sublabel: "Disconnect", onClick: () => clientRef.current?.disconnect() },
+            ]}
+          />
+          <OnScreenKeyboard sendKey={(keysym, pressed) => clientRef.current?.sendKeyEvent(pressed ? 1 : 0, keysym)} />
+        </>
+      )}
       {recorded && (
         <div
           style={{
