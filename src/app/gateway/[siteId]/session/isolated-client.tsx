@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { ConnectSplash } from "./connect-splash";
+import { isolatedDims } from "@/lib/isolated/dims";
 
 // ?site pins the session for the data-plane; it sets a cookie so the KasmVNC
 // client's follow-up asset/WS requests (which carry no ?site) inherit it.
@@ -22,6 +23,7 @@ export function IsolatedSession({ siteId, siteName, recorded, fileTransferMode }
   const [watching, setWatching] = useState(false);
   const [controlHeld, setControlHeld] = useState(false);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
+  const [isTouch, setIsTouch] = useState(false);
   const [fs, setFs] = useState(false);
   const [downloads, setDownloads] = useState<{ name: string; size: number; mtime: number }[]>([]);
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
@@ -80,14 +82,14 @@ export function IsolatedSession({ siteId, siteName, recorded, fileTransferMode }
     }
   };
 
-  // Size the isolated desktop to the vendor's screen so browser-fullscreen fills
-  // exactly (no aspect letterbox). CSS px (logical) keeps resource use reasonable on
-  // Retina; clamped to sane bounds. screen (not innerWidth) so the fullscreen viewport
-  // matches. The broker keeps this size fixed for the session, so recordings stay
-  // correct.
+  // Size the isolated desktop. On a desktop it matches the vendor's screen (browser-
+  // fullscreen fills exactly). On a touch device it matches the phone viewport, so the
+  // internal web app renders its mobile/responsive layout at ~1:1 and native touch is
+  // usable. The broker keeps this size fixed for the session, so recordings stay correct.
   useEffect(() => {
-    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.round(v)));
-    setDims({ w: clamp(window.screen.width, 1024, 2560), h: clamp(window.screen.height, 640, 1600) });
+    const touch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+    setIsTouch(touch);
+    setDims(isolatedDims(touch, window.screen.width, window.screen.height, window.innerWidth, window.innerHeight));
   }, []);
 
   // Mirror GatewaySession: poll whether an admin is watching / has taken control so
