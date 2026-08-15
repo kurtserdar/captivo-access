@@ -33,7 +33,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
         </div>
       </div>
       {!site ? (
-        <div className="empty">Site not found.</div>
+        <div className="empty">Resource not found.</div>
       ) : (
         <div className="card">
           <SiteForm

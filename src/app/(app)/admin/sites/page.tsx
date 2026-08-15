@@ -83,8 +83,8 @@ export default async function AdminSitesPage() {
       {sites.length === 0 ? (
         <div className="empty">
           {connectors.length === 0
-            ? "Add a connector first before creating a site."
-            : "No sites yet — use \"Add site\" to publish an internal app."}
+            ? "Add a connector first before creating a resource."
+            : "No resources yet — use \"Add resource\" to publish an internal app."}
         </div>
       ) : (
         // Existing sites always render (with edit/delete), even when the only

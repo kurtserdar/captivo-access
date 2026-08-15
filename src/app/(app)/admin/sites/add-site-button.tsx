@@ -18,9 +18,9 @@ export function AddSiteButton({
   return (
     <>
       <button type="button" className="btn primary" onClick={() => setOpen(true)}>
-        Add site
+        Add resource
       </button>
-      <Modal open={open} onClose={() => setOpen(false)} title="Add site" size="lg">
+      <Modal open={open} onClose={() => setOpen(false)} title="Add resource" size="lg">
         <SiteForm connectors={connectors} recordingEnabled={recordingEnabled} nativeGateway={nativeGateway} isolationEnabled={isolationEnabled} onDone={() => setOpen(false)} />
       </Modal>
     </>

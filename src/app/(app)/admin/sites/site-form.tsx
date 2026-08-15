@@ -30,7 +30,7 @@ function errorMessage(code: string | undefined, isEdit: boolean): string {
     case "forbidden":
       return "Admin privileges are required for this action.";
     default:
-      return isEdit ? "Couldn't save the site, please try again." : "Couldn't create the site, please try again.";
+      return isEdit ? "Couldn't save the resource, please try again." : "Couldn't create the resource, please try again.";
   }
 }
 
@@ -185,7 +185,7 @@ export function SiteForm({
         window.location.reload();
       }
     } catch {
-      setError(site ? "Couldn't save the site, please try again." : "Couldn't create the site, please try again.");
+      setError(site ? "Couldn't save the resource, please try again." : "Couldn't create the resource, please try again.");
     } finally {
       setBusy(false);
     }
