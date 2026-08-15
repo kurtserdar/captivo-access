@@ -31,3 +31,6 @@ docker-compose.override.yml
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Internal compliance self-assessments (list gaps — keep private)
+docs/compliance/
