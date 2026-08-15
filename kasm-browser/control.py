@@ -13,6 +13,18 @@ MAX_SESSION_SECONDS = int(os.environ.get("MAX_SESSION_SECONDS", "14400"))
 BASE_PORT = 6900  # per-session port = BASE_PORT + display; hub is 6901 (display :1)
 FT_MAX_BYTES = int(os.environ.get("ISOLATED_FT_MAX_BYTES", str(100 * 1024 * 1024)))
 
+
+def _positive_int_env(name, default):
+    try:
+        v = int(os.environ.get(name, "").strip())
+        return v if v > 0 else default
+    except (TypeError, ValueError):
+        return default
+
+# Recording encode knobs (tunable without rebuilding the connector image).
+RECORDING_MAX_WIDTH = _positive_int_env("RECORDING_MAX_WIDTH", 1280)
+RECORDING_VIDEO_BITRATE = (os.environ.get("RECORDING_VIDEO_BITRATE", "").strip() or "512k")
+
 _lock = threading.Lock()
 _sessions = {}  # id -> {"display": N, "port": p, "procs": [...], "profile": path, "started": ts}
 _seq = {"n": 0}
@@ -135,20 +147,29 @@ def close_session(sid):
         _kill(sess)
 
 
-def _ffmpeg_capture(display, recfile, w=1280, h=800):
+def _ffmpeg_args(display, recfile, w=1280, h=800):
     # Grab the per-session Xvnc display as WebM (VP8). The tee muxer writes two sinks:
     # the live pipe (stdout, streamed to the data-plane — crash-safe interim recording)
     # and a seekable file (finalized on clean stop for correct duration + seeking).
     # onfail=ignore keeps the file writing even if the pipe reader goes away. x11grab
     # is real-time paced, so an interrupted (SIGINT) capture still has correct
     # timestamps + duration.
-    return subprocess.Popen(
-        ["ffmpeg", "-loglevel", "error", "-f", "x11grab",
-         "-video_size", "%dx%d" % (w, h), "-framerate", "10", "-i", ":%d" % display,
-         "-an", "-c:v", "libvpx", "-b:v", "1M", "-deadline", "realtime",
-         "-f", "tee", "-map", "0:v",
-         "[f=webm:onfail=ignore]pipe:1|[f=webm]" + recfile],
-        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    #
+    # The -vf scale caps the RECORDING width (aspect-preserving, never upscaling) and a
+    # modest -b:v keeps the file small; both are env-tunable. This only shrinks the
+    # STORED replay — the vendor's view and the admin's /kasm-view live view are
+    # separate full-resolution streams. Applied before -f tee so both sinks are capped.
+    return ["ffmpeg", "-loglevel", "error", "-f", "x11grab",
+            "-video_size", "%dx%d" % (w, h), "-framerate", "10", "-i", ":%d" % display,
+            "-an", "-vf", "scale='min(%d,iw)':-2" % RECORDING_MAX_WIDTH,
+            "-c:v", "libvpx", "-b:v", RECORDING_VIDEO_BITRATE, "-deadline", "realtime",
+            "-f", "tee", "-map", "0:v",
+            "[f=webm:onfail=ignore]pipe:1|[f=webm]" + recfile]
+
+
+def _ffmpeg_capture(display, recfile, w=1280, h=800):
+    return subprocess.Popen(_ffmpeg_args(display, recfile, w, h),
+                            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
 
 
 def _reaper():
