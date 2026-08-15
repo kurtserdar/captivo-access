@@ -976,3 +976,13 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .osk-key { flex: 1 1 0; min-width: 0; background: #334155; color: #fff; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 10px 6px; font: 13px/1 sans-serif; cursor: pointer; }
 .osk-key.armed { background: #14b8a6; color: #06282a; }
 .osk-close { align-self: flex-end; background: transparent; color: #cbd5e1; border: 0; font-size: 16px; cursor: pointer; }
+
+/* Session control panel (gateway + isolated sessions) */
+.scp-handle { position: fixed; left: 0; top: 16px; z-index: 30; background: rgba(15,23,42,0.85); color: #14b8a6; border: 1px solid rgba(255,255,255,0.2); border-left: 0; border-radius: 0 8px 8px 0; padding: 8px 6px; cursor: pointer; letter-spacing: 2px; }
+.scp { position: fixed; left: 0; top: 0; bottom: 0; width: 300px; max-width: 86vw; z-index: 31; background: rgba(15,23,42,0.97); color: #e2e8f0; display: flex; flex-direction: column; gap: 4px; padding: 12px; overflow-y: auto; }
+.scp-head { display: flex; justify-content: space-between; align-items: center; font: 600 15px/1 sans-serif; margin-bottom: 8px; }
+.scp-close { background: transparent; border: 0; color: #94a3b8; font-size: 16px; cursor: pointer; }
+.scp-item { text-align: left; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 12px; color: inherit; cursor: pointer; }
+.scp-item:disabled { cursor: default; opacity: 0.75; }
+.scp-item-label { font: 600 14px/1.2 sans-serif; }
+.scp-item-sub { font: 12px/1.2 sans-serif; color: #94a3b8; margin-top: 2px; }
