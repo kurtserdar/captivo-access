@@ -185,10 +185,43 @@ vendor's own machine, the strongest isolation of the three methods. It reuses th
 gateway plumbing (a `/kasm-tunnel` data-plane relay through the connector) and adds
 DLP controls that only make sense when we own the browser: **clipboard** direction
 control, an optional **screen watermark** (the vendor's email + a live clock,
-composited onto what they see and any screenshot), a **seekable** video recording,
-and the same **live watch / take-control / terminate** as gateway (a second shared
-client via `/kasm-view`). The isolated desktop sizes to the vendor's screen so it
-fills fullscreen.
+composited onto what they see and any screenshot), per-direction **file transfer**
+(off by default; upload into the browser and/or download out, each gated per
+Resource), a **seekable** video recording, and the same **live watch /
+take-control / terminate** as gateway (a second shared client via `/kasm-view`).
+The isolated desktop sizes to the vendor's screen so it fills fullscreen.
+
+```mermaid
+flowchart TD
+    A["Vendor browser<br/>Isolated browser session"] -->|"WSS /kasm-tunnel"| C["Data-plane :3103"]
+    C --> G1{"Gate 1<br/>Signed in?"}
+    G1 -->|no| L["Unauthorized"]
+    G1 -->|yes| G2{"Gate 2 — allowed?<br/>grant · approval · schedule"}
+    G2 -->|no| E403["Forbidden"]
+    G2 -->|yes| BR["Broker spawns a throwaway<br/>browser (KasmVNC) on the<br/>connector's gateway host"]
+    BR -->|outbound tunnel| APP["Isolated browser opens the<br/>Resource's internal URL"]
+    APP --> PX["Only pixels streamed to the vendor<br/>(recorded if enabled)"]
+    PX -.->|"clipboard · watermark · file transfer<br/>(per-Resource DLP)"| DLP["DLP controls"]
+    ADM["Admin · /admin/live"] -->|"join the session (WSS /kasm-view)"| BR
+    BR -.->|"live · optional take-control"| ADM
+
+    classDef deny fill:#3b1b20,stroke:#ff6b7a,color:#ffc2c8;
+    classDef ok fill:#123027,stroke:#42d19a,color:#bff3df;
+    class L,E403 deny;
+    class PX ok;
+```
+
+- **Nothing lands locally.** The app renders inside the server-side browser; the
+  vendor only ever receives a pixel stream, so no page content, cookies, or
+  downloaded files reach their machine unless **file transfer** is explicitly
+  enabled for that Resource.
+- **DLP you can only do when you own the browser.** Clipboard direction control,
+  a composited screen watermark, and per-direction file transfer are all enforced
+  server-side; file transfers are ephemeral (wiped when the session ends) and every
+  upload/download is written to the audit log.
+- **Recording + live view.** The session records to a **seekable** video, and an
+  admin can watch it live at `/admin/live` (joining via `/kasm-view`) and take
+  control — the vendor sees a "being monitored" notice, same as gateway.
 
 A Resource's **access method** — `TRANSPARENT` (web app), `GATEWAY` (remote
 desktop), or `ISOLATED` (isolated browser) — is chosen on its form; all three share

@@ -158,6 +158,13 @@ password: it's stored encrypted and injected server-side.
 Cleanup for this part: `docker rm -f sshtarget captivo-guacd` (and remove the
 Resource/connector in the console).
 
+> **A third access method: isolated browser.** On the same gateway host you can
+> also run a Resource as an **Isolated browser** (`ISOLATED`): the internal web app
+> opens inside a throwaway, server-side browser and only pixels stream to the
+> vendor — nothing lands on their machine. It adds clipboard DLP, an optional screen
+> watermark, per-direction file transfer (off by default), and a seekable recording.
+> See [`how-it-works.md`](how-it-works.md#the-isolated-browser-path-isolated).
+
 ## Cleanup
 
 ```bash

@@ -172,7 +172,9 @@ Shipped and working today:
   nothing but pixels reaches their machine. It sizes to the vendor's screen (fills
   fullscreen), records to a **seekable** video, enforces **clipboard DLP** (copy/paste
   direction control), and can overlay a **screen watermark** (the vendor's email + a
-  live clock, on their screen and any screenshot) as a leak deterrent. A Resource's
+  live clock, on their screen and any screenshot) as a leak deterrent. Per-direction
+  **file transfer** (upload into the browser / download out) is off by default and
+  gated per Resource; transfers are ephemeral and audited. A Resource's
   access method is `TRANSPARENT` (web app) / `GATEWAY` (remote desktop) / `ISOLATED`
   (isolated browser).
 - **Email (SMTP)** — configured from the console (`/admin/email`); sends invite
