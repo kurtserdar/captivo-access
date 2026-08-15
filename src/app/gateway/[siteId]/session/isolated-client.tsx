@@ -27,6 +27,7 @@ export function IsolatedSession({ siteId, siteName, recorded, fileTransferMode }
   const [fs, setFs] = useState(false);
   const [downloads, setDownloads] = useState<{ name: string; size: number; mtime: number }[]>([]);
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
+  const [ctrlHeld, setCtrlHeld] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -64,6 +65,43 @@ export function IsolatedSession({ siteId, siteName, recorded, fileTransferMode }
       setUploadMsg("Upload failed");
     }
     setTimeout(() => setUploadMsg(null), 4000);
+  };
+
+  // The KasmVNC/noVNC hidden keyboard input inside the same-origin iframe. Focusing
+  // it raises the phone soft keyboard; noVNC then captures typing.
+  const kbInput = (): HTMLElement | null => {
+    const doc = frameRef.current?.contentDocument;
+    return (doc?.getElementById("noVNC_keyboard") as HTMLElement | null)
+      ?? (doc?.querySelector("textarea, input[type=text]") as HTMLElement | null);
+  };
+
+  const toggleKeyboard = () => {
+    const el = kbInput();
+    if (!el) return;
+    if (frameRef.current?.contentDocument?.activeElement === el) el.blur();
+    else el.focus();
+  };
+
+  // Send one special key to the remote. Prefer the RFB API if the bundle exposes it;
+  // otherwise dispatch a KeyboardEvent on the focused keyboard input.
+  const sendKey = (key: string, code: string, keysym: number) => {
+    const el = kbInput();
+    if (!el) return;
+    el.focus();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rfb: any = (frameRef.current?.contentWindow as any)?.rfb;
+    const ctrlSym = 0xffe3, ctrlCode = "ControlLeft";
+    if (rfb?.sendKey) {
+      if (ctrlHeld) rfb.sendKey(ctrlSym, ctrlCode, true);
+      rfb.sendKey(keysym, code, true);
+      rfb.sendKey(keysym, code, false);
+      if (ctrlHeld) rfb.sendKey(ctrlSym, ctrlCode, false);
+    } else {
+      const opts: KeyboardEventInit = { key, code, bubbles: true, ctrlKey: ctrlHeld };
+      el.dispatchEvent(new KeyboardEvent("keydown", opts));
+      el.dispatchEvent(new KeyboardEvent("keyup", opts));
+    }
+    if (ctrlHeld) setCtrlHeld(false);
   };
 
   // The macOS green button only maximises the browser window — it keeps the tab/URL
@@ -214,6 +252,28 @@ export function IsolatedSession({ siteId, siteName, recorded, fileTransferMode }
               ))}
             </div>
           )}
+        </div>
+      )}
+      {isTouch && ready && dims && (
+        <div style={{ position: "fixed", bottom: 12, left: "50%", transform: "translateX(-50%)", zIndex: 30, display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center", maxWidth: "96vw" }}>
+          {[
+            { label: "⌨", title: "Keyboard", on: toggleKeyboard },
+            { label: "Esc", title: "Escape", on: () => sendKey("Escape", "Escape", 0xff1b) },
+            { label: "Tab", title: "Tab", on: () => sendKey("Tab", "Tab", 0xff09) },
+            { label: "←", title: "Left", on: () => sendKey("ArrowLeft", "ArrowLeft", 0xff51) },
+            { label: "↑", title: "Up", on: () => sendKey("ArrowUp", "ArrowUp", 0xff52) },
+            { label: "↓", title: "Down", on: () => sendKey("ArrowDown", "ArrowDown", 0xff54) },
+            { label: "→", title: "Right", on: () => sendKey("ArrowRight", "ArrowRight", 0xff53) },
+          ].map((b) => (
+            <button key={b.title} type="button" title={b.title} onClick={b.on}
+              style={{ background: "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "8px 12px", fontFamily: "sans-serif", fontSize: 13, cursor: "pointer", minWidth: 40 }}>
+              {b.label}
+            </button>
+          ))}
+          <button type="button" title="Ctrl" onClick={() => setCtrlHeld((v) => !v)}
+            style={{ background: ctrlHeld ? "rgba(80,160,255,0.85)" : "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "8px 12px", fontFamily: "sans-serif", fontSize: 13, cursor: "pointer", minWidth: 44 }}>
+            Ctrl
+          </button>
         </div>
       )}
       {(!ready || !dims) && <ConnectSplash siteName={siteName} />}
