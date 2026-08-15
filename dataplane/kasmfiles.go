@@ -24,12 +24,17 @@ func fileTransferAllows(mode string) (up, down bool) {
 	}
 }
 
-// _safeSeg strips any path separators from a query-supplied filename (defense in
-// depth; the broker sanitizes again).
+// _safeSeg reduces a query-supplied filename to one safe path segment (defense in
+// depth; the broker sanitizes again). It strips path separators and rejects any
+// control character (CR/LF etc.) so a crafted name cannot inject headers into the
+// broker request (X-Filename) or the download response (Content-Disposition).
 func _safeSeg(name string) string {
 	name = strings.TrimSpace(name)
 	if i := strings.LastIndexAny(name, "/\\"); i >= 0 {
 		name = name[i+1:]
+	}
+	if strings.IndexFunc(name, func(r rune) bool { return r < 0x20 || r == 0x7f }) >= 0 {
+		return ""
 	}
 	if name == "." || name == ".." {
 		return ""
@@ -70,6 +75,7 @@ func serveKasmFiles(hub *SessionHub, reg *Registry, audit *AuditQueue, w http.Re
 	defer conn.Close()
 
 	name := _safeSeg(q.Get("name"))
+	var uploaded int64
 	switch op {
 	case "upload":
 		if name == "" {
@@ -86,10 +92,12 @@ func serveKasmFiles(hub *SessionHub, reg *Registry, audit *AuditQueue, w http.Re
 			http.Error(w, "relay failed", http.StatusBadGateway)
 			return
 		}
-		if _, err := io.Copy(conn, r.Body); err != nil {
+		un, cerr := io.Copy(conn, r.Body)
+		if cerr != nil {
 			http.Error(w, "relay failed", http.StatusBadGateway)
 			return
 		}
+		uploaded = un
 	case "download":
 		if name == "" {
 			http.Error(w, "bad name", http.StatusBadRequest)
@@ -120,10 +128,12 @@ func serveKasmFiles(hub *SessionHub, reg *Registry, audit *AuditQueue, w http.Re
 	n, _ := io.Copy(w, resp.Body)
 
 	verb := "DOWNLOAD"
+	bytesAudited := n // download: bytes streamed out
 	if isUpload {
 		verb = "UPLOAD"
+		bytesAudited = uploaded // upload: bytes received from the vendor, not the broker's ack
 	}
 	if resp.StatusCode/100 == 2 && op != "list" {
-		audit.Enqueue(auditEvent("ALLOW", verb+" file:"+name, userID, siteID, host, r, resp.StatusCode, n))
+		audit.Enqueue(auditEvent("ALLOW", verb+" file:"+name, userID, siteID, host, r, resp.StatusCode, bytesAudited))
 	}
 }
