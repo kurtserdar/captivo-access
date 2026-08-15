@@ -343,8 +343,8 @@ class H(BaseHTTPRequestHandler):
                 return self._json(400, {"error": "bad_url"})
             copy_out = data.get("copyOut", True)
             paste_in = data.get("pasteIn", True)
-            w = _clamp_dim(data.get("w"), 1024, 2560, 1280)
-            h = _clamp_dim(data.get("h"), 640, 1600, 800)
+            w = _clamp_dim(data.get("w"), 360, 2560, 1280)
+            h = _clamp_dim(data.get("h"), 480, 1600, 800)
             wtext = data.get("watermarkText", "")
             if not isinstance(wtext, str):
                 wtext = ""

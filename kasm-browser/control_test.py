@@ -63,10 +63,18 @@ def test_ffmpeg_args_env_fallbacks():
         importlib.reload(control)
 
 
+def test_clamp_dim_floor():
+    assert control._clamp_dim(100, 360, 2560, 1280) == 360
+    assert control._clamp_dim(400, 360, 2560, 1280) == 400
+    assert control._clamp_dim(None, 360, 2560, 1280) == 1280
+    assert control._clamp_dim(480, 480, 1600, 800) == 480
+
+
 if __name__ == "__main__":
     test_safe_name_basename()
     test_safe_name_rejects_traversal()
     test_ffmpeg_args_defaults()
     test_ffmpeg_args_env_overrides()
     test_ffmpeg_args_env_fallbacks()
+    test_clamp_dim_floor()
     print("ok")

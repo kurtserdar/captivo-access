@@ -221,8 +221,8 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 		var port, status int
 		co, pi := clipboardToKasm(d.ClipboardMode)
 		if st, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
-			cw := clampKasmDim(kasmW, 1024, 2560, 1280)
-			ch := clampKasmDim(kasmH, 640, 1600, 800)
+			cw := clampKasmDim(kasmW, 360, 2560, 1280)
+			ch := clampKasmDim(kasmH, 480, 1600, 800)
 			id, port, status, e = openKasmSession(st, d.KasmControlAddr, d.NavigateUrl, co, pi, cw, ch, d.WatermarkText)
 			st.Close()
 			if e != nil {
