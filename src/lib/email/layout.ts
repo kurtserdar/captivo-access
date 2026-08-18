@@ -27,7 +27,6 @@ export function renderEmail(input: {
 <h1 style="margin:0 0 14px;font-size:18px;color:#18202e">${input.heading}</h1>
 ${body}${button}
 </td></tr>
-<tr><td style="padding:16px 24px;border-top:1px solid #e2e7ef;font-size:12px;color:#94a0b1">Captivo Access · self-hosted secure vendor access</td></tr>
 </table></td></tr></table></body></html>`;
   const textLines = [input.heading, "", ...input.bodyLines.map((l) => l.replace(/<[^>]+>/g, ""))];
   if (input.button) textLines.push("", `${input.button.label}: ${input.button.url}`);
