@@ -74,8 +74,12 @@ recorded, and watchable live — with no VPN and no separate bastion.
                    │  never accepts an inbound connection
                    ├──▶ Internal web app   (wiki, admin panel, dashboard, ...)
                    │
-                   └──▶ guacd  (session engine, deployed on a gateway-flagged host)
-                             └──▶ Remote desktop  (RDP / SSH / VNC target)
+                   ├──▶ guacd         (remote-desktop engine, on a gateway-flagged host)
+                   │        └──▶ Remote desktop  (RDP / SSH / VNC target)
+                   │
+                   └──▶ kasm-browser  (isolated-browser engine, on a gateway-flagged host)
+                            └──▶ Isolated browser → opens an internal web app,
+                                 streams pixels only (nothing lands on the vendor)
 ```
 
 Four moving pieces:
@@ -90,7 +94,9 @@ Four moving pieces:
 - **Connector** (`connector/`) — a small Go binary you run inside your own
   network. It dials **out** to the data plane over WSS and never opens a
   listening port; it holds a local allowlist of the internal services it's
-  permitted to reach.
+  permitted to reach. On a **gateway-flagged** host its install command also
+  brings up the session engines — **guacd** (remote desktop) and
+  **kasm-browser** (isolated browser) — reached the same outbound-only way.
 - **`tunnel/`** — the shared wire-format module (frames, dial requests,
   body streaming) used by both the data plane and the connector.
 
@@ -177,6 +183,12 @@ Shipped and working today:
   gated per Resource; transfers are ephemeral and audited. A Resource's
   access method is `TRANSPARENT` (web app) / `GATEWAY` (remote desktop) / `ISOLATED`
   (isolated browser).
+- **In-session control panel + on-screen keyboard** — remote-desktop and
+  isolated-browser sessions carry a collapsible, edge-docked control panel
+  (full screen, clipboard status, file upload, leave) and a full on-screen
+  keyboard with sticky modifiers, so keys a browser can't send — F-keys, arrows,
+  and combinations like **Ctrl+Alt+Del** — reach the session from any device. The
+  RECORDED / being-monitored notices stay visible the whole time.
 - **Email (SMTP)** — configured from the console (`/admin/email`); sends invite
   emails, access-request/approval emails, and resource down/recovered alerts. (Invites
   can also be copied as a one-time link and sent yourself; all of these events also
