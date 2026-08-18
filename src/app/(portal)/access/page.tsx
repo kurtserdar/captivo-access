@@ -36,8 +36,10 @@ export default async function AccessPage() {
     else if (reason === "not_yet") status = "upcoming";
     else if (reason === "off_schedule") status = "off_hours";
     else if (reason === "pending_approval") status = "pending";
-    else if (reason === "denied") status = "denied";
-    if (!status) continue; // expired/revoked not shown
+    // Denied is intentionally NOT shown to the vendor (same as expired/revoked):
+    // a denied card leaks the existence of resources they can't reach and surfaces
+    // the admin's internal denial note. Pending requests still show as "pending".
+    if (!status) continue; // expired / revoked / denied not shown
 
     siteName.set(g.site.id, g.site.name);
     const recorded = recEnabled && g.site.recordSessions;
@@ -54,7 +56,6 @@ export default async function AccessPage() {
       siteId: g.site.id,
       glyph: g.site.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 2).toUpperCase() || "··",
       status,
-      denyReason: g.denyReason ?? null,
       href: launchHref(g.site.accessMode, g.site.id, g.site.hostname ?? ""),
       time: remaining(startISO, endISO, g.schedule ?? null, now),
     };

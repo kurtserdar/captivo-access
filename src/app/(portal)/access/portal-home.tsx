@@ -11,8 +11,7 @@ export interface CardVM {
   hasLogo: boolean;
   siteId: string;
   glyph: string;
-  status: "active" | "upcoming" | "off_hours" | "pending" | "denied";
-  denyReason: string | null;
+  status: "active" | "upcoming" | "off_hours" | "pending";
   href: string;
   time: Remaining;
   whenText?: string; // upcoming cards only: formatted start, e.g. "Aug 14, 09:00 UTC"

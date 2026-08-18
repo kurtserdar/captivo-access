@@ -51,10 +51,10 @@ export function AccessCards({ cards }: { cards: CardVM[] }) {
             </div>
             {c.status === "active"
               ? <a className="vp-open" href={c.href} target="_blank" rel="noopener noreferrer">Open ↗</a>
-              : <span className="vp-open vp-open-off">{c.status === "pending" ? "Pending" : c.status === "off_hours" ? "Off hours" : c.status === "denied" ? "Denied" : "—"}</span>}
+              : <span className="vp-open vp-open-off">{c.status === "pending" ? "Pending" : c.status === "off_hours" ? "Off hours" : "—"}</span>}
           </div>
           <div className="vp-meter">
-            <div className="vp-meter-row"><span className="vp-meter-label">{c.status === "denied" ? (c.denyReason ?? "Not available") : "Access window"}</span><span className="vp-meter-remain" style={{ color: TONE_COLOR[c.time.tone] }}>{c.time.text}</span></div>
+            <div className="vp-meter-row"><span className="vp-meter-label">Access window</span><span className="vp-meter-remain" style={{ color: TONE_COLOR[c.time.tone] }}>{c.time.text}</span></div>
             <div className="vp-bar"><div className="vp-bar-fill" style={{ width: `${c.time.pct}%`, background: TONE_COLOR[c.time.tone] }} /></div>
           </div>
         </div>
