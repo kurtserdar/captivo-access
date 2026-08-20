@@ -34,3 +34,6 @@ __pycache__/
 
 # Internal compliance self-assessments (list gaps — keep private)
 docs/compliance/
+
+# Internal strategy docs (wedge / positioning — keep private)
+docs/strategy/
