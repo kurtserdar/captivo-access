@@ -409,4 +409,7 @@ if __name__ == "__main__":
     os.makedirs("/profiles", exist_ok=True)
     os.makedirs("/rec", exist_ok=True)
     threading.Thread(target=_reaper, daemon=True).start()
+    # A startup line so the console's "Isolated browser logs" confirms the engine is
+    # alive immediately (like guacd's start banner), before any session runs.
+    log("kasm broker started (max %d sessions)" % MAX_SESSIONS)
     ThreadingHTTPServer(("0.0.0.0", 7900), H).serve_forever()
