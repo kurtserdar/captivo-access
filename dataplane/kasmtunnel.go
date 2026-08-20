@@ -182,7 +182,7 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 	// Pin the site for the follow-up asset/WS requests (the iframe loads /kasm-tunnel/
 	// without ?site on its sub-requests).
 	if r.URL.Query().Get("site") != "" {
-		http.SetCookie(w, &http.Cookie{Name: "ca_kasm_site", Value: siteID, Path: "/kasm-tunnel", HttpOnly: true, SameSite: http.SameSiteLaxMode})
+		http.SetCookie(w, &http.Cookie{Name: "ca_kasm_site", Value: siteID, Path: "/kasm-tunnel", HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode})
 	}
 	// Client-reported screen size for a full-screen desktop: query on the HTML load,
 	// cookie for the query-less websockify upgrade (same pattern as ca_kasm_site).
@@ -201,7 +201,7 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 		}
 	}
 	if r.URL.Query().Get("w") != "" && r.URL.Query().Get("h") != "" {
-		http.SetCookie(w, &http.Cookie{Name: "ca_kasm_size", Value: strconv.Itoa(kasmW) + "x" + strconv.Itoa(kasmH), Path: "/kasm-tunnel", HttpOnly: true, SameSite: http.SameSiteLaxMode})
+		http.SetCookie(w, &http.Cookie{Name: "ca_kasm_size", Value: strconv.Itoa(kasmW) + "x" + strconv.Itoa(kasmH), Path: "/kasm-tunnel", HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode})
 	}
 	sess := reg.Get(d.ConnectorID)
 	if sess == nil {

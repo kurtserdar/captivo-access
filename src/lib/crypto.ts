@@ -3,8 +3,10 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 /** AES-256-GCM. ENCRYPTION_KEY = 32-byte hex (64 characters). Format: base64(iv|tag|ct). */
 function key(): Buffer {
   const hex = process.env.ENCRYPTION_KEY;
-  if (!hex || hex.length !== 64) {
-    throw new Error("ENCRYPTION_KEY must be 32-byte hex (64 characters) — openssl rand -hex 32");
+  if (!hex || !/^[0-9a-fA-F]{64}$/.test(hex)) {
+    // Enforce hex-ness, not just length: Buffer.from(x,"hex") silently drops
+    // non-hex chars, so a 64-char non-hex value would yield a short/weak key.
+    throw new Error("ENCRYPTION_KEY must be 32-byte hex (64 hex characters) — openssl rand -hex 32");
   }
   return Buffer.from(hex, "hex");
 }

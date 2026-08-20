@@ -40,7 +40,7 @@ func serveKasmView(hub *SessionHub, ctrl *ControlClient, reg *Registry, w http.R
 		}
 	}
 	if r.URL.Query().Get("session") != "" {
-		http.SetCookie(w, &http.Cookie{Name: "ca_kasm_view", Value: sessionID, Path: "/kasm-view", HttpOnly: true, SameSite: http.SameSiteLaxMode})
+		http.SetCookie(w, &http.Cookie{Name: "ca_kasm_view", Value: sessionID, Path: "/kasm-view", HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode})
 	}
 
 	ls := hub.Get(sessionID)
