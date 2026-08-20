@@ -46,7 +46,7 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 		return
 	}
 
-	conn, guacdAddr, connectorID, record, _, err := ctrl.GatewayDescriptor(userID, siteID)
+	conn, guacdAddr, connectorID, record, keystrokeLogging, err := ctrl.GatewayDescriptor(userID, siteID)
 	if err != nil {
 		log.Printf("guac-tunnel site=%s user=%s: descriptor failed err=%v", siteID, userID, err)
 		http.Error(w, "forbidden", http.StatusForbidden)
@@ -101,11 +101,22 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 	}
 	log.Printf("guac-tunnel site=%s: READY, bridging", siteID)
 
+	recKey := newRecordingKey(siteID, userID)
 	var rec *recWriter
 	if record {
-		rec = newRecWriter(ctrl.BaseURL, ctrl.Secret, newRecordingKey(siteID, userID), siteID, userID, conn.Hostname, conn.Protocol, recordingMaxBytes())
+		rec = newRecWriter(ctrl.BaseURL, ctrl.Secret, recKey, siteID, userID, conn.Hostname, conn.Protocol, recordingMaxBytes())
 		defer rec.Close()
 		log.Printf("guac-tunnel site=%s: recording enabled key=%s", siteID, rec.key)
+	}
+	// Keystroke timeline (opt-in, requires recording): the keyObserver taps the
+	// browser->guacd pump (like the ftObserver) and posts reconstructed events under
+	// the SAME recording key, so the timeline links to the recording for seeking.
+	var keys *keyObserver
+	var kw *keyWriter
+	if record && keystrokeLogging {
+		keys = newKeyObserver(conn.Protocol, time.Now())
+		kw = newKeyWriter(ctrl.BaseURL, ctrl.Secret, recKey)
+		log.Printf("guac-tunnel site=%s: keystroke logging enabled key=%s", siteID, recKey)
 	}
 
 	connID := ""
@@ -184,6 +195,11 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 			for _, ev := range ft.observe(dirUpload, data) {
 				audit.Enqueue(ev)
 			}
+			if keys != nil {
+				if evs := keys.observe(data, time.Now()); len(evs) > 0 {
+					kw.post(evs)
+				}
+			}
 			if _, werr := guac.Write(data); werr != nil {
 				errc <- werr
 				return
@@ -193,5 +209,10 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 	<-errc
 	for _, ev := range ft.flush() {
 		audit.Enqueue(ev)
+	}
+	if keys != nil {
+		if evs := keys.flush(time.Now()); len(evs) > 0 {
+			kw.post(evs)
+		}
 	}
 }
