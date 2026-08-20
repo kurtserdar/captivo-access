@@ -29,6 +29,11 @@ export function mergeActivity(sources: ActivityItem[][], limit: number): Activit
 export async function getActivityFeed(limit = 8): Promise<ActivityItem[]> {
   const [access, admin, recs] = await Promise.all([
     db.auditEvent.findMany({
+      // Collapse the per-request web-app noise out of the feed: an ALLOW with no
+      // reason is one proxied HTTP request (Proxmox polls many per second). These
+      // stay in the audit log for compliance, but the feed shows the one
+      // session_open ("connected") the proxy now emits per web session instead.
+      where: { NOT: { AND: [{ decision: "ALLOW" }, { OR: [{ reason: null }, { reason: "" }] }] } },
       orderBy: { timestamp: "desc" }, take: limit,
       select: { id: true, timestamp: true, decision: true, userEmail: true, siteName: true, host: true, reason: true },
     }),

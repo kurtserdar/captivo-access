@@ -243,6 +243,7 @@ type BrowserProxy struct {
 	managerURL string
 	audit      *AuditQueue
 	web        *WebActivityTracker
+	webIdle    time.Duration
 }
 
 func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -384,8 +385,13 @@ func (p *BrowserProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body := tunnel.NewBodyReader(st)
 	written := p.writeProxyResponse(w, resp, body, recordSessions, clipboardMode)
 	accessLog(userID, siteID, host, r.Method, r.URL.Path, resp.Status, written)
+	// Emit a single session_open when a new web span starts (so the activity feed
+	// shows one "connected" like gateway/isolated), then the per-request ALLOW —
+	// which stays in the audit log for compliance but is collapsed out of the feed.
+	if p.web.Touch(userID, siteID, host, p.webIdle) {
+		p.audit.Enqueue(auditEvent("ALLOW", "session_open", userID, siteID, host, r, resp.Status, 0))
+	}
 	p.audit.Enqueue(auditEvent("ALLOW", "", userID, siteID, host, r, resp.Status, written))
-	p.web.Touch(userID, siteID, host)
 }
 
 // writeProxyResponse writes the upstream response (status, already-copied

@@ -32,23 +32,26 @@ func NewWebActivityTracker() *WebActivityTracker {
 
 const webKeySep = "\x1f"
 
-// Touch records activity for (userID, siteID). Cheap and non-blocking. A first
-// touch (or one after the entry was pruned) starts a new span; a touch within the
-// window advances LastSeen and refreshes the host, keeping StartedAt.
-func (t *WebActivityTracker) Touch(userID, siteID, host string) {
+// Touch records activity for (userID, siteID). Cheap and non-blocking. Returns true
+// when it STARTS A NEW SPAN — a first touch, or one after the previous activity has
+// been idle longer than `idle` (so the caller can emit a session_open audit event
+// once per web session). A touch within the window advances LastSeen and refreshes
+// the host, keeping StartedAt, and returns false.
+func (t *WebActivityTracker) Touch(userID, siteID, host string, idle time.Duration) bool {
 	if t == nil || userID == "" || siteID == "" {
-		return
+		return false
 	}
 	now := t.now()
 	key := userID + webKeySep + siteID
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	if e, ok := t.m[key]; ok {
+	if e, ok := t.m[key]; ok && now.Sub(e.LastSeen) <= idle {
 		e.LastSeen = now
 		e.Host = host
-		return
+		return false
 	}
 	t.m[key] = &WebSessionInfo{UserID: userID, SiteID: siteID, Host: host, StartedAt: now, LastSeen: now}
+	return true
 }
 
 // List returns the active spans (LastSeen within idle), pruning older ones. The

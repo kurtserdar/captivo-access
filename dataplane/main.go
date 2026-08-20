@@ -272,7 +272,7 @@ func main() {
 		log.Printf("WARNING: MANAGER_PUBLIC_URL is empty; unauthenticated proxy requests will redirect to a relative /login on the site host and may loop")
 	}
 
-	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: managerURL, audit: audit, web: web}
+	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: managerURL, audit: audit, web: web, webIdle: webIdle}
 	// Native gateway WebSocket tunnel (guacamole-common-js <-> guacd). The front
 	// nginx forwards /guac-tunnel here; everything else is the browser proxy.
 	mux := http.NewServeMux()
