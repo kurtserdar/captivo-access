@@ -287,13 +287,29 @@ func main() {
 	proxy := &BrowserProxy{reg: reg, ctrl: ctrl, managerURL: managerURL, audit: audit, web: web, webIdle: webIdle}
 	// Native gateway WebSocket tunnel (guacamole-common-js <-> guacd). The front
 	// nginx forwards /guac-tunnel here; everything else is the browser proxy.
+	// The gateway/view session-establishment endpoints each make a manager
+	// round-trip (ResolveSession) on every hit, before auth succeeds. Rate-limit
+	// them per un-spoofable client IP so an unauthenticated caller can't amplify
+	// junk requests into manager load. (The browser proxy is intentionally NOT
+	// wrapped — it serves many assets per legitimate page and already redirects
+	// unauthenticated requests to /login.)
+	gatewayRL := newRateLimiter()
+	rlGuard := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if !gatewayRL.allow(trustedClientIP(r), 60, time.Minute) {
+				http.Error(w, "rate limited", http.StatusTooManyRequests)
+				return
+			}
+			next(w, r)
+		}
+	}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/guac-tunnel", func(w http.ResponseWriter, r *http.Request) { serveGuacTunnel(ctrl, reg, hub, audit, w, r) })
-	mux.HandleFunc("/kasm-tunnel", func(w http.ResponseWriter, r *http.Request) { serveKasmTunnel(ctrl, reg, hub, audit, w, r) })
-	mux.HandleFunc("/kasm-tunnel/", func(w http.ResponseWriter, r *http.Request) { serveKasmTunnel(ctrl, reg, hub, audit, w, r) })
-	mux.HandleFunc("/guac-view", func(w http.ResponseWriter, r *http.Request) { serveGuacView(hub, ctrl, reg, w, r) })
-	mux.HandleFunc("/kasm-view", func(w http.ResponseWriter, r *http.Request) { serveKasmView(hub, ctrl, reg, w, r) })
-	mux.HandleFunc("/kasm-view/", func(w http.ResponseWriter, r *http.Request) { serveKasmView(hub, ctrl, reg, w, r) })
+	mux.HandleFunc("/guac-tunnel", rlGuard(func(w http.ResponseWriter, r *http.Request) { serveGuacTunnel(ctrl, reg, hub, audit, w, r) }))
+	mux.HandleFunc("/kasm-tunnel", rlGuard(func(w http.ResponseWriter, r *http.Request) { serveKasmTunnel(ctrl, reg, hub, audit, w, r) }))
+	mux.HandleFunc("/kasm-tunnel/", rlGuard(func(w http.ResponseWriter, r *http.Request) { serveKasmTunnel(ctrl, reg, hub, audit, w, r) }))
+	mux.HandleFunc("/guac-view", rlGuard(func(w http.ResponseWriter, r *http.Request) { serveGuacView(hub, ctrl, reg, w, r) }))
+	mux.HandleFunc("/kasm-view", rlGuard(func(w http.ResponseWriter, r *http.Request) { serveKasmView(hub, ctrl, reg, w, r) }))
+	mux.HandleFunc("/kasm-view/", rlGuard(func(w http.ResponseWriter, r *http.Request) { serveKasmView(hub, ctrl, reg, w, r) }))
 	mux.Handle("/", proxy)
 	log.Fatal(http.ListenAndServe(env("PROXY_ADDR", ":3103"), mux))
 }

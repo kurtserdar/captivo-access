@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { db } from "@/lib/db";
 import { encryptBytes } from "@/lib/crypto";
+import { contentLengthExceeds } from "@/lib/request-limits";
 import { recordingEnabled } from "@/lib/recording/enabled";
 
 export const runtime = "nodejs";
@@ -25,6 +26,7 @@ interface FinalizeBody {
 export async function POST(req: NextRequest) {
   if (!dataplaneAuthorized(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!recordingEnabled()) return NextResponse.json({ error: "not found" }, { status: 403 });
+  if (contentLengthExceeds(req, 16 << 20)) return new NextResponse(null, { status: 413 });
 
   try {
     const body = (await req.json().catch(() => ({}))) as FinalizeBody;

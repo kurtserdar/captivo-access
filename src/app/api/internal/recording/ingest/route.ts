@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqualStr } from "@/lib/secure-compare";
+import { contentLengthExceeds } from "@/lib/request-limits";
 import { gzipSync } from "node:zlib";
 import { db } from "@/lib/db";
 import { encryptBytes } from "@/lib/crypto";
@@ -25,6 +26,7 @@ interface IngestBody {
 export async function POST(req: NextRequest) {
   if (!dataplaneAuthorized(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!recordingEnabled()) return NextResponse.json({ error: "not found" }, { status: 403 });
+  if (contentLengthExceeds(req, 16 << 20)) return new NextResponse(null, { status: 413 });
 
   try {
     const body = (await req.json().catch(() => ({}))) as IngestBody;
