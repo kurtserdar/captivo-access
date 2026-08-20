@@ -75,6 +75,9 @@ export async function POST(req: NextRequest) {
     notifyAccessRequests: body.notifyAccessRequests !== false,
     notifyAccessDecisions: body.notifyAccessDecisions !== false,
     requireRequestJustification: body.requireRequestJustification !== false,
+    keystrokeLoggingMode: ["off", "per_resource", "required"].includes(body.keystrokeLoggingMode)
+      ? (body.keystrokeLoggingMode as string)
+      : "per_resource",
   });
   await saveGuacParamDefaults(parseGuacParams(body.guacParamDefaults));
   await recordAdminAction({

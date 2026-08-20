@@ -25,6 +25,7 @@ export interface PlatformSettings {
   notifyAccessRequests: boolean | null;
   notifyAccessDecisions: boolean | null;
   requireRequestJustification: boolean | null;
+  keystrokeLoggingMode: string | null;
 }
 
 const ID = "singleton";
@@ -46,6 +47,7 @@ const EMPTY: PlatformSettings = {
   notifyAccessRequests: null,
   notifyAccessDecisions: null,
   requireRequestJustification: null,
+  keystrokeLoggingMode: null,
 };
 
 let cache: { s: PlatformSettings; at: number } | null = null;
@@ -76,6 +78,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     notifyAccessRequests: c?.notifyAccessRequests ?? null,
     notifyAccessDecisions: c?.notifyAccessDecisions ?? null,
     requireRequestJustification: c?.requireRequestJustification ?? null,
+    keystrokeLoggingMode: c?.keystrokeLoggingMode ?? null,
   };
   cache = { s, at: Date.now() };
   return s;
@@ -200,6 +203,17 @@ export async function resolvedExternalAnchorEnabled(): Promise<boolean> {
 export async function resolvedRequireRequestJustification(): Promise<boolean> {
   const s = await getPlatformSettings();
   return s.requireRequestJustification !== false;
+}
+
+export type KeystrokeMode = "off" | "per_resource" | "required";
+const KEYSTROKE_MODES: KeystrokeMode[] = ["off", "per_resource", "required"];
+
+// Tenant-wide keystroke-logging mode: DB value if valid, else per_resource.
+// No env fallback (UI-only control).
+export async function resolvedKeystrokeLoggingMode(): Promise<KeystrokeMode> {
+  const s = await getPlatformSettings();
+  const v = s.keystrokeLoggingMode;
+  return v && (KEYSTROKE_MODES as string[]).includes(v) ? (v as KeystrokeMode) : "per_resource";
 }
 
 export async function resolvedAnchorTsaUrl(): Promise<string> {
