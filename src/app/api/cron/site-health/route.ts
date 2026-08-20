@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { db } from "@/lib/db";
 import { probeSite, probeGatewaySite } from "@/lib/connector/health";
 import { classifyTransition, notifyTransition } from "@/lib/notifications";
@@ -6,7 +7,7 @@ import { recordCronRun } from "@/lib/cron/heartbeat";
 
 function cronAuthorized(req: NextRequest): boolean {
   const s = process.env.CRON_SECRET;
-  return !!s && req.headers.get("authorization") === `Bearer ${s}`;
+  return !!s && timingSafeEqualStr(req.headers.get("authorization"), `Bearer ${s}`);
 }
 
 const POOL = 8;

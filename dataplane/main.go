@@ -5,6 +5,7 @@
 package main
 
 import (
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"log"
@@ -15,6 +16,17 @@ import (
 
 	"github.com/kurtserdar/captivo-access/tunnel"
 )
+
+// dpAuthorized gates the internal API: the caller must present the
+// x-dataplane-secret header, compared in constant time. An unset secret denies
+// (fail-closed) so a misconfigured deployment never exposes the internal plane.
+func dpAuthorized(r *http.Request, secret string) bool {
+	if secret == "" {
+		return false
+	}
+	got := r.Header.Get("x-dataplane-secret")
+	return subtle.ConstantTimeCompare([]byte(got), []byte(secret)) == 1
+}
 
 func main() {
 	secret := os.Getenv("DATAPLANE_SECRET")
@@ -44,7 +56,7 @@ func main() {
 	}, 5*time.Second, 200)
 	in := http.NewServeMux()
 	in.HandleFunc("/proxy", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -76,7 +88,7 @@ func main() {
 		})
 	})
 	in.HandleFunc("/probe", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -96,7 +108,7 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": res.Ok, "latencyMs": res.LatencyMs, "error": res.Error})
 	})
 	in.HandleFunc("/kick", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -114,7 +126,7 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	})
 	in.HandleFunc("/sessions/terminate", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -129,7 +141,7 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "found": found})
 	})
 	in.HandleFunc("/ldap-test", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -144,7 +156,7 @@ func main() {
 		writeJSON(w, http.StatusOK, TestLdap(reg.Get(body.ConnectorID), body.LdapConfig))
 	})
 	in.HandleFunc("/ldap-resolve", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -160,7 +172,7 @@ func main() {
 		writeJSON(w, http.StatusOK, ResolveUser(reg.Get(body.ConnectorID), body.LdapConfig, body.Email))
 	})
 	in.HandleFunc("/connector-telemetry", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -184,7 +196,7 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]any{"online": true, "ageMs": time.Since(at).Milliseconds(), "telemetry": t})
 	})
 	in.HandleFunc("/connector-policy", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -209,21 +221,21 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	})
 	in.HandleFunc("/sessions", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
 		writeJSON(w, http.StatusOK, hub.List())
 	})
 	in.HandleFunc("/web-sessions", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
 		writeJSON(w, http.StatusOK, web.List(webIdle))
 	})
 	in.HandleFunc("/sessions/control", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -248,7 +260,7 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	})
 	in.HandleFunc("/sessions/watch-status", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -256,7 +268,7 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]any{"watching": watching, "controlHeld": controlHeld})
 	})
 	in.HandleFunc("/kasm-files", func(w http.ResponseWriter, r *http.Request) {
-		if secret == "" || r.Header.Get("x-dataplane-secret") != secret {
+		if !dpAuthorized(r, secret) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}

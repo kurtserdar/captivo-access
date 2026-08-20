@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { resolvedVendorIpAllowlist } from "@/lib/settings/platform";
 import { ipAllowed } from "@/lib/net/cidr";
@@ -7,7 +8,7 @@ export const runtime = "nodejs"; // ipAllowed uses node:net
 
 function dataplaneAuthorized(req: NextRequest): boolean {
   const s = process.env.DATAPLANE_SECRET;
-  return !!s && req.headers.get("x-dataplane-secret") === s;
+  return !!s && timingSafeEqualStr(req.headers.get("x-dataplane-secret"), s);
 }
 
 export async function POST(req: NextRequest) {

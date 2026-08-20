@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { recordCronRun } from "@/lib/cron/heartbeat";
 import { runAnchor, runAdminAnchor } from "@/lib/audit/anchor";
 
@@ -7,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 function cronAuthorized(req: NextRequest): boolean {
   const s = process.env.CRON_SECRET;
-  return !!s && req.headers.get("authorization") === `Bearer ${s}`;
+  return !!s && timingSafeEqualStr(req.headers.get("authorization"), `Bearer ${s}`);
 }
 
 export async function POST(req: NextRequest) {

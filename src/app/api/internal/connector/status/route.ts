@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { db } from "@/lib/db";
 import { resolvedConnectorLogLevel } from "@/lib/settings/platform";
 
 function dataplaneAuthorized(req: NextRequest): boolean {
   const s = process.env.DATAPLANE_SECRET;
-  return !!s && req.headers.get("x-dataplane-secret") === s;
+  return !!s && timingSafeEqualStr(req.headers.get("x-dataplane-secret"), s);
 }
 
 export async function POST(req: NextRequest) {

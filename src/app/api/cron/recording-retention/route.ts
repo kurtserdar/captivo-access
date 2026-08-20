@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { db } from "@/lib/db";
 import { resolvedRecordingRetentionDays } from "@/lib/settings/platform";
 import { appendAuditEvents } from "@/lib/audit/append";
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 function cronAuthorized(req: NextRequest): boolean {
   const s = process.env.CRON_SECRET;
-  return !!s && req.headers.get("authorization") === `Bearer ${s}`;
+  return !!s && timingSafeEqualStr(req.headers.get("authorization"), `Bearer ${s}`);
 }
 
 // Deletes session recordings older than the configured retention window

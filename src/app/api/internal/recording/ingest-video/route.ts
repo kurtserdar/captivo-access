@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { db } from "@/lib/db";
 import { encryptBytes } from "@/lib/crypto";
 import { recordingEnabled } from "@/lib/recording/enabled";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 function dataplaneAuthorized(req: NextRequest): boolean {
   const s = process.env.DATAPLANE_SECRET;
-  return !!s && req.headers.get("x-dataplane-secret") === s;
+  return !!s && timingSafeEqualStr(req.headers.get("x-dataplane-secret"), s);
 }
 
 interface IngestVideoBody {
