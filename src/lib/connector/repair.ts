@@ -50,7 +50,7 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, clearV
     `docker run -d --name access-connector --restart unless-stopped --network ${NET} ` +
     `-e MANAGER_URL=${managerUrl} -e DATAPLANE_URL=${tunnelUrl} ` +
     (code ? `-e PAIR_CODE=${code} ` : "") +
-    `-v access_connector_data:/data -v captivo_guacd_logs:/guaclog:ro -v captivo_guacd_drive:/drive:rw ${CONNECTOR}; `;
+    `-v access_connector_data:/data -v captivo_guacd_logs:/guaclog:ro -v captivo_guacd_drive:/drive:rw -v captivo_kasm_logs:/kasmlog:ro ${CONNECTOR}; `;
   // guacd: bypass the entrypoint so our shell wrapper tees guacd's log into the volume.
   const guacd =
     `docker rm -f captivo-guacd >/dev/null 2>&1; ` +
@@ -58,7 +58,7 @@ function runCommand(managerUrl: string, tunnelUrl: string, code?: string, clearV
     `-v captivo_guacd_recordings:/recordings -v captivo_guacd_logs:/guaclog -v captivo_guacd_drive:/drive ` +
     `--entrypoint /bin/sh ${GUACD} -c '/opt/guacamole/sbin/guacd -b 0.0.0.0 -L info -f 2>&1 | tee /guaclog/guacd.log'; `;
   // High-fidelity isolated browser (KasmVNC) — the sole isolated-browser transport.
-  const kasm = `docker pull ${KASM}; docker rm -f captivo-kasm >/dev/null 2>&1; docker run -d --name captivo-kasm --restart unless-stopped --network ${NET} --shm-size=1g ${KASM}`;
+  const kasm = `docker pull ${KASM}; docker rm -f captivo-kasm >/dev/null 2>&1; docker run -d --name captivo-kasm --restart unless-stopped --network ${NET} --shm-size=1g -v captivo_kasm_logs:/kasmlog ${KASM}`;
 
   return prune + network + chown + clear + connector + guacd + kasm;
 }

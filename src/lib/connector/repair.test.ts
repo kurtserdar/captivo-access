@@ -123,6 +123,11 @@ describe("every connector bundles guacd on the shared network", () => {
     expect(cmd).toContain("--entrypoint chown");
     expect(cmd).toContain("-v captivo_guacd_logs:/guaclog:ro");
   });
+  it("captures isolated-browser (kasm) logs to a shared volume", () => {
+    const cmd = buildInstallCommand("CODE123", m, t);
+    expect(cmd).toContain("-v captivo_kasm_logs:/kasmlog "); // kasm writes
+    expect(cmd).toContain("-v captivo_kasm_logs:/kasmlog:ro"); // connector reads
+  });
 });
 
 describe("install/re-pair pull the newest connector image", () => {
