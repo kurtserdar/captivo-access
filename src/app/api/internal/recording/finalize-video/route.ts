@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { encryptBytes } from "@/lib/crypto";
 import { recordingEnabled } from "@/lib/recording/enabled";
 
 export const runtime = "nodejs";
@@ -31,6 +32,11 @@ export async function POST(req: NextRequest) {
     const raw = Buffer.from(body.data, "base64");
     if (raw.length === 0) return new NextResponse(null, { status: 204 });
     const seq = typeof body.seq === "number" ? body.seq : 0;
+    // The interim recording was created encrypted (encrypted:true). The finalized
+    // chunks REPLACE those interim chunks, so they must be encrypted the same way or
+    // the read path (which decrypts when encrypted:true) fails to authenticate them.
+    // WebM is already codec-compressed, so no gzip — mirror ingest-video exactly.
+    const data = encryptBytes(raw);
 
     await db.$transaction(async (tx) => {
       const rec = await tx.sessionRecording.findUnique({ where: { recordingKey } });
@@ -39,15 +45,15 @@ export async function POST(req: NextRequest) {
         await tx.recordingChunk.deleteMany({ where: { recordingId: rec.id } });
         await tx.sessionRecording.update({
           where: { id: rec.id },
-          data: { bytes: raw.length, eventCount: 1, lastEventAt: new Date() },
+          data: { bytes: data.length, eventCount: 1, encrypted: true, lastEventAt: new Date() },
         });
       } else {
         await tx.sessionRecording.update({
           where: { id: rec.id },
-          data: { bytes: { increment: raw.length }, eventCount: { increment: 1 }, lastEventAt: new Date() },
+          data: { bytes: { increment: data.length }, eventCount: { increment: 1 }, lastEventAt: new Date() },
         });
       }
-      await tx.recordingChunk.create({ data: { recordingId: rec.id, seq, data: new Uint8Array(raw) } });
+      await tx.recordingChunk.create({ data: { recordingId: rec.id, seq, data: new Uint8Array(data) } });
     });
 
     return new NextResponse(null, { status: 204 });
