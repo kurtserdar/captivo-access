@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
+import { decryptBytes } from "@/lib/crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +21,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     orderBy: { seq: "asc" },
     select: { data: true },
   });
-  const blob = Buffer.concat(chunks.map((c) => Buffer.from(c.data)));
+  const blob = Buffer.concat(chunks.map((c) => {
+    const buf = Buffer.from(c.data);
+    return rec.encrypted ? decryptBytes(buf) : buf;
+  }));
   const total = blob.length;
 
   // Honour Range so the browser can scrub the seekable WebM instead of loading it all.

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { encryptBytes } from "@/lib/crypto";
 import { recordingEnabled } from "@/lib/recording/enabled";
 
 export const runtime = "nodejs";
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest) {
     const raw = Buffer.from(body.data, "base64");
     if (raw.length === 0) return new NextResponse(null, { status: 204 });
     const seq = typeof body.seq === "number" ? body.seq : 0;
+    // Encrypt at rest (AES-256-GCM). WebM is already codec-compressed, so no gzip.
+    const data = encryptBytes(raw);
 
     await db.$transaction(async (tx) => {
       const rec = await tx.sessionRecording.upsert({
@@ -41,20 +44,20 @@ export async function POST(req: NextRequest) {
           siteId: body.siteId ?? "",
           host: body.host ?? "",
           format: "VIDEO",
-          encrypted: false,
+          encrypted: true,
           protocol: "kasm",
           eventCount: 1,
-          bytes: raw.length,
+          bytes: data.length,
           lastEventAt: new Date(),
         },
         update: {
           eventCount: { increment: 1 },
-          bytes: { increment: raw.length },
+          bytes: { increment: data.length },
           lastEventAt: new Date(),
         },
       });
       await tx.recordingChunk.create({
-        data: { recordingId: rec.id, seq, data: new Uint8Array(raw) },
+        data: { recordingId: rec.id, seq, data: new Uint8Array(data) },
       });
     });
 

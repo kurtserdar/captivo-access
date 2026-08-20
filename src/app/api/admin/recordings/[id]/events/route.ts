@@ -21,7 +21,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!rec) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const chunks = await db.recordingChunk.findMany({ where: { recordingId: id }, orderBy: { seq: "asc" }, select: { seq: true, data: true } });
-  const events = assembleEvents(chunks);
+  const events = assembleEvents(chunks, rec.encrypted);
 
   return NextResponse.json({ id: rec.id, startedAt: rec.startedAt, events });
 }

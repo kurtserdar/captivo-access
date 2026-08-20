@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { gzipSync } from "node:zlib";
 import { db } from "@/lib/db";
+import { encryptBytes } from "@/lib/crypto";
 import { recordingEnabled } from "@/lib/recording/enabled";
 
 export const runtime = "nodejs";
@@ -31,7 +32,8 @@ export async function POST(req: NextRequest) {
     if (!recordingKey || events.length === 0) return new NextResponse(null, { status: 204 });
 
     const seq = typeof body.seq === "number" ? body.seq : 0;
-    const data = gzipSync(Buffer.from(JSON.stringify(events)));
+    // Encrypt at rest (AES-256-GCM over the gzipped events), same as GUAC recordings.
+    const data = encryptBytes(gzipSync(Buffer.from(JSON.stringify(events))));
 
     await db.$transaction(async (tx) => {
       const recording = await tx.sessionRecording.upsert({
@@ -43,6 +45,7 @@ export async function POST(req: NextRequest) {
           host: body.host ?? "",
           eventCount: events.length,
           bytes: data.length,
+          encrypted: true,
           lastEventAt: new Date(),
         },
         update: {
@@ -56,7 +59,7 @@ export async function POST(req: NextRequest) {
         data: {
           recordingId: recording.id,
           seq,
-          data,
+          data: new Uint8Array(data),
         },
       });
     });
