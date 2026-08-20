@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { clientIp } from "@/lib/request-ip";
 import { redeemPairing } from "@/lib/connector/enrollment";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(req.headers) ?? "unknown";
   if (!checkRateLimit(`${ip}:/api/connector/enroll`, 10, 60_000)) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }

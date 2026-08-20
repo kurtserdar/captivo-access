@@ -82,14 +82,15 @@ func bearer(h string) string {
 	return ""
 }
 
-// clientIP returns the rate-limit key for a request: the first hop of
-// X-Forwarded-For if present (the dataplane may sit behind a proxy/LB),
-// otherwise the host part of RemoteAddr (falling back to the raw value if
-// it has no port to split).
+// clientIP returns the un-spoofable rate-limit key: the right-most
+// X-Forwarded-For hop (the one our own trusted front proxy appends), else the
+// socket peer. The left-most hop is client-controlled — using it would let an
+// attacker rotate buckets to bypass the limiter or forge a victim's IP to
+// lock them out.
 func clientIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if i := strings.IndexByte(xff, ','); i >= 0 {
-			return strings.TrimSpace(xff[:i])
+		if i := strings.LastIndexByte(xff, ','); i >= 0 {
+			return strings.TrimSpace(xff[i+1:])
 		}
 		return strings.TrimSpace(xff)
 	}

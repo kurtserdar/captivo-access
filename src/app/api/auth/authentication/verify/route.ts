@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { clientIp } from "@/lib/request-ip";
 import { cookies } from "next/headers";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { verifyAuthentication } from "@/lib/auth/webauthn";
@@ -13,12 +14,12 @@ import { getRpId, originMatchesRp, requestOrigin } from "@/lib/auth/rp";
 function requestMeta(req: NextRequest) {
   return {
     userAgent: req.headers.get("user-agent") ?? undefined,
-    ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? undefined,
+    ip: clientIp(req.headers) ?? undefined,
   };
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(req.headers) ?? "unknown";
   const key = `${ip}:${new URL(req.url).pathname}`;
   if (!checkRateLimit(key, 10, 60_000)) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
