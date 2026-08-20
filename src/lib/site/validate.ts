@@ -29,6 +29,7 @@ export type SiteValidation =
       username: string;
       secret: string | null;
       recordSessions: boolean;
+      keystrokeLogging: boolean;
       guacParams: GuacParams;
     }
   | {
@@ -103,6 +104,7 @@ export function validateSiteInput(
       username,
       secret: secret || null,
       recordSessions: opts.recordingEnabled && body.recordSessions === true,
+      keystrokeLogging: opts.recordingEnabled && body.recordSessions === true && body.keystrokeLogging === true,
       guacParams: parseGuacParams(body.guacParams),
     };
   }

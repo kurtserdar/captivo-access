@@ -46,7 +46,7 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 		return
 	}
 
-	conn, guacdAddr, connectorID, record, err := ctrl.GatewayDescriptor(userID, siteID)
+	conn, guacdAddr, connectorID, record, _, err := ctrl.GatewayDescriptor(userID, siteID)
 	if err != nil {
 		log.Printf("guac-tunnel site=%s user=%s: descriptor failed err=%v", siteID, userID, err)
 		http.Error(w, "forbidden", http.StatusForbidden)

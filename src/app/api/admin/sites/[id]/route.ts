@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   const secretUpdate = v.secret ? { secret: encrypt(v.secret) } : {};
   await db.$transaction(async (tx) => {
-    await tx.site.update({ where: { id }, data: { connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: null, description: v.description, recordSessions: v.recordSessions, accessMode: "GATEWAY", ...logoData } });
+    await tx.site.update({ where: { id }, data: { connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: null, description: v.description, recordSessions: v.recordSessions, keystrokeLogging: v.keystrokeLogging, accessMode: "GATEWAY", ...logoData } });
     await tx.vaultCredential.upsert({
       where: { siteId: id },
       create: { siteId: id, protocol: v.protocol, targetHost: v.targetHost, targetPort: v.targetPort, username: v.username, secret: encrypt(v.secret ?? ""), secretKind: "PASSWORD", guacParams: v.guacParams as Prisma.InputJsonValue },

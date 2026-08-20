@@ -43,6 +43,7 @@ type SiteInitial = {
   description: string;
   insecureSkipVerify: boolean;
   recordSessions: boolean;
+  keystrokeLogging?: boolean;
   clipboardMode: string;
   watermark?: boolean | null;
   fileTransferMode?: string;
@@ -81,6 +82,7 @@ export function SiteForm({
   const [description, setDescription] = useState(site?.description ?? "");
   const [insecureSkipVerify, setInsecureSkipVerify] = useState(site?.insecureSkipVerify ?? false);
   const [recordSessions, setRecordSessions] = useState(site?.recordSessions ?? false);
+  const [keystrokeLogging, setKeystrokeLogging] = useState(site?.keystrokeLogging ?? false);
   const [clipboardMode, setClipboardMode] = useState(site?.clipboardMode ?? "allow");
   const [watermark, setWatermark] = useState<"inherit" | "on" | "off">(
     site?.watermark == null ? "inherit" : site.watermark ? "on" : "off",
@@ -160,6 +162,7 @@ export function SiteForm({
           description: description.trim() || undefined,
           insecureSkipVerify,
           recordSessions,
+          keystrokeLogging,
           clipboardMode,
           watermark: watermark === "inherit" ? null : watermark === "on",
           fileTransferMode,
@@ -411,6 +414,21 @@ export function SiteForm({
             {accessMode === "GATEWAY"
               ? " The remote-desktop screen is recorded and replayed in the console."
               : " Web sessions are captured with an in-page recorder."}
+          </span>
+        </div>
+      )}
+      {recordingEnabled && accessMode === "GATEWAY" && recordSessions && (
+        <div className="field">
+          <label className="field-label">
+            <input
+              type="checkbox"
+              checked={keystrokeLogging}
+              onChange={(e) => setKeystrokeLogging(e.target.checked)}
+            />{" "}
+            Keystroke timeline
+          </label>
+          <span className="hint">
+            Captures typed input (commands for SSH, text for RDP) as a searchable timeline linked to the recording — click an entry to jump to that moment. Warning: this records typed input, which may include passwords typed into the session.
           </span>
         </div>
       )}

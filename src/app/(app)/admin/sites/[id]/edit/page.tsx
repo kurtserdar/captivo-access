@@ -16,7 +16,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
   const [site, connectors] = await Promise.all([
     db.site.findUnique({
       where: { id },
-      select: { id: true, connectorId: true, name: true, hostname: true, upstreamUrl: true, description: true, insecureSkipVerify: true, recordSessions: true, clipboardMode: true, watermark: true, fileTransferMode: true, accessMode: true, logoType: true },
+      select: { id: true, connectorId: true, name: true, hostname: true, upstreamUrl: true, description: true, insecureSkipVerify: true, recordSessions: true, keystrokeLogging: true, clipboardMode: true, watermark: true, fileTransferMode: true, accessMode: true, logoType: true },
     }),
     db.connector.findMany({ where: { status: { not: "REVOKED" } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
@@ -51,6 +51,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
               description: site.description ?? "",
               insecureSkipVerify: site.insecureSkipVerify,
               recordSessions: site.recordSessions,
+              keystrokeLogging: site.keystrokeLogging,
               clipboardMode: site.clipboardMode,
               watermark: site.watermark,
               fileTransferMode: site.fileTransferMode,

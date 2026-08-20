@@ -152,6 +152,7 @@ model Site {
   probeDetail        String?
   probeLatencyMs     Int?
   recordSessions     Boolean       @default(false)
+  keystrokeLogging   Boolean       @default(false) // GATEWAY: capture typed input into a keystroke timeline
   clipboardMode      String        @default("allow") // allow | no_copy | no_paste | none (web via proxy; gateway via guacd disable-copy/disable-paste)
   watermark          Boolean?      // isolated DLP watermark; null = inherit the global watermarkDefault
   fileTransferMode   String        @default("none") // allow | no_upload | no_download | none (ISOLATED only)
@@ -475,6 +476,19 @@ model RecordingChunk {
   recording   SessionRecording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
 
   @@index([recordingId, seq])
+}
+
+model SessionKeyEvent {
+  id           String   @id @default(cuid())
+  recordingKey String   // ties to SessionRecording.recordingKey
+  seq          Int
+  atMs         Int      // offset from recording start, ms (player seek)
+  kind         String   // "command" | "text"
+  data         Bytes    // AES-256-GCM(text)
+  masked       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([recordingKey, seq])
 }
 
 model AdminAuditEvent {
