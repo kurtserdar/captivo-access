@@ -19,6 +19,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
   const [requireJustif, setRequireJustif] = useState(initial.requireRequestJustification !== false);
   const [consent, setConsent] = useState(consentEffective);
   const [watermark, setWatermark] = useState(initial.watermarkDefault === true);
+  const [ksMode, setKsMode] = useState(initial.keystrokeLoggingMode ?? "per_resource");
   const [tz, setTz] = useState(initial.displayTimezone ?? "");
   const [recRetention, setRecRetention] = useState(str(initial.recordingRetentionDays));
   const [connLog, setConnLog] = useState(initial.defaultConnectorLogLevel ?? "info");
@@ -62,6 +63,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
         requireRequestJustification: requireJustif,
         recordingConsentRequired: consent,
         watermarkDefault: watermark,
+        keystrokeLoggingMode: ksMode,
         displayTimezone: tz || null,
         recordingRetentionDays: recRetention,
         defaultConnectorLogLevel: connLog,
@@ -201,6 +203,19 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
             </div>
             <div className="setting-ctl">
               <label className="switch"><input type="checkbox" checked={watermark} onChange={(e) => setWatermark(e.target.checked)} /><span className="track" /></label>
+            </div>
+          </div>
+          <div className="setting">
+            <div className="setting-main">
+              <div className="setting-label">Keystroke logging</div>
+              <div className="setting-hint">Governs the SSH/RDP keystroke timeline for gateway sessions. Applies only to sessions where recording is enabled. <b>Per resource</b> lets each resource decide; <b>Required</b> forces it on for every recorded gateway session (a resource cannot turn it off).</div>
+            </div>
+            <div className="setting-ctl">
+              <select className="select" value={ksMode} onChange={(e) => setKsMode(e.target.value)} aria-label="Keystroke logging mode">
+                <option value="off">Off — disabled for all resources</option>
+                <option value="per_resource">Per resource — each resource decides</option>
+                <option value="required">Required — on for every recorded session</option>
+              </select>
             </div>
           </div>
           <div className="setting">
