@@ -8,6 +8,7 @@ export interface ConnectorTelemetry {
   bytesOut: number;
   recentLogs?: string[];
   guacdLogs?: string[];
+  kasmLogs?: string[];
 }
 
 // Reads a connector's live telemetry from the data-plane (in-memory, ephemeral).

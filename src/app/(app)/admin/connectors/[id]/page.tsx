@@ -183,6 +183,21 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
       </div>
 
       <div className="card">
+        <div className="card-head"><div className="ch-title"><h2>Isolated browser logs</h2><span className="sub">Last lines from the isolated browser engine (KasmVNC)</span></div></div>
+        {t && t.kasmLogs && t.kasmLogs.length > 0 ? (
+          <div className="term">
+            <div className="term-body" style={{ maxHeight: "18rem" }}>
+              {t.kasmLogs.map((line, i) => (
+                <div key={i} className={`term-line ${logLineClass(line)}`}>{line}</div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="cell-sub">No isolated-browser logs yet — the connector is offline, or hasn&apos;t been updated to report them (re-run its command).</p>
+        )}
+      </div>
+
+      <div className="card">
         <div className="card-head"><div className="ch-title"><h2>Recent activity</h2><span className="sub">Latest access decisions on its resources</span></div></div>
         {activity.length === 0 ? (
           <div className="empty">No access activity yet.</div>
