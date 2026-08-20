@@ -14,6 +14,17 @@ BASE_PORT = 6900  # per-session port = BASE_PORT + display; hub is 6901 (display
 FT_MAX_BYTES = int(os.environ.get("ISOLATED_FT_MAX_BYTES", str(100 * 1024 * 1024)))
 
 
+def log(msg, _emit=True):
+    # Timestamped broker log line (session lifecycle). Printed to stdout with flush;
+    # the entrypoint tees stdout to /kasmlog/kasm.log so the connector can tail it and
+    # the console shows "Isolated browser logs". Returns the line so it is testable.
+    # Matches the guacd/connector log style (YYYY/MM/DD HH:MM:SS ...).
+    line = time.strftime("%Y/%m/%d %H:%M:%S") + " " + msg
+    if _emit:
+        print(line, flush=True)
+    return line
+
+
 def _positive_int_env(name, default):
     try:
         v = int(os.environ.get(name, "").strip())
@@ -124,9 +135,11 @@ def _kill(sess):
 def open_session(url, copy_out, paste_in, w=1280, h=800, watermark_text=""):
     with _lock:
         if len(_sessions) >= MAX_SESSIONS:
+            log("capacity reached (%d active) — session refused" % MAX_SESSIONS)
             return None
         display = _free_display()
         if display is None:
+            log("no free display — session refused")
             return None
         _seq["n"] += 1
         sid = "s%d-%d" % (int(time.time()), _seq["n"])
@@ -137,6 +150,7 @@ def open_session(url, copy_out, paste_in, w=1280, h=800, watermark_text=""):
         _sessions[sid] = {"display": display, "port": port, "procs": procs,
                           "profile": profile, "home": home, "started": time.time(),
                           "w": w, "h": h}
+        log("session %s opened -> %s (%dx%d)" % (sid, url, w, h))
         return {"id": sid, "port": port}
 
 
@@ -144,6 +158,7 @@ def close_session(sid):
     with _lock:
         sess = _sessions.pop(sid, None)
     if sess:
+        log("session %s closed" % sid)
         _kill(sess)
 
 
@@ -180,7 +195,7 @@ def _reaper():
             stale = [sid for sid, s in _sessions.items() if now - s["started"] > MAX_SESSION_SECONDS]
             for sid in stale:
                 sess = _sessions.pop(sid)
-                print("kasm-broker: reaping stale session " + sid, flush=True)
+                log("session %s reaped (stale)" % sid)
                 threading.Thread(target=_kill, args=(sess,), daemon=True).start()
 
 

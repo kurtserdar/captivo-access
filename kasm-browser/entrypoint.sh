@@ -9,4 +9,5 @@ cp /kasmvnc.yaml /root/.vnc/kasmvnc.yaml
 Xvnc :1 -geometry 1280x800 -depth 24 -websocketPort 6901 -interface 0.0.0.0 \
   -httpd /usr/share/kasmvnc/www -SecurityTypes None -disableBasicAuth &
 sleep 2
-exec python3 /control.py
+mkdir -p /kasmlog
+python3 /control.py 2>&1 | tee /kasmlog/kasm.log

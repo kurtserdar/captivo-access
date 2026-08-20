@@ -70,6 +70,12 @@ def test_clamp_dim_floor():
     assert control._clamp_dim(480, 480, 1600, 800) == 480
 
 
+def test_log_format():
+    line = control.log("session s1 opened", _emit=False)
+    assert line.endswith(" session s1 opened")
+    assert len(line.split(" ")[0].split("/")) == 3  # date has 3 parts (YYYY/MM/DD)
+
+
 if __name__ == "__main__":
     test_safe_name_basename()
     test_safe_name_rejects_traversal()
@@ -77,4 +83,5 @@ if __name__ == "__main__":
     test_ffmpeg_args_env_overrides()
     test_ffmpeg_args_env_fallbacks()
     test_clamp_dim_floor()
+    test_log_format()
     print("ok")
