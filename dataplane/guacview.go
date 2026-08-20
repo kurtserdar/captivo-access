@@ -98,7 +98,7 @@ func serveGuacView(hub *SessionHub, ctrl *ControlClient, reg *Registry, w http.R
 		log.Printf("guac-view session=%s: ws accept failed err=%v", sessionID, err)
 		return
 	}
-	c.SetReadLimit(-1)
+	c.SetReadLimit(32 << 20) // 32 MiB bound: a live-view spectator sends little input; an unbounded read would let one frame OOM the shared data-plane.
 	defer c.CloseNow()
 	ctx := context.Background()
 

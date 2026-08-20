@@ -147,7 +147,7 @@ func serveGuacTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 		log.Printf("guac-tunnel site=%s: ws accept failed err=%v", siteID, err)
 		return
 	}
-	c.SetReadLimit(-1) // guac instructions can be large (image blobs)
+	c.SetReadLimit(32 << 20) // 32 MiB: generous for vendor input (clipboard/blob) but bounded, so a giant frame can't OOM the shared data-plane. Image blobs flow guacd->browser (writes), not through this read limit.
 	log.Printf("guac-tunnel site=%s: ws accepted subproto=%q", siteID, c.Subprotocol())
 	defer c.CloseNow()
 	// A background context (not the request's) keeps the long-lived session alive
