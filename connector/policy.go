@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net"
 	"sync/atomic"
 
 	"github.com/kurtserdar/captivo-access/tunnel"
@@ -32,8 +33,30 @@ func policyAllowed(authority string) bool {
 	return m == nil || m.Allowed(authority)
 }
 
-// egressAllowed is the effective boundary: the local env ceiling AND the console
-// policy. Never widens past the env.
+// isBlockedTarget hard-denies link-local / cloud-metadata destinations
+// (169.254.0.0/16, fe80::/10) regardless of the egress matchers — these are
+// never legitimate resource targets and are the classic SSRF pivot to a cloud
+// instance's credential endpoint. Loopback and RFC-1918 LAN are deliberately
+// NOT blocked: those are valid on-prem resource targets. Only IP-literal
+// targets are inspected (hostnames resolve at dial time; the realistic
+// metadata vector is a literal 169.254.169.254).
+func isBlockedTarget(authority string) bool {
+	host, _, err := net.SplitHostPort(authority)
+	if err != nil {
+		host = authority
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	return ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast()
+}
+
+// egressAllowed is the effective boundary: link-local/metadata is always denied,
+// then the local env ceiling AND the console policy. Never widens past the env.
 func egressAllowed(allow *TargetMatcher, authority string) bool {
+	if isBlockedTarget(authority) {
+		return false
+	}
 	return allow.Allowed(authority) && policyAllowed(authority)
 }

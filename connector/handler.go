@@ -16,15 +16,26 @@ import (
 	"github.com/kurtserdar/captivo-access/tunnel"
 )
 
+// maxConcurrentStreams bounds how many tunnel streams the connector services at
+// once, so a hostile/compromised control plane can't exhaust the connector
+// host's goroutines, file descriptors, and ephemeral ports by opening streams
+// without limit. Accepting blocks past the cap (backpressure), never dropping.
+const maxConcurrentStreams = 256
+
 // serveStreams accepts streams opened by the data-plane over mux and handles
 // each one independently until the session dies.
 func serveStreams(mux *yamux.Session, allow *TargetMatcher) {
+	sem := make(chan struct{}, maxConcurrentStreams)
 	for {
 		st, err := mux.Accept()
 		if err != nil {
 			return
 		}
-		go handleStream(st, allow)
+		sem <- struct{}{} // backpressure: block accepting new streams past the cap
+		go func(s io.ReadWriteCloser) {
+			defer func() { <-sem }()
+			handleStream(s, allow)
+		}(st)
 	}
 }
 
@@ -445,10 +456,21 @@ func handleWS(st io.ReadWriteCloser, allow *TargetMatcher, reqBytes []byte) {
 		status, _ = strconv.Atoi(parts[1])
 	}
 	header := map[string][]string{}
+	// Bound the header block to 64 KiB total so a hostile/broken upstream can't
+	// stream headers with no terminating blank line and grow memory until the
+	// read deadline. Read from br directly (not a wrapping reader) so no post-
+	// handshake WS body bytes are buffered away from the relay that follows.
+	const maxHeaderBytes = 64 << 10
+	headerBytes := 0
 	for {
 		line, err := br.ReadString('\n')
 		if err != nil {
 			writeWsErr(st, "upstream handshake failed")
+			return
+		}
+		headerBytes += len(line)
+		if headerBytes > maxHeaderBytes {
+			writeWsErr(st, "upstream handshake too large")
 			return
 		}
 		line = strings.TrimRight(line, "\r\n")

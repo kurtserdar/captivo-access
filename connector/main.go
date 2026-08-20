@@ -25,6 +25,11 @@ func main() {
 	managerURL := os.Getenv("MANAGER_URL")
 	dataplaneURL := os.Getenv("DATAPLANE_URL")
 	tokenFile := envOr("TOKEN_FILE", "/data/token")
+	// The enrollment pairing code and the long-lived connector token travel over
+	// these URLs; a plaintext scheme exposes them on the wire. Warn loudly but
+	// don't exit — local/test setups may legitimately use http/ws.
+	warnInsecureURL("MANAGER_URL", managerURL)
+	warnInsecureURL("DATAPLANE_URL", dataplaneURL)
 
 	allow, err := ParseAllowedTargets(os.Getenv("ALLOWED_TARGETS"))
 	if err != nil {
@@ -61,6 +66,15 @@ func main() {
 		go tailKasmLog("/kasmlog/kasm.log")
 	}
 	runClient(dataplaneURL, token, allow)
+}
+
+// warnInsecureURL logs a hard warning when a control-plane URL uses a plaintext
+// scheme (http/ws), over which the enrollment code and connector token would
+// travel unencrypted. Non-fatal so local/test setups still work.
+func warnInsecureURL(name, raw string) {
+	if strings.HasPrefix(raw, "http://") || strings.HasPrefix(raw, "ws://") {
+		logWarn("%s uses a plaintext scheme (%s) — the enrollment code and connector token travel unencrypted; use https:// / wss:// in production", name, raw)
+	}
 }
 
 func envOr(k, d string) string {
