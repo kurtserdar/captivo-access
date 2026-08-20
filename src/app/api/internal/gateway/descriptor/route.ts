@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { getVaultCredential } from "@/lib/vault/store";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { resolvedWatermarkDefault } from "@/lib/settings/platform";
+import { resolvedWatermarkDefault, resolvedGuacParamDefaults, resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
+import { effectiveKeystrokeLogging } from "@/lib/keystroke/policy";
 import { parseGuacParams, resolveGuacParams, toGuacArgs } from "@/lib/gateway/guac-params";
 import { isolationEnabled } from "@/lib/isolation/enabled";
-import { resolvedGuacParamDefaults } from "@/lib/settings/platform";
 import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -74,6 +74,11 @@ export async function POST(req: NextRequest) {
     guacdAddress: (process.env.GUACD_ADDR ?? "captivo-guacd:4822").trim(),
     connectorId: site.connectorId,
     record: recordingEnabled() && site.recordSessions,
-    keystrokeLogging: recordingEnabled() && site.recordSessions && site.keystrokeLogging,
+    keystrokeLogging: effectiveKeystrokeLogging({
+      mode: await resolvedKeystrokeLoggingMode(),
+      recordingEnabled: recordingEnabled(),
+      recordSessions: site.recordSessions,
+      siteFlag: site.keystrokeLogging,
+    }),
   });
 }
