@@ -55,6 +55,11 @@ func main() {
 	if _, err := os.Stat("/guaclog"); err == nil {
 		go tailGuacdLog("/guaclog/guacd.log")
 	}
+	// On a gateway host the isolated-browser log volume is mounted at /kasmlog;
+	// tail the broker log so the console can show it. Absent on non-gateway hosts.
+	if _, err := os.Stat("/kasmlog"); err == nil {
+		go tailKasmLog("/kasmlog/kasm.log")
+	}
 	runClient(dataplaneURL, token, allow)
 }
 

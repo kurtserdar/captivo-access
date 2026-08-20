@@ -17,4 +17,5 @@ type Telemetry struct {
 	BytesOut          int64    `json:"bytesOut"`    // vendor -> upstream bytes relayed since start
 	RecentLogs        []string `json:"recentLogs"`  // tail of the connector's own log output
 	GuacdLogs         []string `json:"guacdLogs"`   // tail of guacd's log (gateway-host connectors only)
+	KasmLogs          []string `json:"kasmLogs"`    // tail of the isolated-browser (KasmVNC) broker log (gateway-host connectors only)
 }
