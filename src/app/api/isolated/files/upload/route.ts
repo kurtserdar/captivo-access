@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/current-user";
+import { evaluateAccess } from "@/lib/access/evaluate";
 import { dataplaneFilesUrl, dataplaneSecretHeader } from "@/lib/dataplane/client";
 
 export const runtime = "nodejs";
@@ -13,6 +14,8 @@ export async function POST(req: Request) {
   const siteId = url.searchParams.get("site") ?? "";
   const name = url.searchParams.get("name") ?? "";
   if (!siteId || !name) return NextResponse.json({ error: "site_and_name_required" }, { status: 400 });
+  const decision = await evaluateAccess(user.id, siteId, new Date());
+  if (!decision.allow) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const len = Number(req.headers.get("content-length") ?? "0");
   if (!len || Number.isNaN(len)) return NextResponse.json({ error: "length_required" }, { status: 411 });
   if (len > MAX_BYTES) return NextResponse.json({ error: "too_large" }, { status: 413 });
