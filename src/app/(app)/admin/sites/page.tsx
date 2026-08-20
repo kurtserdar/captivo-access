@@ -5,6 +5,7 @@ import { timeAgo } from "@/lib/format";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
 import { isolationEnabled } from "@/lib/isolation/enabled";
+import { resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
 import { AddSiteButton } from "./add-site-button";
 import { SitesView, type SiteRow } from "./sites-view";
 
@@ -77,7 +78,7 @@ export default async function AdminSitesPage() {
             tunnel.
           </p>
         </div>
-        {connectors.length > 0 && <AddSiteButton connectors={connectors} recordingEnabled={recordingEnabled()} nativeGateway={nativeGatewayEnabled()} isolationEnabled={isolationEnabled()} />}
+        {connectors.length > 0 && <AddSiteButton connectors={connectors} recordingEnabled={recordingEnabled()} keystrokeMode={await resolvedKeystrokeLoggingMode()} nativeGateway={nativeGatewayEnabled()} isolationEnabled={isolationEnabled()} />}
       </div>
 
       {sites.length === 0 ? (

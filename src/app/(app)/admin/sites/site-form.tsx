@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { parseGuacParams } from "@/lib/gateway/guac-params";
 import { GuacParamsFields, paramsToGuacFields, guacFieldsToParams, type GuacFields } from "@/components/guac-params-fields";
+import type { KeystrokeMode } from "@/lib/settings/platform";
 
 function errorMessage(code: string | undefined, isEdit: boolean): string {
   switch (code) {
@@ -61,6 +62,7 @@ export function SiteForm({
   connectors,
   site,
   recordingEnabled = false,
+  keystrokeMode = "per_resource",
   nativeGateway = false,
   isolationEnabled = false,
   vault,
@@ -69,6 +71,7 @@ export function SiteForm({
   connectors: { id: string; name: string }[];
   site?: SiteInitial;
   recordingEnabled?: boolean;
+  keystrokeMode?: KeystrokeMode;
   nativeGateway?: boolean;
   isolationEnabled?: boolean;
   vault?: { protocol: string; targetHost: string; targetPort: number; username: string; hasSecret: boolean; guacParams?: unknown };
@@ -417,19 +420,26 @@ export function SiteForm({
           </span>
         </div>
       )}
-      {recordingEnabled && accessMode === "GATEWAY" && recordSessions && (
+      {recordingEnabled && accessMode === "GATEWAY" && recordSessions && keystrokeMode !== "off" && (
         <div className="field">
           <label className="field-label">
             <input
               type="checkbox"
-              checked={keystrokeLogging}
+              checked={keystrokeMode === "required" ? true : keystrokeLogging}
+              disabled={keystrokeMode === "required"}
               onChange={(e) => setKeystrokeLogging(e.target.checked)}
             />{" "}
             Keystroke timeline
+            {keystrokeMode === "required" && <span className="hint"> — required by Policy</span>}
           </label>
           <span className="hint">
             Captures typed input (commands for SSH, text for RDP) as a searchable timeline linked to the recording — click an entry to jump to that moment. Warning: this records typed input, which may include passwords typed into the session.
           </span>
+        </div>
+      )}
+      {recordingEnabled && accessMode === "GATEWAY" && recordSessions && keystrokeMode === "off" && (
+        <div className="field">
+          <span className="hint">Keystroke logging is disabled in Policy.</span>
         </div>
       )}
       {accessMode === "TRANSPARENT" && (

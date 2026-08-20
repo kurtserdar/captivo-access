@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
 import { isolationEnabled } from "@/lib/isolation/enabled";
+import { resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
 import { getVaultCredentialMeta } from "@/lib/vault/store";
 import { SiteForm } from "../../site-form";
 
@@ -23,6 +24,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
 
   // Seed the remote-desktop fields from the site's vault credential (secret excluded).
   const vault = site && site.accessMode === "GATEWAY" ? await getVaultCredentialMeta(site.id) : null;
+  const keystrokeMode = await resolvedKeystrokeLoggingMode();
 
   return (
     <main>
@@ -39,6 +41,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
           <SiteForm
             connectors={connectors}
             recordingEnabled={recordingEnabled()}
+            keystrokeMode={keystrokeMode}
             nativeGateway={nativeGatewayEnabled()}
             isolationEnabled={isolationEnabled()}
             vault={vault ?? undefined}
