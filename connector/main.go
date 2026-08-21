@@ -18,8 +18,8 @@ func main() {
 	// Initial threshold from env; the Manager can override it live via policy.
 	setLogLevel(envOr("LOG_LEVEL", "info"))
 
-	// On a gateway host the guacd drive volume is mounted at /drive; prune old
-	// per-session dirs. No-op elsewhere (directory absent).
+	// The install command mounts guacd's drive volume at /drive; prune old
+	// per-session dirs. No-op when the volume isn't mounted (directory absent).
 	startDriveCleanup("/drive")
 
 	managerURL := os.Getenv("MANAGER_URL")
@@ -54,14 +54,14 @@ func main() {
 
 	logInfo("connector starting (version %s)", Version)
 	go logHeartbeat()
-	// On a gateway host the guacd log volume is mounted at /guaclog; tail guacd's
-	// log so the console can show it. On non-gateway hosts /guaclog is absent and
-	// the tail never starts (guacdLogRing stays empty).
+	// The install command mounts guacd's log volume at /guaclog; tail guacd's
+	// log so the console can show it. When the volume isn't mounted /guaclog is
+	// absent and the tail never starts (guacdLogRing stays empty).
 	if _, err := os.Stat("/guaclog"); err == nil {
 		go tailGuacdLog("/guaclog/guacd.log")
 	}
-	// On a gateway host the isolated-browser log volume is mounted at /kasmlog;
-	// tail the broker log so the console can show it. Absent on non-gateway hosts.
+	// The install command mounts the isolated-browser log volume at /kasmlog;
+	// tail the broker log so the console can show it. Absent when unmounted.
 	if _, err := os.Stat("/kasmlog"); err == nil {
 		go tailKasmLog("/kasmlog/kasm.log")
 	}

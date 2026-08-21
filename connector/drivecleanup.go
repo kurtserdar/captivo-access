@@ -28,7 +28,7 @@ func pruneDriveDir(root string, maxAge time.Duration, now time.Time) {
 }
 
 // startDriveCleanup prunes old drive session dirs hourly. No-op when root is
-// absent (i.e. not a gateway host with the drive volume mounted).
+// absent (i.e. the guacd drive volume isn't mounted).
 func startDriveCleanup(root string) {
 	if _, err := os.Stat(root); err != nil {
 		return
