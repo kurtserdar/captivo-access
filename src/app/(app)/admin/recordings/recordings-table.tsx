@@ -31,6 +31,7 @@ type Opt = { id: string; name: string | null; email?: string | null };
 
 type Filters = {
   q: string;
+  cmd: string;
   userId: string;
   siteId: string;
   from: string;
@@ -60,10 +61,11 @@ export function RecordingsTable({
   initialRows: RecordingRowJSON[];
   initialTotal: number;
 }) {
-  const [filters, setFilters] = useState<Filters>({ q: "", userId: "", siteId: "", from: "", to: "" });
+  const [filters, setFilters] = useState<Filters>({ q: "", cmd: "", userId: "", siteId: "", from: "", to: "" });
   const [offset, setOffset] = useState(0);
   const [rows, setRows] = useState<RecordingRowJSON[]>(initialRows);
   const [total, setTotal] = useState(initialTotal);
+  const [tooBroad, setTooBroad] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
@@ -80,6 +82,7 @@ export function RecordingsTable({
     try {
       const sp = new URLSearchParams();
       if (nextFilters.q.trim()) sp.set("q", nextFilters.q.trim());
+      if (nextFilters.cmd.trim()) sp.set("cmd", nextFilters.cmd.trim());
       if (nextFilters.userId) sp.set("userId", nextFilters.userId);
       if (nextFilters.siteId) sp.set("siteId", nextFilters.siteId);
       if (nextFilters.from) sp.set("from", nextFilters.from);
@@ -88,10 +91,11 @@ export function RecordingsTable({
       sp.set("offset", String(nextOffset));
       const res = await fetch(`/api/admin/recordings?${sp.toString()}`);
       if (!res.ok) return;
-      const body = (await res.json()) as { rows: RecordingRowJSON[]; total: number };
+      const body = (await res.json()) as { rows: RecordingRowJSON[]; total: number; tooBroad?: boolean };
       if (requestId !== requestIdRef.current) return; // stale response, a newer request has since been issued
       setRows(body.rows);
       setTotal(body.total);
+      setTooBroad(body.tooBroad ?? false);
       setFilters(nextFilters);
       setOffset(nextOffset);
     } finally {
@@ -158,6 +162,22 @@ export function RecordingsTable({
             }}
           />
         </div>
+        <div className="field field-search">
+          <label className="field-label" htmlFor="rec-filter-cmd">Search commands</label>
+          <input
+            id="rec-filter-cmd"
+            type="search"
+            className="input"
+            placeholder="e.g. rm -rf, systemctl…"
+            value={filters.cmd}
+            onChange={(e) => {
+              const cmd = e.target.value;
+              setFilters((prev) => ({ ...prev, cmd }));
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              debounceRef.current = setTimeout(() => void load({ ...filters, cmd }, 0), 300);
+            }}
+          />
+        </div>
         <div className="field">
           <label className="field-label" htmlFor="rec-filter-site">Resource</label>
           <select id="rec-filter-site" className="select" value={filters.siteId} onChange={(e) => updateFilter("siteId", e.target.value)}>
@@ -201,7 +221,9 @@ export function RecordingsTable({
         </div>
       )}
 
-      {rows.length === 0 ? (
+      {tooBroad ? (
+        <div className="empty">Too many recordings to search by command — narrow by vendor, resource, or date and try again.</div>
+      ) : rows.length === 0 ? (
         <div className="empty">{loading ? "Loading…" : "No recordings match these filters."}</div>
       ) : (
         <div className="table-wrap">
