@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const filter = parseRecordingFilter(req.nextUrl.searchParams, { defaultLimit: 50, maxLimit: 200 });
-  const { rows, total } = await listRecordings(filter);
+  const { rows, total, tooBroad } = await listRecordings(filter);
 
   const userIds = [...new Set(rows.map((r) => r.userId))];
   const siteIds = [...new Set(rows.map((r) => r.siteId))];
@@ -37,5 +37,5 @@ export async function GET(req: NextRequest) {
     protocol: r.protocol,
   }));
 
-  return NextResponse.json({ rows: out, total });
+  return NextResponse.json({ rows: out, total, tooBroad: tooBroad ?? false });
 }
