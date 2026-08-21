@@ -130,7 +130,7 @@ Now edit `.env`. Every variable, with an example value:
 | `SESSION_SECRET` | `<openssl rand -hex 32>` | Signs session tokens. |
 | `ENCRYPTION_KEY` | `<openssl rand -hex 32>` | Encrypts TOTP recovery secrets (AES-256-GCM). |
 | `DATAPLANE_SECRET` | `<openssl rand -hex 32>` | Shared secret between Manager and data-plane. |
-| `CRON_SECRET` | `<openssl rand -hex 32>` | Authorizes the cron endpoints (Step 11). |
+| `CRON_SECRET` | `<openssl rand -hex 32>` | Authorizes the cron endpoints (Step 12). |
 | `AUDIT_RETENTION_DAYS` | `730` | Initial audit-log retention (days). Also editable later on the **Policy** page. |
 
 > **Most operational settings are now managed from the console** (Policy page),
@@ -260,7 +260,7 @@ edit. The first visit to `wiki.access.acme.com` self-provisions its TLS cert.
 
 ## Step 11 — Give a vendor access
 
-1. **Invite the vendor.** Users → Invites → invite `dana@contractor.example` with
+1. **Invite the vendor.** People → Invites → invite `dana@contractor.example` with
    role **Vendor** (external supplier) or **Staff** (your own employee — same
    access, different label; see [Roles](#roles)). If SMTP is configured
    (**Email** page), Dana gets the invite by mail; otherwise copy the one-time

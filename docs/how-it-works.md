@@ -116,7 +116,7 @@ Step by step:
 
 > **A few variations on the same path.** WebSocket apps (e.g. a browser-based
 > console) are relayed the same way; **web sessions can be recorded** per Resource
-> and replayed in the console; internal staff/admins can optionally sign in via
+> (AES-256-GCM at rest) and replayed in the console; internal staff/admins can optionally sign in via
 > **SSO/OIDC** instead of a passkey; and **RDP/SSH/VNC** sessions take
 > [the remote-desktop path](#the-remote-desktop-path-gateway) below. Who can do
 > what in the console is governed by five roles (`ADMIN`, `OPERATOR`, `AUDITOR`,
@@ -134,8 +134,8 @@ Step by step:
 
 A **Remote desktop** Resource (RDP/SSH/VNC) passes the same first two gates, but its
 tail is different: instead of an HTTP round trip to an internal app, the browser
-runs a live session rendered by **guacd** — the remote-desktop engine the
-connector deploys on its own host when you flag it as a *gateway host*. The
+runs a live session rendered by **guacd** — the remote-desktop engine every
+connector deploys on its own host, alongside the connector itself. The
 target's credential lives **encrypted** in the vault; only the data-plane
 decrypts it, per session, to hand to guacd, so the vendor never sees the
 password and the "internal app" is a live screen streamed to the browser.
@@ -159,9 +159,10 @@ flowchart TD
     class SCR ok;
 ```
 
-- **Gateway host.** The session runs on a connector flagged as a *gateway host*
-  in the console; its install command also deploys guacd on that host (no
-  separate pack, one command).
+- **Gateway-capable by default.** Every connector deploys the session engines
+  out of the box — its one install command brings up guacd (RDP/SSH/VNC) and
+  KasmVNC (isolated browser) alongside the connector on the shared
+  `captivo-gateway` network (no separate pack, no toggle).
 - **Credential injection.** The RDP/SSH/VNC username and secret are stored
   encrypted in the vault; the data-plane decrypts them only to build the guacd
   handshake — they never reach the vendor's browser.
@@ -179,7 +180,7 @@ flowchart TD
 ## The isolated-browser path (isolated)
 
 An **Isolated browser** Resource passes the same first two gates, but its tail
-runs the app inside a **throwaway, server-side browser** (KasmVNC on the gateway
+runs the app inside a **throwaway, server-side browser** (KasmVNC on the connector
 host) and streams only pixels to the vendor — the app's content never touches the
 vendor's own machine, the strongest isolation of the three methods. It reuses the
 gateway plumbing (a `/kasm-tunnel` data-plane relay through the connector) and adds
@@ -187,7 +188,7 @@ DLP controls that only make sense when we own the browser: **clipboard** directi
 control, an optional **screen watermark** (the vendor's email + a live clock,
 composited onto what they see and any screenshot), per-direction **file transfer**
 (off by default; upload into the browser and/or download out, each gated per
-Resource), a **seekable** video recording, and the same **live watch /
+Resource), a **seekable** video recording (AES-256-GCM at rest), and the same **live watch /
 take-control / terminate** as gateway (a second shared client via `/kasm-view`).
 The isolated desktop sizes to the vendor's screen so it fills fullscreen.
 
@@ -198,7 +199,7 @@ flowchart TD
     G1 -->|no| L["Unauthorized"]
     G1 -->|yes| G2{"Gate 2 — allowed?<br/>grant · approval · schedule"}
     G2 -->|no| E403["Forbidden"]
-    G2 -->|yes| BR["Broker spawns a throwaway<br/>browser (KasmVNC) on the<br/>connector's gateway host"]
+    G2 -->|yes| BR["Broker spawns a throwaway<br/>browser (KasmVNC) on the<br/>connector host"]
     BR -->|outbound tunnel| APP["Isolated browser opens the<br/>Resource's internal URL"]
     APP --> PX["Only pixels streamed to the vendor<br/>(recorded if enabled)"]
     PX -.->|"clipboard · watermark · file transfer<br/>(per-Resource DLP)"| DLP["DLP controls"]

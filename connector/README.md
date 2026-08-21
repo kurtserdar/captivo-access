@@ -16,6 +16,11 @@ private VPC, home lab — anywhere that isn't internet-reachable). It:
   recent-log tail) to the Manager and applies an optional Manager-pushed
   **egress policy** — both over a control stream on the same outbound tunnel.
 
+Every connector host also brokers **recorded remote-desktop sessions** (RDP/SSH/VNC,
+via a bundled **guacd**) and **isolated-browser sessions** (via a bundled **KasmVNC**).
+The install command deploys both engines alongside the connector on a shared
+`captivo-gateway` Docker network — there is nothing to enable (see [Running](#running)).
+
 It shares wire-format and dial types with the data-plane via the
 [`tunnel`](../tunnel) module.
 
@@ -28,6 +33,7 @@ It shares wire-format and dial types with the data-plane via the
 | `PAIR_CODE`       | first run only | One-time pairing code from the Manager UI. Only needed until a token is stored at `TOKEN_FILE`; ignored afterwards. |
 | `ALLOWED_TARGETS` | no       | Optional egress boundary: comma-separated CIDRs/hosts/`host:port`s, e.g. `10.0.5.0/24,jira.internal,192.168.1.50:8080`. If set, the connector refuses to dial any target outside this list, even if a Resource's internal address points there. Unset means it dials whatever the Manager routes to it. |
 | `TOKEN_FILE`      | no       | Path to the stored connector token. Default: `/data/token`.            |
+| `LOG_LEVEL`       | no       | Initial log threshold (`debug`/`info`/`warn`/`error`). Default `info`; the Manager can override it live via connector policy. |
 
 Upstream targets themselves aren't configured on the connector at all —
 each internal app is defined as a **Resource** (with its internal address) in
@@ -86,18 +92,20 @@ The Manager generates this exact command for you (with your real
 `MANAGER_URL`/`DATAPLANE_URL`/pairing code) under **Add connector** — copy it
 from there rather than hand-editing, so the container name (`access-connector`)
 and token volume (`access_connector_data`) match what the console's
-Repair / Update / Enable-gateway-mode commands expect.
+**Re-pair** and **Update** commands expect. Note the console's command is longer
+than the snippet above: it also starts the guacd and KasmVNC session engines
+(see below).
 
 To cap what this connector may reach, add `-e ALLOWED_TARGETS=10.0.5.0/24`
 (or a comma-separated list of CIDRs/hosts) to the command above — optional,
 and unrelated to which apps route through this connector, which is decided
 entirely by Resources in the Manager.
 
-If this connector will also run remote-desktop sessions (recorded RDP/SSH/VNC),
-don't attach the gateway network or install guacd by hand: flag the connector as
-a **gateway host** in the console (`/admin/connectors` → Enable gateway mode) so
-its generated command deploys the session engine (guacd) and joins the shared
-`captivo-gateway` network durably. guacd's logs are surfaced back on the
+Every connector host also runs the session engines out of the box — there is
+nothing to enable. The console's generated command deploys **guacd** (recorded
+RDP/SSH/VNC) and the **KasmVNC** isolated browser alongside the connector and
+joins them on the shared `captivo-gateway` network durably; don't attach that
+network or install the engines by hand. guacd's logs are surfaced back on the
 connector's detail page ("Gateway logs") for troubleshooting.
 
 You can still build from source with the `docker build` command above if

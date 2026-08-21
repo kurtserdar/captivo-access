@@ -27,10 +27,13 @@ It has **three listeners**:
   (RDP/SSH/VNC) through the connector, driving the guacd handshake server-side
   and injecting the vault credential so it never reaches the vendor; `/guac-view`
   lets an admin **join** that guacd connection (by its connection ID) to watch or
-  take control of a live session;
+  take control of a live session. It likewise hosts the **isolated-browser**
+  transport: `/kasm-tunnel` bridges a browser to a throwaway KasmVNC session
+  through the connector, and `/kasm-view` joins it for live watch/take-control;
 - an **internal API** (`:3102`) the Manager calls to round-trip an allowlisted
   HTTP request (`/proxy`), run a reachability probe (`/probe`), list active
-  gateway sessions, or set take-control, through a specific connector.
+  gateway sessions, set take-control, or relay isolated-browser file transfers
+  (`/kasm-files`), through a specific connector.
 
 It shares wire-format and dial types with the connector via the
 [`tunnel`](../tunnel) module and holds **no persistent state** — connector
@@ -58,7 +61,8 @@ sessions live only in memory and re-establish on reconnect.
                                            Connector  (Go, inside customer network)
                                              dials out; never listens
                                                      ├──▶ Internal app  (wiki, dashboard, …)
-                                                     └──▶ guacd ─▶ Remote desktop (RDP/SSH/VNC)
+                                                     ├──▶ guacd ─▶ Remote desktop (RDP/SSH/VNC)
+                                                     └──▶ KasmVNC ─▶ Isolated browser
 ```
 
 A vendor request never reaches an internal app until the data-plane has resolved
@@ -74,7 +78,7 @@ secrets, and database.
 | Port | Address env     | Audience                                                              |
 | ---- | --------------- | -------------------------------------------------------------------- |
 | 3101 | `WSS_ADDR`      | Public — connectors dial in here (`/tunnel`, `/healthz`)             |
-| 3103 | `PROXY_ADDR`    | Public (behind the front TLS proxy) — vendor per-resource traffic, plus the native gateway `/guac-tunnel` + live-view `/guac-view` |
+| 3103 | `PROXY_ADDR`    | Public (behind the front TLS proxy) — vendor per-resource traffic, plus the native gateway (`/guac-tunnel` + `/guac-view`) and the isolated browser (`/kasm-tunnel` + `/kasm-view`) |
 | 3102 | `INTERNAL_ADDR` | Compose-internal only — the Manager's `/proxy` + `/probe`; **must not** be published to the host/internet |
 
 In `docker-compose.yml`, `3101` and `3103` are published; `3102` is reachable
@@ -92,6 +96,8 @@ solely from other containers on the compose network (the Manager calls
 | `PROXY_ADDR`         | `:3103`                       | Listen address for the browser-facing identity-aware proxy.         |
 | `INTERNAL_ADDR`      | `:3102`                       | Listen address for the internal proxy/probe API. Keep this off any public port mapping. |
 | `AUDIT_QUEUE_CAP`    | `10000`                       | Bounded in-memory audit-event queue depth before the proxy drops events rather than blocking. |
+| `WEB_SESSION_IDLE_SECS` | `120`                      | Idle timeout (seconds) after which a web-app proxy session is considered ended for the activity feed. |
+| `RECORDING_MAX_BYTES` | `524288000` (500 MiB)        | Per-recording cumulative (pre-gzip) byte cap for gateway recordings; past it, capture stops but the live session continues. |
 
 ## Building
 

@@ -74,10 +74,10 @@ recorded, and watchable live — with no VPN and no separate bastion.
                    │  never accepts an inbound connection
                    ├──▶ Internal web app   (wiki, admin panel, dashboard, ...)
                    │
-                   ├──▶ guacd         (remote-desktop engine, on a gateway-flagged host)
+                   ├──▶ guacd         (remote-desktop engine, bundled with every connector)
                    │        └──▶ Remote desktop  (RDP / SSH / VNC target)
                    │
-                   └──▶ kasm-browser  (isolated-browser engine, on a gateway-flagged host)
+                   └──▶ kasm-browser  (isolated-browser engine, bundled with every connector)
                             └──▶ Isolated browser → opens an internal web app,
                                  streams pixels only (nothing lands on the vendor)
 ```
@@ -94,9 +94,9 @@ Four moving pieces:
 - **Connector** (`connector/`) — a small Go binary you run inside your own
   network. It dials **out** to the data plane over WSS and never opens a
   listening port; it holds a local allowlist of the internal services it's
-  permitted to reach. On a **gateway-flagged** host its install command also
-  brings up the session engines — **guacd** (remote desktop) and
-  **kasm-browser** (isolated browser) — reached the same outbound-only way.
+  permitted to reach. Its install command always brings up the session engines
+  alongside it — **guacd** (remote desktop) and **kasm-browser** / KasmVNC
+  (isolated browser) — reached the same outbound-only way, no toggle.
 - **`tunnel/`** — the shared wire-format module (frames, dial requests,
   body streaming) used by both the data plane and the connector.
 
@@ -160,8 +160,9 @@ Shipped and working today:
   AES-256-GCM-encrypted at rest) are replayable at `/admin/recordings`; admins
   filter, replay, and delete them (each deletion is written to the audit log).
 - **Native remote-desktop gateway (RDP/SSH/VNC)** — console protocols are served
-  in-browser with no separate pack: flag a connector host to run sessions and its
-  install command also deploys the session engine (guacd). Add a **Remote
+  in-browser with no separate pack: every connector runs sessions out of the box,
+  its install command also deploying the session engines (guacd for RDP/SSH/VNC,
+  KasmVNC for isolated browser) alongside it. Add a **Remote
   desktop** Resource (protocol/host/port/credentials); the credential is injected
   server-side and the vendor never sees the password. Resources carry a `TRANSPARENT`
   (web app) vs `GATEWAY` (remote desktop) label, and gateway targets are
@@ -215,8 +216,8 @@ Shipped and working today:
 - **Connector observability + egress policy** — each connector's detail page
   shows live telemetry (version, uptime, active/total connections, bytes
   in/out, denied count) and a recent-log tail, streamed over the tunnel's
-  control channel — and, on a gateway host, a separate **Gateway logs** tail from
-  guacd for troubleshooting remote-desktop connections. An optional per-connector
+  control channel — plus a separate **Gateway logs** tail from guacd for
+  troubleshooting remote-desktop connections. An optional per-connector
   **egress policy** narrows what a
   connector may reach on top of its local `ALLOWED_TARGETS` — it can only
   tighten that boundary, never widen it. A connector's **log level** (and a

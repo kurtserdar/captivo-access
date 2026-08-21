@@ -80,10 +80,12 @@ dialog — if it only offers a USB security key, set up a Windows Hello PIN firs
 
 In the console:
 
-1. **Connectors → add one.** Copy the generated `docker run` command. For this
-   single-box quickstart, run the connector on the compose network and point it
-   at the internal service names (simpler and more reliable than the public
-   endpoints for an all-in-one-box test):
+1. **Connectors → add one** and copy the `PAIR_CODE` it shows. For this
+   single-box quickstart, **don't run the generated command** (it deploys three
+   containers on the `captivo-gateway` network, where they can't reach `testapp`
+   on the compose network). Instead run this simplified single-container version
+   on the compose network, pointed at the internal service names (simpler and
+   more reliable for an all-in-one-box test):
 
    ```bash
    docker run -d --name access-connector --restart unless-stopped \
@@ -142,8 +144,8 @@ password: it's stored encrypted and injected server-side.
 
    guacd reaches it at `sshtarget:2222` on the shared network.
 
-3. **Add a Remote desktop Resource.** In the console: **Resources → add**, choose
-   **Remote desktop (RDP / SSH / VNC)**, protocol **SSH**, host `sshtarget`,
+3. **Add a Remote session Resource.** In the console: **Resources → add**, choose
+   **Remote session (RDP / SSH / VNC)**, protocol **SSH**, host `sshtarget`,
    port `2222`, username `demo`, password `demo`, and bind it to your connector.
    (Optionally turn on **Record sessions**.)
 
@@ -159,7 +161,7 @@ password: it's stored encrypted and injected server-side.
 Cleanup for this part: `docker rm -f sshtarget captivo-guacd` (and remove the
 Resource/connector in the console).
 
-> **A third access method: isolated browser.** On the same gateway host you can
+> **A third access method: isolated browser.** On the same connector you can
 > also run a Resource as an **Isolated browser** (`ISOLATED`): the internal web app
 > opens inside a throwaway, server-side browser and only pixels stream to the
 > vendor — nothing lands on their machine. It adds clipboard DLP, an optional screen
@@ -169,6 +171,11 @@ Resource/connector in the console).
 ## Cleanup
 
 ```bash
-docker rm -f access-connector testapp
+docker rm -f access-connector testapp sshtarget captivo-guacd captivo-kasm
+docker network rm captivo-gateway
+docker volume rm access_connector_data captivo_guacd_recordings captivo_guacd_logs captivo_guacd_drive captivo_kasm_logs
 docker compose -f docker-compose.prod.yml down -v
 ```
+
+(`down -v` only removes the compose project's own volumes; the connector-created
+containers, network, and volumes above are separate and must be removed explicitly.)

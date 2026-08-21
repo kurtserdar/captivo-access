@@ -92,7 +92,7 @@ and refusing destructive changes. If it fails, the Manager won't start; check
 
 Go to `https://manager.<ACCESS_DOMAIN>/setup` and register the first
 account as a passkey (becomes `ADMIN`). See the repo root
-[README](../README.md#identity--passkey) for the invite/login flow.
+[README](../README.md#how-access-works) for the invite/login flow.
 
 ## Wildcard TLS
 
