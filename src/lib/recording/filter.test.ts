@@ -39,4 +39,12 @@ describe("parseRecordingFilter", () => {
     expect(f.from).toBeInstanceOf(Date);
     expect(f.to).toBeUndefined();
   });
+  it("parses and trims cmd", () => {
+    const f = parseRecordingFilter(new URLSearchParams("cmd=%20%20rm%20-rf%20%20"), opts);
+    expect(f.cmd).toBe("rm -rf");
+  });
+  it("cmd absent → undefined", () => {
+    const f = parseRecordingFilter(new URLSearchParams(""), opts);
+    expect(f.cmd).toBeUndefined();
+  });
 });
