@@ -207,10 +207,24 @@ The connector is the piece that runs **inside** your network and reaches the
 internal app. It only dials outward — no inbound port.
 
 1. In the console: **Connectors → Add connector**. The Manager shows a ready-to-run
-   `docker run` command with your `MANAGER_URL`, `DATAPLANE_URL`, and a one-time
-   `PAIR_CODE` already filled in. **Copy it.**
-2. On a machine inside `10.0.5.0/24` that can reach the wiki, run that command. It
-   looks like this (yours comes pre-filled — prefer the console's copy):
+   command with your `MANAGER_URL`, `DATAPLANE_URL`, and a one-time `PAIR_CODE`
+   already filled in. **Copy it.**
+2. On a machine inside `10.0.5.0/24` that can reach the wiki, run that command.
+
+   The console's command is a single line that installs three containers on a
+   private Docker network — one command, nothing else to install:
+
+   - **`access-connector`** — the outbound connector agent. Its token lives in the
+     `access_connector_data` volume, so it reconnects after restarts without the
+     pairing code.
+   - **`captivo-guacd`** — the session engine for recorded remote-desktop
+     resources (RDP/SSH/VNC).
+   - **`captivo-kasm`** — the isolated-browser engine (KasmVNC) for isolated-browser
+     resources.
+
+   Every connector is gateway- and isolated-capable out of the box — there is no
+   separate mode to toggle. A simplified view of the connector container itself
+   (the console's real command is longer and also starts the two engines above):
 
    ```bash
    docker run -d \
@@ -222,17 +236,11 @@ internal app. It only dials outward — no inbound port.
      ghcr.io/kurtserdar/captivo-access-connector:latest
    ```
 
-   The `-v access_connector_data:/data` volume stores the connector's token so it reconnects
-   after restarts without the pairing code. Optionally add
-   `-e ALLOWED_TARGETS=10.0.5.0/24` to hard-limit what this connector may ever
-   reach.
-
-   > **Always copy the command from the console** rather than hand-writing it —
-   > it comes pre-filled and adapts to your choices. In particular, if this host
-   > will run **remote-desktop sessions** (RDP/SSH/VNC), toggle **gateway host**
-   > when adding the connector (or **Enable gateway mode** later) and the command
-   > it shows *also* deploys the session engine (guacd) alongside the connector —
-   > one command, nothing else to install. See
+   > **Always copy the full command from the console** rather than hand-writing it
+   > — it comes pre-filled with your URLs and pairing code and also starts the
+   > guacd + KasmVNC engines. Optionally add `-e ALLOWED_TARGETS=10.0.5.0/24` to
+   > the connector to hard-limit what it may ever reach. For more on recorded
+   > remote-desktop sessions, see
    > [remote-desktop gateway](../deploy/README.md#recorded-rdpsshvnc-native-remote-desktop-gateway).
 3. Back in the console, the connector flips to **Online** within a few seconds.
 

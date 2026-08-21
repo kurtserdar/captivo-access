@@ -70,8 +70,9 @@ export function ConnectorForm({ onDone }: { onDone?: () => void }) {
             />
           </div>
           <p className="cell-sub">
-            The install command deploys the connector and the session engine (guacd) together, so this host can
-            serve both web apps and remote-desktop resources (RDP/SSH/VNC) — one command, nothing else to install.
+            The install command deploys the connector together with both session engines — guacd (for
+            remote-desktop resources: RDP/SSH/VNC) and KasmVNC (for isolated-browser resources) — so this host
+            can serve web apps, remote desktops, and isolated browsers alike. One command, nothing else to install.
           </p>
           {error && (
             <p className="notice error" role="alert">

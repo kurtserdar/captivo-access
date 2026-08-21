@@ -123,11 +123,12 @@ gateway (guacd) — no separate install. RDP needs a Windows target, but **SSH**
 lets you try it end-to-end with a throwaway container. The vendor never sees the
 password: it's stored encrypted and injected server-side.
 
-1. **Make the connector a gateway host.** In the console, open your connector
-   (`/admin/connectors` → the connector → **Enable gateway mode**), then copy the
-   command it now shows and run it on the server. That one command creates the
-   `captivo-gateway` network and deploys the session engine (guacd) alongside the
-   connector — nothing else to install.
+1. **Install a connector (if you haven't already).** Every connector is
+   gateway-capable out of the box — its install command
+   (`/admin/connectors` → **Add connector**, or **Update** on an existing one)
+   creates the `captivo-gateway` network and deploys both session engines
+   alongside the connector: **guacd** (RDP/SSH/VNC) and **KasmVNC** (isolated
+   browser). One command, nothing else to install.
 
 2. **Run a throwaway SSH target** on that gateway network:
 

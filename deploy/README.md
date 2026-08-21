@@ -295,9 +295,9 @@ missing/wrong Bearer header they return `401` and do nothing.
 ## Recorded RDP/SSH/VNC (native remote-desktop gateway)
 
 Console-protocol (RDP/SSH/VNC) sessions are served by a built-in gateway — no
-separate pack. In the console, flag a connector as a session host
-(`/admin/connectors` → gateway host); its generated install command also
-deploys the session engine (guacd) on that host and joins the shared
+separate pack. Every connector is gateway-capable out of the box: its generated
+install command deploys the session engines alongside the connector — **guacd**
+(RDP/SSH/VNC) and **KasmVNC** (isolated browser) — and joins the shared
 `captivo-gateway` network. Then add a **Remote desktop** Resource (protocol, host,
 port, and vault credentials) and vendors connect straight from `/access`,
 streamed in-browser and recorded natively (replayable at `/admin/recordings`).
