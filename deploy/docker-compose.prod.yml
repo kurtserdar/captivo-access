@@ -94,6 +94,17 @@ services:
       # Session recording (Pro). Off by default; set to 1/true/on to allow the
       # per-Site "Record sessions" toggle to take effect. See deploy/.env.prod.example.
       RECORDING_ENABLED: ${RECORDING_ENABLED:-}
+      # Native remote-desktop gateway (RDP/SSH/VNC). Off by default; set to 1 to
+      # expose the "Remote session" Resource type. The connector already bundles
+      # guacd — this flag makes it usable. Needs VAULT_ENABLED for credentials.
+      NATIVE_GATEWAY: ${NATIVE_GATEWAY:-}
+      # Isolated browser (RBI). Off by default; set to 1 to expose the "Isolated
+      # browser" Resource type. The connector already bundles KasmVNC.
+      ISOLATED_ENABLED: ${ISOLATED_ENABLED:-}
+      # Credential vault. Off by default; set to 1 to store per-Resource
+      # RDP/SSH/VNC credentials (injected server-side, never shown to the vendor).
+      # Required for remote-session logins.
+      VAULT_ENABLED: ${VAULT_ENABLED:-}
     # Not published to the host — only Caddy (on the compose network) reaches
     # it, at http://access-manager:3100.
     expose:

@@ -144,7 +144,11 @@ Now edit `.env`. Every variable, with an example value:
 
 Leave the optional/commented ones (`DNS_API_TOKEN`, `CADDY_DNS_MODULE`,
 `RECORDING_ENABLED` (Pro session recording — gates the per-Resource "Record
-sessions" toggle), `ISOLATED_ENABLED` (Pro isolated browser — gates the
+sessions" toggle), `NATIVE_GATEWAY` (Pro remote-desktop gateway — gates the
+"Remote session" (RDP/SSH/VNC) Resource type; `captivo-guacd` is bundled with
+every connector, this makes it usable), `VAULT_ENABLED` (Pro credential vault —
+stores per-Resource RDP/SSH/VNC logins, injected server-side; required for
+remote-session logins), `ISOLATED_ENABLED` (Pro isolated browser — gates the
 "Isolated browser" Resource type; the `captivo-kasm` (KasmVNC) container is bundled
 with every gateway connector and reverse-proxied at `/kasm-tunnel`, so host-nginx
 deployments must route `/kasm-tunnel` (and `/kasm-tunnel/`) and `/kasm-view` (and
