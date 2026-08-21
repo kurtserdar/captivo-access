@@ -328,7 +328,7 @@ export function SiteForm({
               <option value="on">On (email + live clock)</option>
               <option value="off">Off</option>
             </select>
-            <span className="hint">Enforced by the session engine (guacd) — copy out of the isolated browser is disabled server-side, a real control.</span>
+            <span className="hint">Rendered by the isolated browser (KasmVNC) — the vendor&apos;s email and a live clock overlay every screen, visible in any screenshot or photo (deters and attributes leaks).</span>
           </div>
           <div className="field">
             <label className="field-label" htmlFor="site-filetransfer">File transfer</label>
