@@ -51,6 +51,11 @@ describe("validateSiteInput", () => {
     expect(validateSiteInput({ ...b }, { ...base, isolationEnabled: true }))
       .toMatchObject({ ok: true, mode: "ISOLATED" });
   });
+  it("ISOLATED: insecureSkipVerify defaults false, true when set", () => {
+    const b = { connectorId: "c1", name: "Wiki", accessMode: "ISOLATED", upstreamUrl: "https://wiki.internal" };
+    expect(validateSiteInput(b, base)).toMatchObject({ ok: true, insecureSkipVerify: false });
+    expect(validateSiteInput({ ...b, insecureSkipVerify: true }, base)).toMatchObject({ ok: true, insecureSkipVerify: true });
+  });
   it("ISOLATED: fileTransferMode defaults to none, accepts valid, normalizes invalid", () => {
     const b = { connectorId: "c1", name: "Wiki", accessMode: "ISOLATED", upstreamUrl: "https://wiki.internal" };
     expect(validateSiteInput(b, base)).toMatchObject({ ok: true, mode: "ISOLATED", fileTransferMode: "none" });

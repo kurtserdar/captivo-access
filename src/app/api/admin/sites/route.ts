@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const site = await db.site.create({
       data: {
         connectorId: v.connectorId, name: v.name, hostname: null, upstreamUrl: v.upstreamUrl, description: v.description,
-        recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, watermark: v.watermark, fileTransferMode: v.fileTransferMode, accessMode: "ISOLATED", ...logoData,
+        insecureSkipVerify: v.insecureSkipVerify, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, watermark: v.watermark, fileTransferMode: v.fileTransferMode, accessMode: "ISOLATED", ...logoData,
       },
       select: { id: true },
     });

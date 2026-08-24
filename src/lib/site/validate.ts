@@ -39,6 +39,7 @@ export type SiteValidation =
       name: string;
       description: string | null;
       upstreamUrl: string;
+      insecureSkipVerify: boolean;
       recordSessions: boolean;
       clipboardMode: string;
       watermark: boolean | null;
@@ -74,6 +75,7 @@ export function validateSiteInput(
     const ft = str(body.fileTransferMode);
     return {
       ok: true, mode: "ISOLATED", connectorId, name, description, upstreamUrl,
+      insecureSkipVerify: body.insecureSkipVerify === true,
       recordSessions: opts.recordingEnabled && body.recordSessions === true,
       clipboardMode: CLIP.includes(clip) ? clip : "allow",
       watermark: body.watermark === true ? true : body.watermark === false ? false : null,
