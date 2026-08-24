@@ -387,7 +387,7 @@ export function SiteForm({
           </details>
         </>
       )}
-      {accessMode === "TRANSPARENT" && (
+      {(accessMode === "TRANSPARENT" || accessMode === "ISOLATED") && (
         <div className="field">
           <label className="field-label">
             <input
@@ -398,7 +398,9 @@ export function SiteForm({
             Allow self-signed certificate (skip TLS verification)
           </label>
           <span className="hint">
-            Only for internal devices you trust — the certificate on the connector→app leg won&apos;t be verified.
+            {accessMode === "ISOLATED"
+              ? "Only for internal devices you trust — the isolated browser won't verify the target's certificate. Needed for self-signed targets like Proxmox, iDRAC/iLO, or router panels."
+              : "Only for internal devices you trust — the certificate on the connector→app leg won't be verified."}
           </span>
         </div>
       )}
