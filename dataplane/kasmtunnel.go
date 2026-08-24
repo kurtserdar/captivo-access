@@ -59,13 +59,14 @@ func clampKasmDim(v, lo, hi, def int) int {
 	return v
 }
 
-func openKasmSession(rw io.ReadWriter, host, target string, copyOut, pasteIn bool, w, h int, watermarkText string) (id string, port, status int, err error) {
+func openKasmSession(rw io.ReadWriter, host, target string, copyOut, pasteIn bool, w, h int, watermarkText string, insecure bool) (id string, port, status int, err error) {
 	body := `{"url":` + jsonQuoteKasm(target) +
 		`,"copyOut":` + strconv.FormatBool(copyOut) +
 		`,"pasteIn":` + strconv.FormatBool(pasteIn) +
 		`,"w":` + strconv.Itoa(w) +
 		`,"h":` + strconv.Itoa(h) +
-		`,"watermarkText":` + jsonQuoteKasm(watermarkText) + `}`
+		`,"watermarkText":` + jsonQuoteKasm(watermarkText) +
+		`,"insecure":` + strconv.FormatBool(insecure) + `}`
 	req := "POST /session HTTP/1.0\r\n" +
 		"Host: " + host + "\r\n" +
 		"Content-Type: application/json\r\n" +
@@ -134,15 +135,16 @@ func clipboardToKasm(mode string) (copyOut, pasteIn bool) {
 
 // kasmDesc is the ISOLATED-hi-fi connection descriptor from the control plane.
 type kasmDesc struct {
-	Transport        string `json:"transport"`
-	NavigateUrl      string `json:"navigateUrl"`
-	KasmAddr         string `json:"kasmAddr"`
-	KasmControlAddr  string `json:"kasmControlAddr"`
-	ConnectorID      string `json:"connectorId"`
-	ClipboardMode    string `json:"clipboardMode"`
-	Record           bool   `json:"record"`
-	WatermarkText    string `json:"watermarkText"`
-	FileTransferMode string `json:"fileTransferMode"`
+	Transport          string `json:"transport"`
+	NavigateUrl        string `json:"navigateUrl"`
+	KasmAddr           string `json:"kasmAddr"`
+	KasmControlAddr    string `json:"kasmControlAddr"`
+	ConnectorID        string `json:"connectorId"`
+	ClipboardMode      string `json:"clipboardMode"`
+	Record             bool   `json:"record"`
+	WatermarkText      string `json:"watermarkText"`
+	FileTransferMode   string `json:"fileTransferMode"`
+	InsecureSkipVerify bool   `json:"insecureSkipVerify"`
 }
 
 // serveKasmTunnel reverse-proxies the vendor's HTTP/WebSocket request to a KasmVNC
@@ -223,7 +225,7 @@ func serveKasmTunnel(ctrl *ControlClient, reg *Registry, hub *SessionHub, audit 
 		if st, e := dialGuacd(sess, d.KasmControlAddr); e == nil {
 			cw := clampKasmDim(kasmW, 360, 2560, 1280)
 			ch := clampKasmDim(kasmH, 480, 1600, 800)
-			id, port, status, e = openKasmSession(st, d.KasmControlAddr, d.NavigateUrl, co, pi, cw, ch, d.WatermarkText)
+			id, port, status, e = openKasmSession(st, d.KasmControlAddr, d.NavigateUrl, co, pi, cw, ch, d.WatermarkText, d.InsecureSkipVerify)
 			st.Close()
 			if e != nil {
 				http.Error(w, "isolated browser unavailable", http.StatusBadGateway)
