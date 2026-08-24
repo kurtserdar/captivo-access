@@ -58,7 +58,7 @@ def _clamp_dim(v, lo, hi, default):
     return max(lo, min(hi, v))
 
 
-def _spawn(display, url, profile, home, copy_out, paste_in, w=1280, h=800, watermark_text=""):
+def _spawn(display, url, profile, home, copy_out, paste_in, w=1280, h=800, watermark_text="", insecure=False):
     disp = ":%d" % display
     env = {**os.environ, "DISPLAY": disp, "HOME": home}
     os.makedirs(profile, exist_ok=True)
@@ -104,10 +104,14 @@ def _spawn(display, url, profile, home, copy_out, paste_in, w=1280, h=800, water
     # brand image here — the app-side ConnectSplash carries the branding.
     subprocess.Popen(["hsetroot", "-solid", "#000000"], env=env,
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    chrome = subprocess.Popen(
-        [CHROME, "--kiosk", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage",
-         "--no-first-run", "--no-default-browser-check", "--disable-translate",
-         "--user-data-dir=" + profile, url], env=env)
+    chrome_args = [CHROME, "--kiosk", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage",
+                   "--no-first-run", "--no-default-browser-check", "--disable-translate",
+                   "--user-data-dir=" + profile]
+    if insecure:
+        # Opt-in per Resource: the target uses a self-signed / internal-CA cert.
+        chrome_args.append("--ignore-certificate-errors")
+    chrome_args.append(url)
+    chrome = subprocess.Popen(chrome_args, env=env)
     return [xvnc, fbox, chrome]
 
 
@@ -132,7 +136,7 @@ def _kill(sess):
             pass
 
 
-def open_session(url, copy_out, paste_in, w=1280, h=800, watermark_text=""):
+def open_session(url, copy_out, paste_in, w=1280, h=800, watermark_text="", insecure=False):
     with _lock:
         if len(_sessions) >= MAX_SESSIONS:
             log("capacity reached (%d active) — session refused" % MAX_SESSIONS)
@@ -145,7 +149,7 @@ def open_session(url, copy_out, paste_in, w=1280, h=800, watermark_text=""):
         sid = "s%d-%d" % (int(time.time()), _seq["n"])
         profile = "/profiles/" + sid
         home = "/sess/" + sid
-        procs = _spawn(display, url, profile, home, copy_out, paste_in, w, h, watermark_text)
+        procs = _spawn(display, url, profile, home, copy_out, paste_in, w, h, watermark_text, insecure)
         port = BASE_PORT + display
         _sessions[sid] = {"display": display, "port": port, "procs": procs,
                           "profile": profile, "home": home, "started": time.time(),
@@ -213,11 +217,14 @@ def _safe_name(name):
 class H(BaseHTTPRequestHandler):
     def _json(self, code, obj):
         body = json.dumps(obj).encode()
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # the data-plane closed the relay before reading the reply
 
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
@@ -363,7 +370,8 @@ class H(BaseHTTPRequestHandler):
             wtext = data.get("watermarkText", "")
             if not isinstance(wtext, str):
                 wtext = ""
-            res = open_session(url, copy_out, paste_in, w, h, wtext)
+            insecure = bool(data.get("insecure", False))
+            res = open_session(url, copy_out, paste_in, w, h, wtext, insecure)
             if res is None:
                 return self._json(503, {"error": "capacity"})
             return self._json(201, res)
