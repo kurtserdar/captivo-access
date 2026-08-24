@@ -106,6 +106,15 @@ def _spawn(display, url, profile, home, copy_out, paste_in, w=1280, h=800, water
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     chrome_args = [CHROME, "--kiosk", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage",
                    "--no-first-run", "--no-default-browser-check", "--disable-translate",
+                   # Quiet the log in this headless, single-purpose container:
+                   # --disable-background-networking kills the GCM/push registration
+                   # attempts (PHONE_REGISTRATION_ERROR etc.); the rest stop Chromium
+                   # probing D-Bus for notifications, power (UPower), media, and
+                   # proxy config (NetworkManager) that don't exist here.
+                   "--disable-background-networking", "--disable-sync",
+                   "--disable-component-update", "--disable-default-apps", "--no-pings",
+                   "--no-proxy-server",
+                   "--disable-features=Translate,MediaRouter,OptimizationHints,MediaSessionService,UsePortalNotifications",
                    "--user-data-dir=" + profile]
     if insecure:
         # Opt-in per Resource: the target uses a self-signed / internal-CA cert.
