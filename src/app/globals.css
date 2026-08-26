@@ -739,7 +739,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .tn-mega-card:hover .tn-mega-nm, .tn-mega-card.active .tn-mega-nm { color: var(--nav-accent); }
 .tn-mega-ds { display: block; font-size: .73rem; color: #6f809a; line-height: 1.35; margin-top: 3px; }
 .tn-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.tn-icon { position: relative; display: inline-flex; color: var(--nav-fg-dim); padding: 6px; border-radius: 8px; }
+.tn-icon { position: relative; display: inline-flex; align-items: center; color: var(--nav-fg-dim); padding: 6px; border-radius: 8px; background: none; border: 0; cursor: pointer; }
 .tn-icon:hover { color: var(--nav-fg); background: var(--nav-active); }
 .tn-badge-dot { position: absolute; top: -2px; right: -2px; }
 .tn-avatar { width: 32px; height: 32px; border-radius: 8px; border: 0; cursor: pointer; background: linear-gradient(135deg,var(--nav-accent),var(--accent-2)); color: #042420; font: 700 .74rem var(--mono); }
