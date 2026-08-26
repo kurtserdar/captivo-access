@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
-export function RevokeAccessButton({ grantId, label }: { grantId: string; label: string }) {
+export function RevokeAccessButton({ grantId, label, className }: { grantId: string; label: string; className?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { confirm, dialog } = useConfirm();
@@ -31,8 +31,8 @@ export function RevokeAccessButton({ grantId, label }: { grantId: string; label:
   return (
     <>
       {dialog}
-      <span>
-        <button type="button" className="btn sm danger" onClick={handleClick} disabled={busy}>
+      <span className="sc-revoke">
+        <button type="button" className={className ?? "btn sm danger"} onClick={handleClick} disabled={busy}>
           {busy ? "Revoking…" : "Revoke access"}
         </button>
         {error && <p className="notice error" role="alert">{error}</p>}

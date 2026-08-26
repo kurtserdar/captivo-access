@@ -48,8 +48,8 @@ export function SecurityConsole({ data }: { data: ConsoleData }) {
                   <div className="sc-card-sub">{s.userLabel}{s.viewerCount > 0 ? ` · ${s.viewerCount} watching` : ""}</div>
                   <div className="sc-thumb">live session</div>
                   <div className="sc-card-actions">
-                    <Link href={`/live/${s.sessionId}`} className="sc-watch">Watch live</Link>
-                    <TerminateButton sessionId={s.sessionId} grantId={s.grantId} vendorLabel={s.userLabel} className="btn sm danger" />
+                    <Link href={`/live/${s.sessionId}`} className="sc-btn watch">Watch live</Link>
+                    <TerminateButton sessionId={s.sessionId} grantId={s.grantId} vendorLabel={s.userLabel} className="sc-btn danger" />
                   </div>
                 </div>
               ) : s.kind === "isolated" ? (
@@ -62,24 +62,24 @@ export function SecurityConsole({ data }: { data: ConsoleData }) {
                   <div className="sc-card-sub">{s.userLabel}{s.viewerCount > 0 ? ` · ${s.viewerCount} watching` : ""}</div>
                   <div className="sc-thumb">isolated browser</div>
                   <div className="sc-card-actions">
-                    <Link href={`/live/${s.sessionId}`} className="sc-watch">Watch live</Link>
-                    <TerminateButton sessionId={s.sessionId} grantId={s.grantId} vendorLabel={s.userLabel} className="btn sm danger" />
+                    <Link href={`/live/${s.sessionId}`} className="sc-btn watch">Watch live</Link>
+                    <TerminateButton sessionId={s.sessionId} grantId={s.grantId} vendorLabel={s.userLabel} className="sc-btn danger" />
                   </div>
                 </div>
               ) : (
                 <div key={`web:${s.userLabel}:${s.siteName}:${s.host}`} className="sc-card">
                   <div className="sc-card-top">
                     <span className="sc-chip">WEB APP</span>
-                    <span className="sc-card-sub">active {activeAgo(s.lastSeen, now)}</span>
+                    <span className="sc-meta">active {activeAgo(s.lastSeen, now)}</span>
                   </div>
                   <div className="sc-card-name">{s.siteName}</div>
                   <div className="sc-card-sub">{s.userLabel} · {s.host}</div>
                   <div className="sc-thumb">web session</div>
                   <div className="sc-card-actions">
                     {s.grantId ? (
-                      <RevokeAccessButton grantId={s.grantId} label={s.userLabel} />
+                      <RevokeAccessButton grantId={s.grantId} label={s.userLabel} className="sc-btn danger" />
                     ) : (
-                      <span className="cell-sub">No active grant</span>
+                      <span className="sc-meta">No active grant</span>
                     )}
                   </div>
                 </div>
