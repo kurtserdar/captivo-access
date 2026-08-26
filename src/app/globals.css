@@ -695,24 +695,28 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;hei
 .tn-menuitem:hover { color: #fff; background: var(--nav-active); }
 .tn-menuitem.active { color: var(--nav-accent); background: var(--nav-active); }
 
-/* ---- notification bell dropdown ---- */
-.tn-notif-panel { left: auto; right: 0; width: 340px; max-width: calc(100vw - 24px); padding: 0; gap: 0; }
-.tn-notif-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--nav-line); font-size: .82rem; color: #fff; }
-.tn-notif-link { background: none; border: none; padding: 0; cursor: pointer; font-size: .78rem; color: var(--nav-accent); text-decoration: none; }
+/* ---- notification bell dropdown (page-theme tokens, not the navy header) ---- */
+.tn-notif-panel { position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; width: 320px; max-width: calc(100vw - 24px);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+.tn-notif-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: .84rem; font-weight: 600; color: var(--fg); }
+.tn-notif-link { background: none; border: none; padding: 0; cursor: pointer; font-size: .78rem; font-weight: 500; color: var(--accent); text-decoration: none; }
 .tn-notif-link:hover { text-decoration: underline; }
 .tn-notif-list { max-height: 24rem; overflow-y: auto; display: flex; flex-direction: column; }
-.tn-notif-empty { padding: 22px 14px; text-align: center; font-size: .82rem; color: var(--nav-fg-dim); }
-.tn-notif-item { display: flex; align-items: flex-start; gap: 8px; padding: 10px 14px; border-bottom: 1px solid #16263f; }
+.tn-notif-empty { padding: 26px 14px; text-align: center; font-size: .82rem; color: var(--muted); }
+.tn-notif-item { display: flex; align-items: flex-start; gap: 8px; padding: 11px 14px; border-bottom: 1px solid var(--line-soft); }
 .tn-notif-item:last-child { border-bottom: none; }
 .tn-notif-body { flex: 1; min-width: 0; }
-.tn-notif-title { font-size: .84rem; color: #fff; }
-.tn-notif-detail { font-size: .78rem; color: var(--nav-fg-dim); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tn-notif-when { font: .68rem/1 var(--mono); color: #61748f; margin-top: 4px; }
+.tn-notif-title { font-size: .84rem; color: var(--fg); }
+.tn-notif-title .down { color: var(--danger); font-weight: 600; }
+.tn-notif-title .up { color: var(--ok); font-weight: 600; }
+.tn-notif-detail { font-size: .78rem; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-notif-when { font: .68rem/1 var(--mono); color: var(--faint); margin-top: 5px; }
 .tn-notif-actions { display: flex; gap: 4px; flex-shrink: 0; }
-.tn-notif-actions button { width: 26px; height: 26px; border: 1px solid #1e3050; border-radius: 7px; background: #0a1220; color: var(--nav-fg-dim); cursor: pointer; font-size: .8rem; line-height: 1; }
-.tn-notif-actions button:hover { color: #fff; border-color: rgba(46,230,201,.4); background: #0c1626; }
-.tn-notif-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 14px; border-top: 1px solid var(--nav-line); }
-.tn-notif-more { font: .68rem/1 var(--mono); color: #61748f; }
+.tn-notif-actions button { width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-2); color: var(--muted); cursor: pointer; font-size: .8rem; line-height: 1; }
+.tn-notif-actions button:hover { color: var(--fg); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: var(--surface-hover); }
+.tn-notif-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 14px; border-top: 1px solid var(--line); }
+.tn-notif-foot .tn-notif-link { font-size: .8rem; }
+.tn-notif-more { font: .68rem/1 var(--mono); color: var(--faint); }
 
 /* ---- header card megamenu (Infrastructure / People) ---- */
 .tn-mega { position: absolute; top: calc(100% + 8px); left: 0; z-index: 50; padding: 18px 20px;

@@ -44,7 +44,7 @@ export function NotificationBell({ badge, open, onToggle }: { badge: number; ope
         {badge > 0 && <span className="tn-badge tn-badge-dot">{badge}</span>}
       </button>
       {open && (
-        <div className="tn-menu tn-notif-panel" role="menu">
+        <div className="tn-notif-panel" role="menu">
           <div className="tn-notif-head">
             <span>Notifications</span>
             {items.length > 0 && (
@@ -60,7 +60,9 @@ export function NotificationBell({ badge, open, onToggle }: { badge: number; ope
               items.map((n) => (
                 <div key={n.id} className="tn-notif-item">
                   <div className="tn-notif-body">
-                    <div className="tn-notif-title">{TITLE[n.type] ?? n.type} — {n.siteName}</div>
+                    <div className="tn-notif-title">
+                      <span className={n.type === "site_down" ? "down" : n.type === "site_recovered" ? "up" : undefined}>{TITLE[n.type] ?? n.type}</span> — {n.siteName}
+                    </div>
                     {n.detail && <div className="tn-notif-detail">{n.detail}</div>}
                     <div className="tn-notif-when">{n.when}</div>
                   </div>
