@@ -8,6 +8,7 @@ import type { NavModel, NavGroup } from "@/lib/nav/model";
 import { BrandMark } from "@/components/brand";
 import { NavIcon } from "./nav-icons";
 import { CommandPalette } from "./command-palette";
+import { NotificationBell } from "./notification-bell";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LogoutButton } from "../logout-button";
 import { LivePill } from "./live-pill";
@@ -90,10 +91,11 @@ export function TopNav({ model, records, role, userName, roleLabel, showLive }: 
         {showLive && <LivePill />}
         {model.showSearch && <CommandPalette records={records} role={role} />}
         {model.showNotifications && (
-          <Link href="/admin/notifications" className="tn-icon" aria-label="Notifications">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-            {model.notificationsBadge > 0 && <span className="tn-badge tn-badge-dot">{model.notificationsBadge}</span>}
-          </Link>
+          <NotificationBell
+            badge={model.notificationsBadge}
+            open={open === "notifications"}
+            onToggle={() => setOpen((v) => (v === "notifications" ? null : "notifications"))}
+          />
         )}
         <ThemeSwitcher />
         <div className="tn-menuwrap tn-account">
