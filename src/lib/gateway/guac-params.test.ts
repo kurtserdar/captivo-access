@@ -97,4 +97,13 @@ describe("toGuacArgs file transfer", () => {
       .not.toHaveProperty("sftp-root-directory");
     expect(toGuacArgs({ enableFileTransfer: true, sftpRoot: "/data" }, "allow", "VNC", "deploy")).toEqual({});
   });
+  it("parseGuacParams keeps a valid rdpSecurity and drops an invalid one", () => {
+    expect(parseGuacParams({ rdpSecurity: "nla" }).rdpSecurity).toBe("nla");
+    expect(parseGuacParams({ rdpSecurity: "bogus" }).rdpSecurity).toBeUndefined();
+  });
+  it("toGuacArgs emits security for RDP when set, omits it otherwise", () => {
+    expect(toGuacArgs({ rdpSecurity: "nla" }, "allow", "RDP")["security"]).toBe("nla");
+    expect(toGuacArgs({ rdpSecurity: "nla" }, "allow", "SSH")["security"]).toBeUndefined();
+    expect(toGuacArgs({}, "allow", "RDP")["security"]).toBeUndefined();
+  });
 });

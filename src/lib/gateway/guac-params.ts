@@ -9,6 +9,7 @@ export interface GuacParams {
   blockUpload?: boolean;
   blockDownload?: boolean;
   sftpRoot?: string;
+  rdpSecurity?: string;
 }
 
 export const KEYBOARD_LAYOUTS: { value: string; label: string }[] = [
@@ -33,6 +34,7 @@ export const KEYBOARD_LAYOUTS: { value: string; label: string }[] = [
 
 const LAYOUTS = new Set(KEYBOARD_LAYOUTS.map((l) => l.value).filter(Boolean));
 const DEPTHS = new Set([8, 16, 24]);
+const RDP_SECURITY = new Set(["any", "nla", "tls", "rdp"]);
 const BOOL_KEYS = ["enableWallpaper", "enableTheming", "enableFontSmoothing", "enableFullWindowDrag", "enableFileTransfer", "blockUpload", "blockDownload"] as const;
 
 // Coerce untrusted JSON into GuacParams, keeping ONLY curated keys with valid values.
@@ -48,6 +50,7 @@ export function parseGuacParams(input: unknown): GuacParams {
     // Absolute path only (guacd rejects relative SFTP roots), bounded, no control chars.
     if (v.startsWith("/") && v.length <= 1024 && !/[\x00-\x1f]/.test(v)) out.sftpRoot = v;
   }
+  if (typeof o.rdpSecurity === "string" && RDP_SECURITY.has(o.rdpSecurity)) out.rdpSecurity = o.rdpSecurity;
   return out;
 }
 
@@ -64,6 +67,7 @@ export function resolveGuacParams(resource: GuacParams, policy: GuacParams): Gua
     blockUpload: resource.blockUpload ?? policy.blockUpload,
     blockDownload: resource.blockDownload ?? policy.blockDownload,
     sftpRoot: resource.sftpRoot ?? policy.sftpRoot,
+    rdpSecurity: resource.rdpSecurity ?? policy.rdpSecurity,
   };
 }
 
@@ -87,6 +91,7 @@ export function toGuacArgs(p: GuacParams, clipboardMode: string, protocol: "RDP"
   if (p.enableFullWindowDrag) a["enable-full-window-drag"] = "true";
   if (clipboardMode === "no_copy" || clipboardMode === "none") a["disable-copy"] = "true";
   if (clipboardMode === "no_paste" || clipboardMode === "none") a["disable-paste"] = "true";
+  if (protocol === "RDP" && p.rdpSecurity) a["security"] = p.rdpSecurity;
   if (p.enableFileTransfer) {
     if (protocol === "RDP") {
       a["enable-drive"] = "true";
