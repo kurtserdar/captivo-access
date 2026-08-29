@@ -145,7 +145,12 @@ func buildConnect(argNames []string, c GuacConn) []byte {
 		case name == "ignore-cert":
 			elems = append(elems, "true") // RDP: accept the target's self-signed cert
 		case name == "security":
-			elems = append(elems, "any") // RDP: let guacd negotiate (NLA/TLS/RDP)
+			// Per-resource override (via guacParams) wins; default to negotiate.
+			if v, ok := c.Params["security"]; ok && v != "" {
+				elems = append(elems, v)
+			} else {
+				elems = append(elems, "any") // default: let guacd negotiate (NLA/TLS/RDP)
+			}
 		case name == "resize-method":
 			elems = append(elems, "display-update") // smoother RDP resize when supported
 		default:
