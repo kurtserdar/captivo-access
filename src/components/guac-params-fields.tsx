@@ -14,11 +14,12 @@ export interface GuacFields {
   blockUpload: string;
   blockDownload: string;
   sftpRoot: string;
+  rdpSecurity: string;
 }
 
 export const EMPTY_GUAC_FIELDS: GuacFields = {
   serverLayout: "", colorDepth: "", enableWallpaper: "", enableTheming: "", enableFontSmoothing: "", enableFullWindowDrag: "",
-  fileTransfer: "", blockUpload: "", blockDownload: "", sftpRoot: "",
+  fileTransfer: "", blockUpload: "", blockDownload: "", sftpRoot: "", rdpSecurity: "",
 };
 
 const TOGGLES: { key: keyof GuacFields; label: string }[] = [
@@ -41,6 +42,7 @@ export function paramsToGuacFields(p: GuacParams): GuacFields {
     blockUpload: tri(p.blockUpload),
     blockDownload: tri(p.blockDownload),
     sftpRoot: p.sftpRoot ?? "",
+    rdpSecurity: p.rdpSecurity ?? "",
   };
 }
 
@@ -60,6 +62,7 @@ export function guacFieldsToParams(f: GuacFields): GuacParams {
   triToBool(f.blockUpload, "blockUpload");
   triToBool(f.blockDownload, "blockDownload");
   if (f.sftpRoot.trim()) p.sftpRoot = f.sftpRoot.trim();
+  if (f.rdpSecurity) p.rdpSecurity = f.rdpSecurity;
   return p;
 }
 
@@ -69,6 +72,7 @@ export function GuacParamsFields({ value, onChange, protocol }: { value: GuacFie
   const showLayout = !protocol || protocol === "RDP";
   const showDepth = !protocol || protocol === "RDP" || protocol === "VNC";
   const showPerf = !protocol || protocol === "RDP";
+  const showSecurity = !protocol || protocol === "RDP";
   const showFt = !protocol || protocol === "RDP" || protocol === "SSH";
   const showSftpRoot = !protocol || protocol === "SSH";
   return (
@@ -78,6 +82,17 @@ export function GuacParamsFields({ value, onChange, protocol }: { value: GuacFie
           <select className="select" value={value.serverLayout} onChange={(e) => set("serverLayout", e.target.value)}>
             {KEYBOARD_LAYOUTS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
           </select>
+        </label>
+      )}
+      {showSecurity && (
+        <label className="field"><span className="field-label">RDP security {protocol ? "" : "(RDP)"}</span>
+          <select className="select" value={value.rdpSecurity} onChange={(e) => set("rdpSecurity", e.target.value)}>
+            <option value="">Automatic (negotiate)</option>
+            <option value="nla">NLA</option>
+            <option value="tls">TLS</option>
+            <option value="rdp">RDP (legacy)</option>
+          </select>
+          <span className="hint">Set to NLA if an updated Windows host refuses the connection (&quot;wrong security type&quot;).</span>
         </label>
       )}
       {showDepth && (
