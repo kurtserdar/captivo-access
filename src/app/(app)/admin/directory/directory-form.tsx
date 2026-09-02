@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { resolveConnectorChoice } from "@/lib/directory/connector-selection";
 
 type Security = "PLAIN" | "STARTTLS" | "LDAPS";
 type Initial = {
@@ -16,8 +17,9 @@ type Initial = {
 };
 
 export function DirectoryForm({ initial, connectors }: { initial: Initial; connectors: { id: string; name: string }[] }) {
+  const initialChoice = resolveConnectorChoice(initial.connectorId, connectors);
   const [enabled, setEnabled] = useState(initial.enabled);
-  const [connectorId, setConnectorId] = useState(initial.connectorId || connectors[0]?.id || "");
+  const [connectorId, setConnectorId] = useState(initialChoice.value);
   const [host, setHost] = useState(initial.host);
   const [port, setPort] = useState(String(initial.port));
   const [security, setSecurity] = useState<Security>(initial.security);
@@ -47,7 +49,11 @@ export function DirectoryForm({ initial, connectors }: { initial: Initial; conne
         setNotice({ kind: "ok", msg: "Saved." });
         setBindPassword("");
       } else {
-        setNotice({ kind: "error", msg: "Couldn't save — check the fields." });
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        const msg = j.error === "connector_not_found"
+          ? "That connector no longer exists — pick a current one and save."
+          : "Couldn't save — check the fields.";
+        setNotice({ kind: "error", msg });
       }
     } finally {
       setBusy(false);
@@ -88,8 +94,14 @@ export function DirectoryForm({ initial, connectors }: { initial: Initial; conne
       <div className="field">
         <label className="field-label" htmlFor="dir-connector">Connector (reaches the directory)</label>
         <select id="dir-connector" className="select" value={connectorId} onChange={(e) => setConnectorId(e.target.value)}>
+          {connectorId === "" && <option value="">— Select a connector —</option>}
           {connectors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
+        {initialChoice.savedMissing && (
+          <span className="hint" style={{ color: "var(--danger)" }}>
+            The previously selected connector no longer exists or was revoked — that&apos;s why the directory test reported it offline. Pick a connector and save.
+          </span>
+        )}
       </div>
       <div className="field">
         <label className="field-label" htmlFor="dir-host">Host</label>

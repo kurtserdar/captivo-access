@@ -125,6 +125,7 @@ model Connector {
   createdAt  DateTime        @default(now())
   sites      Site[]
   pairings   ConnectorPairing[]
+  directoryConfigs DirectoryConfig[]
 }
 
 model ConnectorPairing {
@@ -359,6 +360,7 @@ model DirectoryConfig {
   id                 String    @id
   enabled            Boolean   @default(false)
   connectorId        String?
+  connector          Connector? @relation(fields: [connectorId], references: [id], onDelete: SetNull)
   host               String    @default("")
   port               Int       @default(389)
   security           String    @default("STARTTLS") // PLAIN | STARTTLS | LDAPS

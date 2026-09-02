@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
+import { db } from "@/lib/db";
 import { saveDirectoryConfig, type DirectorySecurity } from "@/lib/directory/config";
 
 export const runtime = "nodejs";
@@ -18,9 +19,19 @@ export async function POST(req: NextRequest) {
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+
+  // The directory is reached through a connector. Reject an id that no longer
+  // resolves (deleted) or is revoked, so we never persist a dangling reference
+  // that would later fail every LDAP test with "connector offline".
+  const connectorId = typeof body.connectorId === "string" && body.connectorId.trim() ? body.connectorId.trim() : null;
+  if (connectorId) {
+    const c = await db.connector.findFirst({ where: { id: connectorId, status: { not: "REVOKED" } }, select: { id: true } });
+    if (!c) return NextResponse.json({ error: "connector_not_found" }, { status: 400 });
+  }
+
   await saveDirectoryConfig({
     enabled: body.enabled === true,
-    connectorId: typeof body.connectorId === "string" ? body.connectorId : null,
+    connectorId,
     host: typeof body.host === "string" ? body.host : "",
     port: typeof body.port === "number" ? body.port : Number(body.port) || 389,
     security: asSecurity(body.security),
