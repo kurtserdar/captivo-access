@@ -19,6 +19,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
   const [requireJustif, setRequireJustif] = useState(initial.requireRequestJustification !== false);
   const [consent, setConsent] = useState(consentEffective);
   const [watermark, setWatermark] = useState(initial.watermarkDefault === true);
+  const [clipboardDefault, setClipboardDefault] = useState(initial.clipboardDefault ?? "allow");
   const [ksMode, setKsMode] = useState(initial.keystrokeLoggingMode ?? "per_resource");
   const [tz, setTz] = useState(initial.displayTimezone ?? "");
   const [recRetention, setRecRetention] = useState(str(initial.recordingRetentionDays));
@@ -63,6 +64,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
         requireRequestJustification: requireJustif,
         recordingConsentRequired: consent,
         watermarkDefault: watermark,
+        clipboardDefault,
         keystrokeLoggingMode: ksMode,
         displayTimezone: tz || null,
         recordingRetentionDays: recRetention,
@@ -203,6 +205,20 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
             </div>
             <div className="setting-ctl">
               <label className="switch"><input type="checkbox" checked={watermark} onChange={(e) => setWatermark(e.target.checked)} /><span className="track" /></label>
+            </div>
+          </div>
+          <div className="setting">
+            <div className="setting-main">
+              <div className="setting-label">Default clipboard policy</div>
+              <div className="setting-hint">Applied to resources set to <b>Inherit</b> (copy/paste between the vendor and the remote desktop or isolated browser). Per-resource overrides win. <b>Allow</b> keeps the current behavior.</div>
+            </div>
+            <div className="setting-ctl">
+              <select id="policy-clipboard" className="select" value={clipboardDefault} onChange={(e) => setClipboardDefault(e.target.value)}>
+                <option value="allow">Allow copy &amp; paste</option>
+                <option value="no_copy">Block copy out (no exfil)</option>
+                <option value="no_paste">Block paste in</option>
+                <option value="none">Block both</option>
+              </select>
             </div>
           </div>
           <div className="setting">

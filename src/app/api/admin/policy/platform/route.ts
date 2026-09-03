@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
-import { savePlatformSettings, saveGuacParamDefaults } from "@/lib/settings/platform";
+import { savePlatformSettings, saveGuacParamDefaults, CLIPBOARD_MODES } from "@/lib/settings/platform";
 import { parseGuacParams } from "@/lib/gateway/guac-params";
 import { validateAllowlist } from "@/lib/net/cidr";
 
@@ -62,6 +62,9 @@ export async function POST(req: NextRequest) {
     maxGrantDays: toIntMin(body.maxGrantDays, 1),
     recordingConsentRequired: body.recordingConsentRequired === true,
     watermarkDefault: body.watermarkDefault === true,
+    clipboardDefault: typeof body.clipboardDefault === "string" && CLIPBOARD_MODES.includes(body.clipboardDefault)
+      ? body.clipboardDefault
+      : null,
     displayTimezone: typeof body.displayTimezone === "string" && body.displayTimezone ? body.displayTimezone : null,
     recordingRetentionDays: toIntMin(body.recordingRetentionDays, 1),
     defaultConnectorLogLevel: ["debug", "info", "warn", "error"].includes(body.defaultConnectorLogLevel)
