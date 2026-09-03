@@ -3,7 +3,7 @@ import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { getVaultCredential } from "@/lib/vault/store";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { resolvedWatermarkDefault, resolvedGuacParamDefaults, resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
+import { resolvedWatermarkDefault, resolvedClipboardDefault, resolvedGuacParamDefaults, resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
 import { effectiveKeystrokeLogging } from "@/lib/keystroke/policy";
 import { parseGuacParams, resolveGuacParams, toGuacArgs } from "@/lib/gateway/guac-params";
 import { isolationEnabled } from "@/lib/isolation/enabled";
@@ -34,6 +34,10 @@ export async function POST(req: NextRequest) {
   const decision = await evaluateAccess(userId, siteId, new Date());
   if (!decision.allow) return NextResponse.json({ error: "forbidden", reason: decision.reason }, { status: 403 });
 
+  // Resolve the inherit sentinel (null) to a concrete mode server-side, so the
+  // data-plane and browser never see "inherit".
+  const clipboardMode = site.clipboardMode ?? (await resolvedClipboardDefault());
+
   if (site.accessMode === "ISOLATED") {
     if (!isolationEnabled()) return NextResponse.json({ error: "isolation_disabled" }, { status: 404 });
     // DLP watermark (live-view): vendor email + live UTC clock, rendered by KasmVNC to
@@ -51,7 +55,7 @@ export async function POST(req: NextRequest) {
       kasmAddr: (process.env.ISOLATED_KASM_ADDR ?? "captivo-kasm:6901").trim(),
       kasmControlAddr: (process.env.ISOLATED_KASM_CONTROL_ADDR ?? "captivo-kasm:7900").trim(),
       connectorId: site.connectorId,
-      clipboardMode: site.clipboardMode,
+      clipboardMode,
       record: recordingEnabled() && site.recordSessions,
       watermarkText,
       fileTransferMode: site.fileTransferMode,
@@ -63,7 +67,7 @@ export async function POST(req: NextRequest) {
   if (!cred) return NextResponse.json({ error: "no_credential" }, { status: 404 });
 
   const resolved = resolveGuacParams(parseGuacParams(cred.guacParams), await resolvedGuacParamDefaults());
-  const params = toGuacArgs(resolved, site.clipboardMode, cred.protocol as "RDP" | "SSH" | "VNC", cred.username);
+  const params = toGuacArgs(resolved, clipboardMode, cred.protocol as "RDP" | "SSH" | "VNC", cred.username);
 
   return NextResponse.json({
     protocol: cred.protocol.toLowerCase(),

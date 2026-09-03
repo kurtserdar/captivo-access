@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { resolvedRecordingConsentRequired } from "@/lib/settings/platform";
+import { resolvedRecordingConsentRequired, resolvedClipboardDefault } from "@/lib/settings/platform";
 
 function dataplaneAuthorized(req: NextRequest): boolean {
   const s = process.env.DATAPLANE_SECRET;
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     recordSessions,
     // Clipboard control is web-injection based (transparent only); gateway sites
     // manage clipboard in Guacamole, so never inject for them.
-    clipboardMode: site.accessMode === "GATEWAY" ? "allow" : site.clipboardMode,
+    clipboardMode: site.accessMode === "GATEWAY" ? "allow" : (site.clipboardMode ?? (await resolvedClipboardDefault())),
     accessMode: site.accessMode,
     // Global consent-gate policy (was RECORDING_CONSENT_REQUIRED env). Only
     // meaningful when this site actually records; resolved once, cached.
