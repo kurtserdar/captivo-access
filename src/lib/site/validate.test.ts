@@ -4,6 +4,19 @@ import { validateSiteInput } from "./validate";
 const base = { nativeGateway: true, requireSecret: true, recordingEnabled: true, isolationEnabled: true };
 
 describe("validateSiteInput", () => {
+  it("maps inherit clipboardMode to null (isolated)", () => {
+    const r = validateSiteInput({ accessMode: "ISOLATED", connectorId: "c1", name: "n", upstreamUrl: "https://x.example", clipboardMode: "inherit" }, base);
+    expect(r.ok).toBe(true);
+    if (r.ok && r.mode === "ISOLATED") expect(r.clipboardMode).toBeNull();
+  });
+  it("passes a concrete clipboardMode through (isolated)", () => {
+    const r = validateSiteInput({ accessMode: "ISOLATED", connectorId: "c1", name: "n", upstreamUrl: "https://x.example", clipboardMode: "no_copy" }, base);
+    if (r.ok && r.mode === "ISOLATED") expect(r.clipboardMode).toBe("no_copy");
+  });
+  it("maps an unknown clipboardMode to null (transparent)", () => {
+    const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c1", name: "n", hostname: "h.example", upstreamUrl: "https://x.example", clipboardMode: "garbage" }, base);
+    if (r.ok && r.mode === "TRANSPARENT") expect(r.clipboardMode).toBeNull();
+  });
   it("web app needs hostname + upstream", () => {
     const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "", upstreamUrl: "" }, base);
     expect(r).toMatchObject({ ok: false });

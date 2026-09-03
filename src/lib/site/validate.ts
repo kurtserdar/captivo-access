@@ -14,7 +14,7 @@ export type SiteValidation =
       upstreamUrl: string;
       description: string | null;
       insecureSkipVerify: boolean;
-      clipboardMode: string;
+      clipboardMode: string | null;
       recordSessions: boolean;
     }
   | {
@@ -41,7 +41,7 @@ export type SiteValidation =
       upstreamUrl: string;
       insecureSkipVerify: boolean;
       recordSessions: boolean;
-      clipboardMode: string;
+      clipboardMode: string | null;
       watermark: boolean | null;
       fileTransferMode: string;
     }
@@ -77,7 +77,7 @@ export function validateSiteInput(
       ok: true, mode: "ISOLATED", connectorId, name, description, upstreamUrl,
       insecureSkipVerify: body.insecureSkipVerify === true,
       recordSessions: opts.recordingEnabled && body.recordSessions === true,
-      clipboardMode: CLIP.includes(clip) ? clip : "allow",
+      clipboardMode: CLIP.includes(clip) ? clip : null,
       watermark: body.watermark === true ? true : body.watermark === false ? false : null,
       fileTransferMode: FT.includes(ft) ? ft : "none",
     };
@@ -122,7 +122,7 @@ export function validateSiteInput(
     return { ok: false, error: "invalid_upstream_url" };
   }
   const clip = str(body.clipboardMode);
-  const clipboardMode = CLIP.includes(clip) ? clip : "allow";
+  const clipboardMode = CLIP.includes(clip) ? clip : null;
   const recordSessions = opts.recordingEnabled && body.recordSessions === true;
   return {
     ok: true,
