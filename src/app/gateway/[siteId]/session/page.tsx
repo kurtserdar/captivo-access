@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
 import { isolationEnabled } from "@/lib/isolation/enabled";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { resolvedRecordingConsentRequired } from "@/lib/settings/platform";
+import { resolvedRecordingConsentRequired, resolvedClipboardDefault } from "@/lib/settings/platform";
 import { GatewaySession } from "./session-client";
 import { IsolatedSession } from "./isolated-client";
 import { ConsentGate } from "./consent-gate";
@@ -35,10 +35,13 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
   // Past the okGateway/okIsolated guards, accessMode is GATEWAY or ISOLATED; narrow
   // the Prisma enum (which also has TRANSPARENT) to the union the viewers expect.
   const mode = site.accessMode === "ISOLATED" ? "ISOLATED" : "GATEWAY";
+  // Resolve the inherit sentinel (null) to a concrete mode server-side so the
+  // client's clipboard caps mirror the same policy guacd enforces.
+  const clipboardMode = site.clipboardMode ?? (await resolvedClipboardDefault());
   if (consentNeeded) {
-    return <ConsentGate accessMode={mode} siteId={siteId} siteName={site.name} recorded={recorded} clipboardMode={site.clipboardMode} fileTransferMode={site.fileTransferMode} />;
+    return <ConsentGate accessMode={mode} siteId={siteId} siteName={site.name} recorded={recorded} clipboardMode={clipboardMode} fileTransferMode={site.fileTransferMode} />;
   }
   return mode === "ISOLATED"
     ? <IsolatedSession siteId={siteId} siteName={site.name} recorded={recorded} fileTransferMode={site.fileTransferMode} />
-    : <GatewaySession siteId={siteId} siteName={site.name} recorded={recorded} clipboardMode={site.clipboardMode} />;
+    : <GatewaySession siteId={siteId} siteName={site.name} recorded={recorded} clipboardMode={clipboardMode} />;
 }

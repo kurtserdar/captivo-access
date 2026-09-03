@@ -45,7 +45,7 @@ type SiteInitial = {
   insecureSkipVerify: boolean;
   recordSessions: boolean;
   keystrokeLogging?: boolean;
-  clipboardMode: string;
+  clipboardMode: string | null;
   watermark?: boolean | null;
   fileTransferMode?: string;
   accessMode: "TRANSPARENT" | "GATEWAY" | "ISOLATED";
