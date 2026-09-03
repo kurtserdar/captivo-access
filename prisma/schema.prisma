@@ -154,7 +154,7 @@ model Site {
   probeLatencyMs     Int?
   recordSessions     Boolean       @default(false)
   keystrokeLogging   Boolean       @default(false) // GATEWAY: capture typed input into a keystroke timeline
-  clipboardMode      String        @default("allow") // allow | no_copy | no_paste | none (web via proxy; gateway via guacd disable-copy/disable-paste)
+  clipboardMode      String?       // null = inherit PlatformSettings.clipboardDefault; else allow | no_copy | no_paste | none (web via proxy; gateway via guacd disable-copy/disable-paste)
   watermark          Boolean?      // isolated DLP watermark; null = inherit the global watermarkDefault
   fileTransferMode   String        @default("none") // allow | no_upload | no_download | none (ISOLATED only)
   accessMode         SiteAccessMode @default(TRANSPARENT)
@@ -419,6 +419,7 @@ model PlatformSettings {
   maxGrantDays           Int? // cap on a grant's duration; 0/null = no cap (permanent grants allowed)
   recordingConsentRequired Boolean? // was RECORDING_CONSENT_REQUIRED; null = env fallback → false
   watermarkDefault         Boolean? // global isolated-session watermark default; null = env/default → false
+  clipboardDefault         String? // global clipboard default for inheriting resources; null = "allow"
   displayTimezone          String? // global display timezone (IANA); null = viewer's browser
   recordingRetentionDays Int? // auto-delete recordings older than N days; 0/null = keep forever
   defaultConnectorLogLevel String? // fleet default log level for connectors set to "use default"; null → info
