@@ -86,7 +86,7 @@ export function SiteForm({
   const [insecureSkipVerify, setInsecureSkipVerify] = useState(site?.insecureSkipVerify ?? false);
   const [recordSessions, setRecordSessions] = useState(site?.recordSessions ?? false);
   const [keystrokeLogging, setKeystrokeLogging] = useState(site?.keystrokeLogging ?? false);
-  const [clipboardMode, setClipboardMode] = useState(site?.clipboardMode ?? "allow");
+  const [clipboardMode, setClipboardMode] = useState(site?.clipboardMode ?? "inherit");
   const [watermark, setWatermark] = useState<"inherit" | "on" | "off">(
     site?.watermark == null ? "inherit" : site.watermark ? "on" : "off",
   );
@@ -315,6 +315,7 @@ export function SiteForm({
           <div className="field">
             <label className="field-label" htmlFor="site-clipboard-iso">Clipboard</label>
             <select id="site-clipboard-iso" className="select" value={clipboardMode} onChange={(e) => setClipboardMode(e.target.value)}>
+              <option value="inherit">Inherit (policy default)</option>
               <option value="allow">Allow copy &amp; paste</option>
               <option value="no_copy">Block copy out (no exfil)</option>
               <option value="no_paste">Block paste in</option>
@@ -376,6 +377,7 @@ export function SiteForm({
             <div className="field">
               <label className="field-label" htmlFor="site-clipboard-gw">Clipboard</label>
               <select id="site-clipboard-gw" className="select" value={clipboardMode} onChange={(e) => setClipboardMode(e.target.value)}>
+                <option value="inherit">Inherit (policy default)</option>
                 <option value="allow">Allow copy &amp; paste</option>
                 <option value="no_copy">Block copy out (no exfil)</option>
                 <option value="no_paste">Block paste in</option>
@@ -448,6 +450,7 @@ export function SiteForm({
         <div className="field">
           <label className="field-label" htmlFor="site-clipboard">Clipboard</label>
           <select id="site-clipboard" className="select" value={clipboardMode} onChange={(e) => setClipboardMode(e.target.value)}>
+            <option value="inherit">Inherit (policy default)</option>
             <option value="allow">Allow copy &amp; paste</option>
             <option value="no_copy">Block copy out (no exfil)</option>
             <option value="no_paste">Block paste in</option>
