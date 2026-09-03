@@ -15,6 +15,7 @@ export interface PlatformSettings {
   maxGrantDays: number | null;
   recordingConsentRequired: boolean | null;
   watermarkDefault: boolean | null;
+  clipboardDefault: string | null;
   displayTimezone: string | null;
   recordingRetentionDays: number | null;
   defaultConnectorLogLevel: string | null;
@@ -37,6 +38,7 @@ const EMPTY: PlatformSettings = {
   maxGrantDays: null,
   recordingConsentRequired: null,
   watermarkDefault: null,
+  clipboardDefault: null,
   displayTimezone: null,
   recordingRetentionDays: null,
   defaultConnectorLogLevel: null,
@@ -68,6 +70,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     maxGrantDays: c?.maxGrantDays ?? null,
     recordingConsentRequired: c?.recordingConsentRequired ?? null,
     watermarkDefault: c?.watermarkDefault ?? null,
+    clipboardDefault: c?.clipboardDefault ?? null,
     displayTimezone: c?.displayTimezone ?? null,
     recordingRetentionDays: c?.recordingRetentionDays ?? null,
     defaultConnectorLogLevel: c?.defaultConnectorLogLevel ?? null,
@@ -168,6 +171,20 @@ export async function resolvedWatermarkDefault(): Promise<boolean> {
   if (s.watermarkDefault !== null) return s.watermarkDefault;
   const v = process.env.WATERMARK_DEFAULT?.trim().toLowerCase();
   return v === "1" || v === "true" || v === "on" || v === "yes";
+}
+
+export const CLIPBOARD_MODES = ["allow", "no_copy", "no_paste", "none"];
+
+// Coerce a stored clipboard default to a concrete mode; unknown/null → "allow".
+export function coerceClipboardDefault(v: string | null): string {
+  return v && CLIPBOARD_MODES.includes(v) ? v : "allow";
+}
+
+// Tenant-wide clipboard default for resources that inherit (Site.clipboardMode
+// is null). DB value if valid, else "allow". No env fallback (UI-only control).
+export async function resolvedClipboardDefault(): Promise<string> {
+  const s = await getPlatformSettings();
+  return coerceClipboardDefault(s.clipboardDefault);
 }
 
 // Recording retention in days; 0 = keep forever. UI-only (no env).
