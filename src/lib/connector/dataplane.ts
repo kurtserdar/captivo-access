@@ -76,11 +76,20 @@ export async function testDirectory(input: {
   return res.json();
 }
 
+// Timeout (ms) for the login-time LDAP resolve. Env DIRECTORY_RESOLVE_TIMEOUT_MS
+// overrides; floor 500ms. Default 4s — a slow or hung AD/data-plane must never
+// stall the login response indefinitely (the caller fails open on timeout).
+export function directoryResolveTimeoutMs(): number {
+  const raw = process.env.DIRECTORY_RESOLVE_TIMEOUT_MS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n >= 500 ? Math.floor(n) : 4000;
+}
+
 // resolveDirectoryUser asks the data-plane to look a user up in AD by email
 // (bind + subtree search) and return their DN + memberOf group DNs. Used by the
 // login-time sync engine. bindPassword is sent cleartext over the internal,
-// secret-gated channel (the Manager decrypts it first). A thrown/failed request
-// surfaces as { error } so the caller can fail open.
+// secret-gated channel (the Manager decrypts it first). A thrown/failed/timed-out
+// request surfaces as { error } so the caller can fail open.
 export async function resolveDirectoryUser(input: {
   connectorId: string;
   host: string;
@@ -99,8 +108,9 @@ export async function resolveDirectoryUser(input: {
     method: "POST",
     headers: { "content-type": "application/json", "x-dataplane-secret": secret },
     body: JSON.stringify(input),
+    signal: AbortSignal.timeout(directoryResolveTimeoutMs()),
   }).catch(() => null);
-  if (!res) return { found: false, error: "The data-plane is unreachable." };
+  if (!res) return { found: false, error: "The directory resolve timed out or the data-plane is unreachable." };
   if (!res.ok) return { found: false, error: "The directory resolve request failed." };
   return res.json();
 }

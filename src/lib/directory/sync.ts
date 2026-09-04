@@ -4,6 +4,7 @@ import { getDirectoryConfig, getDirectoryBindPassword } from "@/lib/directory/co
 import { resolveDirectoryUser } from "@/lib/connector/dataplane";
 import { listGroupMappingsLite } from "@/lib/directory/mappings";
 import { computeReconcile, planGrantChanges, type ReconcileDecision } from "@/lib/directory/reconcile";
+import { directorySyncThrottleMs, shouldSkipSync } from "@/lib/directory/sync-throttle";
 import { appendAuditEvents } from "@/lib/audit/append";
 
 export interface DirectoryUser {
@@ -20,6 +21,14 @@ export interface DirectoryUser {
 export async function syncUserAtLogin(user: DirectoryUser): Promise<{ deprovisioned: boolean }> {
   const cfg = await getDirectoryConfig();
   if (!cfg || !cfg.enabled || !cfg.connectorId) return { deprovisioned: false };
+
+  // Throttle: skip the (potentially slow) LDAP resolve if this user was verified
+  // against AD recently — keeps most logins fast without losing enforcement.
+  const throttleMs = directorySyncThrottleMs();
+  if (throttleMs > 0) {
+    const u = await db.user.findUnique({ where: { id: user.id }, select: { directoryLastVerifiedAt: true } });
+    if (shouldSkipSync(u?.directoryLastVerifiedAt, Date.now(), throttleMs)) return { deprovisioned: false };
+  }
 
   let resolved: { found: boolean; memberOf?: string[]; error?: string };
   try {
@@ -56,8 +65,10 @@ export async function syncUserAtLogin(user: DirectoryUser): Promise<{ deprovisio
     return { deprovisioned: true };
   }
 
-  // No mapping matched and the user is local (not directory-managed) → leave alone.
+  // No mapping matched and the user is local (not directory-managed) → leave
+  // alone, but stamp the verify time so the throttle can skip the next logins.
   if (decision.role === null && decision.grantSiteIds.length === 0) {
+    await db.user.update({ where: { id: user.id }, data: { directoryLastVerifiedAt: new Date() } }).catch(() => {});
     return { deprovisioned: false };
   }
 
