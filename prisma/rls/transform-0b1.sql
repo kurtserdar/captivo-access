@@ -1,10 +1,11 @@
--- Phase 0b-1: reshape the singleton tables in place BEFORE `prisma db push`, so
--- db push (which would otherwise refuse the destructive PK/column drops) sees
--- them already matching and is a no-op. Idempotent + guarded: each block runs
--- only while the old shape is present, and skips safely when a table does not
--- exist yet (fresh install — db push then creates the new shape directly).
+-- Phase 0b-1: reshape tables in place BEFORE `prisma db push`, so db push (which
+-- would otherwise need --accept-data-loss for the PK/unique changes) sees them
+-- already matching and is a clean no-op. We never pass --accept-data-loss.
+-- Idempotent + guarded: each block runs only while the old shape is present and
+-- skips safely when a table does not exist yet (fresh install — db push then
+-- creates the new shape directly).
 
--- Config singletons: id ("singleton") PK -> tenantId PK (one row, tenantId='default').
+-- 1. Config singletons: id ("singleton") PK -> tenantId PK (one row, tenantId='default').
 DO $$
 DECLARE t text;
 BEGIN
@@ -17,7 +18,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- AuditChainState: id ('singleton'|'admin-singleton') -> (tenantId, scope).
+-- 2. AuditChainState: id ('singleton'|'admin-singleton') -> (tenantId, scope).
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'AuditChainState' AND column_name = 'id') THEN
@@ -30,12 +31,12 @@ BEGIN
   END IF;
 END $$;
 
--- CronRun: job PK -> (tenantId, job). Nested guard so the regclass cast only runs
--- when the table exists.
+-- 3. CronRun: job PK -> (tenantId, job). Nested guard so the regclass cast only
+-- runs when the table exists; cast attname to text for the array comparison.
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'CronRun') THEN
-    IF (SELECT array_agg(a.attname ORDER BY a.attname)
+    IF (SELECT array_agg(a.attname::text ORDER BY a.attname)
         FROM pg_index i
         JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
         WHERE i.indrelid = '"CronRun"'::regclass AND i.indisprimary) = ARRAY['job'] THEN
@@ -43,4 +44,28 @@ BEGIN
       ALTER TABLE "CronRun" ADD PRIMARY KEY ("tenantId", "job");
     END IF;
   END IF;
+END $$;
+
+-- 4. Global uniques -> composite (tenantId, field). Drop the old single-field
+-- unique index and create the composite one under Prisma's expected name
+-- (<Table>_tenantId_<field>_key), so db push sees a match. Safe in single-tenant:
+-- all rows share tenantId='default' and the field was already globally unique.
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT * FROM (VALUES
+    ('User','email'), ('Passkey','credentialId'), ('Invite','tokenHash'),
+    ('Session','tokenHash'), ('Connector','tokenHash'), ('Site','hostname'),
+    ('AuditEvent','seq'), ('SessionRecording','recordingKey'), ('AdminAuditEvent','seq')
+  ) AS v(tbl, col) LOOP
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = r.tbl) THEN
+      IF EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = r.tbl || '_' || r.col || '_key') THEN
+        EXECUTE format('DROP INDEX %I', r.tbl || '_' || r.col || '_key');
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = r.tbl || '_tenantId_' || r.col || '_key') THEN
+        EXECUTE format('CREATE UNIQUE INDEX %I ON %I ("tenantId", %I)',
+                       r.tbl || '_tenantId_' || r.col || '_key', r.tbl, r.col);
+      END IF;
+    END IF;
+  END LOOP;
 END $$;
