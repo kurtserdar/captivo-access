@@ -19,13 +19,13 @@ export function currentTenantId(): string {
   return als.getStore()?.tenantId ?? DEFAULT_TENANT;
 }
 
-// Adds `tenantId: currentTenantId()` to a Prisma create/upsert `data` payload
-// when the caller didn't set one. Used by the db extension (Task 4). Leaves an
-// explicit tenantId untouched (so cross-tenant writes are still expressible and
-// caught by RLS in Phase 0b).
-export function injectTenant<A extends { data?: Record<string, unknown> }>(args: A): A {
-  if (args.data && !("tenantId" in args.data)) {
-    return { ...args, data: { ...args.data, tenantId: currentTenantId() } };
+// Returns `row` with tenantId set to the active tenant when it has none. Used by
+// the db extension (Task 4) to stamp create/upsert payloads. Leaves an explicit
+// tenantId untouched (so cross-tenant writes stay expressible and are caught by
+// RLS in Phase 0b). Non-objects pass through unchanged.
+export function fillTenant<T>(row: T): T {
+  if (row && typeof row === "object" && !("tenantId" in (row as Record<string, unknown>))) {
+    return { ...(row as Record<string, unknown>), tenantId: currentTenantId() } as T;
   }
-  return args;
+  return row;
 }

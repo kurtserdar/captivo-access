@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { withTenant, currentTenantId, injectTenant } from "./context";
+import { withTenant, currentTenantId, fillTenant } from "./context";
 
 describe("tenant context", () => {
   it("defaults to the default tenant outside any scope", () => {
@@ -14,14 +14,19 @@ describe("tenant context", () => {
       expect(currentTenantId()).toBe("a");
     });
   });
-  it("injectTenant adds tenantId into data when absent", () => {
+  it("fillTenant adds tenantId to a row when absent", () => {
     withTenant("acme", () => {
-      expect(injectTenant({ data: { name: "x" } })).toEqual({ data: { name: "x", tenantId: "acme" } });
+      expect(fillTenant({ name: "x" })).toEqual({ name: "x", tenantId: "acme" });
     });
   });
-  it("injectTenant leaves an explicit tenantId untouched", () => {
+  it("fillTenant leaves an explicit tenantId untouched", () => {
     withTenant("acme", () => {
-      expect(injectTenant({ data: { name: "x", tenantId: "other" } })).toEqual({ data: { name: "x", tenantId: "other" } });
+      expect(fillTenant({ name: "x", tenantId: "other" })).toEqual({ name: "x", tenantId: "other" });
+    });
+  });
+  it("fillTenant passes non-objects through", () => {
+    withTenant("acme", () => {
+      expect(fillTenant(undefined)).toBe(undefined);
     });
   });
 });
