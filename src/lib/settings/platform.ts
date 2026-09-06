@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 import { parseGuacParams, type GuacParams } from "@/lib/gateway/guac-params";
 
 // Tenant-wide operational settings, editable from /admin/policy. Each was
@@ -29,7 +30,6 @@ export interface PlatformSettings {
   keystrokeLoggingMode: string | null;
 }
 
-const ID = "singleton";
 const EMPTY: PlatformSettings = {
   auditRetentionDays: null,
   inviteTtlHours: null,
@@ -58,7 +58,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
   if (cache && Date.now() - cache.at < 30_000) return cache.s;
   let c;
   try {
-    c = await db.platformSettings.findUnique({ where: { id: ID } });
+    c = await db.platformSettings.findUnique({ where: { tenantId: currentTenantId() } });
   } catch {
     return EMPTY; // table missing / DB down -> resolvers fall back to env/default
   }
@@ -89,8 +89,8 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
 
 export async function savePlatformSettings(input: PlatformSettings): Promise<void> {
   await db.platformSettings.upsert({
-    where: { id: ID },
-    create: { id: ID, ...input },
+    where: { tenantId: currentTenantId() },
+    create: { tenantId: currentTenantId(), ...input },
     update: { ...input },
   });
   cache = null;
@@ -100,7 +100,7 @@ export async function savePlatformSettings(input: PlatformSettings): Promise<voi
 // generic PlatformSettings interface/save to avoid Prisma Json-null friction.
 export async function resolvedGuacParamDefaults(): Promise<GuacParams> {
   try {
-    const c = await db.platformSettings.findUnique({ where: { id: ID }, select: { guacParamDefaults: true } });
+    const c = await db.platformSettings.findUnique({ where: { tenantId: currentTenantId() }, select: { guacParamDefaults: true } });
     return parseGuacParams(c?.guacParamDefaults);
   } catch {
     return {};
@@ -110,8 +110,8 @@ export async function resolvedGuacParamDefaults(): Promise<GuacParams> {
 export async function saveGuacParamDefaults(p: GuacParams): Promise<void> {
   const value = parseGuacParams(p) as Prisma.InputJsonValue;
   await db.platformSettings.upsert({
-    where: { id: ID },
-    create: { id: ID, guacParamDefaults: value },
+    where: { tenantId: currentTenantId() },
+    create: { tenantId: currentTenantId(), guacParamDefaults: value },
     update: { guacParamDefaults: value },
   });
   cache = null;

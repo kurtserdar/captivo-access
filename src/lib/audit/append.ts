@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
 import { computeHash, AUDIT_CHAIN_LOCK_KEY } from "@/lib/audit/chain";
+import { chainKey } from "@/lib/audit/chain-key";
+import { currentTenantId } from "@/lib/tenant/context";
 
 export interface AuditInput {
   timestamp?: string;
@@ -91,8 +93,8 @@ export async function appendAuditEvents(events: AuditInput[]): Promise<number> {
   return db.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${AUDIT_CHAIN_LOCK_KEY})`;
     const head = await tx.auditChainState.upsert({
-      where: { id: "singleton" },
-      create: { id: "singleton" },
+      where: chainKey("access"),
+      create: { tenantId: currentTenantId(), scope: "access" },
       update: {},
       select: { lastSeq: true, lastHash: true },
     });
@@ -107,7 +109,7 @@ export async function appendAuditEvents(events: AuditInput[]): Promise<number> {
       return { ...n, seq, prevHash, hash };
     });
     await tx.auditEvent.createMany({ data: rows });
-    await tx.auditChainState.update({ where: { id: "singleton" }, data: { lastSeq, lastHash } });
+    await tx.auditChainState.update({ where: chainKey("access"), data: { lastSeq, lastHash } });
     return rows.length;
   });
 }

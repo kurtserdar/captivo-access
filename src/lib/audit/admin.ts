@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { computeAdminHash, ADMIN_AUDIT_CHAIN_LOCK_KEY, ADMIN_CHAIN_ID } from "@/lib/audit/admin-chain";
+import { computeAdminHash, ADMIN_AUDIT_CHAIN_LOCK_KEY } from "@/lib/audit/admin-chain";
+import { chainKey } from "@/lib/audit/chain-key";
+import { currentTenantId } from "@/lib/tenant/context";
 
 export interface AdminActor { id: string; email: string | null }
 
@@ -26,8 +28,8 @@ export async function recordAdminAction(input: {
     await db.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ADMIN_AUDIT_CHAIN_LOCK_KEY})`;
       const head = await tx.auditChainState.upsert({
-        where: { id: ADMIN_CHAIN_ID },
-        create: { id: ADMIN_CHAIN_ID },
+        where: chainKey("admin"),
+        create: { tenantId: currentTenantId(), scope: "admin" },
         update: {},
         select: { lastSeq: true, lastHash: true },
       });
@@ -61,7 +63,7 @@ export async function recordAdminAction(input: {
           hash,
         },
       });
-      await tx.auditChainState.update({ where: { id: ADMIN_CHAIN_ID }, data: { lastSeq: seq, lastHash: hash } });
+      await tx.auditChainState.update({ where: chainKey("admin"), data: { lastSeq: seq, lastHash: hash } });
     });
   } catch (e) {
     console.error("recordAdminAction failed:", input.action, e);

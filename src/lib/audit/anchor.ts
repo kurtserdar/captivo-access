@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
 import { buildTimeStampRequest, parseTimeStampResponse } from "./rfc3161";
+import { chainKey, type ChainScope } from "@/lib/audit/chain-key";
 import {
   resolvedExternalAnchorEnabled,
   resolvedAnchorTsaUrl,
@@ -36,7 +37,7 @@ export type AnchorRunResult =
 // A chain-specific binding for the shared anchoring runner: which chain-state
 // singleton to read the head from, and where its anchors are stored.
 type AnchorTarget = {
-  chainStateId: string; // "singleton" | "admin-singleton"
+  scope: ChainScope; // which tamper-evidence chain's head to anchor
   findLastAnchor: () => Promise<{ anchoredSeq: bigint; anchoredHash: string } | null>;
   // Positional args so each binding writes the Prisma `create` object literal
   // inline (Prisma's XOR create-input type rejects a non-literal object).
@@ -58,7 +59,7 @@ async function runAnchorFor(target: AnchorTarget): Promise<AnchorRunResult> {
     if (tsaUrl === "") return { status: "disabled" };
 
     const head = await db.auditChainState.findUnique({
-      where: { id: target.chainStateId },
+      where: chainKey(target.scope),
       select: { lastSeq: true, lastHash: true },
     });
     if (!head) return { status: "skipped" };
@@ -103,7 +104,7 @@ async function runAnchorFor(target: AnchorTarget): Promise<AnchorRunResult> {
 // runAnchorFor extraction.
 export async function runAnchor(): Promise<AnchorRunResult> {
   return runAnchorFor({
-    chainStateId: "singleton",
+    scope: "access",
     findLastAnchor: () =>
       db.auditAnchor.findFirst({ orderBy: { anchoredSeq: "desc" }, select: { anchoredSeq: true, anchoredHash: true } }),
     createAnchor: (anchoredSeq, anchoredHash, tsaUrl, token, genTime) =>
@@ -114,7 +115,7 @@ export async function runAnchor(): Promise<AnchorRunResult> {
 // Anchors the admin-audit chain (head under "admin-singleton").
 export async function runAdminAnchor(): Promise<AnchorRunResult> {
   return runAnchorFor({
-    chainStateId: "admin-singleton",
+    scope: "admin",
     findLastAnchor: () =>
       db.adminAuditAnchor.findFirst({ orderBy: { anchoredSeq: "desc" }, select: { anchoredSeq: true, anchoredHash: true } }),
     createAnchor: (anchoredSeq, anchoredHash, tsaUrl, token, genTime) =>

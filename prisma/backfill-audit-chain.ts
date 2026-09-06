@@ -14,7 +14,7 @@ async function main() {
   await db.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${AUDIT_CHAIN_LOCK_KEY})`;
 
-    const head = await tx.auditChainState.findUnique({ where: { id: "singleton" } });
+    const head = await tx.auditChainState.findUnique({ where: { tenantId_scope: { tenantId: "default", scope: "access" } } });
     if (head && head.lastSeq > 0n && !force) {
       throw new Error(`Chain already established (lastSeq=${head.lastSeq}). Re-run with --force to rebuild.`);
     }
@@ -48,8 +48,8 @@ async function main() {
     }
 
     await tx.auditChainState.upsert({
-      where: { id: "singleton" },
-      create: { id: "singleton", lastSeq: seq, lastHash: prevHash },
+      where: { tenantId_scope: { tenantId: "default", scope: "access" } },
+      create: { tenantId: "default", scope: "access", lastSeq: seq, lastHash: prevHash },
       update: { lastSeq: seq, lastHash: prevHash },
     });
 

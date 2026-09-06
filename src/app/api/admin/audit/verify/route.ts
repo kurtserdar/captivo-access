@@ -4,6 +4,7 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { verifyChain, type StoredEvent } from "@/lib/audit/verify";
+import { chainKey } from "@/lib/audit/chain-key";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export async function GET() {
   // events while we page can't cause a false head-mismatch: bound the page
   // query to seq <= head.lastSeq.
   const head = await db.auditChainState.findUnique({
-    where: { id: "singleton" },
+    where: chainKey("access"),
     select: { lastSeq: true, lastHash: true },
   });
 

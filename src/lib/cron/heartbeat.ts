@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 import { getPlatformSettings } from "@/lib/settings/platform";
 
 export type CronJob = "site-health" | "audit-retention" | "recording-retention" | "audit-anchor";
@@ -8,7 +9,7 @@ export type CronJob = "site-health" | "audit-retention" | "recording-retention" 
 // Best-effort — never fails the cron itself.
 export async function recordCronRun(job: CronJob): Promise<void> {
   await db.cronRun
-    .upsert({ where: { job }, create: { job, ranAt: new Date() }, update: { ranAt: new Date() } })
+    .upsert({ where: { tenantId_job: { tenantId: currentTenantId(), job } }, create: { tenantId: currentTenantId(), job, ranAt: new Date() }, update: { ranAt: new Date() } })
     .catch(() => {});
 }
 

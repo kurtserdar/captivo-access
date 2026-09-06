@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { sendTestEmail } from "@/lib/email/mailer";
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 import { verifyResultFields } from "@/lib/admin/verify-result";
 
 export async function POST(req: NextRequest) {
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
   const to = typeof b.to === "string" && b.to.trim() ? b.to.trim() : admin.email;
   const result = await sendTestEmail(to);
   await db.smtpConfig.updateMany({
-    where: { id: "singleton" },
+    where: { tenantId: currentTenantId() },
     data: verifyResultFields(result.sent, result.sent ? null : (result.reason ?? "send_failed"), new Date()),
   });
   return NextResponse.json(result);

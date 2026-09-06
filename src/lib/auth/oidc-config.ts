@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 import { encrypt, decrypt } from "@/lib/crypto";
 
-const ID = "singleton";
 
 export type OidcConfigView = {
   enabled: boolean;
@@ -17,7 +17,7 @@ export type OidcConfigView = {
 export async function getOidcConfig(): Promise<OidcConfigView | null> {
   let c;
   try {
-    c = await db.oidcConfig.findUnique({ where: { id: ID } });
+    c = await db.oidcConfig.findUnique({ where: { tenantId: currentTenantId() } });
   } catch {
     // If the table doesn't exist yet (deployed before db push) or the DB is
     // unavailable, treat SSO as unconfigured so passkey login still works.
@@ -37,7 +37,7 @@ export async function getOidcConfig(): Promise<OidcConfigView | null> {
 }
 
 export async function getOidcSecret(): Promise<string | null> {
-  const c = await db.oidcConfig.findUnique({ where: { id: ID }, select: { clientSecret: true } });
+  const c = await db.oidcConfig.findUnique({ where: { tenantId: currentTenantId() }, select: { clientSecret: true } });
   if (!c || !c.clientSecret) return null;
   return decrypt(c.clientSecret);
 }
@@ -56,8 +56,8 @@ export async function saveOidcConfig(input: {
   const encSecret = secretProvided ? encrypt(input.clientSecret!.trim()) : undefined;
 
   await db.oidcConfig.upsert({
-    where: { id: ID },
-    create: { id: ID, enabled: input.enabled, issuer, clientId, clientSecret: encSecret ?? "", buttonLabel },
+    where: { tenantId: currentTenantId() },
+    create: { tenantId: currentTenantId(), enabled: input.enabled, issuer, clientId, clientSecret: encSecret ?? "", buttonLabel },
     update: {
       enabled: input.enabled,
       issuer,

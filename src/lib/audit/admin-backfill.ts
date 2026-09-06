@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
-import { computeAdminHash, ADMIN_AUDIT_CHAIN_LOCK_KEY, ADMIN_CHAIN_ID } from "./admin-chain";
+import { computeAdminHash, ADMIN_AUDIT_CHAIN_LOCK_KEY } from "./admin-chain";
+import { chainKey } from "@/lib/audit/chain-key";
+import { currentTenantId } from "@/lib/tenant/context";
 
 // One-time, idempotent: chains every AdminAuditEvent row that has no seq yet,
 // in insertion order, continuing from the current admin head. No-op if none.
@@ -13,7 +15,7 @@ export async function backfillAdminChain(): Promise<{ backfilled: number }> {
     });
     if (pending.length === 0) return { backfilled: 0 };
     const head = await tx.auditChainState.upsert({
-      where: { id: ADMIN_CHAIN_ID }, create: { id: ADMIN_CHAIN_ID }, update: {},
+      where: chainKey("admin"), create: { tenantId: currentTenantId(), scope: "admin" }, update: {},
       select: { lastSeq: true, lastHash: true },
     });
     let lastSeq = head.lastSeq;
@@ -29,7 +31,7 @@ export async function backfillAdminChain(): Promise<{ backfilled: number }> {
       lastSeq = seq;
       lastHash = hash;
     }
-    await tx.auditChainState.update({ where: { id: ADMIN_CHAIN_ID }, data: { lastSeq, lastHash } });
+    await tx.auditChainState.update({ where: chainKey("admin"), data: { lastSeq, lastHash } });
     return { backfilled: pending.length };
   });
 }

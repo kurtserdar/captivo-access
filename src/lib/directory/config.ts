@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 import { encrypt, decrypt } from "@/lib/crypto";
 
-const ID = "singleton";
 
 export type DirectorySecurity = "PLAIN" | "STARTTLS" | "LDAPS";
 
@@ -28,7 +28,7 @@ function asSecurity(v: string): DirectorySecurity {
 export async function getDirectoryConfig(): Promise<DirectoryConfigView | null> {
   let c;
   try {
-    c = await db.directoryConfig.findUnique({ where: { id: ID } });
+    c = await db.directoryConfig.findUnique({ where: { tenantId: currentTenantId() } });
   } catch {
     // Table missing (deployed before db push) or DB down — treat as unconfigured.
     return null;
@@ -54,7 +54,7 @@ export async function getDirectoryConfig(): Promise<DirectoryConfigView | null> 
 // The decrypted bind password — sent to the data-plane's /ldap-test over the
 // internal, secret-gated channel. Never returned to the browser.
 export async function getDirectoryBindPassword(): Promise<string | null> {
-  const c = await db.directoryConfig.findUnique({ where: { id: ID }, select: { bindPassword: true } });
+  const c = await db.directoryConfig.findUnique({ where: { tenantId: currentTenantId() }, select: { bindPassword: true } });
   if (!c || !c.bindPassword) return null;
   return decrypt(c.bindPassword);
 }
@@ -82,9 +82,9 @@ export async function saveDirectoryConfig(input: {
   const encSecret = secretProvided ? encrypt(input.bindPassword!.trim()) : undefined;
 
   await db.directoryConfig.upsert({
-    where: { id: ID },
+    where: { tenantId: currentTenantId() },
     create: {
-      id: ID, enabled: input.enabled, connectorId, host, port, security,
+      tenantId: currentTenantId(), enabled: input.enabled, connectorId, host, port, security,
       insecureSkipVerify: input.insecureSkipVerify, caCertPem, baseDN, bindDN, bindPassword: encSecret ?? "",
     },
     update: {
@@ -97,6 +97,6 @@ export async function saveDirectoryConfig(input: {
 
 export async function recordDirectoryTest(ok: boolean, detail: string): Promise<void> {
   await db.directoryConfig
-    .update({ where: { id: ID }, data: { lastTestedAt: new Date(), lastTestOk: ok, lastTestDetail: detail.slice(0, 500) } })
+    .update({ where: { tenantId: currentTenantId() }, data: { lastTestedAt: new Date(), lastTestOk: ok, lastTestDetail: detail.slice(0, 500) } })
     .catch(() => {});
 }

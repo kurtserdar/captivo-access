@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const b = await db.brandingConfig.findUnique({ where: { id: "singleton" }, select: { splashImage: true, splashImageType: true } });
+  const b = await db.brandingConfig.findUnique({ where: { tenantId: currentTenantId() }, select: { splashImage: true, splashImageType: true } });
   if (!b?.splashImage || !b.splashImageType) return new NextResponse(null, { status: 404 });
   return new NextResponse(Buffer.from(b.splashImage), {
     status: 200,

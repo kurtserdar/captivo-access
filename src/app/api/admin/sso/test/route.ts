@@ -4,6 +4,7 @@ import { can } from "@/lib/auth/roles";
 import { getOidcConfig } from "@/lib/auth/oidc-config";
 import { discover } from "@/lib/auth/oidc";
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 import { verifyResultFields } from "@/lib/admin/verify-result";
 
 export async function POST() {
@@ -17,10 +18,10 @@ export async function POST() {
   const now = new Date();
   try {
     const d = await discover(cfg.issuer);
-    await db.oidcConfig.updateMany({ where: { id: "singleton" }, data: verifyResultFields(true, null, now) });
+    await db.oidcConfig.updateMany({ where: { tenantId: currentTenantId() }, data: verifyResultFields(true, null, now) });
     return NextResponse.json({ ok: true, authorization_endpoint: d.authorization_endpoint, token_endpoint: d.token_endpoint });
   } catch {
-    await db.oidcConfig.updateMany({ where: { id: "singleton" }, data: verifyResultFields(false, "unreachable", now) });
+    await db.oidcConfig.updateMany({ where: { tenantId: currentTenantId() }, data: verifyResultFields(false, "unreachable", now) });
     return NextResponse.json({ ok: false, error: "unreachable" });
   }
 }

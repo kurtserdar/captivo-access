@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 
-const ID = "singleton";
 
 export type UpdateCheckView = {
   enabled: boolean;
@@ -13,7 +13,7 @@ export type UpdateCheckView = {
 export async function getUpdateCheckConfig(): Promise<UpdateCheckView | null> {
   let c;
   try {
-    c = await db.updateCheckConfig.findUnique({ where: { id: ID } });
+    c = await db.updateCheckConfig.findUnique({ where: { tenantId: currentTenantId() } });
   } catch {
     // Table missing (deployed before db push) or DB down → feature off.
     return null;
@@ -30,15 +30,15 @@ export async function getUpdateCheckConfig(): Promise<UpdateCheckView | null> {
 }
 
 export async function setUpdateCheckEnabled(enabled: boolean): Promise<void> {
-  await db.updateCheckConfig.upsert({ where: { id: ID }, create: { id: ID, enabled }, update: { enabled } });
+  await db.updateCheckConfig.upsert({ where: { tenantId: currentTenantId() }, create: { tenantId: currentTenantId(), enabled }, update: { enabled } });
 }
 
 // Persist a check result. On failure (ok=false) the cached latestVersion/latestUrl
 // are left intact (only the timestamp + ok flag update); on success they're set.
 export async function saveUpdateCheckResult(r: { latestVersion: string | null; latestUrl: string | null; ok: boolean }): Promise<void> {
   await db.updateCheckConfig.upsert({
-    where: { id: ID },
-    create: { id: ID, latestVersion: r.latestVersion, latestUrl: r.latestUrl, lastCheckedAt: new Date(), lastCheckOk: r.ok },
+    where: { tenantId: currentTenantId() },
+    create: { tenantId: currentTenantId(), latestVersion: r.latestVersion, latestUrl: r.latestUrl, lastCheckedAt: new Date(), lastCheckOk: r.ok },
     update: {
       lastCheckedAt: new Date(),
       lastCheckOk: r.ok,

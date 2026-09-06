@@ -1,11 +1,12 @@
 import nodemailer from "nodemailer";
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 import { decrypt } from "@/lib/crypto";
 import { buildTransportOptions } from "./transport";
 
 export async function getSmtpConfig() {
   try {
-    return await db.smtpConfig.findUnique({ where: { id: "singleton" } });
+    return await db.smtpConfig.findUnique({ where: { tenantId: currentTenantId() } });
   } catch {
     // If the table doesn't exist yet (deployed before db push) or the DB is
     // unavailable, treat SMTP as unconfigured so notifications still work.

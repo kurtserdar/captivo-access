@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 
 export interface SessionPolicy {
   idleTimeoutMinutes: number | null;
@@ -6,7 +7,6 @@ export interface SessionPolicy {
   maxConcurrentPerUser: number | null;
 }
 
-const ID = "singleton";
 const EMPTY: SessionPolicy = { idleTimeoutMinutes: null, maxSessionHours: null, maxConcurrentPerUser: null };
 
 export function sessionTtlMs(policyHours: number | null | undefined, envHours: number): number {
@@ -30,7 +30,7 @@ export async function getSessionPolicy(): Promise<SessionPolicy> {
   if (cache && Date.now() - cache.at < 30_000) return cache.policy;
   let c;
   try {
-    c = await db.sessionPolicy.findUnique({ where: { id: ID } });
+    c = await db.sessionPolicy.findUnique({ where: { tenantId: currentTenantId() } });
   } catch {
     return EMPTY; // table missing / DB down -> no enforcement
   }
@@ -45,8 +45,8 @@ export async function getSessionPolicy(): Promise<SessionPolicy> {
 
 export async function saveSessionPolicy(input: SessionPolicy): Promise<void> {
   await db.sessionPolicy.upsert({
-    where: { id: ID },
-    create: { id: ID, ...input },
+    where: { tenantId: currentTenantId() },
+    create: { tenantId: currentTenantId(), ...input },
     update: { ...input },
   });
   cache = null;

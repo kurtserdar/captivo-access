@@ -4,6 +4,7 @@ import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 import { encrypt } from "@/lib/crypto";
 
 export async function POST(req: NextRequest) {
@@ -25,13 +26,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "host_port_from_required" }, { status: 400 });
   }
 
-  const existing = await db.smtpConfig.findUnique({ where: { id: "singleton" }, select: { password: true } });
+  const existing = await db.smtpConfig.findUnique({ where: { tenantId: currentTenantId() }, select: { password: true } });
   // Blank password on save = keep the stored one.
   const encPassword = password ? encrypt(password) : existing?.password ?? "";
   if (!encPassword) return NextResponse.json({ error: "password_required" }, { status: 400 });
 
   const data = { host, port, secure, username, password: encPassword, fromName, fromEmail, enabled };
-  await db.smtpConfig.upsert({ where: { id: "singleton" }, create: { id: "singleton", ...data }, update: data });
+  await db.smtpConfig.upsert({ where: { tenantId: currentTenantId() }, create: { tenantId: currentTenantId(), ...data }, update: data });
   await recordAdminAction({
     actor: { id: admin.id, email: admin.email },
     action: "config.smtp_update",

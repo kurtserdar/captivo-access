@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
-import { verifyAdminChain, ADMIN_CHAIN_ID, type AdminStored } from "@/lib/audit/admin-chain";
+import { verifyAdminChain, type AdminStored } from "@/lib/audit/admin-chain";
+import { chainKey } from "@/lib/audit/chain-key";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export async function GET() {
   // Snapshot the head first, then bound the row query to seq <= head.lastSeq so
   // a concurrent admin append can't cause a false head-mismatch.
   const head = await db.auditChainState.findUnique({
-    where: { id: ADMIN_CHAIN_ID },
+    where: chainKey("admin"),
     select: { lastSeq: true, lastHash: true },
   });
 
