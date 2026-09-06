@@ -1,6 +1,7 @@
 // Captivo Access — Manager database schema.
-// Slice 1: identity + passkey (User, Passkey, TotpSecret, Invite, Session).
-// NOT multi-tenant — single-org self-host.
+// Tenant-aware: every table carries a tenantId (FK → Tenant). Self-host runs as
+// a single implicit "default" tenant (MULTI_TENANT off); cloud is multi-tenant
+// with Postgres RLS enforcing isolation. See docs/strategy Phase 0.
 
 generator client {
   provider = "prisma-client"
@@ -9,6 +10,44 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// A tenant (organization). Self-host uses the single seeded row id="default".
+model Tenant {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  status    String   @default("ACTIVE") // ACTIVE | SUSPENDED
+  createdAt DateTime @default(now())
+
+  users             User[]
+  passkeys          Passkey[]
+  totpSecrets       TotpSecret[]
+  invites           Invite[]
+  sessions          Session[]
+  connectors        Connector[]
+  connectorPairings ConnectorPairing[]
+  sites             Site[]
+  vaultCredentials  VaultCredential[]
+  accessGrants      AccessGrant[]
+  auditEvents       AuditEvent[]
+  auditChainStates  AuditChainState[]
+  auditAnchors      AuditAnchor[]
+  adminAuditAnchors AdminAuditAnchor[]
+  smtpConfigs       SmtpConfig[]
+  brandingConfigs   BrandingConfig[]
+  notifications     Notification[]
+  oidcConfigs       OidcConfig[]
+  directoryConfigs  DirectoryConfig[]
+  groupMappings     GroupMapping[]
+  sessionPolicies   SessionPolicy[]
+  cronRuns          CronRun[]
+  platformSettings  PlatformSettings[]
+  updateCheckConfigs UpdateCheckConfig[]
+  sessionRecordings SessionRecording[]
+  recordingChunks   RecordingChunk[]
+  sessionKeyEvents  SessionKeyEvent[]
+  adminAuditEvents  AdminAuditEvent[]
 }
 
 enum Role {
@@ -26,7 +65,9 @@ enum UserStatus {
 
 model User {
   id             String        @id @default(cuid())
-  email          String        @unique
+  tenantId       String        @default("default")
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email          String
   name           String
   phone          String?
   company        String?
@@ -44,13 +85,18 @@ model User {
 
   directoryManaged        Boolean   @default(false)
   directoryLastVerifiedAt DateTime?
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
 }
 
 model Passkey {
   id           String    @id @default(cuid())
+  tenantId     String    @default("default")
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId       String
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  credentialId String    @unique // base64url
+  credentialId String    // base64url
   publicKey    Bytes // COSE public key (not sensitive — public)
   counter      BigInt    @default(0)
   transports   String[] // usb/nfc/ble/internal/hybrid
@@ -58,45 +104,59 @@ model Passkey {
   createdAt    DateTime  @default(now())
   lastUsedAt   DateTime?
 
+  @@unique([tenantId, credentialId])
   @@index([userId])
+  @@index([tenantId])
 }
 
 model TotpSecret {
   userId      String    @id // 1:1
+  tenantId    String    @default("default")
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   secret      String // AES-256-GCM encrypted (crypto.ts)
   confirmedAt DateTime? // set once enrollment is verified
+
+  @@index([tenantId])
 }
 
 model Invite {
   id          String    @id @default(cuid())
+  tenantId    String    @default("default")
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   email       String
   name        String
   phone       String?
   company     String?
   role        Role
-  tokenHash   String    @unique // argon2(random 32B); plaintext only in the link
+  tokenHash   String    // argon2(random 32B); plaintext only in the link
   expiresAt   DateTime
   usedAt      DateTime?
   createdById String?
   createdBy   User?     @relation("InviteCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())
 
+  @@unique([tenantId, tokenHash])
   @@index([email])
+  @@index([tenantId])
 }
 
 model Session {
   id         String   @id @default(cuid())
+  tenantId   String   @default("default")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash  String   @unique // sha256(opaque random); plaintext token lives in the cookie
+  tokenHash  String   // sha256(opaque random); plaintext token lives in the cookie
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   lastSeenAt DateTime @default(now())
   userAgent  String?
   ip         String?
 
+  @@unique([tenantId, tokenHash])
   @@index([userId])
+  @@index([tenantId])
 }
 
 enum ConnectorStatus {
@@ -114,8 +174,10 @@ enum SiteAccessMode {
 
 model Connector {
   id         String          @id @default(cuid())
+  tenantId   String          @default("default")
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name       String
-  tokenHash  String          @unique
+  tokenHash  String
   status     ConnectorStatus @default(PENDING)
   lastSeenAt DateTime?
   version    String?
@@ -126,10 +188,15 @@ model Connector {
   sites      Site[]
   pairings   ConnectorPairing[]
   directoryConfigs DirectoryConfig[]
+
+  @@unique([tenantId, tokenHash])
+  @@index([tenantId])
 }
 
 model ConnectorPairing {
   id          String     @id @default(cuid())
+  tenantId    String     @default("default")
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   codeHash    String
   name        String
   connectorId String?
@@ -137,14 +204,18 @@ model ConnectorPairing {
   expiresAt   DateTime
   usedAt      DateTime?
   createdAt   DateTime   @default(now())
+
+  @@index([tenantId])
 }
 
 model Site {
   id                 String        @id @default(cuid())
+  tenantId           String        @default("default")
+  tenant             Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   connectorId        String
   connector          Connector     @relation(fields: [connectorId], references: [id], onDelete: Cascade)
   name               String
-  hostname           String?       @unique // null for GATEWAY (remote-desktop) sites; required for web apps
+  hostname           String?       // null for GATEWAY (remote-desktop) sites; required for web apps
   upstreamUrl        String?
   insecureSkipVerify Boolean       @default(false)
   description        String?
@@ -164,6 +235,9 @@ model Site {
   grants             AccessGrant[]
   groupMappings      GroupMapping[]
   vaultCredential    VaultCredential?
+
+  @@unique([tenantId, hostname])
+  @@index([tenantId])
 }
 
 enum VaultProtocol {
@@ -181,7 +255,9 @@ enum VaultSecretKind {
 // injected into the Guacamole session so the vendor never sees the password.
 model VaultCredential {
   id         String          @id @default(cuid())
-  siteId     String          @unique
+  tenantId   String          @default("default")
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  siteId     String          @unique // 1:1 with Site; a site is in one tenant, so globally unique is safe
   site       Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
   protocol   VaultProtocol
   targetHost String
@@ -192,6 +268,8 @@ model VaultCredential {
   guacParams Json? // curated per-resource Guacamole connection params (validated allowlist)
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
+
+  @@index([tenantId])
 }
 
 enum GrantStatus {
@@ -202,6 +280,8 @@ enum GrantStatus {
 
 model AccessGrant {
   id       String      @id @default(cuid())
+  tenantId String      @default("default")
+  tenant   Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId   String
   user     User        @relation("GrantSubject", fields: [userId], references: [id], onDelete: Cascade)
   siteId   String
@@ -226,6 +306,7 @@ model AccessGrant {
   directoryManaged Boolean @default(false)
 
   @@index([userId, siteId])
+  @@index([tenantId])
 }
 
 enum AuditDecision {
@@ -235,6 +316,8 @@ enum AuditDecision {
 
 model AuditEvent {
   id        String        @id @default(cuid())
+  tenantId  String        @default("default")
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   timestamp DateTime      @default(now())
   userId    String?
   userEmail String?
@@ -251,23 +334,28 @@ model AuditEvent {
   reason    String?
   clientIp  String?
   userAgent String?
-  seq       BigInt        @unique
+  seq       BigInt
   prevHash  String        @default("")
   hash      String        @default("")
   createdAt DateTime      @default(now())
 
+  @@unique([tenantId, seq])
   @@index([timestamp])
   @@index([userId, timestamp])
   @@index([siteId, timestamp])
-  @@index([seq])
+  @@index([tenantId])
 }
 
-// Singleton (id = "singleton") holding the tamper-evidence chain head.
+// Per-tenant, per-scope tamper-evidence chain head (scope: "access" | "admin").
 model AuditChainState {
-  id        String   @id
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scope     String   // "access" | "admin"
   lastSeq   BigInt   @default(0)
   lastHash  String   @default("")
   updatedAt DateTime @updatedAt
+
+  @@id([tenantId, scope])
 }
 
 // AuditAnchor stores one RFC 3161 timestamp per successful external anchor of
@@ -276,6 +364,8 @@ model AuditChainState {
 // later full-DB rewrite. Only successful anchors are stored.
 model AuditAnchor {
   id           String   @id @default(cuid())
+  tenantId     String   @default("default")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   anchoredSeq  BigInt
   anchoredHash String
   tsaUrl       String
@@ -285,13 +375,16 @@ model AuditAnchor {
 
   @@index([anchoredSeq])
   @@index([createdAt])
+  @@index([tenantId])
 }
 
 // AdminAuditAnchor mirrors AuditAnchor for the admin-audit chain (head stored in
-// AuditChainState under id = "admin-singleton"). Kept a separate table so the
-// working, externally-notarized access anchor path stays untouched.
+// AuditChainState under scope = "admin"). Kept a separate table so the working,
+// externally-notarized access anchor path stays untouched.
 model AdminAuditAnchor {
   id           String   @id @default(cuid())
+  tenantId     String   @default("default")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   anchoredSeq  BigInt
   anchoredHash String
   tsaUrl       String
@@ -301,11 +394,13 @@ model AdminAuditAnchor {
 
   @@index([anchoredSeq])
   @@index([createdAt])
+  @@index([tenantId])
 }
 
-// Singleton (id = "singleton") holding the outbound SMTP relay configuration.
+// Per-tenant outbound SMTP relay configuration (one row per tenant).
 model SmtpConfig {
-  id        String   @id
+  tenantId  String   @id @default("default")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   host      String
   port      Int
   secure    Boolean  @default(false)
@@ -321,7 +416,8 @@ model SmtpConfig {
 }
 
 model BrandingConfig {
-  id              String   @id
+  tenantId        String   @id @default("default")
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   splashImage     Bytes?
   splashImageType String? // MIME of splashImage
   updatedAt       DateTime @updatedAt
@@ -329,6 +425,8 @@ model BrandingConfig {
 
 model Notification {
   id        String    @id @default(cuid())
+  tenantId  String    @default("default")
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   type      String // "site_down" | "site_recovered"
   siteId    String?
   siteName  String
@@ -338,11 +436,13 @@ model Notification {
 
   @@index([readAt])
   @@index([createdAt])
+  @@index([tenantId])
 }
 
-// Singleton (id = "singleton") holding OIDC SSO configuration.
+// Per-tenant OIDC SSO configuration (one row per tenant).
 model OidcConfig {
-  id           String   @id
+  tenantId     String   @id @default("default")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   enabled      Boolean  @default(false)
   issuer       String
   clientId     String
@@ -355,9 +455,10 @@ model OidcConfig {
   updatedAt    DateTime @updatedAt
 }
 
-// Singleton (id = "singleton") holding GitHub release check configuration.
+// Per-tenant LDAP/AD directory configuration (one row per tenant).
 model DirectoryConfig {
-  id                 String    @id
+  tenantId           String    @id @default("default")
+  tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   enabled            Boolean   @default(false)
   connectorId        String?
   connector          Connector? @relation(fields: [connectorId], references: [id], onDelete: SetNull)
@@ -374,10 +475,14 @@ model DirectoryConfig {
   lastTestDetail     String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+
+  @@index([connectorId])
 }
 
 model GroupMapping {
   id        String   @id @default(cuid())
+  tenantId  String   @default("default")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   groupDN   String   // full DN, e.g. "CN=Captivo-Admins,OU=Groups,DC=corp,DC=local"
   kind      String   // "ROLE" | "SITE"
   role      Role?    // set when kind = "ROLE": ADMIN | OPERATOR | AUDITOR
@@ -388,30 +493,39 @@ model GroupMapping {
   updatedAt DateTime @updatedAt
 
   @@index([groupDN])
+  @@index([tenantId])
 }
 
+// Per-tenant session policy (one row per tenant).
 model SessionPolicy {
-  id                   String   @id
+  tenantId             String   @id @default("default")
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   idleTimeoutMinutes   Int?
   maxSessionHours      Int?
   maxConcurrentPerUser Int?
   updatedAt            DateTime @updatedAt
 }
 
-// PlatformSettings is a singleton (id = "singleton") holding tenant-wide
-// operational settings that were previously env-only. Each field is optional;
-// an unset field falls back to its former env var, then a hard default, so an
-// existing deployment keeps working and the env var becomes optional.
 // CronRun records the last time each external cron endpoint was hit, so the
 // console can warn when a scheduled job (retention / health) isn't actually
-// running — the classic "policy set but nobody scheduled the cron" gap.
+// running — the classic "policy set but nobody scheduled the cron" gap. One row
+// per (tenant, job).
 model CronRun {
-  job   String   @id
-  ranAt DateTime
+  tenantId String   @default("default")
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  job      String
+  ranAt    DateTime
+
+  @@id([tenantId, job])
 }
 
+// Per-tenant operational settings that were previously env-only. Each field is
+// optional; an unset field falls back to its former env var, then a hard
+// default, so an existing deployment keeps working and the env var becomes
+// optional. One row per tenant.
 model PlatformSettings {
-  id                     String   @id
+  tenantId               String   @id @default("default")
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   auditRetentionDays     Int? // was AUDIT_RETENTION_DAYS (default 730)
   inviteTtlHours         Int? // was INVITE_TTL_HOURS (default 48)
   notificationWebhookUrl String? // was NOTIFICATION_WEBHOOK_URL
@@ -436,7 +550,8 @@ model PlatformSettings {
 }
 
 model UpdateCheckConfig {
-  id            String    @id
+  tenantId      String    @id @default("default")
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   enabled       Boolean   @default(true)
   latestVersion String?
   latestUrl     String?
@@ -453,7 +568,9 @@ enum RecordingFormat {
 
 model SessionRecording {
   id           String           @id @default(cuid())
-  recordingKey String           @unique
+  tenantId     String           @default("default")
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  recordingKey String
   siteId       String
   userId       String
   host         String
@@ -466,13 +583,17 @@ model SessionRecording {
   encrypted    Boolean          @default(false)
   chunks       RecordingChunk[]
 
+  @@unique([tenantId, recordingKey])
   @@index([siteId])
   @@index([userId])
   @@index([startedAt])
+  @@index([tenantId])
 }
 
 model RecordingChunk {
   id          String           @id @default(cuid())
+  tenantId    String           @default("default")
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   recordingId String
   seq         Int
   data        Bytes
@@ -480,10 +601,13 @@ model RecordingChunk {
   recording   SessionRecording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
 
   @@index([recordingId, seq])
+  @@index([tenantId])
 }
 
 model SessionKeyEvent {
   id           String   @id @default(cuid())
+  tenantId     String   @default("default")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   recordingKey String   // ties to SessionRecording.recordingKey
   seq          Int
   atMs         Int      // offset from recording start, ms (player seek)
@@ -493,10 +617,13 @@ model SessionKeyEvent {
   createdAt    DateTime @default(now())
 
   @@index([recordingKey, seq])
+  @@index([tenantId])
 }
 
 model AdminAuditEvent {
   id         String   @id @default(cuid())
+  tenantId   String   @default("default")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   timestamp  DateTime @default(now())
   actorId    String?
   actorEmail String?
@@ -507,12 +634,13 @@ model AdminAuditEvent {
   metadata   Json?
   clientIp   String?
   createdAt  DateTime @default(now())
-  seq        BigInt?  @unique
+  seq        BigInt?
   prevHash   String   @default("")
   hash       String   @default("")
 
+  @@unique([tenantId, seq])
   @@index([timestamp])
   @@index([action, timestamp])
   @@index([targetType, targetId])
-  @@index([seq])
+  @@index([tenantId])
 }
