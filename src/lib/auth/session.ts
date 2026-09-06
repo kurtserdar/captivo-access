@@ -45,7 +45,7 @@ export async function createSession(userId: string, meta?: { userAgent?: string;
 
 export async function getSessionUser(token: string) {
   if (!token) return null;
-  const s = await db.session.findUnique({ where: { tokenHash: sha256(token) }, include: { user: true } });
+  const s = await db.session.findFirst({ where: { tokenHash: sha256(token) }, include: { user: true } });
   if (!s || s.expiresAt < new Date()) return null;
   if (s.user.status !== "ACTIVE") return null;
   // Idle timeout: lastSeenAt is the previous request's time, so this measures
@@ -101,6 +101,6 @@ export async function startSession(userId: string, req: NextRequest): Promise<vo
 export async function currentSessionId(): Promise<string | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const s = await db.session.findUnique({ where: { tokenHash: sha256(token) }, select: { id: true } });
+  const s = await db.session.findFirst({ where: { tokenHash: sha256(token) }, select: { id: true } });
   return s?.id ?? null;
 }

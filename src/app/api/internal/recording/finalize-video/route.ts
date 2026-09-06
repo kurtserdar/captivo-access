@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const data = encryptBytes(raw);
 
     await db.$transaction(async (tx) => {
-      const rec = await tx.sessionRecording.findUnique({ where: { recordingKey } });
+      const rec = await tx.sessionRecording.findFirst({ where: { recordingKey } });
       if (!rec) return; // no interim recording to finalize — nothing to do
       if (seq === 0) {
         await tx.recordingChunk.deleteMany({ where: { recordingId: rec.id } });

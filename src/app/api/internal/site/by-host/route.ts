@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const host = typeof body.host === "string" ? body.host : "";
   const site = host
-    ? await db.site.findUnique({
+    ? await db.site.findFirst({
         where: { hostname: host.toLowerCase().trim() },
         select: { id: true, connectorId: true, upstreamUrl: true, insecureSkipVerify: true, recordSessions: true, clipboardMode: true, accessMode: true },
       })

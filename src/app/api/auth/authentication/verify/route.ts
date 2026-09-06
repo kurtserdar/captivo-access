@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "challenge_expired" }, { status: 401 });
   }
 
-  const passkey = await db.passkey.findUnique({ where: { credentialId: response.id }, include: { user: true } });
+  const passkey = await db.passkey.findFirst({ where: { credentialId: response.id }, include: { user: true } });
   if (!passkey || passkey.user.status !== "ACTIVE") {
     return NextResponse.json({ error: "verification_failed" }, { status: 401 });
   }

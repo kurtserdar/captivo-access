@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     return failed();
   }
 
-  const user = await db.user.findUnique({ where: { email }, include: { totp: true } });
+  const user = await db.user.findFirst({ where: { email }, include: { totp: true } });
   if (!user || user.status !== "ACTIVE" || !user.totp || !user.totp.confirmedAt) {
     return failed();
   }

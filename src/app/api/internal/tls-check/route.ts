@@ -17,6 +17,6 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const domain = req.nextUrl.searchParams.get("domain")?.toLowerCase().trim();
   if (!domain) return new NextResponse(null, { status: 403 });
-  const site = await db.site.findUnique({ where: { hostname: domain }, select: { id: true } });
+  const site = await db.site.findFirst({ where: { hostname: domain }, select: { id: true } });
   return new NextResponse(null, { status: site ? 200 : 403 });
 }

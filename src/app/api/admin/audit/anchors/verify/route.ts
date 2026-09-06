@@ -20,7 +20,7 @@ export async function POST() {
 
   const verdicts = [];
   for (const a of anchors) {
-    const event = await db.auditEvent.findUnique({ where: { seq: a.anchoredSeq }, select: { hash: true } });
+    const event = await db.auditEvent.findFirst({ where: { seq: a.anchoredSeq }, select: { hash: true } });
     verdicts.push(
       await verifyOneAnchor(
         {

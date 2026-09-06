@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 import { encryptBytes } from "@/lib/crypto";
 import { contentLengthExceeds } from "@/lib/request-limits";
 import { recordingEnabled } from "@/lib/recording/enabled";
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     await db.$transaction(async (tx) => {
       const rec = await tx.sessionRecording.upsert({
-        where: { recordingKey },
+        where: { tenantId_recordingKey: { tenantId: currentTenantId(), recordingKey } },
         create: {
           recordingKey,
           userId: body.userId ?? "",
