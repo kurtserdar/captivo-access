@@ -55,3 +55,4 @@ jobs:
       # the db module, so it must not share a worker with the other file.
       - run: TEST_DATABASE_URL=$DB_URL npx vitest run src/lib/tenant/rls.integration.test.ts
       - run: TEST_DATABASE_URL=$DB_URL npx vitest run src/lib/tenant/rls.withtenant.integration.test.ts
+      - run: TEST_DATABASE_URL=$DB_URL npx vitest run src/lib/tenant/resolve.integration.test.ts
