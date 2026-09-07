@@ -5,4 +5,4 @@ set -e
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/rls/pre-push.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/rls/transform-0b1.sql
 ./node_modules/.bin/prisma db push --schema=prisma/schema.prisma
-# Phase 0b-2 appends: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/rls/bootstrap.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -v app_password="${APP_DB_PASSWORD:-}" -f prisma/rls/bootstrap.sql
