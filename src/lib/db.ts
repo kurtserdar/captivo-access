@@ -1,7 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 import { multiTenantEnabled } from "@/lib/tenant/enabled";
-import { fillTenant } from "@/lib/tenant/context";
+import { fillTenant, whereTenant } from "@/lib/tenant/context";
 
 // Prisma 7: schema.prisma no longer carries a datasource url — the client's
 // runtime connection is set up via a driver adapter (see prisma.config.ts comment).
@@ -27,6 +27,18 @@ function withTenantInjection(base: PrismaClient): PrismaClient {
           args.create = fillTenant(args.create);
           return query(args);
         },
+        // Read/mutate operations that take a filterable `where` are tenant-scoped
+        // at the ORM layer. (findUnique/update/delete by a unique key are not
+        // filterable here; the DB RLS policies close that gap once activated in
+        // Phase 2 — cuids are unguessable so the near-term gap is narrow.)
+        findMany({ args, query }) { return query(whereTenant(args)); },
+        findFirst({ args, query }) { return query(whereTenant(args)); },
+        findFirstOrThrow({ args, query }) { return query(whereTenant(args)); },
+        count({ args, query }) { return query(whereTenant(args)); },
+        aggregate({ args, query }) { return query(whereTenant(args)); },
+        groupBy({ args, query }) { return query(whereTenant(args)); },
+        updateMany({ args, query }) { return query(whereTenant(args)); },
+        deleteMany({ args, query }) { return query(whereTenant(args)); },
       },
     },
   }) as unknown as PrismaClient;

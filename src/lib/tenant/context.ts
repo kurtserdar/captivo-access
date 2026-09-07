@@ -29,3 +29,15 @@ export function fillTenant<T>(row: T): T {
   }
   return row;
 }
+
+// Adds tenantId to a Prisma `where` filter when the caller didn't set one. Used
+// by the db extension (Phase 0b-2) to tenant-scope list/filter operations
+// (findMany, findFirst, count, aggregate, groupBy, updateMany, deleteMany) at
+// the ORM layer. An explicit tenantId is left untouched.
+export function whereTenant<A extends { where?: Record<string, unknown> }>(args: A): A {
+  const where = (args?.where ?? {}) as Record<string, unknown>;
+  if (!("tenantId" in where)) {
+    return { ...args, where: { ...where, tenantId: currentTenantId() } } as A;
+  }
+  return args;
+}

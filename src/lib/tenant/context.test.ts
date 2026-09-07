@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { withTenant, currentTenantId, fillTenant } from "./context";
+import { withTenant, currentTenantId, fillTenant, whereTenant } from "./context";
 
 describe("tenant context", () => {
   it("defaults to the default tenant outside any scope", () => {
@@ -27,6 +27,17 @@ describe("tenant context", () => {
   it("fillTenant passes non-objects through", () => {
     withTenant("acme", () => {
       expect(fillTenant(undefined)).toBe(undefined);
+    });
+  });
+  it("whereTenant adds tenantId to an empty/absent where", () => {
+    withTenant("acme", () => {
+      expect(whereTenant({})).toEqual({ where: { tenantId: "acme" } });
+      expect(whereTenant({ where: { name: "x" } })).toEqual({ where: { name: "x", tenantId: "acme" } });
+    });
+  });
+  it("whereTenant leaves an explicit tenantId untouched", () => {
+    withTenant("acme", () => {
+      expect(whereTenant({ where: { tenantId: "other" } })).toEqual({ where: { tenantId: "other" } });
     });
   });
 });
