@@ -30,6 +30,22 @@ export function validateCreateInput(input: { name: string; slug: string; adminEm
   if (!EMAIL_RE.test(input.adminEmail.trim())) throw new PlatformError("invalid_email");
 }
 
+// Confirmed empirically against Prisma 7.9 + the pg driver adapter: a Postgres
+// unique-violation (SQLSTATE 23505) raised inside a raw query surfaces as a
+// PrismaClientKnownRequestError with code "P2010" (generic "raw query failed"),
+// and the actual SQLSTATE is nested at meta.driverAdapterError.cause.originalCode
+// (meta.code is NOT the SQLSTATE on this client — don't rely on it). Any other
+// error (connection failure, pool exhaustion, permission/grant regression,
+// etc.) must propagate unchanged so it isn't misreported as "slug taken".
+function isUniqueViolation(e: unknown): boolean {
+  if (!(e instanceof Error)) return false;
+  const err = e as {
+    code?: string;
+    meta?: { driverAdapterError?: { cause?: { originalCode?: string; kind?: string } } };
+  };
+  return err.code === "P2010" && err.meta?.driverAdapterError?.cause?.originalCode === "23505";
+}
+
 export async function listTenants(): Promise<PlatformTenant[]> {
   const rows = await base.$queryRawUnsafe<
     { id: string; slug: string; name: string; status: string; createdAt: Date; adminCount: bigint }[]
@@ -53,8 +69,11 @@ export async function createTenant(input: { name: string; slug: string; adminEma
   try {
     await base.$queryRawUnsafe(`SELECT platform_create_tenant($1, $2, $3)`, id, slug, name);
   } catch (e) {
-    // Unique-violation on slug/id → a friendly conflict.
-    throw new PlatformError("slug_taken", (e as Error).message);
+    // A genuine unique-violation on slug/id → a friendly conflict. Everything
+    // else (DB outage, pool exhaustion, a grant regression, ...) propagates
+    // unchanged — it must never be masked as "slug taken".
+    if (isUniqueViolation(e)) throw new PlatformError("slug_taken", (e as Error).message);
+    throw e;
   }
 
   // 2. Provision the first admin: an invite IN THE NEW TENANT, via the existing

@@ -89,4 +89,26 @@ d("createTenant provisions a tenant + invite (app role, flag on)", () => {
     await setTenantStatus(tenant.id, "SUSPENDED");
     expect(await resolveTenantBySlug(slug)).toBeNull(); // ACTIVE filter → suspended slug stops resolving
   });
+
+  it("rejects a duplicate slug with PlatformError(slug_taken), not a masked DB error", async () => {
+    process.env.MULTI_TENANT = "on";
+    process.env.APP_DATABASE_URL = appUrlFrom(process.env.TEST_DATABASE_URL!);
+    vi.resetModules();
+    delete (globalThis as Record<string, unknown>).prismaBase;
+
+    const { createTenant, PlatformError } = await import("@/lib/platform/tenants");
+
+    const slug = `dup-${crypto.randomUUID().slice(0, 8)}`;
+    const first = await createTenant({ name: "First Co", slug, adminEmail: "admin@first.co" });
+    createdIds.push(first.tenant.id);
+
+    let caught: unknown;
+    try {
+      await createTenant({ name: "Second Co", slug, adminEmail: "admin@second.co" });
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(PlatformError);
+    expect((caught as InstanceType<typeof PlatformError>).code).toBe("slug_taken");
+  });
 });
