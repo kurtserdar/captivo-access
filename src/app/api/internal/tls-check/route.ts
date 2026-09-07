@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { resolveTenantByHostname, withTenantFrom } from "@/lib/tenant/internal";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +15,16 @@ export const dynamic = "force-dynamic";
  * hostname is a configured Site (an attacker learns the same by connecting),
  * so it carries no body and no other data.
  */
-export async function GET(req: NextRequest) {
+async function tenantFromReq(req: NextRequest): Promise<string | null> {
+  const domain = req.nextUrl.searchParams.get("domain")?.toLowerCase().trim();
+  return domain ? resolveTenantByHostname(domain) : null;
+}
+
+async function handler(req: NextRequest) {
   const domain = req.nextUrl.searchParams.get("domain")?.toLowerCase().trim();
   if (!domain) return new NextResponse(null, { status: 403 });
   const site = await db.site.findFirst({ where: { hostname: domain }, select: { id: true } });
   return new NextResponse(null, { status: site ? 200 : 403 });
 }
+
+export const GET = withTenantFrom(tenantFromReq)(handler);

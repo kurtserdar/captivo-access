@@ -19,6 +19,8 @@ export const resolveTenantBySite = (id: string) => callResolver("resolve_tenant_
 export const resolveTenantBySessionToken = (h: string) => callResolver("resolve_tenant_by_session_token", h);
 export const resolveTenantByRecordingKey = (k: string) => callResolver("resolve_tenant_by_recording_key", k);
 export const resolveTenantByConnector = (id: string) => callResolver("resolve_tenant_by_connector", id);
+// Hostnames are stored/matched lowercased+trimmed (mirrors resolveTenantByHostname in resolve.ts).
+export const resolveTenantByHostname = (host: string) => callResolver("resolve_tenant_by_hostname", host.toLowerCase().trim());
 
 // Enumerates ACTIVE tenants (excluding the reserved 'platform' tenant) via the
 // SECURITY DEFINER function, for cron/fan-out contexts with no request tenant.

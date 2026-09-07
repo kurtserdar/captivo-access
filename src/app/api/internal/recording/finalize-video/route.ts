@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { encryptBytes } from "@/lib/crypto";
 import { contentLengthExceeds } from "@/lib/request-limits";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { resolveTenantByRecordingKey, withTenantFrom } from "@/lib/tenant/internal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,11 +20,16 @@ interface FinalizeBody {
   data?: string; // base64 seekable WebM bytes
 }
 
+async function tenantFromReq(req: NextRequest): Promise<string | null> {
+  const body = (await req.clone().json().catch(() => ({}))) as FinalizeBody;
+  return resolveTenantByRecordingKey(body.recordingKey ?? "");
+}
+
 // Replaces an isolated recording's interim (live) chunks with the finalized, seekable
 // file streamed at clean session end. On the first chunk (seq 0) the old chunks are
 // dropped; later chunks append. The live relay has already drained before this is
 // called, so no interim chunk can race in.
-export async function POST(req: NextRequest) {
+async function handler(req: NextRequest) {
   if (!dataplaneAuthorized(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!recordingEnabled()) return NextResponse.json({ error: "not found" }, { status: 403 });
   if (contentLengthExceeds(req, 16 << 20)) return new NextResponse(null, { status: 413 });
@@ -65,3 +71,5 @@ export async function POST(req: NextRequest) {
     return new NextResponse(null, { status: 500 });
   }
 }
+
+export const POST = withTenantFrom(tenantFromReq)(handler);

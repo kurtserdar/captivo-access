@@ -8,6 +8,7 @@ import { effectiveKeystrokeLogging } from "@/lib/keystroke/policy";
 import { parseGuacParams, resolveGuacParams, toGuacArgs } from "@/lib/gateway/guac-params";
 import { isolationEnabled } from "@/lib/isolation/enabled";
 import { db } from "@/lib/db";
+import { resolveTenantBySite, withTenantFrom } from "@/lib/tenant/internal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,11 +18,16 @@ function dpAuthorized(req: NextRequest): boolean {
   return !!s && timingSafeEqualStr(req.headers.get("x-dataplane-secret"), s);
 }
 
+async function tenantFromReq(req: NextRequest): Promise<string | null> {
+  const body = (await req.clone().json().catch(() => ({}))) as Record<string, unknown>;
+  return resolveTenantBySite(typeof body.siteId === "string" ? body.siteId : "");
+}
+
 // The data-plane guac-tunnel calls this per session: it authorizes (grant) and
 // returns the decrypted connection descriptor to inject into the guacd handshake.
 // The plaintext secret leaves the manager only over this DATAPLANE_SECRET-gated,
 // internal-only channel.
-export async function POST(req: NextRequest) {
+async function handler(req: NextRequest) {
   if (!dpAuthorized(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const userId = typeof b.userId === "string" ? b.userId : "";
@@ -88,3 +94,5 @@ export async function POST(req: NextRequest) {
     }),
   });
 }
+
+export const POST = withTenantFrom(tenantFromReq)(handler);
