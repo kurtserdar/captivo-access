@@ -30,12 +30,6 @@ export function currentTx(): unknown | null {
   return als.getStore()?.tx ?? null;
 }
 
-// Back-compat convenience for pure ALS scoping (no transaction). Production
-// multi-tenant callers use withTenant from scope.ts instead.
-export function withTenant<T>(tenantId: string, fn: () => T): T {
-  return withScope({ tenantId }, fn);
-}
-
 // Returns `row` with tenantId set to the active tenant when it has none. Used by
 // the db extension (Task 4) to stamp create/upsert payloads. Leaves an explicit
 // tenantId untouched (so cross-tenant writes stay expressible and are caught by
