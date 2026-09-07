@@ -57,6 +57,7 @@ enum Role {
   AUDITOR
   STAFF
   VENDOR
+  PLATFORM
 }
 
 enum UserStatus {

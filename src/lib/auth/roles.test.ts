@@ -37,3 +37,26 @@ describe("assignable roles + labels", () => {
     for (const r of ASSIGNABLE_ROLES) expect(ROLE_LABELS[r]).toBeTruthy();
   });
 });
+
+describe("PLATFORM role", () => {
+  it("holds manage_tenants", () => {
+    expect(can("PLATFORM", "manage_tenants")).toBe(true);
+  });
+  it("is not a console user", () => {
+    expect(isConsoleUser("PLATFORM")).toBe(false);
+  });
+  it("does not hold tenant-console capabilities", () => {
+    expect(can("PLATFORM", "configure")).toBe(false);
+    expect(can("PLATFORM", "read_console")).toBe(false);
+    expect(can("PLATFORM", "approve_grants")).toBe(false);
+  });
+  it("is not invite-assignable", () => {
+    expect(ASSIGNABLE_ROLES).not.toContain("PLATFORM");
+  });
+  it("keeps existing console roles unchanged", () => {
+    expect(isConsoleUser("ADMIN")).toBe(true);
+    expect(isConsoleUser("AUDITOR")).toBe(true);
+    expect(isConsoleUser("STAFF")).toBe(false);
+    expect(can("ADMIN", "manage_tenants")).toBe(false);
+  });
+});
