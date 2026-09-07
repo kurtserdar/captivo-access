@@ -5,6 +5,7 @@ import { currentTenantId } from "@/lib/tenant/context";
 import { encryptBytes } from "@/lib/crypto";
 import { contentLengthExceeds } from "@/lib/request-limits";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { requireDataplaneSecret, resolveTenantBySite, withTenantFrom } from "@/lib/tenant/internal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,7 +24,12 @@ interface IngestVideoBody {
   data?: string; // base64 raw WebM bytes
 }
 
-export async function POST(req: NextRequest) {
+async function tenantFromReq(req: NextRequest): Promise<string | null> {
+  const body = (await req.clone().json().catch(() => ({}))) as IngestVideoBody;
+  return resolveTenantBySite(body.siteId ?? "");
+}
+
+async function handler(req: NextRequest) {
   if (!dataplaneAuthorized(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!recordingEnabled()) return NextResponse.json({ error: "not found" }, { status: 403 });
   if (contentLengthExceeds(req, 16 << 20)) return new NextResponse(null, { status: 413 });
@@ -72,3 +78,5 @@ export async function POST(req: NextRequest) {
     return new NextResponse(null, { status: 500 });
   }
 }
+
+export const POST = requireDataplaneSecret(withTenantFrom(tenantFromReq)(handler));

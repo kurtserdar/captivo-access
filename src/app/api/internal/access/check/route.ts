@@ -3,6 +3,7 @@ import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { resolvedVendorIpAllowlist } from "@/lib/settings/platform";
 import { ipAllowed } from "@/lib/net/cidr";
+import { requireDataplaneSecret, resolveTenantBySite, withTenantFrom } from "@/lib/tenant/internal";
 
 export const runtime = "nodejs"; // ipAllowed uses node:net
 
@@ -11,7 +12,12 @@ function dataplaneAuthorized(req: NextRequest): boolean {
   return !!s && timingSafeEqualStr(req.headers.get("x-dataplane-secret"), s);
 }
 
-export async function POST(req: NextRequest) {
+async function tenantFromReq(req: NextRequest): Promise<string | null> {
+  const body = (await req.clone().json().catch(() => ({}))) as Record<string, unknown>;
+  return resolveTenantBySite(typeof body.siteId === "string" ? body.siteId : "");
+}
+
+async function handler(req: NextRequest) {
   if (!dataplaneAuthorized(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const userId = typeof body.userId === "string" ? body.userId : "";
@@ -31,3 +37,5 @@ export async function POST(req: NextRequest) {
   const d = await evaluateAccess(userId, siteId, new Date());
   return NextResponse.json({ allow: d.allow, reason: d.reason });
 }
+
+export const POST = requireDataplaneSecret(withTenantFrom(tenantFromReq)(handler));

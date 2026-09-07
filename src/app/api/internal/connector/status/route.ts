@@ -2,13 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { db } from "@/lib/db";
 import { resolvedConnectorLogLevel } from "@/lib/settings/platform";
+import { requireDataplaneSecret, resolveTenantByConnector, withTenantFrom } from "@/lib/tenant/internal";
 
 function dataplaneAuthorized(req: NextRequest): boolean {
   const s = process.env.DATAPLANE_SECRET;
   return !!s && timingSafeEqualStr(req.headers.get("x-dataplane-secret"), s);
 }
 
-export async function POST(req: NextRequest) {
+async function tenantFromReq(req: NextRequest): Promise<string | null> {
+  const body = (await req.clone().json().catch(() => ({}))) as Record<string, unknown>;
+  return resolveTenantByConnector(typeof body.connectorId === "string" ? body.connectorId : "");
+}
+
+async function handler(req: NextRequest) {
   if (!dataplaneAuthorized(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const connectorId = typeof body.connectorId === "string" ? body.connectorId : "";
@@ -34,3 +40,5 @@ export async function POST(req: NextRequest) {
     logLevel: await resolvedConnectorLogLevel(c?.logLevel ?? null),
   });
 }
+
+export const POST = requireDataplaneSecret(withTenantFrom(tenantFromReq)(handler));

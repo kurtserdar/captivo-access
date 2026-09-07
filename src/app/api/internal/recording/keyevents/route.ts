@@ -4,6 +4,7 @@ import { contentLengthExceeds } from "@/lib/request-limits";
 import { db } from "@/lib/db";
 import { encryptBytes } from "@/lib/crypto";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { requireDataplaneSecret, resolveTenantByRecordingKey, withTenantFrom } from "@/lib/tenant/internal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,12 @@ interface KeyEventsBody {
   events?: { atMs: number; kind: string; text: string; masked: boolean }[];
 }
 
-export async function POST(req: NextRequest) {
+async function tenantFromReq(req: NextRequest): Promise<string | null> {
+  const body = (await req.clone().json().catch(() => ({}))) as KeyEventsBody;
+  return resolveTenantByRecordingKey(body.recordingKey ?? "");
+}
+
+async function handler(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!recordingEnabled()) return new NextResponse(null, { status: 403 });
   if (contentLengthExceeds(req, 1 << 20)) return new NextResponse(null, { status: 413 });
@@ -41,3 +47,5 @@ export async function POST(req: NextRequest) {
   });
   return new NextResponse(null, { status: 204 });
 }
+
+export const POST = requireDataplaneSecret(withTenantFrom(tenantFromReq)(handler));
