@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { listUserGrants } from "@/lib/access/grants";
 import { classifyGrant } from "@/lib/access/evaluate";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 
 // The signed-in user's currently-active grants, for the login "access-ready" step.
-export async function GET() {
+// Wrapped so its DB work runs under the request's tenant scope in cloud
+// (pass-through on self-host). First proof site for withTenantRoute.
+export const GET = withTenantRoute(async () => {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
@@ -24,4 +27,4 @@ export async function GET() {
     }));
 
   return NextResponse.json({ grants });
-}
+});
