@@ -29,7 +29,7 @@ async function handler(req: NextRequest) {
   // resolution.
   if (!multiTenantEnabled()) {
     const inserted = await appendAuditEvents(events);
-    return NextResponse.json({ inserted, dropped: 0 });
+    return NextResponse.json({ inserted });
   }
 
   const groups = new Map<string, AuditInput[]>();

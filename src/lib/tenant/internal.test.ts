@@ -55,20 +55,20 @@ describe("requireDataplaneSecret", () => {
     return new Request("http://x", { method: "POST", headers });
   }
 
-  it("401s and never calls the handler when the secret header is missing", async () => {
+  it("403s and never calls the handler when the secret header is missing", async () => {
     const handler = vi.fn(async (_req: Request) => new Response("should not run"));
     const wrapped = requireDataplaneSecret(handler);
     const res = await wrapped(req() as never);
-    expect(res.status).toBe(401);
-    expect(await res.json()).toEqual({ error: "unauthorized" });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "forbidden" });
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it("401s and never calls the handler when the secret header is wrong", async () => {
+  it("403s and never calls the handler when the secret header is wrong", async () => {
     const handler = vi.fn(async (_req: Request) => new Response("should not run"));
     const wrapped = requireDataplaneSecret(handler);
     const res = await wrapped(req("wrong-secret") as never);
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
     expect(handler).not.toHaveBeenCalled();
   });
 
@@ -88,7 +88,7 @@ describe("requireDataplaneSecret", () => {
 
     const res = await composed(req("wrong-secret") as never);
 
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
     expect(resolve).not.toHaveBeenCalled();
     expect(handler).not.toHaveBeenCalled();
   });

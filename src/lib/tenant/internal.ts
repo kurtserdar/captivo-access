@@ -49,9 +49,10 @@ export function withTenantFrom<A extends unknown[]>(resolve: (...a: A) => Promis
 
 // Shared DATAPLANE_SECRET gate for the payload-keyed data-plane internal/*
 // endpoints — the SAME check every handler already ran inline (constant-time
-// compare of `x-dataplane-secret` against DATAPLANE_SECRET), centralized so it
-// can be composed OUTSIDE withTenantFrom and be the outermost gate. Always
-// applies, independent of MULTI_TENANT (self-host must keep this check too).
+// compare of `x-dataplane-secret` against DATAPLANE_SECRET, 403 forbidden on
+// failure), centralized so it can be composed OUTSIDE withTenantFrom and be
+// the outermost gate. Always applies, independent of MULTI_TENANT (self-host
+// must keep this check too, with the exact same response shape as before).
 //
 // Ordering matters: withTenantFrom's resolvers are SECURITY DEFINER (RLS
 // -bypass) and, unguarded, would run before any auth check — a valid payload
@@ -65,7 +66,7 @@ export function requireDataplaneSecret<A extends unknown[]>(handler: (...a: A) =
     const req = a[0] as unknown as NextRequest;
     const s = process.env.DATAPLANE_SECRET;
     if (!s || !timingSafeEqualStr(req.headers.get("x-dataplane-secret"), s)) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
     return handler(...a);
   };

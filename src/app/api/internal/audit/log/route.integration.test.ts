@@ -8,7 +8,7 @@
 //   - tenant A's AuditEvent rows contain only tenant A's events,
 //   - tenant B's AuditEvent rows contain only tenant B's events,
 //   - the unresolvable event is dropped (not inserted anywhere) and counted,
-//   - an unauthenticated POST is 401 and appends nothing at all.
+//   - an unauthenticated POST is 403 and appends nothing at all.
 // Requires a live Postgres via TEST_DATABASE_URL (owner connection, schema
 // pushed, bootstrap.sql applied, `app` role present); SKIPPED otherwise. MUST
 // run in its own vitest process (mutates process-wide env + the db module
@@ -118,10 +118,10 @@ describe.skipIf(!OWNER_URL)("internal/audit/log groups a batch by per-event tena
     expect(total[0].count).toBe(BigInt(0));
   });
 
-  it("an unauthenticated POST is 401 and never resolves or appends anything", async () => {
+  it("an unauthenticated POST is 403 and never resolves or appends anything", async () => {
     const res = await POST(logReq([{ siteId: siteA, path: "/should-not-land" }], { "x-dataplane-secret": "wrong" }));
-    expect(res.status).toBe(401);
-    expect(await res.json()).toEqual({ error: "unauthorized" });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "forbidden" });
 
     const rows = await owner.$queryRawUnsafe<{ count: bigint }[]>(
       `SELECT count(*)::bigint AS count FROM "AuditEvent" WHERE path = '/should-not-land'`,
