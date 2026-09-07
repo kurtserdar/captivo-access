@@ -25,30 +25,10 @@ export function currentTenantId(): string {
 }
 
 // The ambient request transaction, or null when none is set (self-host / outside
-// a withTenant scope). db.ts routes queries onto it when present.
+// a withTenant scope). db.ts routes queries onto it when present. Tenant
+// enforcement is entirely in the database (RLS reads + an insert trigger for
+// writes, both GUC-driven), so no ALS-based query filtering is needed — that was
+// tried and proved flaky inside Prisma's interactive-transaction query pipeline.
 export function currentTx(): unknown | null {
   return als.getStore()?.tx ?? null;
-}
-
-// Returns `row` with tenantId set to the active tenant when it has none. Used by
-// the db extension (Task 4) to stamp create/upsert payloads. Leaves an explicit
-// tenantId untouched (so cross-tenant writes stay expressible and are caught by
-// RLS in Phase 0b). Non-objects pass through unchanged.
-export function fillTenant<T>(row: T): T {
-  if (row && typeof row === "object" && !("tenantId" in (row as Record<string, unknown>))) {
-    return { ...(row as Record<string, unknown>), tenantId: currentTenantId() } as T;
-  }
-  return row;
-}
-
-// Adds tenantId to a Prisma `where` filter when the caller didn't set one. Used
-// by the db extension (Phase 0b-2) to tenant-scope list/filter operations
-// (findMany, findFirst, count, aggregate, groupBy, updateMany, deleteMany) at
-// the ORM layer. An explicit tenantId is left untouched.
-export function whereTenant<A extends { where?: Record<string, unknown> }>(args: A): A {
-  const where = (args?.where ?? {}) as Record<string, unknown>;
-  if (!("tenantId" in where)) {
-    return { ...args, where: { ...where, tenantId: currentTenantId() } } as A;
-  }
-  return args;
 }

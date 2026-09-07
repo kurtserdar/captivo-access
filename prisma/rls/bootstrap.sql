@@ -41,3 +41,34 @@ BEGIN
   EXECUTE 'DROP POLICY IF EXISTS tenant_isolation ON "Tenant"';
   EXECUTE 'CREATE POLICY tenant_isolation ON "Tenant" USING ("id" = current_setting(''app.current_tenant'', true)) WITH CHECK ("id" = current_setting(''app.current_tenant'', true))';
 END $$;
+
+-- 4. Write-side stamping. Prisma's @default("default") sends tenantId="default"
+-- explicitly on INSERT, bypassing any column default. This BEFORE INSERT trigger
+-- replaces that sentinel with the request's tenant GUC (deterministic,
+-- connection-bound — no dependency on app-level ALS). Self-host: GUC unset ⇒
+-- no-op, tenantId stays "default". An explicit non-default tenantId is left
+-- alone and validated by the RLS WITH CHECK.
+CREATE OR REPLACE FUNCTION set_tenant_from_guc() RETURNS trigger AS $$
+BEGIN
+  IF current_setting('app.current_tenant', true) IS NOT NULL
+     AND current_setting('app.current_tenant', true) <> ''
+     AND NEW."tenantId" = 'default' THEN
+    NEW."tenantId" := current_setting('app.current_tenant', true);
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'User','Passkey','TotpSecret','Invite','Session','Connector','ConnectorPairing',
+    'Site','VaultCredential','AccessGrant','AuditEvent','AuditChainState','AuditAnchor',
+    'AdminAuditAnchor','SmtpConfig','BrandingConfig','Notification','OidcConfig',
+    'DirectoryConfig','GroupMapping','SessionPolicy','CronRun','PlatformSettings',
+    'UpdateCheckConfig','SessionRecording','RecordingChunk','SessionKeyEvent','AdminAuditEvent'
+  ] LOOP
+    EXECUTE format('DROP TRIGGER IF EXISTS trg_tenant_from_guc ON %I', t);
+    EXECUTE format('CREATE TRIGGER trg_tenant_from_guc BEFORE INSERT ON %I FOR EACH ROW EXECUTE FUNCTION set_tenant_from_guc()', t);
+  END LOOP;
+END $$;

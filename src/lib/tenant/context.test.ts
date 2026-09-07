@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { currentTenantId, fillTenant, whereTenant, withScope, currentTx } from "./context";
+import { currentTenantId, withScope, currentTx } from "./context";
 
 describe("tenant context", () => {
   it("defaults to the default tenant outside any scope", () => {
@@ -23,32 +23,6 @@ describe("tenant context", () => {
     withScope({ tenantId: "a" }, () => {
       withScope({ tenantId: "b" }, () => expect(currentTenantId()).toBe("b"));
       expect(currentTenantId()).toBe("a");
-    });
-  });
-  it("fillTenant adds tenantId to a row when absent", () => {
-    withScope({ tenantId: "acme" }, () => {
-      expect(fillTenant({ name: "x" })).toEqual({ name: "x", tenantId: "acme" });
-    });
-  });
-  it("fillTenant leaves an explicit tenantId untouched", () => {
-    withScope({ tenantId: "acme" }, () => {
-      expect(fillTenant({ name: "x", tenantId: "other" })).toEqual({ name: "x", tenantId: "other" });
-    });
-  });
-  it("fillTenant passes non-objects through", () => {
-    withScope({ tenantId: "acme" }, () => {
-      expect(fillTenant(undefined)).toBe(undefined);
-    });
-  });
-  it("whereTenant adds tenantId to an empty/absent where", () => {
-    withScope({ tenantId: "acme" }, () => {
-      expect(whereTenant({})).toEqual({ where: { tenantId: "acme" } });
-      expect(whereTenant({ where: { name: "x" } })).toEqual({ where: { name: "x", tenantId: "acme" } });
-    });
-  });
-  it("whereTenant leaves an explicit tenantId untouched", () => {
-    withScope({ tenantId: "acme" }, () => {
-      expect(whereTenant({ where: { tenantId: "other" } })).toEqual({ where: { tenantId: "other" } });
     });
   });
 });
