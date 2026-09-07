@@ -39,7 +39,7 @@ export function PortalMobileNav({ isAdmin, initials }: { isAdmin: boolean; initi
                 </Link>
               );
             })}
-            {isAdmin && <a href="/" role="menuitem" className="vp-mlink vp-mlink-admin">Console →</a>}
+            {isAdmin && <Link href="/" role="menuitem" className="vp-mlink vp-mlink-admin">Console →</Link>}
             <div className="vp-mdiv" />
             <div className="vp-mrow"><span className="vp-mrow-label">Theme</span><ThemeSwitcher /></div>
             <div className="vp-mrow"><LogoutButton /></div>

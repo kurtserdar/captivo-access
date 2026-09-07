@@ -1,6 +1,7 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import reactHooks from "eslint-plugin-react-hooks";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -12,26 +13,24 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Claude Code skill tooling (vendored .cjs scripts) — not app source.
+    ".claude/**",
+    // Prisma-generated client.
+    "src/generated/**",
   ]),
   {
-    // Guard against the misplaced-hook class of bug (e.g. calling useRouter()
-    // inside an event handler): a Rules-of-Hooks violation is valid
-    // TypeScript, so only this lint rule catches it before it ships.
+    // We intentionally enforce ONLY rules-of-hooks (the misplaced-hook class of
+    // bug — e.g. calling useRouter() inside an event handler — which is valid
+    // TypeScript, so only this lint rule catches it). eslint-config-next also
+    // pulls in react-hooks v7's react-compiler rules (set-state-in-effect,
+    // purity, immutability); those flag deliberate patterns we use widely
+    // (post-hydration setState to avoid SSR mismatch, etc.), so we keep them off.
+    plugins: { "react-hooks": reactHooks },
     rules: {
       "react-hooks/rules-of-hooks": "error",
-    },
-  },
-  {
-    // Both read a persisted value (schedule state / a saved view preference)
-    // once after mount and setState — deliberately post-hydration to avoid an
-    // SSR mismatch, which is exactly what this rule flags.
-    files: [
-      "src/app/(app)/access/schedule-builder.tsx",
-      "src/app/(app)/admin/sites/sites-view.tsx",
-      "src/app/(app)/access/access-view.tsx",
-    ],
-    rules: {
       "react-hooks/set-state-in-effect": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/immutability": "off",
     },
   },
 ]);

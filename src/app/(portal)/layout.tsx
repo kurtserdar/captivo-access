@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
 import { isConsoleUser } from "@/lib/auth/roles";
 import { resolvedDisplayTimezone } from "@/lib/settings/timezone";
@@ -26,7 +27,7 @@ export default async function PortalLayout({ children }: { children: React.React
         </div>
         <nav className="vp-navlinks">
           <PortalNav />
-          {isConsoleUser(user.role) && <a href="/" className="vp-navlink vp-navlink-admin">Console →</a>}
+          {isConsoleUser(user.role) && <Link href="/" className="vp-navlink vp-navlink-admin">Console →</Link>}
         </nav>
         <span className="vp-sep" aria-hidden="true">|</span>
         <div className="vp-navright">
