@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { currentTenantId } from "@/lib/tenant/context";
 import { listActiveSessions } from "@/lib/dataplane/client";
 
 export interface TrendDay { date: string; allow: number; deny: number }
@@ -110,6 +111,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export async function getInsights(now = new Date()): Promise<Insights> {
   const since = new Date(now.getTime() - 30 * DAY_MS);
+  const tenant = currentTenantId();
   const in7d = new Date(now.getTime() + 7 * DAY_MS);
   const expiringWhere = { status: "ACTIVE" as const, endsAt: { gte: now, lte: in7d } };
 
@@ -121,46 +123,46 @@ export async function getInsights(now = new Date()): Promise<Insights> {
     db.$queryRaw<{ day: string; decision: string; n: bigint }[]>`
       SELECT to_char("timestamp", 'YYYY-MM-DD') AS day, "decision"::text AS decision, COUNT(DISTINCT "userId") AS n
       FROM "AuditEvent"
-      WHERE "timestamp" >= ${since} AND "userId" IS NOT NULL
+      WHERE "tenantId" = ${tenant} AND "timestamp" >= ${since} AND "userId" IS NOT NULL
       GROUP BY day, "decision"`,
     db.$queryRaw<{ n: bigint }[]>`
       SELECT COUNT(DISTINCT "userId") AS n FROM "AuditEvent"
-      WHERE "timestamp" >= ${since} AND "decision" = 'ALLOW' AND "userId" IS NOT NULL`,
+      WHERE "tenantId" = ${tenant} AND "timestamp" >= ${since} AND "decision" = 'ALLOW' AND "userId" IS NOT NULL`,
     db.$queryRaw<{ id: string; label: string | null; n: bigint }[]>`
       SELECT "siteId" AS id, MAX("siteName") AS label, COUNT(DISTINCT to_char("timestamp", 'YYYY-MM-DD')) AS n
       FROM "AuditEvent"
-      WHERE "timestamp" >= ${since} AND "decision" = 'ALLOW' AND "siteId" IS NOT NULL
+      WHERE "tenantId" = ${tenant} AND "timestamp" >= ${since} AND "decision" = 'ALLOW' AND "siteId" IS NOT NULL
       GROUP BY "siteId" ORDER BY n DESC LIMIT 5`,
     db.$queryRaw<{ id: string; label: string | null; n: bigint }[]>`
       SELECT "userId" AS id, MAX("userEmail") AS label, COUNT(DISTINCT to_char("timestamp", 'YYYY-MM-DD')) AS n
       FROM "AuditEvent"
-      WHERE "timestamp" >= ${since} AND "decision" = 'ALLOW' AND "userId" IS NOT NULL
+      WHERE "tenantId" = ${tenant} AND "timestamp" >= ${since} AND "decision" = 'ALLOW' AND "userId" IS NOT NULL
       GROUP BY "userId" ORDER BY n DESC LIMIT 5`,
     db.$queryRaw<{ accessMode: string; n: bigint }[]>`
       SELECT s."accessMode"::text AS "accessMode", COUNT(DISTINCT ("a"."userId", "a"."siteId")) AS n
       FROM "AuditEvent" a JOIN "Site" s ON s."id" = "a"."siteId"
-      WHERE "a"."timestamp" >= ${since} AND "a"."decision" = 'ALLOW' AND "a"."userId" IS NOT NULL
+      WHERE "a"."tenantId" = ${tenant} AND "a"."timestamp" >= ${since} AND "a"."decision" = 'ALLOW' AND "a"."userId" IS NOT NULL
       GROUP BY s."accessMode"`,
     db.$queryRaw<{ reason: string | null; n: bigint }[]>`
       SELECT COALESCE("reason", 'unspecified') AS reason, COUNT(*) AS n
       FROM "AuditEvent"
-      WHERE "timestamp" >= ${since} AND "decision" = 'DENY'
+      WHERE "tenantId" = ${tenant} AND "timestamp" >= ${since} AND "decision" = 'DENY'
       GROUP BY reason ORDER BY n DESC`,
     db.$queryRaw<{ dow: number; hour: number; n: bigint }[]>`
       SELECT EXTRACT(DOW FROM "timestamp")::int AS dow, EXTRACT(HOUR FROM "timestamp")::int AS hour, COUNT(*) AS n
       FROM "AuditEvent"
-      WHERE "timestamp" >= ${since}
+      WHERE "tenantId" = ${tenant} AND "timestamp" >= ${since}
       GROUP BY dow, hour`,
     db.$queryRaw<{ userEmail: string; n: bigint }[]>`
       SELECT "userEmail", COUNT(DISTINCT "clientIp") AS n
       FROM "AuditEvent"
-      WHERE "timestamp" >= ${since} AND "userEmail" IS NOT NULL AND "clientIp" IS NOT NULL
+      WHERE "tenantId" = ${tenant} AND "timestamp" >= ${since} AND "userEmail" IS NOT NULL AND "clientIp" IS NOT NULL
       GROUP BY "userEmail" HAVING COUNT(DISTINCT "clientIp") >= ${IP_FLAG_THRESHOLD}
       ORDER BY n DESC`,
     db.$queryRaw<{ userEmail: string; n: bigint }[]>`
       SELECT "userEmail", COUNT(*) AS n
       FROM "AuditEvent"
-      WHERE "timestamp" >= ${since} AND "decision" = 'DENY' AND "userEmail" IS NOT NULL
+      WHERE "tenantId" = ${tenant} AND "timestamp" >= ${since} AND "decision" = 'DENY' AND "userEmail" IS NOT NULL
       GROUP BY "userEmail" ORDER BY n DESC LIMIT 3`,
     db.accessGrant.findMany({
       where: expiringWhere,
