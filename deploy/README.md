@@ -56,10 +56,12 @@ The rest of this document is the reference for what it sets up and how to tune i
      cert is issued automatically on first use, see [Wildcard TLS](#wildcard-tls) below)
 3. Docker + Docker Compose v2 on the host, ports 80 and 443 reachable from
    the internet.
-4. Nothing to build — this stack pulls the published images
-   (`ghcr.io/kurtserdar/captivo-access-manager:latest`, `...-dataplane:latest`,
-   and `...-migrate:latest` — the one-shot schema-migration image the Manager
-   waits on).
+4. Nothing to build — this stack pulls the published `ghcr.io` images
+   (`...-manager`, `...-dataplane`, and `...-migrate`, the one-shot
+   schema-migration image the Manager waits on). The compose file **pins them
+   to a specific release** by default (`${CAPTIVO_VERSION:-<version>}`) so an
+   install is reproducible; set `CAPTIVO_VERSION` in `.env` to override or to
+   upgrade (see [Updating](#updating)).
 
 ## Deploy steps
 
@@ -308,16 +310,22 @@ logs") for troubleshooting connection or authentication failures.
 
 ## Updating
 
+The images are **pinned to a release** (`CAPTIVO_VERSION`, default set in the
+compose file), so `pull` alone stays on your current version — upgrading is a
+deliberate version bump:
+
 ```bash
-git pull
+git pull                                   # picks up a newer default version + any compose/Caddyfile change
+# or, to choose a version explicitly, set CAPTIVO_VERSION=<release> in .env
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-`git pull` first so a changed `docker-compose.prod.yml`/`Caddyfile` is picked up.
-The schema migrates automatically on `up -d` (the `access-migrate` service).
-Connectors run on their own hosts — update each with `docker pull …connector:latest`
-+ recreate (the token in `/data` persists).
+Check the latest release tags at
+`https://github.com/kurtserdar/captivo-access/releases`. The schema migrates
+automatically on `up -d` (the `access-migrate` service). Connectors run on
+their own hosts — update each with `docker pull …connector:<version>` + recreate
+(the token in `/data` persists).
 
 ### Breaking change: v0.2.0 (dynamic upstreams)
 

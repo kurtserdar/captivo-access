@@ -10,6 +10,9 @@
 #   docker compose -f docker-compose.prod.yml up -d
 #
 # See deploy/README.md for the full walkthrough (DNS, TLS). Schema migration runs automatically via the access-migrate service.
+#
+# The captivo-access images are pinned to a release via ${CAPTIVO_VERSION:-<version>}
+# for reproducible installs — set CAPTIVO_VERSION in .env to override/upgrade.
 name: captivo-access-prod
 
 services:
@@ -38,7 +41,7 @@ services:
   # Idempotent (a no-op when already in sync) and fail-closed on a destructive
   # diff — see deploy/README.md.
   access-migrate:
-    image: ghcr.io/kurtserdar/captivo-access-migrate:latest
+    image: ghcr.io/kurtserdar/captivo-access-migrate:${CAPTIVO_VERSION:-1.7.0}
     container_name: access-migrate
     depends_on:
       access-postgres:
@@ -48,7 +51,7 @@ services:
     restart: "no"
 
   access-manager:
-    image: ghcr.io/kurtserdar/captivo-access-manager:latest
+    image: ghcr.io/kurtserdar/captivo-access-manager:${CAPTIVO_VERSION:-1.7.0}
     container_name: access-manager
     restart: unless-stopped
     depends_on:
@@ -111,7 +114,7 @@ services:
       - "3100"
 
   access-dataplane:
-    image: ghcr.io/kurtserdar/captivo-access-dataplane:latest
+    image: ghcr.io/kurtserdar/captivo-access-dataplane:${CAPTIVO_VERSION:-1.7.0}
     container_name: access-dataplane
     restart: unless-stopped
     depends_on:
