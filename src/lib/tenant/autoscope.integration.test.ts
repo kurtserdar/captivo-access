@@ -33,7 +33,7 @@ vi.mock("next/headers", () => ({
 describe.skipIf(!OWNER_URL)("auto-scope: unwrapped cloud db ops resolve tenant from request host", () => {
   let owner: PrismaClient;
   let db: any;
-  let TenantScopeRequiredError: new (...a: unknown[]) => Error;
+  let TenantScopeRequiredError: typeof import("@/lib/tenant/ambient")["TenantScopeRequiredError"];
 
   beforeAll(async () => {
     owner = new PrismaClient({ adapter: new PrismaPg({ connectionString: OWNER_URL }) });

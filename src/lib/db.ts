@@ -90,13 +90,18 @@ function makeTenantDb(): PrismaClient {
           inAutoScope((scopedTx) => (scopedTx as unknown as Record<string, (...a: unknown[]) => Promise<unknown>>)[method](...args));
       }
       // A model delegate (db.site, db.user, ...): return a Level-2 proxy whose
-      // methods each open their own auto-scoped mini-tx.
+      // methods each open their own auto-scoped mini-tx. Mirrors the real
+      // delegate for anything that isn't an actual method (symbols, `.then`,
+      // unknown keys) — passthrough, not a wrapped callable — so the proxy
+      // can't look thenable or fail opaquely deep inside a mini-tx.
       if (typeof prop === "string" && prop in target && !prop.startsWith("$")) {
         const model = prop;
         return new Proxy(
           {},
           {
             get(_d, method) {
+              const real = (base as unknown as Record<string, Record<string, unknown>>)[model];
+              if (typeof method === "symbol" || typeof real?.[method as string] !== "function") return real?.[method as string];
               return (...args: unknown[]) =>
                 inAutoScope(
                   (scopedTx) =>
