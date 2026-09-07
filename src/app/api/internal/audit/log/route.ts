@@ -1,16 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { appendAuditEvents, type AuditInput } from "@/lib/audit/append";
+import { requireDataplaneSecret, resolveTenantBySite, resolveTenantByHostname } from "@/lib/tenant/internal";
+import { withTenant } from "@/lib/tenant/scope";
+import { multiTenantEnabled } from "@/lib/tenant/enabled";
 
-function dataplaneAuthorized(req: NextRequest): boolean {
-  const s = process.env.DATAPLANE_SECRET;
-  return !!s && timingSafeEqualStr(req.headers.get("x-dataplane-secret"), s);
+// The hosted data-plane is shared across ALL tenants, so a single batch can
+// interleave events from many of them — unlike the other internal/* endpoints
+// (see internal.ts), this route is intentionally NOT wrapped in
+// withTenantFrom (single resolved tenant for the whole request). Instead each
+// event resolves its own tenant and the batch is grouped + appended per group,
+// since the per-tenant audit chain (appendAuditEvents keys on
+// currentTenantId()) requires each event to land under its own tenant.
+async function resolveEventTenant(e: AuditInput): Promise<string | null> {
+  if (e.siteId) {
+    const tid = await resolveTenantBySite(e.siteId);
+    if (tid) return tid;
+  }
+  if (e.host) return resolveTenantByHostname(e.host);
+  return null;
 }
 
-export async function POST(req: NextRequest) {
-  if (!dataplaneAuthorized(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+async function handler(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as { events?: AuditInput[] };
   const events = Array.isArray(body.events) ? body.events : [];
-  const inserted = await appendAuditEvents(events);
-  return NextResponse.json({ inserted });
+
+  // Flag off (self-host): a single implicit "default" tenant — collapse to the
+  // prior behavior exactly, one append call for the whole batch, no per-event
+  // resolution.
+  if (!multiTenantEnabled()) {
+    const inserted = await appendAuditEvents(events);
+    return NextResponse.json({ inserted, dropped: 0 });
+  }
+
+  const groups = new Map<string, AuditInput[]>();
+  let dropped = 0;
+  for (const e of events) {
+    const tid = await resolveEventTenant(e);
+    if (!tid) {
+      dropped++;
+      continue;
+    }
+    const group = groups.get(tid);
+    if (group) group.push(e);
+    else groups.set(tid, [e]);
+  }
+
+  let inserted = 0;
+  for (const [tid, group] of groups) {
+    inserted += await withTenant(tid, () => appendAuditEvents(group));
+  }
+
+  return NextResponse.json({ inserted, dropped });
 }
+
+// requireDataplaneSecret is the outermost gate: an unauthenticated caller never
+// reaches per-event tenant resolution (SECURITY DEFINER, RLS-bypass) or any DB
+// work — closing the pre-auth enumeration oracle the other internal/* routes
+// guard against (see internal.ts's requireDataplaneSecret doc comment).
+export const POST = requireDataplaneSecret(handler);
