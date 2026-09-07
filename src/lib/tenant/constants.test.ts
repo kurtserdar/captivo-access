@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { PLATFORM_TENANT_ID, isReservedSlug, isValidTenantSlug } from "./constants";
+import { PLATFORM_TENANT_ID, RESERVED_SLUGS, isReservedSlug, isValidTenantSlug } from "./constants";
+import { RESERVED } from "./resolve";
 
 describe("tenant constants", () => {
   it("pins the platform tenant id", () => {
@@ -19,6 +20,11 @@ describe("tenant constants", () => {
   it("rejects malformed slugs", () => {
     for (const s of ["", "Acme", "acme_corp", "-acme", "acme-", "a".repeat(64), "a.b", "spar ta"]) {
       expect(isValidTenantSlug(s)).toBe(false);
+    }
+  });
+  it("keeps resolve.ts's RESERVED host labels in sync with RESERVED_SLUGS (RESERVED ⊆ RESERVED_SLUGS)", () => {
+    for (const label of RESERVED) {
+      expect(RESERVED_SLUGS.has(label)).toBe(true);
     }
   });
 });

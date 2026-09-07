@@ -2,7 +2,7 @@ import { base } from "@/lib/db";
 
 // Subdomain labels that are never a tenant slug (the manager host + common
 // infra names live under the access domain too).
-const RESERVED = new Set(["manager", "www", "app", "admin", "api"]);
+export const RESERVED = new Set(["manager", "www", "app", "admin", "api"]);
 
 // Extracts the single-label tenant slug from a request host, given the bare
 // access domain (e.g. "access.example.com"). `<slug>.<accessDomain>` → slug;
