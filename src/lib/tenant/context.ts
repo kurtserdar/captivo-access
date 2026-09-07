@@ -4,19 +4,36 @@ import { AsyncLocalStorage } from "node:async_hooks";
 // fallback whenever no tenant scope has been established.
 export const DEFAULT_TENANT = "default";
 
-const als = new AsyncLocalStorage<{ tenantId: string }>();
+// The ambient scope: the active tenant, and (multi-tenant mode) the request
+// transaction whose connection carries the tenant GUC — so `db` can route every
+// query onto it (see db.ts). `tx` is unknown here to keep this module free of a
+// db import (avoids a context ← db ← scope cycle).
+type TenantScope = { tenantId: string; tx?: unknown };
+const als = new AsyncLocalStorage<TenantScope>();
 
-// Runs `fn` with `tenantId` as the active tenant for the duration of the call
-// (and anything it awaits). Nests correctly — an inner scope restores the outer
-// one on exit.
-export function withTenant<T>(tenantId: string, fn: () => T): T {
-  return als.run({ tenantId }, fn);
+// Low-level: run `fn` under the given scope. The public entry point that opens
+// the request transaction and fills `tx` lives in scope.ts (production) — this
+// stays db-free.
+export function withScope<T>(scope: TenantScope, fn: () => T): T {
+  return als.run(scope, fn);
 }
 
-// The active tenant, or DEFAULT_TENANT when no scope is set (self-host / Phase
-// 0a, where the context is never entered).
+// The active tenant, or DEFAULT_TENANT when no scope is set (self-host, where
+// the context is never entered).
 export function currentTenantId(): string {
   return als.getStore()?.tenantId ?? DEFAULT_TENANT;
+}
+
+// The ambient request transaction, or null when none is set (self-host / outside
+// a withTenant scope). db.ts routes queries onto it when present.
+export function currentTx(): unknown | null {
+  return als.getStore()?.tx ?? null;
+}
+
+// Back-compat convenience for pure ALS scoping (no transaction). Production
+// multi-tenant callers use withTenant from scope.ts instead.
+export function withTenant<T>(tenantId: string, fn: () => T): T {
+  return withScope({ tenantId }, fn);
 }
 
 // Returns `row` with tenantId set to the active tenant when it has none. Used by

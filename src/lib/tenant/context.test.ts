@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { withTenant, currentTenantId, fillTenant, whereTenant } from "./context";
+import { withTenant, currentTenantId, fillTenant, whereTenant, withScope, currentTx } from "./context";
 
 describe("tenant context", () => {
   it("defaults to the default tenant outside any scope", () => {
@@ -7,6 +7,17 @@ describe("tenant context", () => {
   });
   it("returns the active tenant inside withTenant", () => {
     withTenant("acme", () => expect(currentTenantId()).toBe("acme"));
+  });
+  it("currentTx is null outside a scope", () => {
+    expect(currentTx()).toBeNull();
+  });
+  it("withScope exposes both tenantId and tx", () => {
+    const fakeTx = { marker: 1 };
+    withScope({ tenantId: "acme", tx: fakeTx }, () => {
+      expect(currentTenantId()).toBe("acme");
+      expect(currentTx()).toBe(fakeTx);
+    });
+    expect(currentTx()).toBeNull();
   });
   it("restores the outer tenant after a nested scope", () => {
     withTenant("a", () => {
