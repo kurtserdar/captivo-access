@@ -1,12 +1,21 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
 const HAS_DB = !!process.env.TEST_DATABASE_URL;
 const d = describe.skipIf(!HAS_DB);
 
+const APP_PW = "rls_test_pw";
+function appUrlFrom(owner: string): string {
+  const u = new URL(owner);
+  u.username = "app";
+  u.password = APP_PW;
+  return u.toString();
+}
+
 let owner: PrismaClient;
 const ids: string[] = [];
+const createdIds: string[] = [];
 
 beforeAll(async () => {
   owner = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.TEST_DATABASE_URL }) });
@@ -18,7 +27,10 @@ beforeAll(async () => {
 
 afterAll(async () => {
   for (const id of ids) await owner.$executeRawUnsafe(`DELETE FROM "Tenant" WHERE id=$1`, id).catch(() => {});
+  for (const id of createdIds) await owner.$executeRawUnsafe(`DELETE FROM "Tenant" WHERE id=$1`, id).catch(() => {});
   await owner?.$disconnect();
+  delete process.env.MULTI_TENANT;
+  delete process.env.APP_DATABASE_URL;
 });
 
 d("platform SECURITY DEFINER functions", () => {
@@ -45,5 +57,36 @@ d("platform SECURITY DEFINER functions", () => {
     await expect(owner.$executeRawUnsafe(`SELECT platform_set_tenant_status('platform','SUSPENDED')`)).rejects.toThrow();
     const id = ids[0];
     await expect(owner.$executeRawUnsafe(`SELECT platform_set_tenant_status($1,'NOPE')`, id)).rejects.toThrow();
+  });
+});
+
+d("createTenant provisions a tenant + invite (app role, flag on)", () => {
+  it("creates the tenant, seeds an invite in it, lists it, and suspend hides it", async () => {
+    process.env.MULTI_TENANT = "on";
+    process.env.APP_DATABASE_URL = appUrlFrom(process.env.TEST_DATABASE_URL!);
+    vi.resetModules();
+    delete (globalThis as Record<string, unknown>).prismaBase;
+
+    const { createTenant, listTenants, setTenantStatus } = await import("@/lib/platform/tenants");
+    const { resolveTenantBySlug } = await import("@/lib/tenant/resolve");
+
+    const slug = `it-${crypto.randomUUID().slice(0, 8)}`;
+    const { tenant, inviteToken } = await createTenant({ name: "IT Co", slug, adminEmail: "admin@it.co" });
+    createdIds.push(tenant.id);
+    expect(inviteToken).toBeTruthy();
+
+    // The invite exists IN THE NEW TENANT (verified as owner, RLS-bypassed).
+    const invites = await owner.$queryRawUnsafe<{ email: string; tenantId: string }[]>(
+      `SELECT email, "tenantId" FROM "Invite" WHERE "tenantId"=$1`, tenant.id,
+    );
+    expect(invites).toHaveLength(1);
+    expect(invites[0].email).toBe("admin@it.co");
+
+    const list = await listTenants();
+    expect(list.find((t) => t.id === tenant.id)).toBeTruthy();
+
+    expect(await resolveTenantBySlug(slug)).toBe(tenant.id);
+    await setTenantStatus(tenant.id, "SUSPENDED");
+    expect(await resolveTenantBySlug(slug)).toBeNull(); // ACTIVE filter → suspended slug stops resolving
   });
 });
