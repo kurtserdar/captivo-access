@@ -72,3 +72,23 @@ BEGIN
     EXECUTE format('CREATE TRIGGER trg_tenant_from_guc BEFORE INSERT ON %I FOR EACH ROW EXECUTE FUNCTION set_tenant_from_guc()', t);
   END LOOP;
 END $$;
+
+-- 5. SECURITY DEFINER resolvers (Phase 2b). Owner-defined so they bypass RLS —
+-- the app role has no tenant scope yet when resolving a request's tenant from
+-- its host. Read-only, STABLE, search_path pinned; EXECUTE granted only to app.
+CREATE OR REPLACE FUNCTION resolve_tenant_by_slug(p_slug text)
+RETURNS text LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT id FROM "Tenant" WHERE slug = p_slug AND status = 'ACTIVE'
+$$;
+CREATE OR REPLACE FUNCTION resolve_tenant_by_hostname(p_host text)
+RETURNS text LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT "tenantId" FROM "Site" WHERE hostname = p_host LIMIT 1
+$$;
+REVOKE ALL ON FUNCTION resolve_tenant_by_slug(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION resolve_tenant_by_hostname(text) FROM PUBLIC;
+
+SELECT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app') AS have_role \gset
+\if :have_role
+GRANT EXECUTE ON FUNCTION resolve_tenant_by_slug(text) TO app;
+GRANT EXECUTE ON FUNCTION resolve_tenant_by_hostname(text) TO app;
+\endif
