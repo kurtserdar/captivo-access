@@ -14,6 +14,8 @@ import { getCurrentUser } from "@/lib/current-user";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getRpId, originMatchesRp, requestOrigin } from "@/lib/auth/rp";
 import { normalizeEmail } from "@/lib/auth/email";
+import { resolveSetupRole } from "@/lib/auth/setup-role";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 function requestMeta(req: NextRequest) {
   return {
@@ -22,7 +24,7 @@ function requestMeta(req: NextRequest) {
   };
 }
 
-export async function POST(req: NextRequest) {
+async function handler(req: NextRequest) {
   const ip = clientIp(req.headers) ?? "unknown";
   const key = `${ip}:${new URL(req.url).pathname}`;
   if (!checkRateLimit(key, 10, 60_000)) {
@@ -258,6 +260,10 @@ export async function POST(req: NextRequest) {
   // between this check and create (a full lock would require a unique
   // constraint + a single-row "setup lock" table), but in practice this
   // prevents two concurrent setups from both creating an ADMIN.
+  const setup = resolveSetupRole();
+  if (!setup.allowed) {
+    return NextResponse.json({ error: "setup_disabled" }, { status: 404 });
+  }
   if (await hasAnyUser()) {
     return NextResponse.json({ error: "already_setup" }, { status: 409 });
   }
@@ -274,7 +280,7 @@ export async function POST(req: NextRequest) {
     // the other is rolled back too (no "locked" ADMIN without a passkey).
     const user = await db.$transaction(async (tx) => {
       const created = await tx.user.create({
-        data: { ...(uid ? { id: uid } : {}), email, name, role: "ADMIN", status: "ACTIVE" },
+        data: { ...(uid ? { id: uid } : {}), email, name, role: setup.role, status: "ACTIVE" },
       });
       await tx.passkey.create({
         data: {
@@ -306,3 +312,5 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
+
+export const POST = withTenantRoute(handler);

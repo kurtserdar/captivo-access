@@ -15,3 +15,10 @@ CREATE TABLE IF NOT EXISTS "Tenant" (
 INSERT INTO "Tenant" ("id", "slug", "name")
 VALUES ('default', 'default', 'Default')
 ON CONFLICT ("id") DO NOTHING;
+
+-- Reserved control-plane tenant. Platform super-admins live here; the platform
+-- console host (platform.<accessDomain>) resolves to it. Harmless on self-host
+-- (the flag is off, so nothing addresses it).
+INSERT INTO "Tenant" ("id", "slug", "name")
+VALUES ('platform', 'platform', 'Platform')
+ON CONFLICT ("id") DO NOTHING;

@@ -92,3 +92,47 @@ SELECT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app') AS have_role \gset
 GRANT EXECUTE ON FUNCTION resolve_tenant_by_slug(text) TO app;
 GRANT EXECUTE ON FUNCTION resolve_tenant_by_hostname(text) TO app;
 \endif
+
+-- 6. Platform control-plane functions (cross-tenant, RLS-bypass). Owner-defined
+-- so a platform admin — whose session is RLS-scoped to the reserved 'platform'
+-- tenant — can manage OTHER tenants. Authorization is app-level
+-- (requirePlatformAdmin); these do the RLS-bypass mechanics only.
+CREATE OR REPLACE FUNCTION platform_create_tenant(p_id text, p_slug text, p_name text)
+RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  INSERT INTO "Tenant"(id, slug, name, status) VALUES (p_id, p_slug, p_name, 'ACTIVE');
+  RETURN p_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION platform_list_tenants()
+RETURNS TABLE(id text, slug text, name text, status text, "createdAt" timestamptz, "adminCount" bigint)
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT t.id, t.slug, t.name, t.status, t."createdAt",
+         (SELECT count(*) FROM "User" u WHERE u."tenantId" = t.id) AS "adminCount"
+  FROM "Tenant" t
+  WHERE t.id <> 'platform'
+  ORDER BY t."createdAt" DESC
+$$;
+
+CREATE OR REPLACE FUNCTION platform_set_tenant_status(p_id text, p_status text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF p_status NOT IN ('ACTIVE', 'SUSPENDED') THEN
+    RAISE EXCEPTION 'invalid tenant status: %', p_status;
+  END IF;
+  IF p_id = 'platform' THEN
+    RAISE EXCEPTION 'cannot change the platform tenant status';
+  END IF;
+  UPDATE "Tenant" SET status = p_status WHERE id = p_id;
+END $$;
+
+REVOKE ALL ON FUNCTION platform_create_tenant(text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_list_tenants() FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_set_tenant_status(text, text) FROM PUBLIC;
+
+SELECT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app') AS have_role \gset
+\if :have_role
+GRANT EXECUTE ON FUNCTION platform_create_tenant(text, text, text) TO app;
+GRANT EXECUTE ON FUNCTION platform_list_tenants() TO app;
+GRANT EXECUTE ON FUNCTION platform_set_tenant_status(text, text) TO app;
+\endif

@@ -12,7 +12,7 @@ export async function createInvite(input: {
   email: string;
   name: string;
   role: Role;
-  createdById: string;
+  createdById?: string | null;
   phone?: string | null;
   company?: string | null;
 }) {
@@ -26,7 +26,7 @@ export async function createInvite(input: {
       company: input.company ?? null,
       tokenHash: await hashToken(token),
       expiresAt: new Date(Date.now() + (await ttlMs())),
-      createdById: input.createdById,
+      createdById: input.createdById ?? null,
     },
   });
   return { id: inv.id, token };

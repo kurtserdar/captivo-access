@@ -9,8 +9,10 @@ import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { hasAnyUser } from "@/lib/auth/bootstrap";
+import { resolveSetupRole } from "@/lib/auth/setup-role";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST(req: NextRequest) {
+async function handler(req: NextRequest) {
   const ip = clientIp(req.headers) ?? "unknown";
   const key = `${ip}:${new URL(req.url).pathname}`;
   if (!checkRateLimit(key, 10, 60_000)) {
@@ -72,6 +74,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_mode" }, { status: 400 });
   }
 
+  const setup = resolveSetupRole();
+  if (!setup.allowed) {
+    return NextResponse.json({ error: "setup_disabled" }, { status: 404 });
+  }
   if (await hasAnyUser()) {
     return NextResponse.json({ error: "already_setup" }, { status: 409 });
   }
@@ -93,3 +99,5 @@ export async function POST(req: NextRequest) {
   await setChallenge(options.challenge, "reg", uid);
   return NextResponse.json(options);
 }
+
+export const POST = withTenantRoute(handler);
