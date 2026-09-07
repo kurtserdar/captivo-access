@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { db } from "@/lib/db";
 import { can } from "@/lib/auth/roles";
-import { resolveTenantByUser, withTenantFrom } from "@/lib/tenant/internal";
+import { requireDataplaneSecret, resolveTenantByUser, withTenantFrom } from "@/lib/tenant/internal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,4 +26,4 @@ async function handler(req: NextRequest) {
   return NextResponse.json({ allow: !!user && can(user.role, "read_console") });
 }
 
-export const POST = withTenantFrom(tenantFromReq)(handler);
+export const POST = requireDataplaneSecret(withTenantFrom(tenantFromReq)(handler));

@@ -3,7 +3,7 @@ import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { resolvedRecordingConsentRequired, resolvedClipboardDefault } from "@/lib/settings/platform";
-import { resolveTenantByHostname, withTenantFrom } from "@/lib/tenant/internal";
+import { requireDataplaneSecret, resolveTenantByHostname, withTenantFrom } from "@/lib/tenant/internal";
 
 function dataplaneAuthorized(req: NextRequest): boolean {
   const s = process.env.DATAPLANE_SECRET;
@@ -51,4 +51,4 @@ async function handler(req: NextRequest) {
   });
 }
 
-export const POST = withTenantFrom(tenantFromReq)(handler);
+export const POST = requireDataplaneSecret(withTenantFrom(tenantFromReq)(handler));

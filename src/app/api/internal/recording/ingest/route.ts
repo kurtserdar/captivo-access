@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { currentTenantId } from "@/lib/tenant/context";
 import { encryptBytes } from "@/lib/crypto";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { resolveTenantBySite, withTenantFrom } from "@/lib/tenant/internal";
+import { requireDataplaneSecret, resolveTenantBySite, withTenantFrom } from "@/lib/tenant/internal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -83,4 +83,4 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const POST = withTenantFrom(tenantFromReq)(handler);
+export const POST = requireDataplaneSecret(withTenantFrom(tenantFromReq)(handler));

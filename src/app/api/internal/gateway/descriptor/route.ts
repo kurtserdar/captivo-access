@@ -8,7 +8,7 @@ import { effectiveKeystrokeLogging } from "@/lib/keystroke/policy";
 import { parseGuacParams, resolveGuacParams, toGuacArgs } from "@/lib/gateway/guac-params";
 import { isolationEnabled } from "@/lib/isolation/enabled";
 import { db } from "@/lib/db";
-import { resolveTenantBySite, withTenantFrom } from "@/lib/tenant/internal";
+import { requireDataplaneSecret, resolveTenantBySite, withTenantFrom } from "@/lib/tenant/internal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -95,4 +95,4 @@ async function handler(req: NextRequest) {
   });
 }
 
-export const POST = withTenantFrom(tenantFromReq)(handler);
+export const POST = requireDataplaneSecret(withTenantFrom(tenantFromReq)(handler));

@@ -3,7 +3,7 @@ import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { resolvedVendorIpAllowlist } from "@/lib/settings/platform";
 import { ipAllowed } from "@/lib/net/cidr";
-import { resolveTenantBySite, withTenantFrom } from "@/lib/tenant/internal";
+import { requireDataplaneSecret, resolveTenantBySite, withTenantFrom } from "@/lib/tenant/internal";
 
 export const runtime = "nodejs"; // ipAllowed uses node:net
 
@@ -38,4 +38,4 @@ async function handler(req: NextRequest) {
   return NextResponse.json({ allow: d.allow, reason: d.reason });
 }
 
-export const POST = withTenantFrom(tenantFromReq)(handler);
+export const POST = requireDataplaneSecret(withTenantFrom(tenantFromReq)(handler));

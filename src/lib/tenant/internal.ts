@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { base } from "@/lib/db";
 import { withTenant } from "@/lib/tenant/scope";
 import { multiTenantEnabled } from "@/lib/tenant/enabled";
+import { timingSafeEqualStr } from "@/lib/secure-compare";
 
 // Resolvers for non-request contexts (data-plane internal API, connector
 // enrollment, cron): each maps a payload key to its tenant id via the matching
@@ -43,4 +45,28 @@ export function withTenantFrom<A extends unknown[]>(resolve: (...a: A) => Promis
       if (!tid) return NextResponse.json({ error: "unknown_tenant" }, { status: 404 });
       return withTenant(tid, () => handler(...a));
     };
+}
+
+// Shared DATAPLANE_SECRET gate for the payload-keyed data-plane internal/*
+// endpoints — the SAME check every handler already ran inline (constant-time
+// compare of `x-dataplane-secret` against DATAPLANE_SECRET), centralized so it
+// can be composed OUTSIDE withTenantFrom and be the outermost gate. Always
+// applies, independent of MULTI_TENANT (self-host must keep this check too).
+//
+// Ordering matters: withTenantFrom's resolvers are SECURITY DEFINER (RLS
+// -bypass) and, unguarded, would run before any auth check — a valid payload
+// key (belonging to ANY tenant) reaches the handler (which then 403s on a bad
+// secret) while an invalid key 404s "unknown_tenant" from the wrapper. That
+// difference is a pre-auth, cross-tenant id-existence oracle plus does
+// pre-auth DB work. Composing `requireDataplaneSecret(withTenantFrom(...)(...))`
+// closes it: an unauthenticated caller never reaches tenant resolution.
+export function requireDataplaneSecret<A extends unknown[]>(handler: (...a: A) => Promise<Response>) {
+  return async (...a: A): Promise<Response> => {
+    const req = a[0] as unknown as NextRequest;
+    const s = process.env.DATAPLANE_SECRET;
+    if (!s || !timingSafeEqualStr(req.headers.get("x-dataplane-secret"), s)) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    return handler(...a);
+  };
 }

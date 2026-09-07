@@ -4,7 +4,7 @@ import { contentLengthExceeds } from "@/lib/request-limits";
 import { db } from "@/lib/db";
 import { encryptBytes } from "@/lib/crypto";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { resolveTenantByRecordingKey, withTenantFrom } from "@/lib/tenant/internal";
+import { requireDataplaneSecret, resolveTenantByRecordingKey, withTenantFrom } from "@/lib/tenant/internal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,4 +48,4 @@ async function handler(req: NextRequest) {
   return new NextResponse(null, { status: 204 });
 }
 
-export const POST = withTenantFrom(tenantFromReq)(handler);
+export const POST = requireDataplaneSecret(withTenantFrom(tenantFromReq)(handler));

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { getSessionUser } from "@/lib/auth/session";
 import { sha256 } from "@/lib/auth/tokens";
-import { resolveTenantBySessionToken, withTenantFrom } from "@/lib/tenant/internal";
+import { requireDataplaneSecret, resolveTenantBySessionToken, withTenantFrom } from "@/lib/tenant/internal";
 
 function dataplaneAuthorized(req: NextRequest): boolean {
   const s = process.env.DATAPLANE_SECRET;
@@ -26,4 +26,4 @@ async function handler(req: NextRequest) {
   return NextResponse.json({ userId: user.id, email: user.email });
 }
 
-export const POST = withTenantFrom(tenantFromReq)(handler);
+export const POST = requireDataplaneSecret(withTenantFrom(tenantFromReq)(handler));
