@@ -3,7 +3,8 @@ import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { getVaultCredential } from "@/lib/vault/store";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { resolvedWatermarkDefault, resolvedClipboardDefault, resolvedGuacParamDefaults, resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
+import { effectiveRecordSessions } from "@/lib/recording/mode";
+import { resolvedWatermarkDefault, resolvedClipboardDefault, resolvedGuacParamDefaults, resolvedKeystrokeLoggingMode, resolvedRecordingMode } from "@/lib/settings/platform";
 import { effectiveKeystrokeLogging } from "@/lib/keystroke/policy";
 import { parseGuacParams, resolveGuacParams, toGuacArgs } from "@/lib/gateway/guac-params";
 import { isolationEnabled } from "@/lib/isolation/enabled";
@@ -43,6 +44,9 @@ async function handler(req: NextRequest) {
   // Resolve the inherit sentinel (null) to a concrete mode server-side, so the
   // data-plane and browser never see "inherit".
   const clipboardMode = site.clipboardMode ?? (await resolvedClipboardDefault());
+  // Tenant recordingMode policy applied on top of the global RECORDING_ENABLED
+  // capability and this resource's own toggle — same resolution both routes below use.
+  const record = recordingEnabled() && effectiveRecordSessions(await resolvedRecordingMode(), site.recordSessions);
 
   if (site.accessMode === "ISOLATED") {
     if (!isolationEnabled()) return NextResponse.json({ error: "isolation_disabled" }, { status: 404 });
@@ -62,7 +66,7 @@ async function handler(req: NextRequest) {
       kasmControlAddr: (process.env.ISOLATED_KASM_CONTROL_ADDR ?? "captivo-kasm:7900").trim(),
       connectorId: site.connectorId,
       clipboardMode,
-      record: recordingEnabled() && site.recordSessions,
+      record,
       watermarkText,
       fileTransferMode: site.fileTransferMode,
       insecureSkipVerify: site.insecureSkipVerify,
@@ -85,7 +89,7 @@ async function handler(req: NextRequest) {
     secretKind: cred.secretKind,
     guacdAddress: (process.env.GUACD_ADDR ?? "captivo-guacd:4822").trim(),
     connectorId: site.connectorId,
-    record: recordingEnabled() && site.recordSessions,
+    record,
     keystrokeLogging: effectiveKeystrokeLogging({
       mode: await resolvedKeystrokeLoggingMode(),
       recordingEnabled: recordingEnabled(),

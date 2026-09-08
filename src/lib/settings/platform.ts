@@ -54,10 +54,16 @@ const EMPTY: PlatformSettings = {
   recordingMode: null,
 };
 
-let cache: { s: PlatformSettings; at: number } | null = null;
+// Keyed by tenant id: a single un-keyed slot would let one tenant's settings
+// leak into another's reads for up to the TTL below (multi-tenant only — every
+// call shares one Node process across concurrent tenants; self-host has just
+// the "default" tenant, so this was latent there).
+const cache = new Map<string, { s: PlatformSettings; at: number }>();
 
 export async function getPlatformSettings(): Promise<PlatformSettings> {
-  if (cache && Date.now() - cache.at < 30_000) return cache.s;
+  const tid = currentTenantId();
+  const hit = cache.get(tid);
+  if (hit && Date.now() - hit.at < 30_000) return hit.s;
   let c;
   try {
     c = await db.platformSettings.findUnique({ where: { tenantId: currentTenantId() } });
@@ -86,7 +92,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     keystrokeLoggingMode: c?.keystrokeLoggingMode ?? null,
     recordingMode: c?.recordingMode ?? null,
   };
-  cache = { s, at: Date.now() };
+  cache.set(tid, { s, at: Date.now() });
   return s;
 }
 
@@ -96,7 +102,7 @@ export async function savePlatformSettings(input: PlatformSettings): Promise<voi
     create: { tenantId: currentTenantId(), ...input },
     update: { ...input },
   });
-  cache = null;
+  cache.delete(currentTenantId());
 }
 
 // Global default Guacamole connection params (curated allowlist). Kept out of the
@@ -117,7 +123,7 @@ export async function saveGuacParamDefaults(p: GuacParams): Promise<void> {
     create: { tenantId: currentTenantId(), guacParamDefaults: value },
     update: { guacParamDefaults: value },
   });
-  cache = null;
+  cache.delete(currentTenantId());
 }
 
 function envInt(name: string): number | null {

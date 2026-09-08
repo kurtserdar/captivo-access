@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { resolvedRecordingConsentRequired, resolvedClipboardDefault } from "@/lib/settings/platform";
+import { effectiveRecordSessions } from "@/lib/recording/mode";
+import { resolvedRecordingConsentRequired, resolvedClipboardDefault, resolvedRecordingMode } from "@/lib/settings/platform";
 import { requireDataplaneSecret, resolveTenantByHostname, withTenantFrom } from "@/lib/tenant/internal";
 
 function dataplaneAuthorized(req: NextRequest): boolean {
@@ -32,7 +33,7 @@ async function handler(req: NextRequest) {
   });
   if (!site) return NextResponse.json({ error: "no_site" }, { status: 404 });
 
-  const recordSessions = site.recordSessions && recordingEnabled();
+  const recordSessions = recordingEnabled() && effectiveRecordSessions(await resolvedRecordingMode(), site.recordSessions);
   return NextResponse.json({
     siteId: site.id,
     connectorId: site.connectorId,
