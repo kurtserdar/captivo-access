@@ -152,12 +152,14 @@ d("SECURITY DEFINER resolvers for non-request contexts", () => {
     expect(missing[0].id).toBeNull();
   });
 
-  it("list_active_tenant_ids: includes seeded + default, excludes platform", async () => {
+  it("list_active_tenant_ids: includes seeded tenants, excludes the platform + default sentinels", async () => {
     const rows = await owner.$queryRawUnsafe<{ id: string }[]>(`SELECT list_active_tenant_ids() AS id`);
     const ids = rows.map((r) => r.id);
     expect(ids).toContain(tenantA.id);
     expect(ids).toContain(tenantB.id);
-    expect(ids).toContain("default");
+    // The reserved 'default' (self-host sentinel) and 'platform' tenants are not
+    // real customer tenants and must not appear in the cron fan-out list.
+    expect(ids).not.toContain("default");
     expect(ids).not.toContain("platform");
   });
 
