@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     }
     const site = await db.site.create({
       data: {
-        connectorId: v.connectorId, name: v.name, hostname: v.hostname, upstreamUrl: v.upstreamUrl, description: v.description,
+        connectorId: v.connectorId, name: v.name, hostname: v.hostname, customDomain: v.customDomain, upstreamUrl: v.upstreamUrl, description: v.description,
         insecureSkipVerify: v.insecureSkipVerify, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "TRANSPARENT", ...logoData,
       },
       select: { id: true },

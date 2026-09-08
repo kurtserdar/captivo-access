@@ -172,6 +172,7 @@ export function SiteForm({
       const res = await fetch(`/api/admin/sites/${site.id}/verify-domain`, { method: "POST" });
       const result = await res.json().catch(() => ({}));
       setVerifyResult(res.ok ? result : { status: "undetermined" });
+      if (res.ok && result?.status === "ok") router.refresh();
     } catch {
       setVerifyResult({ status: "undetermined" });
     } finally {

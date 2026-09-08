@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const connector = await db.connector.findUnique({ where: { id: v.connectorId }, select: { id: true } });
   if (!connector) return NextResponse.json({ error: "connector_not_found" }, { status: 400 });
 
-  const existing = await db.site.findUnique({ where: { id }, select: { id: true } });
+  const existing = await db.site.findUnique({ where: { id }, select: { id: true, hostname: true } });
   if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const logoResult = parseLogoUpload(body.logo, body.logoType);
@@ -42,7 +42,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       return NextResponse.json({ error: "hostname_taken" }, { status: 409 });
     }
     try {
-      await db.site.update({ where: { id }, data: { connectorId: v.connectorId, name: v.name, hostname: v.hostname, upstreamUrl: v.upstreamUrl, description: v.description, insecureSkipVerify: v.insecureSkipVerify, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "TRANSPARENT", ...logoData } });
+      await db.site.update({ where: { id }, data: { connectorId: v.connectorId, name: v.name, hostname: v.hostname, customDomain: v.customDomain, domainVerifiedAt: v.customDomain && v.hostname === existing.hostname ? undefined : null, upstreamUrl: v.upstreamUrl, description: v.description, insecureSkipVerify: v.insecureSkipVerify, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "TRANSPARENT", ...logoData } });
     } catch (e) {
       if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2002") {
         return NextResponse.json({ error: "hostname_taken" }, { status: 409 });
