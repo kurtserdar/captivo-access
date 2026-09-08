@@ -11,15 +11,17 @@ afterAll(() => {
 });
 
 describe("vaultEnabled", () => {
-  it("is off by default", () => expect(vaultEnabled()).toBe(false));
+  it("is on by default", () => expect(vaultEnabled()).toBe(true));
   it("is on for 1/true/on (case-insensitive)", () => {
     for (const v of ["1", "true", "on", "ON", "True"]) {
       process.env.VAULT_ENABLED = v;
       expect(vaultEnabled()).toBe(true);
     }
   });
-  it("is off for other values", () => {
-    process.env.VAULT_ENABLED = "no";
-    expect(vaultEnabled()).toBe(false);
+  it("is off for explicit falsy values", () => {
+    for (const v of ["0", "false", "off", "no"]) {
+      process.env.VAULT_ENABLED = v;
+      expect(vaultEnabled()).toBe(false);
+    }
   });
 });

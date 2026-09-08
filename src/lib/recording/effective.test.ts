@@ -22,7 +22,7 @@ afterEach(() => {
 
 describe("effectiveSiteRecording", () => {
   it("capability off → never records, regardless of mode/toggle", async () => {
-    delete process.env.RECORDING_ENABLED;
+    process.env.RECORDING_ENABLED = "0"; // explicitly disable — capability now defaults on
     resolvedRecordingMode.mockResolvedValue("required");
     expect(await effectiveSiteRecording(true)).toBe(false);
     expect(await effectiveSiteRecording(false)).toBe(false);

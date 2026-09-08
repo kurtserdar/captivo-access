@@ -1,5 +1,6 @@
-// Pro capability gate for the isolated-browser (RBI) access mode. Default OFF.
+// Pro capability gate for the isolated-browser (RBI) access mode. On by default.
+import { flagOn } from "@/lib/env-flag";
+
 export function isolationEnabled(): boolean {
-  const v = process.env.ISOLATED_ENABLED?.trim().toLowerCase();
-  return v === "1" || v === "true" || v === "on";
+  return flagOn(process.env.ISOLATED_ENABLED, true);
 }
