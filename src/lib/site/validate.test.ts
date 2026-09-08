@@ -3,16 +3,16 @@ import { validateSiteInput } from "./validate";
 
 const base = { nativeGateway: true, requireSecret: true, recordingEnabled: true, isolationEnabled: true };
 const selfHost = { ...base, hostSuffix: ".access.example.com" };
-const cloud = { ...base, hostSuffix: "-acme.sites.cloud.captivo.io" };
+const cloud = { ...base, hostSuffix: ".acme.cloud.captivo.io" };
 
 describe("validateSiteInput", () => {
   it("self-host: appends .<accessDomain> to a bare label", () => {
     const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "WIKI", upstreamUrl: "http://10.0.0.5:80" }, selfHost);
     expect(r).toMatchObject({ ok: true, hostname: "wiki.access.example.com" });
   });
-  it("cloud: embeds the tenant slug in the label (per-tenant namespace)", () => {
+  it("cloud: nests the site under the tenant subdomain (per-tenant namespace)", () => {
     const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "wiki", upstreamUrl: "http://10.0.0.5:80" }, cloud);
-    expect(r).toMatchObject({ ok: true, hostname: "wiki-acme.sites.cloud.captivo.io" });
+    expect(r).toMatchObject({ ok: true, hostname: "wiki.acme.cloud.captivo.io" });
   });
   it("rejects a non-label (contains a dot) when a suffix is set", () => {
     const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "a.b", upstreamUrl: "http://10.0.0.5:80" }, selfHost);
