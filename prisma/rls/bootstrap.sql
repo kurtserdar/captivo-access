@@ -188,3 +188,7 @@ GRANT EXECUTE ON FUNCTION list_active_tenant_ids() TO app;
 GRANT EXECUTE ON FUNCTION list_connector_token_candidates() TO app;
 GRANT EXECUTE ON FUNCTION list_pairing_candidates() TO app;
 \endif
+
+-- 8. Custom (BYO) vendor hostnames must be globally unique (managed hosts are
+-- per-tenant-unique via the slug suffix; only customDomain hosts need this).
+CREATE UNIQUE INDEX IF NOT EXISTS site_custom_hostname_uq ON "Site" (hostname) WHERE "customDomain";
