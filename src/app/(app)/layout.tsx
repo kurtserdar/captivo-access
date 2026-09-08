@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/current-user";
+import { isPlatformAdmin } from "@/lib/platform/auth";
 import { can, ROLE_LABELS } from "@/lib/auth/roles";
 import { countPendingGrants } from "@/lib/access/grants";
 import { countUnreadNotifications } from "@/lib/notifications";
@@ -17,6 +19,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  // Platform super-admins operate the platform console, not the tenant console —
+  // send them there instead of the vendor "My access" view. Dormant on self-host
+  // (no PLATFORM users exist there).
+  if (isPlatformAdmin(user.role)) redirect("/platform");
   const tz = await resolvedDisplayTimezone(user.id);
   const showGrants = can(user.role, "approve_grants");
   const showRead = can(user.role, "read_console");

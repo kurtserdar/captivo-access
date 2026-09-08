@@ -23,7 +23,7 @@ export function CreateTenantForm() {
   const [adminEmail, setAdminEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ slug: string; inviteToken: string } | null>(null);
+  const [result, setResult] = useState<{ slug: string; inviteUrl: string } | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,7 +40,7 @@ export function CreateTenantForm() {
         setError(errorMessage(body?.error));
         return;
       }
-      setResult({ slug: body.tenant.slug, inviteToken: body.inviteToken });
+      setResult({ slug: body.tenant.slug, inviteUrl: body.inviteUrl });
     } catch {
       setError(errorMessage(undefined));
     } finally {
@@ -53,7 +53,7 @@ export function CreateTenantForm() {
       <p className="notice success">
         Tenant <strong>{result.slug}</strong> created. Send the first admin this invite link:
         <br />
-        <code>{`https://${result.slug}.<access-domain>/invite/${result.inviteToken}`}</code>
+        <code>{result.inviteUrl}</code>
       </p>
     );
   }
