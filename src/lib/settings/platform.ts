@@ -28,6 +28,7 @@ export interface PlatformSettings {
   notifyAccessDecisions: boolean | null;
   requireRequestJustification: boolean | null;
   keystrokeLoggingMode: string | null;
+  recordingMode: string | null;
 }
 
 const EMPTY: PlatformSettings = {
@@ -50,6 +51,7 @@ const EMPTY: PlatformSettings = {
   notifyAccessDecisions: null,
   requireRequestJustification: null,
   keystrokeLoggingMode: null,
+  recordingMode: null,
 };
 
 let cache: { s: PlatformSettings; at: number } | null = null;
@@ -82,6 +84,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     notifyAccessDecisions: c?.notifyAccessDecisions ?? null,
     requireRequestJustification: c?.requireRequestJustification ?? null,
     keystrokeLoggingMode: c?.keystrokeLoggingMode ?? null,
+    recordingMode: c?.recordingMode ?? null,
   };
   cache = { s, at: Date.now() };
   return s;
@@ -231,6 +234,15 @@ export async function resolvedKeystrokeLoggingMode(): Promise<KeystrokeMode> {
   const s = await getPlatformSettings();
   const v = s.keystrokeLoggingMode;
   return v && (KEYSTROKE_MODES as string[]).includes(v) ? (v as KeystrokeMode) : "per_resource";
+}
+
+export const RECORDING_MODES = ["off", "per_resource", "required"] as const;
+export async function resolvedRecordingMode(): Promise<string> {
+  const s = await getPlatformSettings();
+  if (s.recordingMode && (RECORDING_MODES as readonly string[]).includes(s.recordingMode)) return s.recordingMode;
+  const v = process.env.RECORDING_MODE?.trim().toLowerCase();
+  if (v && (RECORDING_MODES as readonly string[]).includes(v)) return v;
+  return "per_resource";
 }
 
 export async function resolvedAnchorTsaUrl(): Promise<string> {

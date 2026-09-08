@@ -550,6 +550,7 @@ model PlatformSettings {
   notifyAccessDecisions Boolean? // email the vendor on approve/deny; null = default on
   requireRequestJustification Boolean? // require a justification on access requests; null = default on (required)
   keystrokeLoggingMode  String? // tenant-wide keystroke logging: "off" | "per_resource" | "required"; null → per_resource
+  recordingMode String? // null = env/default → "per_resource"; one of off|per_resource|required
   guacParamDefaults     Json? // global default Guacamole connection params (validated allowlist)
   updatedAt              DateTime @updatedAt
 }

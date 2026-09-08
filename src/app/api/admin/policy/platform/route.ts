@@ -82,6 +82,9 @@ export const POST = withTenantRoute(async (req: NextRequest) => {
     keystrokeLoggingMode: ["off", "per_resource", "required"].includes(body.keystrokeLoggingMode)
       ? (body.keystrokeLoggingMode as string)
       : "per_resource",
+    recordingMode: ["off", "per_resource", "required"].includes(body.recordingMode)
+      ? (body.recordingMode as string)
+      : "per_resource",
   });
   await saveGuacParamDefaults(parseGuacParams(body.guacParamDefaults));
   await recordAdminAction({
