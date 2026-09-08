@@ -78,7 +78,7 @@ describe.skipIf(!OWNER_URL)("recordingMode is enforced at by-host and round-trip
   let policyPOST: (req: NextRequest) => Promise<Response>;
   let withTenant: <T>(t: string, fn: () => Promise<T>) => Promise<T>;
   let resolvedRecordingMode: () => Promise<string>;
-  let savePlatformSettings: (input: Record<string, unknown>) => Promise<void>;
+  let savePlatformSettings: typeof import("@/lib/settings/platform").savePlatformSettings;
 
   // A full PlatformSettings input with every field null except recordingMode —
   // mirrors src/lib/settings/recording-mode.integration.test.ts's settingsWith.
