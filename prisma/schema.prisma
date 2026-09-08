@@ -218,6 +218,8 @@ model Site {
   connector          Connector     @relation(fields: [connectorId], references: [id], onDelete: Cascade)
   name               String
   hostname           String?       // null for GATEWAY (remote-desktop) sites; required for web apps
+  customDomain       Boolean       @default(false) // hostname is a tenant-owned FQDN (BYO), not a managed <label>.<slug> host
+  domainVerifiedAt   DateTime?     // set when the custom domain's DNS is verified to point at this server
   upstreamUrl        String?
   insecureSkipVerify Boolean       @default(false)
   description        String?

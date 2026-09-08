@@ -42,21 +42,28 @@ export async function POST(req: NextRequest) {
     if (await crossTenantHostnameTaken(v.hostname)) {
       return NextResponse.json({ error: "hostname_taken" }, { status: 409 });
     }
-    const site = await db.site.create({
-      data: {
-        connectorId: v.connectorId, name: v.name, hostname: v.hostname, upstreamUrl: v.upstreamUrl, description: v.description,
-        insecureSkipVerify: v.insecureSkipVerify, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "TRANSPARENT", ...logoData,
-      },
-      select: { id: true },
-    });
-    await recordAdminAction({
-      actor: { id: admin.id, email: admin.email },
-      action: "resource.create",
-      targetType: "resource", targetId: site.id,
-      summary: `Created resource "${v.name}"`,
-      clientIp: clientIp(req.headers) ?? null,
-    });
-    return NextResponse.json({ id: site.id });
+    try {
+      const site = await db.site.create({
+        data: {
+          connectorId: v.connectorId, name: v.name, hostname: v.hostname, customDomain: v.customDomain, upstreamUrl: v.upstreamUrl, description: v.description,
+          insecureSkipVerify: v.insecureSkipVerify, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "TRANSPARENT", ...logoData,
+        },
+        select: { id: true },
+      });
+      await recordAdminAction({
+        actor: { id: admin.id, email: admin.email },
+        action: "resource.create",
+        targetType: "resource", targetId: site.id,
+        summary: `Created resource "${v.name}"`,
+        clientIp: clientIp(req.headers) ?? null,
+      });
+      return NextResponse.json({ id: site.id });
+    } catch (e) {
+      if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2002") {
+        return NextResponse.json({ error: "hostname_taken" }, { status: 409 });
+      }
+      throw e;
+    }
   }
 
   if (v.mode === "ISOLATED") {

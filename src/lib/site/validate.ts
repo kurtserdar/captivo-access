@@ -11,6 +11,7 @@ export type SiteValidation =
       connectorId: string;
       name: string;
       hostname: string;
+      customDomain: boolean;
       upstreamUrl: string;
       description: string | null;
       insecureSkipVerify: boolean;
@@ -114,11 +115,18 @@ export function validateSiteInput(
   // The form sends only the subdomain LABEL; the server owns the suffix
   // (hostSuffix, e.g. ".access.example.com" self-host or "-acme.sites.cloud.captivo.io"
   // in cloud). With a suffix configured, require a single DNS label and append it.
-  // Without one (dev/misconfig), accept the value as-is.
+  // Without one (dev/misconfig), accept the value as-is. When the tenant brings
+  // their own domain (customDomain: true), the entered value is a full FQDN they
+  // own and is used verbatim (no suffix, no DB work here).
+  const customDomain = body.customDomain === true;
   const rawHost = str(body.hostname).toLowerCase().trim();
   if (!rawHost) return { ok: false, error: "invalid_hostname" };
   let hostname: string;
-  if (opts.hostSuffix) {
+  if (customDomain) {
+    // a full tenant-owned FQDN: at least two labels, valid DNS chars, not empty labels
+    if (!/^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/.test(rawHost)) return { ok: false, error: "invalid_hostname" };
+    hostname = rawHost;
+  } else if (opts.hostSuffix) {
     if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(rawHost)) return { ok: false, error: "invalid_hostname" };
     hostname = `${rawHost}${opts.hostSuffix}`;
   } else {
@@ -141,6 +149,7 @@ export function validateSiteInput(
     connectorId,
     name,
     hostname,
+    customDomain,
     upstreamUrl,
     description,
     insecureSkipVerify: body.insecureSkipVerify === true,
