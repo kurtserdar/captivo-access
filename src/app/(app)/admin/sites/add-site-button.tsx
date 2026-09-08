@@ -9,14 +9,14 @@ export function AddSiteButton({
   recordingEnabled,
   keystrokeMode,
   nativeGateway,
-  accessDomain,
+  hostSuffix,
   isolationEnabled,
 }: {
   connectors: { id: string; name: string }[];
   recordingEnabled: boolean;
   keystrokeMode: KeystrokeMode;
   nativeGateway: boolean;
-  accessDomain: string | null;
+  hostSuffix: string | null;
   isolationEnabled: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -26,7 +26,7 @@ export function AddSiteButton({
         Add resource
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title="Add resource" size="lg">
-        <SiteForm connectors={connectors} recordingEnabled={recordingEnabled} keystrokeMode={keystrokeMode} nativeGateway={nativeGateway} isolationEnabled={isolationEnabled} accessDomain={accessDomain} onDone={() => setOpen(false)} />
+        <SiteForm connectors={connectors} recordingEnabled={recordingEnabled} keystrokeMode={keystrokeMode} nativeGateway={nativeGateway} isolationEnabled={isolationEnabled} hostSuffix={hostSuffix} onDone={() => setOpen(false)} />
       </Modal>
     </>
   );

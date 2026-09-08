@@ -25,6 +25,18 @@ export async function resolveRequestTenant(): Promise<string | null> {
   return resolveTenantBySlug(slug);
 }
 
+// The acting tenant's slug from the request's console host (<slug>.<consoleDomain>),
+// without a DB lookup. Null off a tenant/console host. Used to namespace vendor
+// site hostnames per tenant.
+export async function resolveRequestTenantSlug(): Promise<string | null> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+  const consoleDomain =
+    process.env.CONSOLE_DOMAIN?.trim() ||
+    accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN);
+  return slugFromHost(host, consoleDomain);
+}
+
 // Wraps a route handler so its DB work runs under the request's tenant scope.
 // Self-host (flag off): pass-through, unchanged. Cloud: resolve the tenant and
 // enter withTenant; an unresolvable host is a 404 (unknown tenant).

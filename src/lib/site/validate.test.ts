@@ -2,18 +2,23 @@ import { describe, it, expect } from "vitest";
 import { validateSiteInput } from "./validate";
 
 const base = { nativeGateway: true, requireSecret: true, recordingEnabled: true, isolationEnabled: true };
-const withDomain = { ...base, accessDomain: "access.example.com" };
+const selfHost = { ...base, hostSuffix: ".access.example.com" };
+const cloud = { ...base, hostSuffix: "-acme.sites.cloud.captivo.io" };
 
 describe("validateSiteInput", () => {
-  it("assembles <label>.<accessDomain> from a bare label", () => {
-    const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "WIKI", upstreamUrl: "http://10.0.0.5:80" }, withDomain);
+  it("self-host: appends .<accessDomain> to a bare label", () => {
+    const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "WIKI", upstreamUrl: "http://10.0.0.5:80" }, selfHost);
     expect(r).toMatchObject({ ok: true, hostname: "wiki.access.example.com" });
   });
-  it("rejects a non-label (contains a dot) when an access domain is set", () => {
-    const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "a.b", upstreamUrl: "http://10.0.0.5:80" }, withDomain);
+  it("cloud: embeds the tenant slug in the label (per-tenant namespace)", () => {
+    const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "wiki", upstreamUrl: "http://10.0.0.5:80" }, cloud);
+    expect(r).toMatchObject({ ok: true, hostname: "wiki-acme.sites.cloud.captivo.io" });
+  });
+  it("rejects a non-label (contains a dot) when a suffix is set", () => {
+    const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "a.b", upstreamUrl: "http://10.0.0.5:80" }, selfHost);
     expect(r).toMatchObject({ ok: false, error: "invalid_hostname" });
   });
-  it("without an access domain, uses the value as-is (dev/misconfig)", () => {
+  it("without a suffix, uses the value as-is (dev/misconfig)", () => {
     const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "app.x.io", upstreamUrl: "http://10.0.0.5:80" }, base);
     expect(r).toMatchObject({ ok: true, hostname: "app.x.io" });
   });

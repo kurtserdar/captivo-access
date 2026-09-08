@@ -65,7 +65,7 @@ export function SiteForm({
   keystrokeMode = "per_resource",
   nativeGateway = false,
   isolationEnabled = false,
-  accessDomain = null,
+  hostSuffix = null,
   vault,
   onDone,
 }: {
@@ -75,7 +75,7 @@ export function SiteForm({
   keystrokeMode?: KeystrokeMode;
   nativeGateway?: boolean;
   isolationEnabled?: boolean;
-  accessDomain?: string | null;
+  hostSuffix?: string | null;
   vault?: { protocol: string; targetHost: string; targetPort: number; username: string; hasSecret: boolean; guacParams?: unknown };
   onDone?: () => void;
 }) {
@@ -84,10 +84,10 @@ export function SiteForm({
   const [name, setName] = useState(site?.name ?? "");
   // The hostname field holds only the subdomain LABEL; the domain suffix is a
   // fixed, server-owned affix. On edit, strip the suffix off the stored full host.
-  const hostSuffix = accessDomain ? `.${accessDomain}` : "";
+  const suffix = hostSuffix ?? "";
   const [hostname, setHostname] = useState(
-    site?.hostname && hostSuffix && site.hostname.endsWith(hostSuffix)
-      ? site.hostname.slice(0, -hostSuffix.length)
+    site?.hostname && suffix && site.hostname.endsWith(suffix)
+      ? site.hostname.slice(0, -suffix.length)
       : (site?.hostname ?? ""),
   );
   const [upstreamUrl, setUpstreamUrl] = useState(site?.upstreamUrl ?? "");
@@ -268,7 +268,7 @@ export function SiteForm({
         <label className="field-label" htmlFor="site-hostname">
           Public hostname
         </label>
-        {accessDomain ? (
+        {hostSuffix ? (
           <div className="host-input-row" style={{ display: "flex", alignItems: "center", gap: 0 }}>
             <input
               id="site-hostname"
@@ -286,7 +286,7 @@ export function SiteForm({
             />
             <span id="site-hostname-suffix" className="host-suffix"
               style={{ padding: "0 0.6rem", whiteSpace: "nowrap", opacity: 0.75, borderTopRightRadius: 6, borderBottomRightRadius: 6 }}>
-              .{accessDomain}
+              {hostSuffix}
             </span>
           </div>
         ) : (

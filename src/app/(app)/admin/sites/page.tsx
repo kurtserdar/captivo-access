@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { timeAgo } from "@/lib/format";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
-import { accessDomain } from "@/lib/domain/custom-domain";
+import { siteHostSuffix } from "@/lib/site/host-suffix";
 import { isolationEnabled } from "@/lib/isolation/enabled";
 import { resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
 import { AddSiteButton } from "./add-site-button";
@@ -79,7 +79,7 @@ export default async function AdminSitesPage() {
             tunnel.
           </p>
         </div>
-        {connectors.length > 0 && <AddSiteButton connectors={connectors} recordingEnabled={recordingEnabled()} keystrokeMode={await resolvedKeystrokeLoggingMode()} nativeGateway={nativeGatewayEnabled()} isolationEnabled={isolationEnabled()} accessDomain={accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN)} />}
+        {connectors.length > 0 && <AddSiteButton connectors={connectors} recordingEnabled={recordingEnabled()} keystrokeMode={await resolvedKeystrokeLoggingMode()} nativeGateway={nativeGatewayEnabled()} isolationEnabled={isolationEnabled()} hostSuffix={await siteHostSuffix()} />}
       </div>
 
       {sites.length === 0 ? (

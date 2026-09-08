@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { recordingEnabled } from "@/lib/recording/enabled";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
 import { isolationEnabled } from "@/lib/isolation/enabled";
-import { accessDomain } from "@/lib/domain/custom-domain";
+import { siteHostSuffix } from "@/lib/site/host-suffix";
 import { resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
 import { getVaultCredentialMeta } from "@/lib/vault/store";
 import { SiteForm } from "../../site-form";
@@ -45,7 +45,7 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
             keystrokeMode={keystrokeMode}
             nativeGateway={nativeGatewayEnabled()}
             isolationEnabled={isolationEnabled()}
-            accessDomain={accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN)}
+            hostSuffix={await siteHostSuffix()}
             vault={vault ?? undefined}
             site={{
               id: site.id,
