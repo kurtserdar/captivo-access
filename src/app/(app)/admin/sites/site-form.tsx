@@ -50,7 +50,11 @@ type SiteInitial = {
   fileTransferMode?: string;
   accessMode: "TRANSPARENT" | "GATEWAY" | "ISOLATED";
   hasLogo?: boolean;
+  customDomain?: boolean;
+  domainVerifiedAt?: string | null;
 };
+
+type VerifyResult = { status: "ok" | "missing" | "mismatch" | "undetermined"; expectedIp?: string | null; resolvedIp?: string | null };
 
 // The standard port for each remote-session protocol; pre-filled when the
 // protocol changes (the operator can still override it for a non-standard port).
@@ -90,6 +94,9 @@ export function SiteForm({
       ? site.hostname.slice(0, -suffix.length)
       : (site?.hostname ?? ""),
   );
+  const [customDomain, setCustomDomain] = useState(site?.customDomain ?? false);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
   const [upstreamUrl, setUpstreamUrl] = useState(site?.upstreamUrl ?? "");
   const [description, setDescription] = useState(site?.description ?? "");
   const [insecureSkipVerify, setInsecureSkipVerify] = useState(site?.insecureSkipVerify ?? false);
@@ -157,6 +164,21 @@ export function SiteForm({
     return null;
   })();
 
+  async function verifyDomain() {
+    if (!site?.id) return;
+    setVerifying(true);
+    setVerifyResult(null);
+    try {
+      const res = await fetch(`/api/admin/sites/${site.id}/verify-domain`, { method: "POST" });
+      const result = await res.json().catch(() => ({}));
+      setVerifyResult(res.ok ? result : { status: "undetermined" });
+    } catch {
+      setVerifyResult({ status: "undetermined" });
+    } finally {
+      setVerifying(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -170,6 +192,7 @@ export function SiteForm({
           name,
           accessMode,
           hostname,
+          customDomain,
           upstreamUrl,
           description: description.trim() || undefined,
           insecureSkipVerify,
@@ -265,10 +288,74 @@ export function SiteForm({
       {accessMode === "TRANSPARENT" && (
       <>
       <div className="field">
+        <label className="field-label">Domain</label>
+        <div className="view-toggle" role="group" aria-label="Domain type">
+          <button
+            type="button"
+            className={`btn sm ${!customDomain ? "primary" : ""}`}
+            aria-pressed={!customDomain}
+            onClick={() => setCustomDomain(false)}
+          >
+            Managed by us
+          </button>
+          <button
+            type="button"
+            className={`btn sm ${customDomain ? "primary" : ""}`}
+            aria-pressed={customDomain}
+            onClick={() => setCustomDomain(true)}
+          >
+            Bring your own domain
+          </button>
+        </div>
+      </div>
+      <div className="field">
         <label className="field-label" htmlFor="site-hostname">
           Public hostname
         </label>
-        {hostSuffix ? (
+        {customDomain ? (
+          <>
+            <input
+              id="site-hostname"
+              type="text"
+              className="input"
+              value={hostname}
+              onChange={(e) => setHostname(e.target.value)}
+              required
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="portal.acme.com"
+            />
+            <p className="hint">
+              Point this domain&apos;s DNS <b>A record</b> at this server, then verify it below.
+            </p>
+            {site?.id && (
+              <>
+                {site.domainVerifiedAt && (
+                  <p className="notice success">Verified {new Date(site.domainVerifiedAt).toLocaleDateString()}.</p>
+                )}
+                <button type="button" className="btn sm" onClick={verifyDomain} disabled={verifying}>
+                  {verifying ? "Verifying…" : "Verify DNS"}
+                </button>
+                {verifyResult && (
+                  <p
+                    className={`notice ${
+                      verifyResult.status === "ok" ? "success" : verifyResult.status === "mismatch" ? "warn" : "error"
+                    }`}
+                    role="status"
+                  >
+                    {verifyResult.status === "ok" && "Verified — DNS points at this server."}
+                    {verifyResult.status === "missing" &&
+                      `No A record found for ${hostname}. Point its DNS A record at this server and try again.`}
+                    {verifyResult.status === "mismatch" &&
+                      `${hostname} resolves to ${verifyResult.resolvedIp ?? "a different address"}, not this server (${verifyResult.expectedIp ?? "unknown"}). Update the A record and try again.`}
+                    {verifyResult.status === "undetermined" && "Couldn't check right now — try again shortly."}
+                  </p>
+                )}
+              </>
+            )}
+          </>
+        ) : hostSuffix ? (
           <div className="host-input-row" style={{ display: "flex", alignItems: "center", gap: 0 }}>
             <input
               id="site-hostname"
