@@ -65,6 +65,7 @@ export function SiteForm({
   keystrokeMode = "per_resource",
   nativeGateway = false,
   isolationEnabled = false,
+  accessDomain = null,
   vault,
   onDone,
 }: {
@@ -74,13 +75,21 @@ export function SiteForm({
   keystrokeMode?: KeystrokeMode;
   nativeGateway?: boolean;
   isolationEnabled?: boolean;
+  accessDomain?: string | null;
   vault?: { protocol: string; targetHost: string; targetPort: number; username: string; hasSecret: boolean; guacParams?: unknown };
   onDone?: () => void;
 }) {
   const router = useRouter();
   const [connectorId, setConnectorId] = useState(site?.connectorId ?? connectors[0]?.id ?? "");
   const [name, setName] = useState(site?.name ?? "");
-  const [hostname, setHostname] = useState(site?.hostname ?? "");
+  // The hostname field holds only the subdomain LABEL; the domain suffix is a
+  // fixed, server-owned affix. On edit, strip the suffix off the stored full host.
+  const hostSuffix = accessDomain ? `.${accessDomain}` : "";
+  const [hostname, setHostname] = useState(
+    site?.hostname && hostSuffix && site.hostname.endsWith(hostSuffix)
+      ? site.hostname.slice(0, -hostSuffix.length)
+      : (site?.hostname ?? ""),
+  );
   const [upstreamUrl, setUpstreamUrl] = useState(site?.upstreamUrl ?? "");
   const [description, setDescription] = useState(site?.description ?? "");
   const [insecureSkipVerify, setInsecureSkipVerify] = useState(site?.insecureSkipVerify ?? false);
@@ -259,15 +268,38 @@ export function SiteForm({
         <label className="field-label" htmlFor="site-hostname">
           Public hostname
         </label>
-        <input
-          id="site-hostname"
-          type="text"
-          className="input"
-          value={hostname}
-          onChange={(e) => setHostname(e.target.value)}
-          required
-          placeholder="wiki.access.example.com"
-        />
+        {accessDomain ? (
+          <div className="host-input-row" style={{ display: "flex", alignItems: "center", gap: 0 }}>
+            <input
+              id="site-hostname"
+              type="text"
+              className="input"
+              style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+              value={hostname}
+              onChange={(e) => setHostname(e.target.value)}
+              required
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="wiki"
+              aria-describedby="site-hostname-suffix"
+            />
+            <span id="site-hostname-suffix" className="host-suffix"
+              style={{ padding: "0 0.6rem", whiteSpace: "nowrap", opacity: 0.75, borderTopRightRadius: 6, borderBottomRightRadius: 6 }}>
+              .{accessDomain}
+            </span>
+          </div>
+        ) : (
+          <input
+            id="site-hostname"
+            type="text"
+            className="input"
+            value={hostname}
+            onChange={(e) => setHostname(e.target.value)}
+            required
+            placeholder="wiki.access.example.com"
+          />
+        )}
       </div>
       <div className="field">
         <label className="field-label" htmlFor="site-upstream">

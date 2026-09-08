@@ -8,6 +8,7 @@ import { isolationEnabled } from "@/lib/isolation/enabled";
 import { encrypt } from "@/lib/crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { validateSiteInput } from "@/lib/site/validate";
+import { accessDomain } from "@/lib/domain/custom-domain";
 import { crossTenantHostnameTaken } from "@/lib/site/hostname";
 import { parseLogoUpload } from "@/lib/site/logo";
 import { recordAdminAction } from "@/lib/audit/admin";
@@ -20,7 +21,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const { id } = await ctx.params;
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled(), requireSecret: false, recordingEnabled: recordingEnabled(), isolationEnabled: isolationEnabled() });
+  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled(), requireSecret: false, recordingEnabled: recordingEnabled(), isolationEnabled: isolationEnabled(), accessDomain: accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN) });
   if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.error === "native_gateway_disabled" || v.error === "isolation_disabled" ? 403 : 400 });
 
   const connector = await db.connector.findUnique({ where: { id: v.connectorId }, select: { id: true } });

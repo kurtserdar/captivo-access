@@ -55,7 +55,7 @@ function str(v: unknown): string {
 // (no DB/env) so it is unit-tested; the routes do the DB writes with its output.
 export function validateSiteInput(
   body: Record<string, unknown>,
-  opts: { nativeGateway: boolean; requireSecret: boolean; recordingEnabled: boolean; isolationEnabled: boolean },
+  opts: { nativeGateway: boolean; requireSecret: boolean; recordingEnabled: boolean; isolationEnabled: boolean; accessDomain?: string | null },
 ): SiteValidation {
   const connectorId = str(body.connectorId);
   const name = str(body.name);
@@ -111,9 +111,19 @@ export function validateSiteInput(
     };
   }
 
-  const hostname = str(body.hostname).toLowerCase();
+  // The form sends only the subdomain LABEL; the server owns the domain suffix.
+  // With an access domain configured, assemble <label>.<accessDomain> and require
+  // a single DNS label. Without one (dev/misconfig), accept the value as-is.
+  const rawHost = str(body.hostname).toLowerCase().trim();
+  let hostname: string;
+  if (opts.accessDomain) {
+    if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(rawHost)) return { ok: false, error: "invalid_hostname" };
+    hostname = `${rawHost}.${opts.accessDomain}`;
+  } else {
+    hostname = rawHost;
+  }
   const upstreamUrl = str(body.upstreamUrl);
-  if (!hostname) return { ok: false, error: "invalid_hostname" };
+  if (!rawHost) return { ok: false, error: "invalid_hostname" };
   if (!upstreamUrl) return { ok: false, error: "connector_name_upstream_required" };
   try {
     const u = new URL(upstreamUrl);

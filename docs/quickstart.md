@@ -101,7 +101,8 @@ In the console:
    needed here — the connector takes no `UPSTREAMS` (only an optional
    `ALLOWED_TARGETS` boundary, unneeded for this quickstart).
 
-2. **Resources → add one.** Name it, set **hostname** = `app.SERVER_IP.sslip.io`,
+2. **Resources → add one.** Name it, set the **hostname** to just `app` (the
+   field shows your `.SERVER_IP.sslip.io` domain suffix automatically),
    **internal address** = `http://testapp:80` (the dummy app's address on the
    compose network), and bind it to your connector.
 
