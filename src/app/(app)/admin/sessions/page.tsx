@@ -3,11 +3,12 @@ import { SessionsIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { currentSessionId } from "@/lib/auth/session";
 import { SessionsTable, type SessionRow } from "./sessions-table";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Sessions" };
 
-export default async function AdminSessionsPage() {
+async function AdminSessionsPageImpl() {
   await requireAdmin();
 
   const [sessions, currentId] = await Promise.all([
@@ -51,3 +52,8 @@ export default async function AdminSessionsPage() {
     </main>
   );
 }
+
+export default async function AdminSessionsPage(...args: Parameters<typeof AdminSessionsPageImpl>) {
+  return withRequestTenant(() => AdminSessionsPageImpl(...args));
+}
+

@@ -3,11 +3,12 @@ import { db } from "@/lib/db";
 import { timeAgo } from "@/lib/format";
 import { MarkReadButton } from "./mark-read-button";
 import { NotificationsView, type NotificationRow } from "./notifications-view";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Notifications" };
 
-export default async function AdminNotificationsPage() {
+async function AdminNotificationsPageImpl() {
   await requireCapability("read_console");
 
   const notifications = await db.notification.findMany({
@@ -52,3 +53,8 @@ export default async function AdminNotificationsPage() {
     </main>
   );
 }
+
+export default async function AdminNotificationsPage(...args: Parameters<typeof AdminNotificationsPageImpl>) {
+  return withRequestTenant(() => AdminNotificationsPageImpl(...args));
+}
+

@@ -2,11 +2,12 @@ import Link from "next/link";
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { TimezoneForm } from "./timezone-form";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Preferences" };
 
-export default async function PreferencesPage() {
+async function PreferencesPageImpl() {
   const user = await requireUser();
   const u = await db.user.findUnique({ where: { id: user.id }, select: { timezone: true } });
   return (
@@ -28,3 +29,8 @@ export default async function PreferencesPage() {
     </main>
   );
 }
+
+export default async function PreferencesPage(...args: Parameters<typeof PreferencesPageImpl>) {
+  return withRequestTenant(() => PreferencesPageImpl(...args));
+}
+

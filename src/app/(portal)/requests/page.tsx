@@ -4,6 +4,7 @@ import { requestStatus, type RequestState } from "@/lib/portal/request-status";
 import { resolvedRequireRequestJustification } from "@/lib/settings/platform";
 import { RequestAccessButton } from "../access/request-access-button";
 import { WithdrawRequestButton } from "../access/withdraw-request-button";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Requests" };
@@ -20,7 +21,7 @@ function fmtDate(d: Date): string {
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(d);
 }
 
-export default async function RequestsPage() {
+async function RequestsPageImpl() {
   const user = await requireUser();
   const now = new Date();
   const rows = await listUserRequests(user.id);
@@ -63,3 +64,8 @@ export default async function RequestsPage() {
     </div>
   );
 }
+
+export default async function RequestsPage(...args: Parameters<typeof RequestsPageImpl>) {
+  return withRequestTenant(() => RequestsPageImpl(...args));
+}
+

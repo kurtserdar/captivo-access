@@ -9,6 +9,7 @@ import Link from "next/link";
 import { listAdminAuditEvents } from "@/lib/audit/admin-query";
 import { AdminAuditTable, type AdminAuditRowJSON } from "./admin-audit-table";
 import { AdminIntegrityPanel } from "./admin-integrity-panel";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 function AuditTabs({ admin }: { admin: boolean }) {
   return (
@@ -24,7 +25,7 @@ export const metadata = { title: "Audit log" };
 
 const INITIAL_LIMIT = 50;
 
-export default async function AdminAuditPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+async function AdminAuditPageImpl({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   await requireCapability("read_console");
   const { tab } = await searchParams;
 
@@ -125,3 +126,8 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
     </main>
   );
 }
+
+export default async function AdminAuditPage(...args: Parameters<typeof AdminAuditPageImpl>) {
+  return withRequestTenant(() => AdminAuditPageImpl(...args));
+}
+

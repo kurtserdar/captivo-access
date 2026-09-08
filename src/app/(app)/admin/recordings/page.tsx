@@ -3,11 +3,12 @@ import { RecordingsIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { listRecordings } from "@/lib/recording/query";
 import { RecordingsTable, type RecordingRowJSON } from "./recordings-table";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Recordings" };
 
-export default async function AdminRecordingsPage() {
+async function AdminRecordingsPageImpl() {
   await requireAdmin();
 
   const [users, sites, { rows, total }] = await Promise.all([
@@ -46,3 +47,8 @@ export default async function AdminRecordingsPage() {
     </main>
   );
 }
+
+export default async function AdminRecordingsPage(...args: Parameters<typeof AdminRecordingsPageImpl>) {
+  return withRequestTenant(() => AdminRecordingsPageImpl(...args));
+}
+

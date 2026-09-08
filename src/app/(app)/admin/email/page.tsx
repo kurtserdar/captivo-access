@@ -2,11 +2,12 @@ import { requireAdmin } from "@/lib/current-user";
 import { getSmtpConfig } from "@/lib/email/mailer";
 import { LastVerified } from "@/app/(app)/_shell/last-verified";
 import { EmailForm } from "./email-form";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Email" };
 
-export default async function AdminEmailPage() {
+async function AdminEmailPageImpl() {
   const admin = await requireAdmin();
   const cfg = await getSmtpConfig();
   const initial = cfg
@@ -28,3 +29,8 @@ export default async function AdminEmailPage() {
     </main>
   );
 }
+
+export default async function AdminEmailPage(...args: Parameters<typeof AdminEmailPageImpl>) {
+  return withRequestTenant(() => AdminEmailPageImpl(...args));
+}
+

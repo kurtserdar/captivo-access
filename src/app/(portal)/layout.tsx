@@ -8,12 +8,13 @@ import { PortalNav } from "./_nav/portal-nav";
 import { PortalMobileNav } from "./_nav/portal-mobile-nav";
 import { BrandLockup } from "@/components/brand";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 
 // Light, self-contained shell for connect-only (vendor) users. No admin sidebar.
 // Theme-independent: explicit light palette, Public Sans.
-export default async function PortalLayout({ children }: { children: React.ReactNode }) {
+async function PortalLayoutImpl({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const tz = await resolvedDisplayTimezone(user.id);
   const initials = (user.name ?? user.email ?? "?").trim().slice(0, 2).toUpperCase();
@@ -42,3 +43,8 @@ export default async function PortalLayout({ children }: { children: React.React
     </TimezoneProvider>
   );
 }
+
+export default async function PortalLayout(...args: Parameters<typeof PortalLayoutImpl>) {
+  return withRequestTenant(() => PortalLayoutImpl(...args));
+}
+

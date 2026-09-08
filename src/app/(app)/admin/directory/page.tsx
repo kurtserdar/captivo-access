@@ -6,11 +6,12 @@ import { LastVerified } from "@/app/(app)/_shell/last-verified";
 import { DirectoryForm } from "./directory-form";
 import { GroupMappings } from "./group-mappings";
 import { ResolvePreview } from "./resolve-preview";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Directory (LDAP/AD)" };
 
-export default async function AdminDirectoryPage() {
+async function AdminDirectoryPageImpl() {
   await requireCapability("configure");
   const [cfg, connectors, mappings, sites] = await Promise.all([
     getDirectoryConfig(),
@@ -57,3 +58,8 @@ export default async function AdminDirectoryPage() {
     </main>
   );
 }
+
+export default async function AdminDirectoryPage(...args: Parameters<typeof AdminDirectoryPageImpl>) {
+  return withRequestTenant(() => AdminDirectoryPageImpl(...args));
+}
+

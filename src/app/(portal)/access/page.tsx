@@ -9,11 +9,12 @@ import { securityStatus } from "@/lib/portal/security-status";
 import { launchHref } from "@/lib/portal/launch-href";
 import { resolvedRequireRequestJustification } from "@/lib/settings/platform";
 import { PortalHome, type CardVM, type RecentVM } from "./portal-home";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "My access" };
 
-export default async function AccessPage() {
+async function AccessPageImpl() {
   const user = await requireUser();
   const now = new Date();
   const recEnabled = recordingEnabled();
@@ -89,6 +90,10 @@ export default async function AccessPage() {
       requireJustification={requireJustification}
     />
   );
+}
+
+export default async function AccessPage(...args: Parameters<typeof AccessPageImpl>) {
+  return withRequestTenant(() => AccessPageImpl(...args));
 }
 
 function durationText(start: Date, end: Date): string {

@@ -5,11 +5,12 @@ import { db } from "@/lib/db";
 import { listActiveSessions, listActiveWebSessions } from "@/lib/dataplane/client";
 import { LiveTable, type LiveRow } from "./live-table";
 import { AutoRefresh } from "@/app/(app)/_shell/auto-refresh";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Live sessions" };
 
-export default async function AdminLivePage() {
+async function AdminLivePageImpl() {
   const user = await getCurrentUser();
   if (!user || !can(user.role, "read_console")) notFound();
 
@@ -78,3 +79,8 @@ export default async function AdminLivePage() {
     </main>
   );
 }
+
+export default async function AdminLivePage(...args: Parameters<typeof AdminLivePageImpl>) {
+  return withRequestTenant(() => AdminLivePageImpl(...args));
+}
+

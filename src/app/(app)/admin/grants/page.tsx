@@ -10,11 +10,12 @@ import { AddGrantButton } from "./add-grant-button";
 import { TestAccessWidget } from "./test-access-widget";
 import { DecisionButtons } from "./decision-buttons";
 import { GrantsTable, type GrantRow } from "./grants-table";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Grants" };
 
-export default async function AdminGrantsPage() {
+async function AdminGrantsPageImpl() {
   const user = await requireCapability("read_console");
   const canApprove = can(user.role, "approve_grants");
   const canConfigure = can(user.role, "configure");
@@ -93,3 +94,8 @@ export default async function AdminGrantsPage() {
     </main>
   );
 }
+
+export default async function AdminGrantsPage(...args: Parameters<typeof AdminGrantsPageImpl>) {
+  return withRequestTenant(() => AdminGrantsPageImpl(...args));
+}
+

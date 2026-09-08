@@ -8,11 +8,12 @@ import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { AddConnectorButton } from "./add-connector-button";
 import { ConnectorsTable, type ConnectorRow } from "./connectors-table";
 import { DeletePairingButton } from "./delete-pairing-button";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Connectors" };
 
-export default async function AdminConnectorsPage() {
+async function AdminConnectorsPageImpl() {
   await requireAdmin();
 
   const connectors = await db.connector.findMany({
@@ -103,3 +104,8 @@ export default async function AdminConnectorsPage() {
     </main>
   );
 }
+
+export default async function AdminConnectorsPage(...args: Parameters<typeof AdminConnectorsPageImpl>) {
+  return withRequestTenant(() => AdminConnectorsPageImpl(...args));
+}
+

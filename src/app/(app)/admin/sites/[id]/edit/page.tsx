@@ -8,11 +8,12 @@ import { siteHostSuffix } from "@/lib/site/host-suffix";
 import { resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
 import { getVaultCredentialMeta } from "@/lib/vault/store";
 import { SiteForm } from "../../site-form";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Edit resource" };
 
-export default async function EditSitePage({ params }: { params: Promise<{ id: string }> }) {
+async function EditSitePageImpl({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
   const { id } = await params;
   const [site, connectors] = await Promise.all([
@@ -71,3 +72,8 @@ export default async function EditSitePage({ params }: { params: Promise<{ id: s
     </main>
   );
 }
+
+export default async function EditSitePage(...args: Parameters<typeof EditSitePageImpl>) {
+  return withRequestTenant(() => EditSitePageImpl(...args));
+}
+

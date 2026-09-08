@@ -8,11 +8,12 @@ import { getSetupStatus } from "@/lib/dashboard/stats";
 import { isConsoleUser, ROLE_LABELS } from "@/lib/auth/roles";
 import { getConsoleData } from "@/lib/console/data";
 import { SecurityConsole } from "./_console/security-console";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Overview" };
 
-export default async function DashboardPage() {
+async function DashboardPageImpl() {
   const user = await requireUser();
 
   const head = (
@@ -88,3 +89,8 @@ export default async function DashboardPage() {
     </main>
   );
 }
+
+export default async function DashboardPage(...args: Parameters<typeof DashboardPageImpl>) {
+  return withRequestTenant(() => DashboardPageImpl(...args));
+}
+

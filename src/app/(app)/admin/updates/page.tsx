@@ -8,11 +8,12 @@ import { buildConnectorUpdateCommand } from "@/lib/connector/repair";
 import { managerVersion } from "@/lib/version";
 import { UpdatesForm } from "./updates-form";
 import { UpgradeGuide } from "./upgrade-guide";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Updates" };
 
-export default async function AdminUpdatesPage() {
+async function AdminUpdatesPageImpl() {
   await requireCapability("configure");
   const cfg = await getUpdateCheckConfig();
   const mgr = managerVersion();
@@ -64,3 +65,8 @@ export default async function AdminUpdatesPage() {
     </main>
   );
 }
+
+export default async function AdminUpdatesPage(...args: Parameters<typeof AdminUpdatesPageImpl>) {
+  return withRequestTenant(() => AdminUpdatesPageImpl(...args));
+}
+

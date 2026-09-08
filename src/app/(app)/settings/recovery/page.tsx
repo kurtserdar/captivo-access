@@ -3,11 +3,12 @@ import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { RecoverySetup } from "./recovery-setup";
 import { RemoveRecoveryButton } from "./remove-recovery-button";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Recovery" };
 
-export default async function RecoveryPage() {
+async function RecoveryPageImpl() {
   const user = await requireUser();
 
   const totp = await db.totpSecret.findUnique({
@@ -50,3 +51,8 @@ export default async function RecoveryPage() {
     </main>
   );
 }
+
+export default async function RecoveryPage(...args: Parameters<typeof RecoveryPageImpl>) {
+  return withRequestTenant(() => RecoveryPageImpl(...args));
+}
+

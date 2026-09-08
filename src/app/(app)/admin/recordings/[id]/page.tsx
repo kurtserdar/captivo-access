@@ -5,11 +5,12 @@ import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { RecordingPlayer } from "./recording-player";
 import { GuacRecordingPlayer } from "./guac-recording-player";
 import { VideoRecordingPlayer } from "./video-recording-player";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Recording" };
 
-export default async function RecordingPage({ params }: { params: Promise<{ id: string }> }) {
+async function RecordingPageImpl({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
   const { id } = await params;
   const rec = await db.sessionRecording.findUnique({ where: { id } });
@@ -37,3 +38,8 @@ export default async function RecordingPage({ params }: { params: Promise<{ id: 
     </main>
   );
 }
+
+export default async function RecordingPage(...args: Parameters<typeof RecordingPageImpl>) {
+  return withRequestTenant(() => RecordingPageImpl(...args));
+}
+

@@ -3,11 +3,12 @@ import { UsersIcon } from "@/components/icons";
 import { requireAdmin } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { UsersTable } from "./users-table";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Users" };
 
-export default async function AdminUsersPage({
+async function AdminUsersPageImpl({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string | string[] }>;
@@ -61,3 +62,8 @@ export default async function AdminUsersPage({
     </main>
   );
 }
+
+export default async function AdminUsersPage(...args: Parameters<typeof AdminUsersPageImpl>) {
+  return withRequestTenant(() => AdminUsersPageImpl(...args));
+}
+

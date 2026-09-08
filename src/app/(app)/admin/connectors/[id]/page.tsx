@@ -9,6 +9,7 @@ import { getConnectorTelemetry } from "@/lib/connector/telemetry";
 import { resolvedDefaultConnectorLogLevel } from "@/lib/settings/platform";
 import { EgressPolicyForm } from "./egress-policy-form";
 import { LogLevelForm } from "./log-level-form";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Connector" };
@@ -45,7 +46,7 @@ function humanDuration(sec: number): string {
   return `${m}m`;
 }
 
-export default async function ConnectorDetailPage({ params }: { params: Promise<{ id: string }> }) {
+async function ConnectorDetailPageImpl({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
   const { id } = await params;
 
@@ -223,3 +224,8 @@ export default async function ConnectorDetailPage({ params }: { params: Promise<
     </main>
   );
 }
+
+export default async function ConnectorDetailPage(...args: Parameters<typeof ConnectorDetailPageImpl>) {
+  return withRequestTenant(() => ConnectorDetailPageImpl(...args));
+}
+

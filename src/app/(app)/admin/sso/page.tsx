@@ -3,11 +3,12 @@ import { requireCapability } from "@/lib/current-user";
 import { getOidcConfig } from "@/lib/auth/oidc-config";
 import { LastVerified } from "@/app/(app)/_shell/last-verified";
 import { SsoForm } from "./sso-form";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Single sign-on" };
 
-export default async function AdminSsoPage() {
+async function AdminSsoPageImpl() {
   await requireCapability("configure");
   const cfg = await getOidcConfig();
 
@@ -46,3 +47,8 @@ export default async function AdminSsoPage() {
     </main>
   );
 }
+
+export default async function AdminSsoPage(...args: Parameters<typeof AdminSsoPageImpl>) {
+  return withRequestTenant(() => AdminSsoPageImpl(...args));
+}
+

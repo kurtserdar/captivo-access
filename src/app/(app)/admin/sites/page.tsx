@@ -9,11 +9,12 @@ import { isolationEnabled } from "@/lib/isolation/enabled";
 import { resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
 import { AddSiteButton } from "./add-site-button";
 import { SitesView, type SiteRow } from "./sites-view";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Resources" };
 
-export default async function AdminSitesPage() {
+async function AdminSitesPageImpl() {
   await requireAdmin();
 
   const [sites, connectors] = await Promise.all([
@@ -97,3 +98,8 @@ export default async function AdminSitesPage() {
     </main>
   );
 }
+
+export default async function AdminSitesPage(...args: Parameters<typeof AdminSitesPageImpl>) {
+  return withRequestTenant(() => AdminSitesPageImpl(...args));
+}
+

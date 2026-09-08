@@ -13,11 +13,12 @@ import { buildNavModel } from "@/lib/nav/model";
 import { resolvedDisplayTimezone } from "@/lib/settings/timezone";
 import { TopNav } from "./_shell/topnav";
 import { TimezoneProvider } from "./_shell/timezone-context";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 // requireUser() must be read fresh from the DB on every request (session/role changes reflect immediately).
 export const dynamic = "force-dynamic";
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+async function AppLayoutImpl({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   // Platform super-admins operate the platform console, not the tenant console —
   // send them there instead of the vendor "My access" view. Dormant on self-host
@@ -65,3 +66,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     </TimezoneProvider>
   );
 }
+
+export default async function AppLayout(...args: Parameters<typeof AppLayoutImpl>) {
+  return withRequestTenant(() => AppLayoutImpl(...args));
+}
+

@@ -4,6 +4,7 @@ import { getPlatformSettings, resolvedRecordingConsentRequired, resolvedGuacPara
 import { cronHealth, type CronJob } from "@/lib/cron/heartbeat";
 import { SessionPolicyForm } from "./session-policy-form";
 import { PlatformSettingsForm } from "./platform-settings-form";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Policy" };
@@ -15,7 +16,7 @@ const JOB_LABEL: Record<CronJob, string> = {
   "audit-anchor": "External anchor",
 };
 
-export default async function AdminPolicyPage() {
+async function AdminPolicyPageImpl() {
   await requireCapability("configure");
   const [policy, platform, consentEffective, cron, guacDefaults] = await Promise.all([
     getSessionPolicy(),
@@ -62,3 +63,8 @@ export default async function AdminPolicyPage() {
     </main>
   );
 }
+
+export default async function AdminPolicyPage(...args: Parameters<typeof AdminPolicyPageImpl>) {
+  return withRequestTenant(() => AdminPolicyPageImpl(...args));
+}
+

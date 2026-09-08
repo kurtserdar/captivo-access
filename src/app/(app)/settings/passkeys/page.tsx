@@ -4,12 +4,13 @@ import { db } from "@/lib/db";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { AddPasskeyButton } from "./add-passkey-button";
 import { DeletePasskeyButton } from "./delete-passkey-button";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 // The passkey list must be read fresh on every request (full page reload after add/delete).
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings" };
 
-export default async function PasskeysPage() {
+async function PasskeysPageImpl() {
   const user = await requireUser();
 
   // Only serializable fields are selected — counter (BigInt) and
@@ -72,3 +73,8 @@ export default async function PasskeysPage() {
     </main>
   );
 }
+
+export default async function PasskeysPage(...args: Parameters<typeof PasskeysPageImpl>) {
+  return withRequestTenant(() => PasskeysPageImpl(...args));
+}
+

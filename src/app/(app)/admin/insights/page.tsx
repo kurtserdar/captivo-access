@@ -2,11 +2,12 @@ import { requireCapability } from "@/lib/current-user";
 import { getDashboardStats } from "@/lib/dashboard/stats";
 import { getInsights } from "@/lib/dashboard/insights";
 import { DashboardInsights } from "../../_dashboard/dashboard-insights";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Insights" };
 
-export default async function InsightsPage() {
+async function InsightsPageImpl() {
   await requireCapability("read_console");
   const [stats, insights] = await Promise.all([getDashboardStats(), getInsights()]);
   return (
@@ -16,3 +17,8 @@ export default async function InsightsPage() {
     </main>
   );
 }
+
+export default async function InsightsPage(...args: Parameters<typeof InsightsPageImpl>) {
+  return withRequestTenant(() => InsightsPageImpl(...args));
+}
+

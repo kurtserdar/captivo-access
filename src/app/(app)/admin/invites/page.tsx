@@ -5,6 +5,7 @@ import { getSmtpConfig } from "@/lib/email/mailer";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { AddInviteButton } from "./add-invite-button";
 import { InvitesTable, type InviteRow } from "./invites-table";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Invites" };
@@ -15,7 +16,7 @@ function inviteStatus(inv: { usedAt: Date | null; expiresAt: Date }): string {
   return "Pending";
 }
 
-export default async function AdminInvitesPage() {
+async function AdminInvitesPageImpl() {
   await requireAdmin();
 
   const smtp = await getSmtpConfig();
@@ -52,3 +53,8 @@ export default async function AdminInvitesPage() {
     </main>
   );
 }
+
+export default async function AdminInvitesPage(...args: Parameters<typeof AdminInvitesPageImpl>) {
+  return withRequestTenant(() => AdminInvitesPageImpl(...args));
+}
+

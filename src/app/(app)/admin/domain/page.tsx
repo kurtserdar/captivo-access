@@ -3,11 +3,12 @@ import { promises as dns } from "node:dns";
 import { accessDomain, wildcardRecord } from "@/lib/domain/custom-domain";
 import { DomainVerifier } from "./domain-verifier";
 import { CopyButton } from "@/app/(app)/_shell/copy-button";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Custom domain" };
 
-export default async function AdminDomainPage() {
+async function AdminDomainPageImpl() {
   await requireCapability("configure");
 
   const domain = accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN);
@@ -55,3 +56,8 @@ export default async function AdminDomainPage() {
     </main>
   );
 }
+
+export default async function AdminDomainPage(...args: Parameters<typeof AdminDomainPageImpl>) {
+  return withRequestTenant(() => AdminDomainPageImpl(...args));
+}
+

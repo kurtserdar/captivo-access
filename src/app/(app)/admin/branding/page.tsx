@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Branding" };
@@ -8,6 +9,11 @@ export const metadata = { title: "Branding" };
 // /api/branding/splash, BrandingConfig, ConnectSplash's custom-image path) stays in
 // the codebase. Re-enable by restoring the nav entry in src/lib/nav/model.ts and
 // reverting this file to render <SplashForm/>.
-export default function BrandingPage() {
+function BrandingPageImpl() {
   notFound();
 }
+
+export default async function BrandingPage(...args: Parameters<typeof BrandingPageImpl>) {
+  return withRequestTenant(async () => BrandingPageImpl(...args));
+}
+
