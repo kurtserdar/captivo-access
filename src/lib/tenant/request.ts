@@ -6,13 +6,21 @@ import { slugFromHost, resolveTenantBySlug } from "@/lib/tenant/resolve";
 import { withTenant } from "@/lib/tenant/scope";
 import { multiTenantEnabled } from "@/lib/tenant/enabled";
 
-// Resolves the request's tenant from its host: <slug>.<accessDomain> → slug →
+// Resolves the request's tenant from its host: <slug>.<consoleDomain> → slug →
 // tenant id (via the SECURITY DEFINER resolver). Null when the host carries no
 // tenant slug or the slug is unknown.
+//
+// The console domain (where tenant consoles live) can differ from the site
+// domain: when CONSOLE_DOMAIN is set, tenant slugs resolve under it; otherwise it
+// falls back to the access domain, so a deployment that co-locates consoles and
+// sites under one domain (and the single-tenant default) is unchanged.
 export async function resolveRequestTenant(): Promise<string | null> {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
-  const slug = slugFromHost(host, accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN));
+  const consoleDomain =
+    process.env.CONSOLE_DOMAIN?.trim() ||
+    accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN);
+  const slug = slugFromHost(host, consoleDomain);
   if (!slug) return null;
   return resolveTenantBySlug(slug);
 }

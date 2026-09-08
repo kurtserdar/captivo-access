@@ -4,7 +4,7 @@ export const PLATFORM_TENANT_ID = "platform";
 
 // Slugs a customer tenant may never claim: the platform console + the infra
 // labels that are never a tenant host (kept in sync with RESERVED in resolve.ts).
-export const RESERVED_SLUGS = new Set(["platform", "manager", "www", "app", "admin", "api"]);
+export const RESERVED_SLUGS = new Set(["platform", "manager", "www", "app", "admin", "api", "connect", "sites"]);
 
 export function isReservedSlug(slug: string): boolean {
   return RESERVED_SLUGS.has(slug);
