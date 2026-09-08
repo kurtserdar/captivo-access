@@ -8,6 +8,7 @@ import { isolationEnabled } from "@/lib/isolation/enabled";
 import { encrypt } from "@/lib/crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { validateSiteInput } from "@/lib/site/validate";
+import { crossTenantHostnameTaken } from "@/lib/site/hostname";
 import { parseLogoUpload } from "@/lib/site/logo";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
@@ -36,6 +37,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     : {};
 
   if (v.mode === "TRANSPARENT") {
+    if (await crossTenantHostnameTaken(v.hostname)) {
+      return NextResponse.json({ error: "hostname_taken" }, { status: 409 });
+    }
     try {
       await db.site.update({ where: { id }, data: { connectorId: v.connectorId, name: v.name, hostname: v.hostname, upstreamUrl: v.upstreamUrl, description: v.description, insecureSkipVerify: v.insecureSkipVerify, recordSessions: v.recordSessions, clipboardMode: v.clipboardMode, accessMode: "TRANSPARENT", ...logoData } });
     } catch (e) {

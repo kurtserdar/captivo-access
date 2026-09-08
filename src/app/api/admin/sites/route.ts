@@ -8,6 +8,7 @@ import { isolationEnabled } from "@/lib/isolation/enabled";
 import { encrypt } from "@/lib/crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { validateSiteInput } from "@/lib/site/validate";
+import { crossTenantHostnameTaken } from "@/lib/site/hostname";
 import { parseLogoUpload } from "@/lib/site/logo";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
@@ -37,6 +38,9 @@ export async function POST(req: NextRequest) {
   const logoData = logoResult.action === "set" ? { logo: logoResult.data, logoType: logoResult.type } : {};
 
   if (v.mode === "TRANSPARENT") {
+    if (await crossTenantHostnameTaken(v.hostname)) {
+      return NextResponse.json({ error: "hostname_taken" }, { status: 409 });
+    }
     const site = await db.site.create({
       data: {
         connectorId: v.connectorId, name: v.name, hostname: v.hostname, upstreamUrl: v.upstreamUrl, description: v.description,

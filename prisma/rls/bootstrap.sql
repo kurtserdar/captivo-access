@@ -110,7 +110,7 @@ LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
   SELECT t.id, t.slug, t.name, t.status, t."createdAt",
          (SELECT count(*) FROM "User" u WHERE u."tenantId" = t.id) AS "adminCount"
   FROM "Tenant" t
-  WHERE t.id <> 'platform'
+  WHERE t.id NOT IN ('platform', 'default')
   ORDER BY t."createdAt" DESC
 $$;
 
@@ -157,7 +157,7 @@ RETURNS text LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
 
 CREATE OR REPLACE FUNCTION list_active_tenant_ids()
 RETURNS SETOF text LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
-  SELECT id FROM "Tenant" WHERE status = 'ACTIVE' AND id <> 'platform' $$;
+  SELECT id FROM "Tenant" WHERE status = 'ACTIVE' AND id NOT IN ('platform', 'default') $$;
 
 CREATE OR REPLACE FUNCTION list_connector_token_candidates()
 RETURNS TABLE(id text, "tenantId" text, "tokenHash" text)
