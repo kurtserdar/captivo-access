@@ -4,10 +4,11 @@ import { discover, randomUrlSafe, codeChallengeS256 } from "@/lib/auth/oidc";
 import { setOidcState } from "@/lib/auth/oidc-state";
 import { safeReturnTo } from "@/lib/auth/return-to";
 import { managerBaseUrl } from "@/lib/url";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
+async function handler(req: NextRequest) {
   const cfg = await getOidcConfig();
   // Browser redirects use managerBaseUrl (the public URL), NOT req.nextUrl —
   // behind the proxy the latter resolves to the container's own hostname.
@@ -41,3 +42,5 @@ export async function GET(req: NextRequest) {
   url.searchParams.set("code_challenge_method", "S256");
   return NextResponse.redirect(url);
 }
+
+export const GET = withTenantRoute(handler);

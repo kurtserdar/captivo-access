@@ -3,10 +3,11 @@ import { InviteEnrollForm } from "./invite-enroll-form";
 import { BrandMark } from "@/components/brand";
 import { AuthShell } from "@/components/auth-shell";
 import { ROLE_LABELS } from "@/lib/auth/roles";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 
-export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
+async function InvitePageImpl({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const invite = await verifyInvite(token);
 
@@ -31,4 +32,8 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
       <InviteEnrollForm token={token} />
     </AuthShell>
   );
+}
+
+export default async function InvitePage(...args: Parameters<typeof InvitePageImpl>) {
+  return withRequestTenant(() => InvitePageImpl(...args));
 }

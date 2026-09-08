@@ -3,8 +3,9 @@ import { clientIp } from "@/lib/request-ip";
 import { genAuthenticationOptions } from "@/lib/auth/webauthn";
 import { setChallenge } from "@/lib/auth/challenge";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST(req: NextRequest) {
+async function handler(req: NextRequest) {
   const ip = clientIp(req.headers) ?? "unknown";
   const key = `${ip}:${new URL(req.url).pathname}`;
   if (!checkRateLimit(key, 10, 60_000)) {
@@ -15,3 +16,5 @@ export async function POST(req: NextRequest) {
   await setChallenge(options.challenge, "auth");
   return NextResponse.json(options);
 }
+
+export const POST = withTenantRoute(handler);

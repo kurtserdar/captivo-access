@@ -10,6 +10,7 @@ import { syncUserAtLogin } from "@/lib/directory/sync";
 import { cookieSecure, cookieDomain } from "@/lib/auth/cookies";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getRpId, originMatchesRp, requestOrigin } from "@/lib/auth/rp";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 function requestMeta(req: NextRequest) {
   return {
@@ -18,7 +19,7 @@ function requestMeta(req: NextRequest) {
   };
 }
 
-export async function POST(req: NextRequest) {
+async function handler(req: NextRequest) {
   const ip = clientIp(req.headers) ?? "unknown";
   const key = `${ip}:${new URL(req.url).pathname}`;
   if (!checkRateLimit(key, 10, 60_000)) {
@@ -90,3 +91,5 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
+
+export const POST = withTenantRoute(handler);

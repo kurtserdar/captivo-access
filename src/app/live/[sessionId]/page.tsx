@@ -7,11 +7,12 @@ import { clientIp } from "@/lib/request-ip";
 import { LiveViewer } from "./live-viewer";
 import { KasmLiveViewer } from "./kasm-live-viewer";
 import { listActiveSessions } from "@/lib/dataplane/client";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Live session" };
 
-export default async function LiveSessionPage({ params }: { params: Promise<{ sessionId: string }> }) {
+async function LiveSessionPageImpl({ params }: { params: Promise<{ sessionId: string }> }) {
   const user = await getCurrentUser();
   if (!user || !can(user.role, "read_console")) notFound();
   const { sessionId } = await params;
@@ -41,4 +42,8 @@ export default async function LiveSessionPage({ params }: { params: Promise<{ se
   return match?.kind === "isolated"
     ? <KasmLiveViewer sessionId={sessionId} canControl={canControl} label={match.host} />
     : <LiveViewer sessionId={sessionId} canControl={canControl} />;
+}
+
+export default async function LiveSessionPage(...args: Parameters<typeof LiveSessionPageImpl>) {
+  return withRequestTenant(() => LiveSessionPageImpl(...args));
 }

@@ -9,13 +9,14 @@ import { resolvedRecordingConsentRequired, resolvedClipboardDefault } from "@/li
 import { GatewaySession } from "./session-client";
 import { IsolatedSession } from "./isolated-client";
 import { ConsentGate } from "./consent-gate";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Session" };
 
 // Top-level route (outside the (app) shell) so the session is the ONLY thing on
 // screen — no header, no sidebar, full viewport.
-export default async function GatewaySessionPage({ params }: { params: Promise<{ siteId: string }> }) {
+async function GatewaySessionPageImpl({ params }: { params: Promise<{ siteId: string }> }) {
   await requireUser();
   const { siteId } = await params;
   const site = await db.site.findUnique({ where: { id: siteId }, select: { accessMode: true, name: true, recordSessions: true, clipboardMode: true, fileTransferMode: true } });
@@ -44,4 +45,8 @@ export default async function GatewaySessionPage({ params }: { params: Promise<{
   return mode === "ISOLATED"
     ? <IsolatedSession siteId={siteId} siteName={site.name} recorded={recorded} fileTransferMode={site.fileTransferMode} />
     : <GatewaySession siteId={siteId} siteName={site.name} recorded={recorded} clipboardMode={clipboardMode} />;
+}
+
+export default async function GatewaySessionPage(...args: Parameters<typeof GatewaySessionPageImpl>) {
+  return withRequestTenant(() => GatewaySessionPageImpl(...args));
 }

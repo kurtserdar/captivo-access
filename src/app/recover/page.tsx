@@ -3,11 +3,12 @@ import { getCurrentUser } from "@/lib/current-user";
 import { RecoverForm } from "./recover-form";
 import { BrandMark } from "@/components/brand";
 import { AuthShell } from "@/components/auth-shell";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 // getCurrentUser() must be read fresh from the DB on every request.
 export const dynamic = "force-dynamic";
 
-export default async function RecoverPage() {
+async function RecoverPageImpl() {
   if (await getCurrentUser()) redirect("/");
 
   return (
@@ -22,4 +23,8 @@ export default async function RecoverPage() {
       <RecoverForm />
     </AuthShell>
   );
+}
+
+export default async function RecoverPage(...args: Parameters<typeof RecoverPageImpl>) {
+  return withRequestTenant(() => RecoverPageImpl(...args));
 }

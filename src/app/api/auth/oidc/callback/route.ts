@@ -8,6 +8,7 @@ import { startSession } from "@/lib/auth/session";
 import { syncUserAtLogin } from "@/lib/directory/sync";
 import { safeReturnTo } from "@/lib/auth/return-to";
 import { managerBaseUrl } from "@/lib/url";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ function fail(req: NextRequest, error: string, reason?: string) {
   return NextResponse.redirect(new URL(`/login?error=${error}`, managerBaseUrl(req)));
 }
 
-export async function GET(req: NextRequest) {
+async function handler(req: NextRequest) {
   const cfg = await getOidcConfig();
   const saved = await readOidcState();
   await clearOidcState(); // single-use, always cleared
@@ -143,3 +144,5 @@ export async function GET(req: NextRequest) {
   await startSession(created.id, req);
   return NextResponse.redirect(new URL(safeReturnTo(saved.returnTo), managerBaseUrl(req)));
 }
+
+export const GET = withTenantRoute(handler);

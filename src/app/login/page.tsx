@@ -5,11 +5,12 @@ import { safeReturnTo } from "@/lib/auth/return-to";
 import { getOidcConfig } from "@/lib/auth/oidc-config";
 import { LoginForm } from "./login-form";
 import { AuthShell } from "@/components/auth-shell";
+import { withRequestTenant } from "@/lib/tenant/request";
 
 // getCurrentUser() must be read fresh from the DB on every request.
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage({
+async function LoginPageImpl({
   searchParams,
 }: {
   searchParams: Promise<{ returnTo?: string | string[]; error?: string | string[] }>;
@@ -37,4 +38,8 @@ export default async function LoginPage({
       <LoginForm returnTo={returnTo} ssoEnabled={ssoEnabled} ssoLabel={ssoLabel} ssoError={errorMsg} />
     </AuthShell>
   );
+}
+
+export default async function LoginPage(...args: Parameters<typeof LoginPageImpl>) {
+  return withRequestTenant(() => LoginPageImpl(...args));
 }
