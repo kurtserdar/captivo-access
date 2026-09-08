@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { parseGuacParams } from "@/lib/gateway/guac-params";
 import { GuacParamsFields, paramsToGuacFields, guacFieldsToParams, type GuacFields } from "@/components/guac-params-fields";
 import type { KeystrokeMode } from "@/lib/settings/platform";
+import { recordToggleLock } from "@/lib/recording/mode";
 
 function errorMessage(code: string | undefined, isEdit: boolean): string {
   switch (code) {
@@ -66,6 +67,7 @@ export function SiteForm({
   connectors,
   site,
   recordingEnabled = false,
+  recordingMode = "per_resource",
   keystrokeMode = "per_resource",
   nativeGateway = false,
   isolationEnabled = false,
@@ -76,6 +78,7 @@ export function SiteForm({
   connectors: { id: string; name: string }[];
   site?: SiteInitial;
   recordingEnabled?: boolean;
+  recordingMode?: string;
   keystrokeMode?: KeystrokeMode;
   nativeGateway?: boolean;
   isolationEnabled?: boolean;
@@ -121,6 +124,11 @@ export function SiteForm({
   const [logoType, setLogoType] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Tenant recording policy can lock this resource's toggle to a fixed value.
+  // The submitted value still reflects the resource's own stored preference
+  // (recordSessions state, untouched by the lock) so it's preserved if policy
+  // later returns to "per resource" — the lock only affects display/runtime.
+  const recordLock = recordToggleLock(recordingMode);
 
   function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -531,10 +539,12 @@ export function SiteForm({
           <label className="field-label">
             <input
               type="checkbox"
-              checked={recordSessions}
+              checked={recordLock.locked ? (recordLock.forcedValue ?? false) : recordSessions}
+              disabled={recordLock.locked}
               onChange={(e) => setRecordSessions(e.target.checked)}
             />{" "}
             Record sessions
+            {recordLock.locked && <span className="hint"> — Managed by policy: {recordingMode}</span>}
           </label>
           <span className="hint">
             Captures a replayable recording of vendor sessions on this site for audit purposes.

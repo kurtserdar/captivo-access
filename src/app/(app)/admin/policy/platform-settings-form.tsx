@@ -21,6 +21,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
   const [watermark, setWatermark] = useState(initial.watermarkDefault === true);
   const [clipboardDefault, setClipboardDefault] = useState(initial.clipboardDefault ?? "allow");
   const [ksMode, setKsMode] = useState(initial.keystrokeLoggingMode ?? "per_resource");
+  const [recMode, setRecMode] = useState(initial.recordingMode ?? "per_resource");
   const [tz, setTz] = useState(initial.displayTimezone ?? "");
   const [recRetention, setRecRetention] = useState(str(initial.recordingRetentionDays));
   const [connLog, setConnLog] = useState(initial.defaultConnectorLogLevel ?? "info");
@@ -66,6 +67,7 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
         watermarkDefault: watermark,
         clipboardDefault,
         keystrokeLoggingMode: ksMode,
+        recordingMode: recMode,
         displayTimezone: tz || null,
         recordingRetentionDays: recRetention,
         defaultConnectorLogLevel: connLog,
@@ -189,6 +191,19 @@ export function PlatformSettingsForm({ initial, consentEffective, guacDefaults }
       <div className="card">
         <div className="card-head"><h2>Session recording</h2></div>
         <div className="settings">
+          <div className="setting">
+            <div className="setting-main">
+              <div className="setting-label">Session recording mode</div>
+              <div className="setting-hint">Governs whether a resource records vendor sessions. <b>Off</b> disables recording for every resource. <b>Per resource</b> lets each resource decide on its own form. <b>Required</b> forces recording on for every resource — resources cannot opt out.</div>
+            </div>
+            <div className="setting-ctl">
+              <select className="select" value={recMode} onChange={(e) => setRecMode(e.target.value)} aria-label="Session recording mode">
+                <option value="off">Off — disabled for all resources</option>
+                <option value="per_resource">Per resource — each resource decides</option>
+                <option value="required">Required — on for every resource</option>
+              </select>
+            </div>
+          </div>
           <div className="setting">
             <div className="setting-main">
               <div className="setting-label">Require recording consent</div>

@@ -6,7 +6,7 @@ import { recordingEnabled } from "@/lib/recording/enabled";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
 import { siteHostSuffix } from "@/lib/site/host-suffix";
 import { isolationEnabled } from "@/lib/isolation/enabled";
-import { resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
+import { resolvedKeystrokeLoggingMode, resolvedRecordingMode } from "@/lib/settings/platform";
 import { AddSiteButton } from "./add-site-button";
 import { SitesView, type SiteRow } from "./sites-view";
 import { withRequestTenant } from "@/lib/tenant/request";
@@ -80,7 +80,7 @@ async function AdminSitesPageImpl() {
             tunnel.
           </p>
         </div>
-        {connectors.length > 0 && <AddSiteButton connectors={connectors} recordingEnabled={recordingEnabled()} keystrokeMode={await resolvedKeystrokeLoggingMode()} nativeGateway={nativeGatewayEnabled()} isolationEnabled={isolationEnabled()} hostSuffix={await siteHostSuffix()} />}
+        {connectors.length > 0 && <AddSiteButton connectors={connectors} recordingEnabled={recordingEnabled()} recordingMode={await resolvedRecordingMode()} keystrokeMode={await resolvedKeystrokeLoggingMode()} nativeGateway={nativeGatewayEnabled()} isolationEnabled={isolationEnabled()} hostSuffix={await siteHostSuffix()} />}
       </div>
 
       {sites.length === 0 ? (

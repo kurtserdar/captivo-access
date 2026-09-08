@@ -7,6 +7,7 @@ import type { KeystrokeMode } from "@/lib/settings/platform";
 export function AddSiteButton({
   connectors,
   recordingEnabled,
+  recordingMode,
   keystrokeMode,
   nativeGateway,
   hostSuffix,
@@ -14,6 +15,7 @@ export function AddSiteButton({
 }: {
   connectors: { id: string; name: string }[];
   recordingEnabled: boolean;
+  recordingMode: string;
   keystrokeMode: KeystrokeMode;
   nativeGateway: boolean;
   hostSuffix: string | null;
@@ -26,7 +28,7 @@ export function AddSiteButton({
         Add resource
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title="Add resource" size="lg">
-        <SiteForm connectors={connectors} recordingEnabled={recordingEnabled} keystrokeMode={keystrokeMode} nativeGateway={nativeGateway} isolationEnabled={isolationEnabled} hostSuffix={hostSuffix} onDone={() => setOpen(false)} />
+        <SiteForm connectors={connectors} recordingEnabled={recordingEnabled} recordingMode={recordingMode} keystrokeMode={keystrokeMode} nativeGateway={nativeGateway} isolationEnabled={isolationEnabled} hostSuffix={hostSuffix} onDone={() => setOpen(false)} />
       </Modal>
     </>
   );
