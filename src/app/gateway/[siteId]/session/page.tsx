@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { nativeGatewayEnabled } from "@/lib/gateway/native";
 import { isolationEnabled } from "@/lib/isolation/enabled";
-import { recordingEnabled } from "@/lib/recording/enabled";
+import { effectiveSiteRecording } from "@/lib/recording/effective";
 import { resolvedRecordingConsentRequired, resolvedClipboardDefault } from "@/lib/settings/platform";
 import { GatewaySession } from "./session-client";
 import { IsolatedSession } from "./isolated-client";
@@ -28,11 +28,11 @@ async function GatewaySessionPageImpl({ params }: { params: Promise<{ siteId: st
   if (!site || (!okGateway && !okIsolated)) {
     notFound();
   }
-  const recorded = recordingEnabled() && site.recordSessions;
+  const recorded = await effectiveSiteRecording(site.recordSessions);
   // Ask for recording consent once per browser session (matches web sessions):
   // skip the gate if the vendor already acknowledged this resource this session.
   const alreadyConsented = (await cookies()).get(`ca_rec_consent_${siteId}`)?.value === "1";
-  const consentNeeded = site.recordSessions && !alreadyConsented && (await resolvedRecordingConsentRequired());
+  const consentNeeded = recorded && !alreadyConsented && (await resolvedRecordingConsentRequired());
   // Past the okGateway/okIsolated guards, accessMode is GATEWAY or ISOLATED; narrow
   // the Prisma enum (which also has TRANSPARENT) to the union the viewers expect.
   const mode = site.accessMode === "ISOLATED" ? "ISOLATED" : "GATEWAY";

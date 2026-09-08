@@ -3,11 +3,12 @@ import { db } from "@/lib/db";
 import { listUserGrants } from "@/lib/access/grants";
 import { classifyGrant } from "@/lib/access/evaluate";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { effectiveRecordSessions } from "@/lib/recording/mode";
 import { listRecordings } from "@/lib/recording/query";
 import { remaining } from "@/lib/portal/time-remaining";
 import { securityStatus } from "@/lib/portal/security-status";
 import { launchHref } from "@/lib/portal/launch-href";
-import { resolvedRequireRequestJustification } from "@/lib/settings/platform";
+import { resolvedRequireRequestJustification, resolvedRecordingMode } from "@/lib/settings/platform";
 import { PortalHome, type CardVM, type RecentVM } from "./portal-home";
 import { withRequestTenant } from "@/lib/tenant/request";
 
@@ -18,6 +19,9 @@ async function AccessPageImpl() {
   const user = await requireUser();
   const now = new Date();
   const recEnabled = recordingEnabled();
+  // Resolve the tenant recording policy once (this grants list is a single tenant) so the
+  // vendor-facing "sessions are recorded" claim honors required/off, not the raw toggle.
+  const recMode = await resolvedRecordingMode();
 
   const [grants, passkeyCount, recentRes] = await Promise.all([
     listUserGrants(user.id),
@@ -43,7 +47,7 @@ async function AccessPageImpl() {
     if (!status) continue; // expired / revoked / denied not shown
 
     siteName.set(g.site.id, g.site.name);
-    const recorded = recEnabled && g.site.recordSessions;
+    const recorded = recEnabled && effectiveRecordSessions(recMode, g.site.recordSessions);
     if (recorded) anyRecorded = true;
 
     const startISO = g.startsAt ? g.startsAt.toISOString() : null;

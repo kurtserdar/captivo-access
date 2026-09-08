@@ -3,6 +3,8 @@ import { listActiveSessions, listActiveWebSessions } from "@/lib/dataplane/clien
 import { countPendingGrants, listPendingGrants } from "@/lib/access/grants";
 import { getActivityFeed, type ActivityItem } from "@/lib/console/activity-feed";
 import { recordingEnabled } from "@/lib/recording/enabled";
+import { effectiveRecordSessions } from "@/lib/recording/mode";
+import { resolvedRecordingMode } from "@/lib/settings/platform";
 
 export type ConsoleAuditRow = ActivityItem;
 
@@ -30,6 +32,10 @@ export async function getConsoleData(): Promise<ConsoleData> {
   const in24h = new Date(now.getTime() + 24 * 3600 * 1000);
   const weekAgo = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
   const recEnabled = recordingEnabled();
+  // Resolve the tenant recording policy once (this snapshot is a single tenant) so the
+  // live "REC" dot reflects what is actually recorded under required/off, not the raw
+  // per-resource toggle. recEnabled is applied alongside below (see effectiveSiteRecording).
+  const recMode = await resolvedRecordingMode();
 
   const [grants, pending, expiring24h, recordings7d, sessions, webSessions, pendingRows, expiringRows, connectors, audit] = await Promise.all([
     db.accessGrant.count({ where: { status: "ACTIVE" } }),
@@ -65,7 +71,7 @@ export async function getConsoleData(): Promise<ConsoleData> {
   ]);
   const userMap = new Map(users.map((u) => [u.id, u.name || u.email]));
   const siteNameMap = new Map(sites.map((s) => [s.id, s.name]));
-  const recMap = new Map(sites.map((s) => [s.id, s.recordSessions]));
+  const recMap = new Map(sites.map((s) => [s.id, effectiveRecordSessions(recMode, s.recordSessions)]));
   const grantMap = new Map(liveGrants.map((g) => [g.userId + "\x1f" + g.siteId, g.id]));
 
   const gatewayCards: LiveCard[] = sessions.filter((s) => s.kind !== "isolated").map((s) => ({

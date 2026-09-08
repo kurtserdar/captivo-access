@@ -3,8 +3,8 @@ import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { getVaultCredential } from "@/lib/vault/store";
 import { recordingEnabled } from "@/lib/recording/enabled";
-import { effectiveRecordSessions } from "@/lib/recording/mode";
-import { resolvedWatermarkDefault, resolvedClipboardDefault, resolvedGuacParamDefaults, resolvedKeystrokeLoggingMode, resolvedRecordingMode } from "@/lib/settings/platform";
+import { effectiveSiteRecording } from "@/lib/recording/effective";
+import { resolvedWatermarkDefault, resolvedClipboardDefault, resolvedGuacParamDefaults, resolvedKeystrokeLoggingMode } from "@/lib/settings/platform";
 import { effectiveKeystrokeLogging } from "@/lib/keystroke/policy";
 import { parseGuacParams, resolveGuacParams, toGuacArgs } from "@/lib/gateway/guac-params";
 import { isolationEnabled } from "@/lib/isolation/enabled";
@@ -46,7 +46,7 @@ async function handler(req: NextRequest) {
   const clipboardMode = site.clipboardMode ?? (await resolvedClipboardDefault());
   // Tenant recordingMode policy applied on top of the global RECORDING_ENABLED
   // capability and this resource's own toggle — same resolution both routes below use.
-  const record = recordingEnabled() && effectiveRecordSessions(await resolvedRecordingMode(), site.recordSessions);
+  const record = await effectiveSiteRecording(site.recordSessions);
 
   if (site.accessMode === "ISOLATED") {
     if (!isolationEnabled()) return NextResponse.json({ error: "isolation_disabled" }, { status: 404 });
