@@ -22,6 +22,18 @@ describe("validateSiteInput", () => {
     const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "app.x.io", upstreamUrl: "http://10.0.0.5:80" }, base);
     expect(r).toMatchObject({ ok: true, hostname: "app.x.io" });
   });
+  it("custom domain: uses the entered FQDN verbatim (no suffix)", () => {
+    const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", customDomain: true, hostname: "Portal.ACME.com", upstreamUrl: "http://10.0.0.5:80" }, cloud);
+    expect(r).toMatchObject({ ok: true, hostname: "portal.acme.com", customDomain: true });
+  });
+  it("custom domain: rejects a non-FQDN", () => {
+    const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", customDomain: true, hostname: "notadomain", upstreamUrl: "http://10.0.0.5:80" }, cloud);
+    expect(r).toMatchObject({ ok: false, error: "invalid_hostname" });
+  });
+  it("managed (default) still appends the suffix", () => {
+    const r = validateSiteInput({ accessMode: "TRANSPARENT", connectorId: "c", name: "n", hostname: "wiki", upstreamUrl: "http://10.0.0.5:80" }, cloud);
+    expect(r).toMatchObject({ ok: true, hostname: "wiki.acme.cloud.captivo.io", customDomain: false });
+  });
   it("maps inherit clipboardMode to null (isolated)", () => {
     const r = validateSiteInput({ accessMode: "ISOLATED", connectorId: "c1", name: "n", upstreamUrl: "https://x.example", clipboardMode: "inherit" }, base);
     expect(r.ok).toBe(true);
