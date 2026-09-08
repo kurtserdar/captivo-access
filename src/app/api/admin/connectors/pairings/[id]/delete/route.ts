@@ -4,12 +4,13 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 // Deletes a pending (unredeemed) connector pairing — used to clear stale or
 // mistaken installs that never connected. Only unredeemed, unbound pairings can
 // be deleted here (a redeemed pairing already produced a connector; a re-pair
 // pairing belongs to an existing connector).
-export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export const POST = withTenantRoute(async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -29,4 +30,4 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});

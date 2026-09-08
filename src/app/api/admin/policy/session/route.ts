@@ -4,6 +4,7 @@ import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { saveSessionPolicy } from "@/lib/policy/session-policy";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ function toInt(v: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -30,4 +31,4 @@ export async function POST(req: NextRequest) {
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});

@@ -3,10 +3,11 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { getUpdateCheckConfig, saveUpdateCheckResult } from "@/lib/updates/update-check-config";
 import { parseLatestRelease } from "@/lib/updates/github";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 const RELEASES_URL = "https://api.github.com/repos/kurtserdar/captivo-access/releases/latest";
 
-export async function POST() {
+export const POST = withTenantRoute(async () => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -33,4 +34,4 @@ export async function POST() {
     await saveUpdateCheckResult({ latestVersion: null, latestUrl: null, ok: false });
     return NextResponse.json({ ok: false });
   }
-}
+});

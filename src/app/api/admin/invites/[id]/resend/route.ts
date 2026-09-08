@@ -6,8 +6,9 @@ import { createInvite } from "@/lib/auth/invite";
 import { managerBaseUrl } from "@/lib/url";
 import { getSmtpConfig, sendMail } from "@/lib/email/mailer";
 import { inviteEmail } from "@/lib/email/templates";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export const POST = withTenantRoute(async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -45,4 +46,4 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     // best-effort: email must never fail the resend
   }
   return NextResponse.json({ link, emailed });
-}
+});

@@ -3,6 +3,7 @@ import { promises as dns } from "node:dns";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { accessDomain, wildcardRecord, classifyVerify } from "@/lib/domain/custom-domain";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ async function resolve4(host: string): Promise<string[]> {
   }
 }
 
-export async function POST() {
+export const POST = withTenantRoute(async () => {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(user.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -40,4 +41,4 @@ export async function POST() {
     expectedIp,
     resolvedIp: resolved[0] ?? null,
   });
-}
+});

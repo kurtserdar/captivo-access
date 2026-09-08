@@ -3,11 +3,12 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { assembleEvents } from "@/lib/recording/assemble";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withTenantRoute(async (_req: Request, { params }: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -24,4 +25,4 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const events = assembleEvents(chunks, rec.encrypted);
 
   return NextResponse.json({ id: rec.id, startedAt: rec.startedAt, events });
-}
+});

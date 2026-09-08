@@ -4,10 +4,11 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { verifyAdminChain, type AdminStored } from "@/lib/audit/admin-chain";
 import { chainKey } from "@/lib/audit/chain-key";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export const GET = withTenantRoute(async () => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "read_console")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -32,4 +33,4 @@ export async function GET() {
   }));
 
   return NextResponse.json(verifyAdminChain(events, head ?? undefined));
-}
+});

@@ -6,10 +6,11 @@ import { grantEndsAtError, grantCapError } from "@/lib/access/grant-edit";
 import { resolvedMaxGrantDays } from "@/lib/settings/platform";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 const NOTE_MAX = 500;
 
-export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export const PATCH = withTenantRoute(async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -53,4 +54,4 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});

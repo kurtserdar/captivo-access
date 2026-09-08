@@ -6,6 +6,7 @@ import { setVaultCredential, clearVaultCredential } from "@/lib/vault/store";
 import { parseGuacParams } from "@/lib/gateway/guac-params";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 const PROTOCOLS = ["RDP", "SSH", "VNC"] as const;
 const KINDS = ["PASSWORD", "KEY"] as const;
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PUT = withTenantRoute(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -41,9 +42,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withTenantRoute(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -56,4 +57,4 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});

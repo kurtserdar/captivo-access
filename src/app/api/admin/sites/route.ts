@@ -13,8 +13,9 @@ import { crossTenantHostnameTaken } from "@/lib/site/hostname";
 import { parseLogoUpload } from "@/lib/site/logo";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST(req: NextRequest) {
+export const POST = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -105,9 +106,9 @@ export async function POST(req: NextRequest) {
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ id });
-}
+});
 
-export async function GET() {
+export const GET = withTenantRoute(async () => {
   const admin = await getCurrentUser();
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -130,4 +131,4 @@ export async function GET() {
   });
 
   return NextResponse.json({ sites });
-}
+});

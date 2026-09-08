@@ -4,11 +4,12 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { verifyTimeStampToken } from "@/lib/audit/rfc3161";
 import { verifyOneAnchor } from "@/lib/audit/anchor-verify";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+export const POST = withTenantRoute(async () => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "read_console")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -38,4 +39,4 @@ export async function POST() {
 
   const okCount = verdicts.filter((v) => v.ok).length;
   return NextResponse.json({ total: verdicts.length, ok: okCount, failed: verdicts.length - okCount, verdicts });
-}
+});

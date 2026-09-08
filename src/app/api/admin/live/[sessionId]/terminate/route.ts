@@ -5,8 +5,9 @@ import { terminateSession } from "@/lib/dataplane/client";
 import { revokeGrant } from "@/lib/access/grants";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST(req: Request, ctx: { params: Promise<{ sessionId: string }> }) {
+export const POST = withTenantRoute(async (req: Request, ctx: { params: Promise<{ sessionId: string }> }) => {
   const admin = await requireUser();
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const { sessionId } = await ctx.params;
@@ -32,4 +33,4 @@ export async function POST(req: Request, ctx: { params: Promise<{ sessionId: str
     });
   }
   return NextResponse.json({ ...result, revoked: !!grantId });
-}
+});

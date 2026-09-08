@@ -5,8 +5,9 @@ import { db } from "@/lib/db";
 import { proxyThroughConnector } from "@/lib/connector/dataplane";
 import { probeSite, probeGatewaySite } from "@/lib/connector/health";
 import { classifyTransition, notifyTransition } from "@/lib/notifications";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withTenantRoute(async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -89,4 +90,4 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   });
 
   return NextResponse.json(result);
-}
+});

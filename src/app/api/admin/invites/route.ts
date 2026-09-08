@@ -10,8 +10,9 @@ import { inviteEmail } from "@/lib/email/templates";
 import type { Role } from "@/generated/prisma/enums";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST(req: NextRequest) {
+export const POST = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -76,4 +77,4 @@ export async function POST(req: NextRequest) {
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ link, emailed: sendEmail ? emailed : null });
-}
+});

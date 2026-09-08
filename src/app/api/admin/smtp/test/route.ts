@@ -5,8 +5,9 @@ import { sendTestEmail } from "@/lib/email/mailer";
 import { db } from "@/lib/db";
 import { currentTenantId } from "@/lib/tenant/context";
 import { verifyResultFields } from "@/lib/admin/verify-result";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST(req: NextRequest) {
+export const POST = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -18,4 +19,4 @@ export async function POST(req: NextRequest) {
     data: verifyResultFields(result.sent, result.sent ? null : (result.reason ?? "send_failed"), new Date()),
   });
   return NextResponse.json(result);
-}
+});

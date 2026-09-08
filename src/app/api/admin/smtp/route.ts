@@ -6,8 +6,9 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { currentTenantId } from "@/lib/tenant/context";
 import { encrypt } from "@/lib/crypto";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST(req: NextRequest) {
+export const POST = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -40,4 +41,4 @@ export async function POST(req: NextRequest) {
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});

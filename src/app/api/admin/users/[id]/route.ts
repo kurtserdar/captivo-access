@@ -5,10 +5,11 @@ import { db } from "@/lib/db";
 import { UserStatus } from "@/generated/prisma/enums";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 const VALID_STATUSES: string[] = Object.values(UserStatus);
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withTenantRoute(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -69,9 +70,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withTenantRoute(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -95,4 +96,4 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});

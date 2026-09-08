@@ -6,6 +6,7 @@ import { can } from "@/lib/auth/roles";
 import { savePlatformSettings, saveGuacParamDefaults, CLIPBOARD_MODES } from "@/lib/settings/platform";
 import { parseGuacParams } from "@/lib/gateway/guac-params";
 import { validateAllowlist } from "@/lib/net/cidr";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +27,7 @@ function toWebhook(v: unknown): { ok: true; value: string | null } | { ok: false
   }
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -90,4 +91,4 @@ export async function POST(req: NextRequest) {
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});

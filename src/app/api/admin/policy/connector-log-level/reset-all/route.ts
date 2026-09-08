@@ -5,13 +5,14 @@ import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { pushConnectorPolicy } from "@/lib/connector/policy";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Clears every connector's explicit log level (-> null = inherit the fleet
 // default) and pushes the now-default level live to non-revoked connectors.
-export async function POST(req: Request) {
+export const POST = withTenantRoute(async (req: Request) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -27,4 +28,4 @@ export async function POST(req: Request) {
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true, count: updated.count });
-}
+});

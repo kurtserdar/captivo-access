@@ -6,8 +6,9 @@ import { discover } from "@/lib/auth/oidc";
 import { db } from "@/lib/db";
 import { currentTenantId } from "@/lib/tenant/context";
 import { verifyResultFields } from "@/lib/admin/verify-result";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST() {
+export const POST = withTenantRoute(async () => {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(user.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -24,4 +25,4 @@ export async function POST() {
     await db.oidcConfig.updateMany({ where: { tenantId: currentTenantId() }, data: verifyResultFields(false, "unreachable", now) });
     return NextResponse.json({ ok: false, error: "unreachable" });
   }
-}
+});

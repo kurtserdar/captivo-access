@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withTenantRoute(async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "read_console")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -21,4 +22,4 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       "Content-Disposition": `attachment; filename="admin-anchor-seq-${anchor.anchoredSeq}.tsr"`,
     },
   });
-}
+});

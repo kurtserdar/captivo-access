@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST() {
+export const POST = withTenantRoute(async () => {
   const admin = await getCurrentUser();
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -18,4 +19,4 @@ export async function POST() {
   });
 
   return NextResponse.json({ ok: true });
-}
+});

@@ -3,10 +3,11 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { listAuditEvents, toCsv } from "@/lib/audit/query";
 import { parseAuditFilter } from "@/lib/audit/filter";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 const EXPORT_LIMIT = 10000;
 
-export async function GET(req: NextRequest) {
+export const GET = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -25,4 +26,4 @@ export async function GET(req: NextRequest) {
       "content-disposition": 'attachment; filename="audit.csv"',
     },
   });
-}
+});

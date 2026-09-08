@@ -5,8 +5,9 @@ import { db } from "@/lib/db";
 import { canDeleteConnector } from "@/lib/connector/deletion";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export const POST = withTenantRoute(async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -30,4 +31,4 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});

@@ -5,6 +5,7 @@ import { getDirectoryConfig, getDirectoryBindPassword } from "@/lib/directory/co
 import { resolveDirectoryUser } from "@/lib/connector/dataplane";
 import { listGroupMappingsLite } from "@/lib/directory/mappings";
 import { computeReconcile } from "@/lib/directory/reconcile";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic";
 // Dry-run: shows what a user WOULD get on login. Never writes. Because the
 // target user is not being deprovisioned here, the preview computes the
 // decision as if directoryManaged=true so admins can see "would deprovision".
-export async function POST(req: NextRequest) {
+export const POST = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -52,4 +53,4 @@ export async function POST(req: NextRequest) {
     groups,
     decision,
   });
-}
+});

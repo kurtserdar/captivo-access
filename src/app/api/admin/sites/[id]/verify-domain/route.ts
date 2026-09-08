@@ -3,10 +3,11 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { resolve4, expectedServerIp, verifyDecision } from "@/lib/site/verify-domain";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export const POST = withTenantRoute(async (_req: Request, ctx: { params: Promise<{ id: string }> }) => {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(user.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -28,4 +29,4 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
   if (status === "ok") await db.site.update({ where: { id }, data: { domainVerifiedAt: new Date() } });
 
   return NextResponse.json({ status, expectedIp: expected, resolvedIp: resolved[0] ?? null });
-}
+});

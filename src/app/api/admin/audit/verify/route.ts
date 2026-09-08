@@ -5,12 +5,13 @@ import { db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { verifyChain, type StoredEvent } from "@/lib/audit/verify";
 import { chainKey } from "@/lib/audit/chain-key";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
 
 const PAGE = 1000;
 
-export async function GET() {
+export const GET = withTenantRoute(async () => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "read_console")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -48,4 +49,4 @@ export async function GET() {
   }
 
   return NextResponse.json(verifyChain(events, head ? { lastSeq: head.lastSeq, lastHash: head.lastHash } : undefined));
-}
+});

@@ -6,12 +6,13 @@ import { currentTenantId } from "@/lib/tenant/context";
 import { parseSplashUpload } from "@/lib/branding/splash";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 
-export async function POST(req: Request) {
+export const POST = withTenantRoute(async (req: Request) => {
   const admin = await requireUser();
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const body = (await req.json().catch(() => ({}))) as { splashImage?: unknown; splashImageType?: unknown };
@@ -34,9 +35,9 @@ export async function POST(req: Request) {
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});
 
-export async function DELETE(req: Request) {
+export const DELETE = withTenantRoute(async (req: Request) => {
   const admin = await requireUser();
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   await db.brandingConfig.upsert({ where: { tenantId: currentTenantId() }, create: { tenantId: currentTenantId() }, update: { splashImage: null, splashImageType: null } });
@@ -48,4 +49,4 @@ export async function DELETE(req: Request) {
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});

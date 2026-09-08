@@ -4,8 +4,9 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withTenantRoute(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -29,4 +30,4 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   });
 
   return NextResponse.json({ ok: true });
-}
+});

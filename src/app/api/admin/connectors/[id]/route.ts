@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 const NAME_MAX = 100;
 
-export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export const PATCH = withTenantRoute(async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -27,4 +28,4 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const updated = await db.connector.updateMany({ where: { id }, data });
   if (updated.count === 0) return NextResponse.json({ error: "not_found" }, { status: 404 });
   return NextResponse.json({ ok: true });
-}
+});

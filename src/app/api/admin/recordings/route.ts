@@ -4,11 +4,12 @@ import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { parseRecordingFilter } from "@/lib/recording/filter";
 import { listRecordings } from "@/lib/recording/query";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
+export const GET = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -38,4 +39,4 @@ export async function GET(req: NextRequest) {
   }));
 
   return NextResponse.json({ rows: out, total, tooBroad: tooBroad ?? false });
-}
+});

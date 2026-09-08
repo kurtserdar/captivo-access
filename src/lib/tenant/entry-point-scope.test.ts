@@ -34,3 +34,17 @@ describe("RSC entry points are tenant-scoped", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+const isRoute = (p: string) => /route\.ts$/.test(p);
+
+describe("admin route handlers are tenant-scoped", () => {
+  it("every /api/admin route wraps all method exports in withTenantRoute", () => {
+    const offenders: string[] = [];
+    for (const file of listFiles("src/app/api/admin", isRoute)) {
+      const src = readSrc(file);
+      const bare = bareMethodExports(src);
+      if (bare.length || !referencesWrapper(src, "withTenantRoute")) offenders.push(`${file} [${bare.join(",")}]`);
+    }
+    expect(offenders).toEqual([]);
+  });
+});

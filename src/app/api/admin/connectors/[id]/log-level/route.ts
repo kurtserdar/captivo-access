@@ -5,13 +5,14 @@ import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { pushConnectorPolicy } from "@/lib/connector/policy";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const LEVELS = ["debug", "info", "warn", "error"];
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withTenantRoute(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -33,4 +34,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true, live: push.ok });
-}
+});

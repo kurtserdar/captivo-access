@@ -4,6 +4,7 @@ import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { listGroupMappings, createGroupMapping } from "@/lib/directory/mappings";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,13 +16,13 @@ async function guard() {
   return { admin };
 }
 
-export async function GET() {
+export const GET = withTenantRoute(async () => {
   const g = await guard();
   if (g.error) return g.error;
   return NextResponse.json({ mappings: await listGroupMappings() });
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withTenantRoute(async (req: NextRequest) => {
   const g = await guard();
   if (g.error) return g.error;
   const body = await req.json().catch(() => null);
@@ -45,4 +46,4 @@ export async function POST(req: NextRequest) {
     });
   }
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
-}
+});

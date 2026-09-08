@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { evaluateAccess } from "@/lib/access/evaluate";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function POST(req: NextRequest) {
+export const POST = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -21,4 +22,4 @@ export async function POST(req: NextRequest) {
 
   const d = await evaluateAccess(userId, siteId, new Date());
   return NextResponse.json({ allow: d.allow, reason: d.reason });
-}
+});

@@ -3,11 +3,12 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { listAuditEvents } from "@/lib/audit/query";
 import { parseAuditFilter } from "@/lib/audit/filter";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 const MAX_LIMIT = 200;
 const DEFAULT_LIMIT = 50;
 
-export async function GET(req: NextRequest) {
+export const GET = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -20,4 +21,4 @@ export async function GET(req: NextRequest) {
   const { rows, total } = await listAuditEvents(filter);
 
   return NextResponse.json({ rows, total });
-}
+});

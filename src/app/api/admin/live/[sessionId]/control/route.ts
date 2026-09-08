@@ -4,11 +4,12 @@ import { can } from "@/lib/auth/roles";
 import { setSessionControl } from "@/lib/dataplane/client";
 import { appendAuditEvents } from "@/lib/audit/append";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request, { params }: { params: Promise<{ sessionId: string }> }) {
+export const POST = withTenantRoute(async (req: Request, { params }: { params: Promise<{ sessionId: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -38,4 +39,4 @@ export async function POST(req: Request, { params }: { params: Promise<{ session
     console.error("[live/control] audit append failed:", err);
   }
   return NextResponse.json({ ok: true });
-}
+});

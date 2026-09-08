@@ -13,8 +13,9 @@ import { crossTenantHostnameTaken } from "@/lib/site/hostname";
 import { parseLogoUpload } from "@/lib/site/logo";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export const PATCH = withTenantRoute(async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -93,9 +94,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});
 
-export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export const DELETE = withTenantRoute(async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -110,4 +111,4 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});

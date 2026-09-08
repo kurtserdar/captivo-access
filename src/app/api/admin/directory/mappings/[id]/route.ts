@@ -4,6 +4,7 @@ import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
 import { can } from "@/lib/auth/roles";
 import { updateGroupMapping, deleteGroupMapping } from "@/lib/directory/mappings";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ async function guard() {
   return null;
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withTenantRoute(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const denied = await guard();
   if (denied) return denied;
   const admin = (await getCurrentUser())!;
@@ -35,9 +36,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withTenantRoute(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const denied = await guard();
   if (denied) return denied;
   const admin = (await getCurrentUser())!;
@@ -51,4 +52,4 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     clientIp: clientIp(req.headers) ?? null,
   });
   return NextResponse.json({ ok: true });
-}
+});
