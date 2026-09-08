@@ -205,7 +205,9 @@ Shipped and working today:
   (no redeploy): **session** limits (idle timeout, max lifetime, concurrent-session
   cap), a **maximum grant duration** (every grant must expire — time-boxed vendor
   access), **retention** for the audit log and session recordings, a **recording
-  consent** gate, the notification webhook, and the invitation-link lifetime.
+  mode** (off / per-resource / required — leave recording to each resource, force
+  every session for compliance, or disable it) and a **recording consent** gate,
+  the notification webhook, and the invitation-link lifetime.
   Settings that used to be environment variables now live here (the UI value wins).
 - **Zero-Trust source-IP allowlist** — restrict vendor access to published Resources
   to specific networks (IPv4/IPv6 CIDRs). Checked live on every request against
