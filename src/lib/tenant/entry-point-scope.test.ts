@@ -1,3 +1,4 @@
+import { sep } from "node:path";
 import { describe, it, expect } from "vitest";
 import { isClientComponent, referencesWrapper, bareMethodExports, listFiles, readSrc } from "./entry-point-scope";
 
@@ -37,14 +38,28 @@ describe("RSC entry points are tenant-scoped", () => {
 
 const isRoute = (p: string) => /route\.ts$/.test(p);
 
-describe("admin route handlers are tenant-scoped", () => {
-  it("every /api/admin route wraps all method exports in withTenantRoute", () => {
-    const offenders: string[] = [];
-    for (const file of listFiles("src/app/api/admin", isRoute)) {
+// Exempt: resolve tenant by a non-host mechanism, or tenant-agnostic. Reason each.
+const EXEMPT_PREFIXES: Array<[string, string]> = [
+  ["src/app/api/internal/", "dataplane calls; tenant from dataplane identifier (withTenantFrom)"],
+  ["src/app/api/platform/", "platform tenant; PLATFORM_TENANT_ID scope"],
+  ["src/app/api/cron/", "no request host; fans out per tenant via forEachTenant"],
+  ["src/app/api/auth/", "registration/login; own token/host flow"],
+  ["src/app/api/connector/enroll/", "tunnel host + pairing token; resolved via SECURITY DEFINER"],
+  ["src/app/api/recovery/", "pre-session recovery; resolved by token/email"],
+  ["src/app/api/health/", "tenant-agnostic liveness"],
+];
+const norm = (p: string) => p.split(sep).join("/");
+describe("all /api tenant route handlers are scoped or explicitly exempt", () => {
+  it("every route.ts is wrapped or allow-listed with a reason", () => {
+    const unwrapped: string[] = [];
+    const unclassified: string[] = [];
+    for (const file of listFiles("src/app/api", isRoute)) {
+      const f = norm(file);
+      if (EXEMPT_PREFIXES.some(([p]) => f.startsWith(p))) continue;
       const src = readSrc(file);
       const bare = bareMethodExports(src);
-      if (bare.length || !referencesWrapper(src, "withTenantRoute")) offenders.push(`${file} [${bare.join(",")}]`);
+      if (bare.length || !referencesWrapper(src, "withTenantRoute")) unwrapped.push(`${f} [${bare.join(",")}]`);
     }
-    expect(offenders).toEqual([]);
+    expect({ unwrapped, unclassified }).toEqual({ unwrapped: [], unclassified: [] });
   });
 });

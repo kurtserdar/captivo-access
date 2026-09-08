@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/current-user";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { dataplaneFilesUrl, dataplaneSecretHeader } from "@/lib/dataplane/client";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_BYTES = Number(process.env.ISOLATED_FT_MAX_BYTES ?? 100 * 1024 * 1024);
 
-export async function POST(req: Request) {
+export const POST = withTenantRoute(async (req: Request) => {
   const user = await requireUser();
   const url = new URL(req.url);
   const siteId = url.searchParams.get("site") ?? "";
@@ -28,4 +29,4 @@ export async function POST(req: Request) {
     body,
   });
   return NextResponse.json(res.ok ? { ok: true } : { ok: false }, { status: res.status });
-}
+});

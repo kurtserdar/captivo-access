@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/current-user";
 import { evaluateAccess } from "@/lib/access/evaluate";
 import { dataplaneFilesUrl, dataplaneSecretHeader } from "@/lib/dataplane/client";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
+export const GET = withTenantRoute(async (req: Request) => {
   const user = await requireUser();
   const url = new URL(req.url);
   const siteId = url.searchParams.get("site") ?? "";
@@ -24,4 +25,4 @@ export async function GET(req: Request) {
       "content-disposition": res.headers.get("content-disposition") ?? `attachment; filename="${name}"`,
     },
   });
-}
+});

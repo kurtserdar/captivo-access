@@ -3,11 +3,12 @@ import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { appendAuditEvents } from "@/lib/audit/append";
 import { clientIp } from "@/lib/request-ip";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request, { params }: { params: Promise<{ siteId: string }> }) {
+export const POST = withTenantRoute(async (req: Request, { params }: { params: Promise<{ siteId: string }> }) => {
   const user = await requireUser();
   const { siteId } = await params;
   const site = await db.site.findUnique({ where: { id: siteId }, select: { id: true } });
@@ -45,4 +46,4 @@ export async function POST(req: Request, { params }: { params: Promise<{ siteId:
     sameSite: "lax",
   });
   return res;
-}
+});

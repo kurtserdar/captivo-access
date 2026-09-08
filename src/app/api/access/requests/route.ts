@@ -9,6 +9,7 @@ import { resolvedMaxGrantDays, resolvedRequireRequestJustification } from "@/lib
 import { sendMail, getAdminEmails } from "@/lib/email/mailer";
 import { approvalRequestEmail } from "@/lib/email/templates";
 import { notifyEmailEnabled } from "@/lib/notifications/gate";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 function parseDate(value: unknown): { ok: true; value: Date | null } | { ok: false } {
   if (value === undefined || value === null || value === "") return { ok: true, value: null };
@@ -18,7 +19,7 @@ function parseDate(value: unknown): { ok: true; value: Date | null } | { ok: fal
   return { ok: true, value: d };
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withTenantRoute(async (req: NextRequest) => {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
@@ -86,4 +87,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ id: result.id }, { status: 201 });
-}
+});

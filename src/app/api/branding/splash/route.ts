@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { currentTenantId } from "@/lib/tenant/context";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 // Serves the custom splash image to any authenticated user (branding, not sensitive).
 // no-store so a re-upload shows immediately. Sandboxing CSP + nosniff neutralise any
 // mistyped payload.
-export async function GET() {
+export const GET = withTenantRoute(async () => {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const b = await db.brandingConfig.findUnique({ where: { tenantId: currentTenantId() }, select: { splashImage: true, splashImageType: true } });
@@ -23,4 +24,4 @@ export async function GET() {
       "Cache-Control": "no-store",
     },
   });
-}
+});

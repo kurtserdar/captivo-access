@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withTenantRoute(async (_req: Request, { params }: { params: Promise<{ id: string }> }) => {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
@@ -26,4 +27,4 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (deleted.count === 0) return NextResponse.json({ error: "not_pending" }, { status: 409 });
 
   return NextResponse.json({ ok: true });
-}
+});

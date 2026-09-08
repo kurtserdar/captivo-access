@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
+import { withTenantRoute } from "@/lib/tenant/request";
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withTenantRoute(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -22,4 +23,4 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   await db.passkey.delete({ where: { id } });
   return NextResponse.json({ ok: true });
-}
+});

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
+import { withTenantRoute } from "@/lib/tenant/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 // Serves a Site's uploaded logo to any authenticated user (a Site logo is
 // branding, not sensitive). The sandboxing CSP + nosniff neutralise any
 // malicious SVG even if the URL is opened directly.
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withTenantRoute(async (_req: Request, { params }: { params: Promise<{ id: string }> }) => {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
@@ -27,4 +28,4 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       "Cache-Control": "private, max-age=300",
     },
   });
-}
+});
