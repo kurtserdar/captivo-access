@@ -125,6 +125,13 @@ gateway (guacd) — no separate install. RDP needs a Windows target, but **SSH**
 lets you try it end-to-end with a throwaway container. The vendor never sees the
 password: it's stored encrypted and injected server-side.
 
+> **Enable it on the Manager first.** The "Remote session" Resource type is off
+> by default. Set `NATIVE_GATEWAY=1` and `VAULT_ENABLED=1` in the Manager's
+> environment (`.env`) and restart it (`docker compose up -d access-manager`)
+> before you start — otherwise the Resource type won't appear in step 3. The
+> connector already bundles the gateway engines; these flags expose the feature
+> in the console. (The isolated-browser note at the end needs `ISOLATED_ENABLED=1`.)
+
 1. **Install a connector (if you haven't already).** Every connector is
    gateway-capable out of the box — its install command
    (`/admin/connectors` → **Add connector**, or **Update** on an existing one)

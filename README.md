@@ -162,7 +162,9 @@ Shipped and working today:
 - **Native remote-desktop gateway (RDP/SSH/VNC)** — console protocols are served
   in-browser with no separate pack: every connector runs sessions out of the box,
   its install command also deploying the session engines (guacd for RDP/SSH/VNC,
-  KasmVNC for isolated browser) alongside it. Add a **Remote
+  KasmVNC for isolated browser) alongside it. The connector needs no toggle; to
+  expose the Resource type in the Manager, set `NATIVE_GATEWAY=1` (and
+  `VAULT_ENABLED=1` for injected credentials). Add a **Remote
   desktop** Resource (protocol/host/port/credentials); the credential is injected
   server-side and the vendor never sees the password. Resources carry a `TRANSPARENT`
   (web app) vs `GATEWAY` (remote desktop) label, and gateway targets are

@@ -324,33 +324,8 @@ docker compose -f docker-compose.prod.yml up -d
 Check the latest release tags at
 `https://github.com/kurtserdar/captivo-access/releases`. The schema migrates
 automatically on `up -d` (the `access-migrate` service). Connectors run on
-their own hosts — update each with `docker pull …connector:<version>` + recreate
-(the token in `/data` persists).
-
-### Breaking change: v0.2.0 (dynamic upstreams)
-
-v0.2.0 moves the internal address off the connector and onto the Resource, which
-changes both the schema and the connector↔data-plane protocol:
-
-- **Upgrade the data-plane and every connector together.** An old connector
-  can't talk to a new data-plane (the tunnel now carries the target URL, not an
-  alias). Pull the new images for all three services and restart; connectors
-  re-run on the new image (no re-enrollment needed — the token in `/data`
-  persists).
-- **Re-set each Resource's address.** `db push` drops the old `upstreamName` column
-  and adds `upstreamUrl`; existing Resources come out blank. Open each Resource and set
-  its **Internal address** (`http://host:port`) before it will route.
-
-  > The automatic `access-migrate` service refuses destructive changes, so this
-  > one legacy jump (dropping `upstreamName`) halts it and keeps the Manager
-  > down. Apply it once by hand before `up -d`:
-  >
-  > ```bash
-  > docker run --rm --network captivo-access-prod_default \
-  >   -e DATABASE_URL="postgresql://access:<POSTGRES_PASSWORD>@access-postgres:5432/captivo_access" \
-  >   ghcr.io/kurtserdar/captivo-access-migrate:latest \
-  >   ./node_modules/.bin/prisma db push --accept-data-loss --schema=prisma/schema.prisma
-  > ```
-- **Connectors no longer take `UPSTREAMS`.** Drop it from the `docker run`
-  command. Optionally add `ALLOWED_TARGETS` (e.g. `10.0.5.0/24`) to cap what a
-  connector may reach.
+their own hosts — update each with `docker pull …connector:latest` + recreate
+(the token in `/data` persists). Every release republishes the connector image
+in lockstep with the server, so a `:latest` connector stays compatible with a
+server tracking the latest release. If you pin the server to an *older* release,
+pin the connector to that same `:<version>` so the two don't drift.

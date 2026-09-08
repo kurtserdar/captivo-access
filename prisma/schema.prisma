@@ -2,7 +2,7 @@
 // Tenant-aware. Every table carries tenantId (FK → Tenant). Uniques are
 // tenant-scoped (composite) and singletons are keyed per tenant. Self-host runs
 // as the single seeded "default" tenant (MULTI_TENANT off). RLS enforcement is
-// applied out-of-band (Phase 0b-2 bootstrap.sql). See docs/strategy Phase 0.
+// applied out-of-band by the RLS bootstrap (prisma/rls/bootstrap.sql).
 
 generator client {
   provider = "prisma-client"
