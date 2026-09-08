@@ -159,6 +159,10 @@ and if you set the connector's `ALLOWED_TARGETS` it must include
 `wss://connect.<ACCESS_DOMAIN>` endpoint)) alone unless you know you need them. `DNS_API_TOKEN` is **only** for the large-scale wildcard-certificate escape
 hatch — you do not need it for a normal install.
 
+The four Pro capability flags (`RECORDING_ENABLED`, `NATIVE_GATEWAY`,
+`VAULT_ENABLED`, `ISOLATED_ENABLED`) are **on by default** — leaving them
+commented keeps the features enabled; set one to `0` only to disable it.
+
 **Never commit `.env`.** It holds every secret.
 
 ## Step 5 — Bring the stack up

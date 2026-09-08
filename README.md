@@ -154,17 +154,18 @@ Shipped and working today:
   (Caddy On-Demand), configured from the console.
 - **WebSocket passthrough** — the proxy relays WebSocket upgrades transparently,
   so WS/streaming internal apps (e.g. a Proxmox noVNC console) work end-to-end.
-- **Session recording** — with recording enabled (`RECORDING_ENABLED` + a
-  per-Resource toggle), both **web sessions** (an injected rrweb DOM recorder) and
+- **Session recording** — on by default (disable with `RECORDING_ENABLED=0`); with a
+  per-Resource toggle, both **web sessions** (an injected rrweb DOM recorder) and
   **remote-desktop sessions** (captured natively from the guacd stream,
   AES-256-GCM-encrypted at rest) are replayable at `/admin/recordings`; admins
   filter, replay, and delete them (each deletion is written to the audit log).
 - **Native remote-desktop gateway (RDP/SSH/VNC)** — console protocols are served
   in-browser with no separate pack: every connector runs sessions out of the box,
   its install command also deploying the session engines (guacd for RDP/SSH/VNC,
-  KasmVNC for isolated browser) alongside it. The connector needs no toggle; to
-  expose the Resource type in the Manager, set `NATIVE_GATEWAY=1` (and
-  `VAULT_ENABLED=1` for injected credentials). Add a **Remote
+  KasmVNC for isolated browser) alongside it. The connector needs no toggle; the
+  "Remote session" Resource type is available by default (disable with
+  `NATIVE_GATEWAY=0`), with server-side credential injection via the built-in
+  vault (on by default). Add a **Remote
   desktop** Resource (protocol/host/port/credentials); the credential is injected
   server-side and the vendor never sees the password. Resources carry a `TRANSPARENT`
   (web app) vs `GATEWAY` (remote desktop) label, and gateway targets are
