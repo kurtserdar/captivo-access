@@ -94,18 +94,18 @@ services:
       # Optional outbound alert when a Site goes down or recovers (best-effort
       # POST). Unset = disabled. See deploy/.env.prod.example.
       NOTIFICATION_WEBHOOK_URL: ${NOTIFICATION_WEBHOOK_URL:-}
-      # Session recording (Pro). Off by default; set to 1/true/on to allow the
-      # per-Site "Record sessions" toggle to take effect. See deploy/.env.prod.example.
+      # Session recording (Pro). On by default; set to 0 to disable the
+      # per-Site "Record sessions" toggle. See deploy/.env.prod.example.
       RECORDING_ENABLED: ${RECORDING_ENABLED:-}
-      # Native remote-desktop gateway (RDP/SSH/VNC). Off by default; set to 1 to
-      # expose the "Remote session" Resource type. The connector already bundles
-      # guacd — this flag makes it usable. Needs VAULT_ENABLED for credentials.
+      # Native remote-desktop gateway (RDP/SSH/VNC). On by default; set to 0 to
+      # hide the "Remote session" Resource type. The connector already bundles
+      # guacd. Uses VAULT_ENABLED (also on by default) for credentials.
       NATIVE_GATEWAY: ${NATIVE_GATEWAY:-}
-      # Isolated browser (RBI). Off by default; set to 1 to expose the "Isolated
+      # Isolated browser (RBI). On by default; set to 0 to hide the "Isolated
       # browser" Resource type. The connector already bundles KasmVNC.
       ISOLATED_ENABLED: ${ISOLATED_ENABLED:-}
-      # Credential vault. Off by default; set to 1 to store per-Resource
-      # RDP/SSH/VNC credentials (injected server-side, never shown to the vendor).
+      # Credential vault. On by default; set to 0 to disable per-Resource
+      # RDP/SSH/VNC credential storage (injected server-side, never shown to the vendor).
       # Required for remote-session logins.
       VAULT_ENABLED: ${VAULT_ENABLED:-}
     # Not published to the host — only Caddy (on the compose network) reaches
