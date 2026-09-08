@@ -129,6 +129,10 @@ export function SiteForm({
   // (recordSessions state, untouched by the lock) so it's preserved if policy
   // later returns to "per resource" — the lock only affects display/runtime.
   const recordLock = recordToggleLock(recordingMode);
+  // Effective recording for DISPLAY gating: under a locked policy (required/off) the
+  // forced value drives what the UI shows; otherwise the resource's own toggle. The
+  // stored/submitted recordSessions is left untouched — policy overrides at runtime.
+  const effectiveRecord = recordLock.locked ? (recordLock.forcedValue ?? false) : recordSessions;
 
   function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -539,7 +543,7 @@ export function SiteForm({
           <label className="field-label">
             <input
               type="checkbox"
-              checked={recordLock.locked ? (recordLock.forcedValue ?? false) : recordSessions}
+              checked={effectiveRecord}
               disabled={recordLock.locked}
               onChange={(e) => setRecordSessions(e.target.checked)}
             />{" "}
@@ -554,7 +558,7 @@ export function SiteForm({
           </span>
         </div>
       )}
-      {recordingEnabled && accessMode === "GATEWAY" && recordSessions && keystrokeMode !== "off" && (
+      {recordingEnabled && accessMode === "GATEWAY" && effectiveRecord && keystrokeMode !== "off" && (
         <div className="field">
           <label className="field-label">
             <input
@@ -571,7 +575,7 @@ export function SiteForm({
           </span>
         </div>
       )}
-      {recordingEnabled && accessMode === "GATEWAY" && recordSessions && keystrokeMode === "off" && (
+      {recordingEnabled && accessMode === "GATEWAY" && effectiveRecord && keystrokeMode === "off" && (
         <div className="field">
           <span className="hint">Keystroke logging is disabled in Policy.</span>
         </div>

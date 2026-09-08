@@ -62,7 +62,6 @@ const EXEMPT_PREFIXES: Array<[string, string]> = [
 describe("all /api tenant route handlers are scoped or explicitly exempt", () => {
   it("every route.ts is wrapped or allow-listed with a reason", () => {
     const unwrapped: string[] = [];
-    const unclassified: string[] = [];
     for (const file of listFiles("src/app/api", isRoute)) {
       const f = norm(file);
       if (EXEMPT_PREFIXES.some(([p]) => f.startsWith(p))) continue;
@@ -70,6 +69,6 @@ describe("all /api tenant route handlers are scoped or explicitly exempt", () =>
       const bare = bareMethodExports(src);
       if (bare.length || !referencesWrapper(src, "withTenantRoute")) unwrapped.push(`${f} [${bare.join(",")}]`);
     }
-    expect({ unwrapped, unclassified }).toEqual({ unwrapped: [], unclassified: [] });
+    expect(unwrapped).toEqual([]);
   });
 });
