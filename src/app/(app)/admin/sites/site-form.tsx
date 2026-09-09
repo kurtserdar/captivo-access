@@ -6,6 +6,7 @@ import { parseGuacParams } from "@/lib/gateway/guac-params";
 import { GuacParamsFields, paramsToGuacFields, guacFieldsToParams, type GuacFields } from "@/components/guac-params-fields";
 import type { KeystrokeMode } from "@/lib/settings/platform";
 import { recordToggleLock } from "@/lib/recording/mode";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 
 function errorMessage(code: string | undefined, isEdit: boolean): string {
   switch (code) {
@@ -345,7 +346,7 @@ export function SiteForm({
             {site?.id && (
               <>
                 {site.domainVerifiedAt && (
-                  <p className="notice success">Verified {new Date(site.domainVerifiedAt).toLocaleDateString()}.</p>
+                  <p className="notice success">Verified <LocalTime iso={new Date(site.domainVerifiedAt).toISOString()} mode="date" />.</p>
                 )}
                 <button type="button" className="btn sm" onClick={verifyDomain} disabled={verifying}>
                   {verifying ? "Verifying…" : "Verify DNS"}

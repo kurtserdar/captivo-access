@@ -1,4 +1,5 @@
 import { RequestAccessButton } from "./request-access-button";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 import { AccessCards } from "./access-cards";
 import type { Remaining } from "@/lib/portal/time-remaining";
 import type { StatusLine } from "@/lib/portal/security-status";
@@ -14,7 +15,7 @@ export interface CardVM {
   status: "active" | "upcoming" | "off_hours" | "pending";
   href: string;
   time: Remaining;
-  whenText?: string; // upcoming cards only: formatted start, e.g. "Aug 14, 09:00 UTC"
+  whenIso?: string | null; // upcoming cards only: start instant (rendered in the display timezone); null = "Scheduled"
 }
 export interface RecentVM { id: string; name: string; protocol: string; durationText: string; }
 
@@ -49,7 +50,7 @@ export function PortalHome(props: {
           <div className="vp-railcard">
             <div className="vp-railtitle">Upcoming</div>
             {upcoming.length === 0 ? <div className="vp-muted">Nothing scheduled.</div> : upcoming.map((u) => (
-              <div key={u.id} className="vp-upcoming"><div className="vp-upcoming-name">{u.siteName}</div><div className="vp-upcoming-when">{u.whenText ?? u.time.text}</div></div>
+              <div key={u.id} className="vp-upcoming"><div className="vp-upcoming-name">{u.siteName}</div><div className="vp-upcoming-when">{u.whenIso ? <LocalTime iso={u.whenIso} mode="short" /> : "Scheduled"}</div></div>
             ))}
           </div>
           <div className="vp-railcard">

@@ -3,6 +3,9 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
+import { useTimezone } from "@/app/(app)/_shell/timezone-context";
+import { TimezoneHint } from "@/app/(app)/_shell/effective-timezone";
+import { startOfDayInZone, endOfDayInZone } from "@/lib/time/datetime-local";
 import { DeleteRecordingButton } from "./delete-recording-button";
 import { useConfirm } from "@/app/(app)/_shell/confirm-dialog";
 
@@ -61,6 +64,7 @@ export function RecordingsTable({
   initialRows: RecordingRowJSON[];
   initialTotal: number;
 }) {
+  const tz = useTimezone();
   const [filters, setFilters] = useState<Filters>({ q: "", cmd: "", userId: "", siteId: "", from: "", to: "" });
   const [offset, setOffset] = useState(0);
   const [rows, setRows] = useState<RecordingRowJSON[]>(initialRows);
@@ -85,8 +89,11 @@ export function RecordingsTable({
       if (nextFilters.cmd.trim()) sp.set("cmd", nextFilters.cmd.trim());
       if (nextFilters.userId) sp.set("userId", nextFilters.userId);
       if (nextFilters.siteId) sp.set("siteId", nextFilters.siteId);
-      if (nextFilters.from) sp.set("from", nextFilters.from);
-      if (nextFilters.to) sp.set("to", nextFilters.to);
+      // Calendar days in the display timezone (or the browser's), inclusive on both ends.
+      const from = nextFilters.from ? startOfDayInZone(nextFilters.from, tz) : null;
+      const to = nextFilters.to ? endOfDayInZone(nextFilters.to, tz) : null;
+      if (from) sp.set("from", from.toISOString());
+      if (to) sp.set("to", to.toISOString());
       sp.set("limit", String(PAGE));
       sp.set("offset", String(nextOffset));
       const res = await fetch(`/api/admin/recordings?${sp.toString()}`);
@@ -201,11 +208,11 @@ export function RecordingsTable({
           </select>
         </div>
         <div className="field">
-          <label className="field-label" htmlFor="rec-filter-from">From</label>
+          <label className="field-label" htmlFor="rec-filter-from">From<TimezoneHint /></label>
           <input id="rec-filter-from" type="date" className="input" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} />
         </div>
         <div className="field">
-          <label className="field-label" htmlFor="rec-filter-to">To</label>
+          <label className="field-label" htmlFor="rec-filter-to">To<TimezoneHint /></label>
           <input id="rec-filter-to" type="date" className="input" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} />
         </div>
         </div>

@@ -1,10 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { HistoryRowJSON } from "@/lib/portal/history";
-
-function fmtDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(iso));
-}
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 
 export function HistoryList({ initial, pageSize }: { initial: HistoryRowJSON[]; pageSize: number }) {
   const [rows, setRows] = useState<HistoryRowJSON[]>(initial);
@@ -30,7 +27,7 @@ export function HistoryList({ initial, pageSize }: { initial: HistoryRowJSON[]; 
       {rows.map((r) => (
         <div key={r.id} className="vp-recent">
           <span className="vp-recent-name">{r.name}{r.protocol ? ` · ${r.protocol.toUpperCase()}` : ""}</span>
-          <span className="vp-recent-meta">{fmtDate(r.date)} · {r.durationText}</span>
+          <span className="vp-recent-meta"><LocalTime iso={r.date} mode="shortdate" /> · {r.durationText}</span>
         </div>
       ))}
       {!done && (

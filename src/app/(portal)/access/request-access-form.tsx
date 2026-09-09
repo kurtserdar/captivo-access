@@ -4,11 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ScheduleBuilder } from "@/components/schedule-builder";
 import type { Schedule } from "@/lib/access/schedule";
+import { useTimezone } from "@/app/(app)/_shell/timezone-context";
+import { TimezoneHint } from "@/app/(app)/_shell/effective-timezone";
+import { parseDatetimeLocal } from "@/lib/time/datetime-local";
 
 type Site = { id: string; name: string };
 
 export function RequestAccessForm({ onDone, requireJustification = true }: { onDone?: () => void; requireJustification?: boolean }) {
   const router = useRouter();
+  const tz = useTimezone();
   const [sites, setSites] = useState<Site[]>([]);
   const [siteId, setSiteId] = useState("");
   const [startsAt, setStartsAt] = useState("");
@@ -28,8 +32,13 @@ export function RequestAccessForm({ onDone, requireJustification = true }: { onD
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setError(null);
+    // The wall times typed here are in the display timezone (or the browser's when
+    // none is configured); send instants so the server never guesses a zone.
+    const startsDate = startsAt ? parseDatetimeLocal(startsAt, tz) : null;
+    const endsDate = endsAt ? parseDatetimeLocal(endsAt, tz) : null;
+    if ((startsAt && !startsDate) || (endsAt && !endsDate)) { setError("Enter valid dates."); return; }
+    setBusy(true);
     try {
       const res = await fetch("/api/access/requests", {
         method: "POST",
@@ -37,8 +46,8 @@ export function RequestAccessForm({ onDone, requireJustification = true }: { onD
         body: JSON.stringify({
           siteId,
           note,
-          startsAt: startsAt || undefined,
-          endsAt: endsAt || undefined,
+          startsAt: startsDate ? startsDate.toISOString() : undefined,
+          endsAt: endsDate ? endsDate.toISOString() : undefined,
           schedule: schedule ?? undefined,
         }),
       });
@@ -73,11 +82,11 @@ export function RequestAccessForm({ onDone, requireJustification = true }: { onD
         </select>
       </div>
       <div className="field">
-        <label className="field-label" htmlFor="req-start">From (optional)</label>
+        <label className="field-label" htmlFor="req-start">From (optional)<TimezoneHint /></label>
         <input id="req-start" className="input" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
       </div>
       <div className="field">
-        <label className="field-label" htmlFor="req-end">Until (optional)</label>
+        <label className="field-label" htmlFor="req-end">Until (optional)<TimezoneHint /></label>
         <input id="req-end" className="input" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
       </div>
       <div className="field">

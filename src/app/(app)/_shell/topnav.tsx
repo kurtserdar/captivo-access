@@ -11,6 +11,7 @@ import { CommandPalette } from "./command-palette";
 import { NotificationBell } from "./notification-bell";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LogoutButton } from "../logout-button";
+import { TimezoneLabel } from "./effective-timezone";
 import { LivePill } from "./live-pill";
 
 export function TopNav({ model, records, role, userName, roleLabel, showLive }: {
@@ -104,9 +105,10 @@ export function TopNav({ model, records, role, userName, roleLabel, showLive }: 
           </button>
           {open === "account" && (
             <div className="tn-menu tn-menu-right" role="menu">
-              <div className="tn-ident"><b>{userName}</b><span>{roleLabel}</span></div>
+              <div className="tn-ident"><b>{userName}</b><span>{roleLabel}</span><span><TimezoneLabel /></span></div>
               <Link href="/access" role="menuitem" className="tn-menuitem">My access</Link>
               <Link href="/settings/passkeys" role="menuitem" className="tn-menuitem">Settings</Link>
+              <Link href="/settings/preferences" role="menuitem" className="tn-menuitem">Preferences</Link>
               <div className="tn-menu-foot"><LogoutButton /></div>
             </div>
           )}

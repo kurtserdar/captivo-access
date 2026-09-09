@@ -5,6 +5,7 @@ import { resolvedRequireRequestJustification } from "@/lib/settings/platform";
 import { RequestAccessButton } from "../access/request-access-button";
 import { WithdrawRequestButton } from "../access/withdraw-request-button";
 import { withRequestTenant } from "@/lib/tenant/request";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Requests" };
@@ -16,10 +17,6 @@ const BADGE: Record<RequestState, { label: string; cls: string }> = {
   withdrawn: { label: "Withdrawn", cls: "gray" },
   expired: { label: "Expired", cls: "gray" },
 };
-
-function fmtDate(d: Date): string {
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(d);
-}
 
 async function RequestsPageImpl() {
   const user = await requireUser();
@@ -55,7 +52,7 @@ async function RequestsPageImpl() {
                   </div>
                   {st === "pending" && <WithdrawRequestButton id={r.id} />}
                 </div>
-                <div className="vp-req-meta">Requested {fmtDate(r.createdAt)}{reason ? ` · ${reason}` : ""}</div>
+                <div className="vp-req-meta">Requested <LocalTime iso={r.createdAt.toISOString()} mode="shortdate" />{reason ? ` · ${reason}` : ""}</div>
               </div>
             );
           })}

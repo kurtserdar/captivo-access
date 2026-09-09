@@ -6,6 +6,9 @@ import { ScheduleBuilder } from "@/components/schedule-builder";
 import type { Schedule } from "@/lib/access/schedule";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import type { Role } from "@/generated/prisma/enums";
+import { useTimezone } from "@/app/(app)/_shell/timezone-context";
+import { TimezoneHint } from "@/app/(app)/_shell/effective-timezone";
+import { parseDatetimeLocal } from "@/lib/time/datetime-local";
 
 function errorMessage(code: string | undefined): string {
   switch (code) {
@@ -38,6 +41,7 @@ export function GrantForm({
   sites: { id: string; name: string }[];
 }) {
   const router = useRouter();
+  const tz = useTimezone();
   const [userId, setUserId] = useState(users[0]?.id ?? "");
   const [siteId, setSiteId] = useState(sites[0]?.id ?? "");
   const [startsAt, setStartsAt] = useState("");
@@ -50,6 +54,14 @@ export function GrantForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // Wall times typed into the datetime-local inputs are in the display timezone
+    // (or the browser's when none is configured) — the same zone the list shows.
+    const startsDate = startsAt ? parseDatetimeLocal(startsAt, tz) : null;
+    const endsDate = endsAt ? parseDatetimeLocal(endsAt, tz) : null;
+    if ((startsAt && !startsDate) || (endsAt && !endsDate)) {
+      setError(errorMessage("invalid_date"));
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch("/api/admin/grants", {
@@ -58,8 +70,8 @@ export function GrantForm({
         body: JSON.stringify({
           userId,
           siteId,
-          startsAt: startsAt ? new Date(startsAt).toISOString() : null,
-          endsAt: endsAt ? new Date(endsAt).toISOString() : null,
+          startsAt: startsDate ? startsDate.toISOString() : null,
+          endsAt: endsDate ? endsDate.toISOString() : null,
           note: note.trim() || undefined,
           schedule: schedule ?? undefined,
         }),
@@ -110,7 +122,7 @@ export function GrantForm({
       </div>
       <div className="field">
         <label className="field-label" htmlFor="grant-starts-at">
-          Start (optional)
+          Start (optional)<TimezoneHint />
         </label>
         <input
           id="grant-starts-at"
@@ -122,7 +134,7 @@ export function GrantForm({
       </div>
       <div className="field">
         <label className="field-label" htmlFor="grant-ends-at">
-          End (optional — leave empty for permanent access)
+          End (optional — leave empty for permanent access)<TimezoneHint />
         </label>
         <input
           id="grant-ends-at"

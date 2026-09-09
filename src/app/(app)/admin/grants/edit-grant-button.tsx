@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTimezone } from "@/app/(app)/_shell/timezone-context";
+import { TimezoneHint } from "@/app/(app)/_shell/effective-timezone";
+import { formatDatetimeLocal, parseDatetimeLocal } from "@/lib/time/datetime-local";
 
-// ISO → value for <input type="datetime-local"> in the browser's local zone.
-function toLocalInput(iso: string | null): string {
+// ISO → value for <input type="datetime-local"> in the display timezone (or the
+// browser's when none is configured) — the same zone the grant list shows.
+function toLocalInput(iso: string | null, tz: string | null): string {
   if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return formatDatetimeLocal(new Date(iso), tz);
 }
 
 function saveError(code: string | undefined): string {
@@ -29,8 +30,11 @@ function saveError(code: string | undefined): string {
 }
 
 export function EditGrantButton({ id, endsAt, note }: { id: string; endsAt: string | null; note: string | null }) {
+  const tz = useTimezone();
   const [open, setOpen] = useState(false);
-  const [endsAtLocal, setEndsAtLocal] = useState(toLocalInput(endsAt));
+  // Filled when the editor opens (client-side) so the browser-zone fallback never
+  // runs during SSR.
+  const [endsAtLocal, setEndsAtLocal] = useState("");
   const [noteValue, setNoteValue] = useState(note ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,8 +46,8 @@ export function EditGrantButton({ id, endsAt, note }: { id: string; endsAt: stri
     try {
       const payload: { endsAt?: string; note: string } = { note: noteValue };
       if (endsAtLocal) {
-        const d = new Date(endsAtLocal);
-        if (Number.isNaN(d.getTime())) {
+        const d = parseDatetimeLocal(endsAtLocal, tz);
+        if (!d) {
           setError("Enter a valid end date.");
           setBusy(false);
           return;
@@ -70,7 +74,7 @@ export function EditGrantButton({ id, endsAt, note }: { id: string; endsAt: stri
 
   if (!open) {
     return (
-      <button type="button" className="btn sm" onClick={() => setOpen(true)}>
+      <button type="button" className="btn sm" onClick={() => { setEndsAtLocal(toLocalInput(endsAt, tz)); setOpen(true); }}>
         Edit
       </button>
     );
@@ -79,7 +83,7 @@ export function EditGrantButton({ id, endsAt, note }: { id: string; endsAt: stri
   return (
     <div>
       <div className="field">
-        <label className="field-label" htmlFor={`edit-ends-${id}`}>End date</label>
+        <label className="field-label" htmlFor={`edit-ends-${id}`}>End date<TimezoneHint /></label>
         <input
           id={`edit-ends-${id}`}
           type="datetime-local"

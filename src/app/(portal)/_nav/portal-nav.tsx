@@ -6,6 +6,7 @@ const LINKS = [
   { href: "/access", label: "My access" },
   { href: "/requests", label: "Requests" },
   { href: "/history", label: "History" },
+  { href: "/preferences", label: "Preferences" },
 ];
 
 export function PortalNav() {

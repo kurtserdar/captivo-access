@@ -101,7 +101,7 @@ export function IntegrityPanel({ anchor }: { anchor: AnchorProp }) {
               <b>External anchor</b>{" "}
               <span className="sub">
                 {anchor.last
-                  ? `Last: seq ${anchor.last.anchoredSeq} · ${new Date(anchor.last.genTime).toLocaleString()} · ${anchor.count} anchor(s) · ${anchor.last.tsaUrl}`
+                  ? <>Last: seq {anchor.last.anchoredSeq} · <LocalTime iso={new Date(anchor.last.genTime).toISOString()} /> · {anchor.count} anchor(s) · {anchor.last.tsaUrl}</>
                   : "Enabled, but no anchor recorded yet (runs daily)."}
               </span>
             </div>

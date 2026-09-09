@@ -130,6 +130,11 @@ Shipped and working today:
   Admin-created grants are active immediately.
 - **Recurring schedules** — a grant can be restricted to weekly windows (e.g.
   weekdays 09:00–18:00 in a chosen timezone), evaluated in that timezone.
+- **Display timezone** — every date shown, and every date typed into a form
+  (grant start/end, access requests, audit and recording filters), uses one
+  zone: the organization default (Policy → Platform settings; per tenant on
+  Cloud), which each user can override under Preferences (console and vendor
+  portal alike). When neither is set, the viewer's browser zone is used.
 - **Tamper-evident audit** — audit rows are hash-chained; the admin console
   can verify the chain is intact and detect alteration, deletion, splicing,
   or tail-truncation. An optional **external anchor** (a trusted RFC 3161 /

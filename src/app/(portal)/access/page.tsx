@@ -65,7 +65,7 @@ async function AccessPageImpl() {
       time: remaining(startISO, endISO, g.schedule ?? null, now),
     };
     if (status === "upcoming") {
-      card.whenText = g.startsAt ? formatWhen(g.startsAt) : "Scheduled";
+      card.whenIso = startISO;
       upcoming.push(card);
     } else cards.push(card);
   }
@@ -105,8 +105,4 @@ function durationText(start: Date, end: Date): string {
   if (mins < 60) return `${mins}m`;
   const h = Math.floor(mins / 60), m = mins % 60;
   return `${h}h ${m}m`;
-}
-
-function formatWhen(d: Date): string {
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }).format(d) + " UTC";
 }

@@ -6,6 +6,7 @@ import { ROLE_LABELS, ASSIGNABLE_ROLES } from "@/lib/auth/roles";
 import { ToggleStatusButton } from "./toggle-status-button";
 import { DeleteUserButton } from "./delete-user-button";
 import { RoleSelect } from "./role-select";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 
 export type UserRow = {
   id: string;
@@ -114,7 +115,7 @@ export function UsersTable({ users, initialQuery }: { users: UserRow[]; initialQ
                   <td className="cell-sub">
                     {u.directoryManaged
                       ? u.directoryLastVerifiedAt
-                        ? `Verified ${new Date(u.directoryLastVerifiedAt).toLocaleDateString()}`
+                        ? <>Verified <LocalTime iso={new Date(u.directoryLastVerifiedAt).toISOString()} mode="date" /></>
                         : "Managed"
                       : "—"}
                   </td>

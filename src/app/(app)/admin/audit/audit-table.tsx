@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LocalTime } from "@/app/(app)/_shell/local-time";
+import { useTimezone } from "@/app/(app)/_shell/timezone-context";
+import { TimezoneHint } from "@/app/(app)/_shell/effective-timezone";
+import { parseDatetimeLocal, formatDatetimeLocal } from "@/lib/time/datetime-local";
 import { CopyButton } from "@/app/(app)/_shell/copy-button";
 import { transferBadge } from "@/lib/audit/access-format";
 
@@ -37,29 +40,37 @@ type Filters = {
 
 const LIMIT = 50;
 
-function toIso(datetimeLocal: string): string | undefined {
+// datetime-local wall time → ISO, interpreted in the display timezone (or the
+// browser's when none is configured) — the same zone the table shows.
+function toIso(datetimeLocal: string, tz: string | null): string | undefined {
   if (!datetimeLocal) return undefined;
-  const d = new Date(datetimeLocal);
-  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+  return parseDatetimeLocal(datetimeLocal, tz)?.toISOString();
 }
 
-function buildParams(filters: Filters, limit: number, offset: number): URLSearchParams {
+function buildParams(filters: Filters, tz: string | null, limit: number, offset: number): URLSearchParams {
   const params = new URLSearchParams();
   if (filters.q) params.set("q", filters.q);
   if (filters.userId) params.set("userId", filters.userId);
   if (filters.siteId) params.set("siteId", filters.siteId);
   if (filters.decision) params.set("decision", filters.decision);
   if (filters.kind) params.set("kind", filters.kind);
-  const fromIso = toIso(filters.from);
+  const fromIso = toIso(filters.from, tz);
   if (fromIso) params.set("from", fromIso);
-  const toIsoValue = toIso(filters.to);
+  const toIsoValue = toIso(filters.to, tz);
   if (toIsoValue) params.set("to", toIsoValue);
   params.set("limit", String(limit));
   params.set("offset", String(offset));
   return params;
 }
 
-function filtersFromParams(sp: URLSearchParams): Filters {
+// URL params carry ISO instants; the inputs hold wall times in the display zone.
+function isoToLocal(v: string | null, tz: string | null): string {
+  if (!v) return "";
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? "" : formatDatetimeLocal(d, tz);
+}
+
+function filtersFromParams(sp: URLSearchParams, tz: string | null): Filters {
   const decision = sp.get("decision");
   return {
     q: sp.get("q") ?? "",
@@ -67,8 +78,8 @@ function filtersFromParams(sp: URLSearchParams): Filters {
     siteId: sp.get("siteId") ?? "",
     decision: decision === "ALLOW" || decision === "DENY" ? decision : "",
     kind: sp.get("kind") === "file" ? "file" : "",
-    from: sp.get("from") ?? "",
-    to: sp.get("to") ?? "",
+    from: isoToLocal(sp.get("from"), tz),
+    to: isoToLocal(sp.get("to"), tz),
   };
 }
 
@@ -86,7 +97,8 @@ export function AuditTable({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [filters, setFilters] = useState<Filters>(() => filtersFromParams(new URLSearchParams(searchParams.toString())));
+  const tz = useTimezone();
+  const [filters, setFilters] = useState<Filters>(() => filtersFromParams(new URLSearchParams(searchParams.toString()), tz));
   const [offset, setOffset] = useState(0);
   const [rows, setRows] = useState<AuditRowJSON[]>(initialRows);
   const [total, setTotal] = useState(initialTotal);
@@ -98,7 +110,7 @@ export function AuditTable({
     setBusy(true);
     setError(null);
     try {
-      const params = buildParams(nextFilters, LIMIT, nextOffset);
+      const params = buildParams(nextFilters, tz, LIMIT, nextOffset);
       const res = await fetch(`/api/admin/audit?${params.toString()}`);
       const body = await res.json().catch(() => ({}));
       if (!res.ok || !Array.isArray(body?.rows)) {
@@ -119,7 +131,7 @@ export function AuditTable({
   }
 
   useEffect(() => {
-    const seeded = filtersFromParams(new URLSearchParams(searchParams.toString()));
+    const seeded = filtersFromParams(new URLSearchParams(searchParams.toString()), tz);
     const hasAny = Object.values(seeded).some((v) => v !== "");
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (hasAny) load(seeded, 0);
@@ -131,7 +143,7 @@ export function AuditTable({
     load(nextFilters, 0);
   }
 
-  const csvHref = `/api/admin/audit/export?${buildParams(filters, LIMIT, 0).toString()}`;
+  const csvHref = `/api/admin/audit/export?${buildParams(filters, tz, LIMIT, 0).toString()}`;
   const hasPrev = offset > 0;
   const hasNext = offset + LIMIT < total;
 
@@ -220,7 +232,7 @@ export function AuditTable({
         </div>
         <div className="field">
           <label className="field-label" htmlFor="audit-filter-from">
-            From
+            From<TimezoneHint />
           </label>
           <input
             id="audit-filter-from"
@@ -232,7 +244,7 @@ export function AuditTable({
         </div>
         <div className="field">
           <label className="field-label" htmlFor="audit-filter-to">
-            To
+            To<TimezoneHint />
           </label>
           <input
             id="audit-filter-to"

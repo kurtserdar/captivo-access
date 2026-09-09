@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/access", label: "My access" },
   { href: "/requests", label: "Requests" },
   { href: "/history", label: "History" },
+  { href: "/preferences", label: "Preferences" },
 ];
 
 // Phone-only header: a hamburger that opens a menu holding the nav links, the

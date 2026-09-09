@@ -4,7 +4,8 @@
 // set if Intl.supportedValuesOf is unavailable. Empty value = "" (inherit/browser).
 const FALLBACK = ["UTC", "Europe/Istanbul", "Europe/London", "America/New_York", "America/Los_Angeles", "Asia/Dubai"];
 
-function zones(): string[] {
+// Every IANA zone the runtime knows (single source for all pickers).
+export function timeZoneList(): string[] {
   try {
     const sv = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf;
     return sv ? sv("timeZone") : FALLBACK;
@@ -17,7 +18,7 @@ export function TimezoneSelect({ value, onChange, inheritLabel }: { value: strin
   return (
     <select className="select" value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">{inheritLabel}</option>
-      {zones().map((z) => (
+      {timeZoneList().map((z) => (
         <option key={z} value={z}>{z}</option>
       ))}
     </select>

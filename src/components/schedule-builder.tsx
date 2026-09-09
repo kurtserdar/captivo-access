@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { COMMON_TIMEZONES, type Schedule } from "@/lib/access/schedule";
+import type { Schedule } from "@/lib/access/schedule";
+import { useTimezone } from "@/app/(app)/_shell/timezone-context";
+import { timeZoneList } from "@/app/(app)/_shell/timezone-select";
 
 const DAYS = [
   { i: 1, l: "Mon" }, { i: 2, l: "Tue" }, { i: 3, l: "Wed" }, { i: 4, l: "Thu" },
@@ -11,18 +13,22 @@ const DAYS = [
 type State = { enabled: boolean; days: number[]; start: string; end: string; tz: string };
 
 export function ScheduleBuilder({ onChange }: { onChange: (s: Schedule | null) => void }) {
-  const [s, setS] = useState<State>({ enabled: false, days: [1, 2, 3, 4, 5], start: "09:00", end: "18:00", tz: "UTC" });
+  const displayTz = useTimezone();
+  const [s, setS] = useState<State>({ enabled: false, days: [1, 2, 3, 4, 5], start: "09:00", end: "18:00", tz: displayTz ?? "UTC" });
 
-  // Default the timezone to the operator's browser zone (set after mount to
-  // avoid an SSR/client hydration mismatch). They can still pick any zone.
+  // Default the window's zone to the configured display timezone (what every other
+  // time on screen is shown in); when none is configured, the operator's browser
+  // zone — set after mount to avoid an SSR/client hydration mismatch. Any zone can
+  // still be picked.
   useEffect(() => {
+    if (displayTz) return;
     try {
       const b = Intl.DateTimeFormat().resolvedOptions().timeZone;
       if (b) setS((prev) => ({ ...prev, tz: b }));
     } catch {
       /* keep UTC */
     }
-  }, []);
+  }, [displayTz]);
 
   function update(patch: Partial<State>) {
     const next = { ...s, ...patch };
@@ -33,6 +39,8 @@ export function ScheduleBuilder({ onChange }: { onChange: (s: Schedule | null) =
   function toggleDay(i: number) {
     update({ days: s.days.includes(i) ? s.days.filter((d) => d !== i) : [...s.days, i] });
   }
+
+  const zones = timeZoneList();
 
   return (
     <div className="field">
@@ -60,7 +68,7 @@ export function ScheduleBuilder({ onChange }: { onChange: (s: Schedule | null) =
           </div>
           <label className="field-label">Time zone
             <select className="select" value={s.tz} onChange={(e) => update({ tz: e.target.value })}>
-              {(COMMON_TIMEZONES.includes(s.tz) ? COMMON_TIMEZONES : [s.tz, ...COMMON_TIMEZONES]).map((z) => (
+              {(zones.includes(s.tz) ? zones : [s.tz, ...zones]).map((z) => (
                 <option key={z} value={z}>{z}</option>
               ))}
             </select>

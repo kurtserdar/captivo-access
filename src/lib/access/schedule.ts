@@ -8,18 +8,6 @@ export type Schedule = {
   end: string; // "HH:MM", strictly greater than start (same-day window)
 };
 
-// A short curated list for the UI picker. validateSchedule still accepts ANY valid
-// IANA zone, so this list is a convenience, not a whitelist.
-export const COMMON_TIMEZONES = [
-  "Europe/Istanbul",
-  "UTC",
-  "Europe/London",
-  "Europe/Berlin",
-  "America/New_York",
-  "America/Los_Angeles",
-  "Asia/Dubai",
-];
-
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 function timeToMinutes(t: string): number | null {

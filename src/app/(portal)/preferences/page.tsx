@@ -1,0 +1,36 @@
+import { requireUser } from "@/lib/current-user";
+import { db } from "@/lib/db";
+import { TimezoneForm } from "@/app/(app)/settings/preferences/timezone-form";
+import { withRequestTenant } from "@/lib/tenant/request";
+
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Preferences" };
+
+// Vendor-facing counterpart of /settings/preferences: lets a portal user pick the
+// timezone their access windows, requests and history are shown (and entered) in.
+async function PreferencesPageImpl() {
+  const user = await requireUser();
+  const u = await db.user.findUnique({ where: { id: user.id }, select: { timezone: true } });
+  return (
+    <div className="vp-home">
+      <div className="vp-head">
+        <div>
+          <h1 className="vp-greet">Preferences</h1>
+          <p className="vp-sub">Your personal display settings for this account.</p>
+        </div>
+      </div>
+      <div className="vp-railcard">
+        <h2 style={{ fontSize: "1rem", margin: 0 }}>Display timezone</h2>
+        <p className="vp-sub" style={{ margin: 0 }}>
+          Dates and times you see — and the times you type when requesting access — use this timezone.
+          Leave on the organization default to follow the setting chosen by your administrator.
+        </p>
+        <TimezoneForm initial={u?.timezone ?? ""} />
+      </div>
+    </div>
+  );
+}
+
+export default async function PreferencesPage(...args: Parameters<typeof PreferencesPageImpl>) {
+  return withRequestTenant(() => PreferencesPageImpl(...args));
+}
