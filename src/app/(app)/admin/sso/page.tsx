@@ -4,6 +4,7 @@ import { getOidcConfig } from "@/lib/auth/oidc-config";
 import { LastVerified } from "@/app/(app)/_shell/last-verified";
 import { SsoForm } from "./sso-form";
 import { withRequestTenant } from "@/lib/tenant/request";
+import { managerBaseUrlFromHeaders } from "@/lib/url";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Single sign-on" };
@@ -12,12 +13,9 @@ async function AdminSsoPageImpl() {
   await requireCapability("configure");
   const cfg = await getOidcConfig();
 
-  // Show the redirect URI to register in the IdP (derived from the public URL).
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
-  const proto = h.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
-  const base = process.env.MANAGER_PUBLIC_URL?.replace(/\/+$/, "") || (host ? `${proto}://${host}` : "");
-  const redirectUri = `${base}/api/auth/oidc/callback`;
+  // Show the redirect URI to register in the IdP — the same base the OIDC
+  // start/callback routes use (on Cloud: this tenant's own console host).
+  const redirectUri = `${managerBaseUrlFromHeaders(await headers())}/api/auth/oidc/callback`;
 
   const initial = {
     enabled: cfg?.enabled ?? false,

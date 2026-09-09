@@ -10,6 +10,7 @@ import { notifyEmailEnabled } from "@/lib/notifications/gate";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
 import { withTenantRoute } from "@/lib/tenant/request";
+import { consoleBaseUrl } from "@/lib/tenant/console-url";
 
 export const POST = withTenantRoute(async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
   const admin = await getCurrentUser();
@@ -45,7 +46,7 @@ export const POST = withTenantRoute(async (req: NextRequest, ctx: { params: Prom
         const m = accessDecisionEmail({
           decision: decision === "approve" ? "approved" : "denied",
           siteName: grant.site.name,
-          consoleUrl: (process.env.MANAGER_PUBLIC_URL ?? "").replace(/\/$/, ""),
+          consoleUrl: await consoleBaseUrl(),
         });
         await sendMail({ to: grant.user.email, subject: m.subject, html: m.html, text: m.text });
       }

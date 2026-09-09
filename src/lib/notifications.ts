@@ -3,6 +3,7 @@ import { sendMail, getAdminEmails } from "@/lib/email/mailer";
 import { siteEventEmail } from "@/lib/email/templates";
 import { resolvedNotificationWebhookUrl } from "@/lib/settings/platform";
 import { notifyEmailEnabled } from "@/lib/notifications/gate";
+import { consoleBaseUrl } from "@/lib/tenant/console-url";
 
 export type NotificationType = "site_down" | "site_recovered";
 
@@ -41,7 +42,7 @@ export async function notifyTransition(input: {
           type: input.type,
           siteName: input.siteName,
           detail: input.detail,
-          consoleUrl: (process.env.MANAGER_PUBLIC_URL ?? "").replace(/\/$/, ""),
+          consoleUrl: await consoleBaseUrl(),
         });
         await sendMail({ to: admins, subject: m.subject, html: m.html, text: m.text });
       }

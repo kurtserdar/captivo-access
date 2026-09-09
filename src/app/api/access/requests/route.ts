@@ -10,6 +10,7 @@ import { sendMail, getAdminEmails } from "@/lib/email/mailer";
 import { approvalRequestEmail } from "@/lib/email/templates";
 import { notifyEmailEnabled } from "@/lib/notifications/gate";
 import { withTenantRoute } from "@/lib/tenant/request";
+import { consoleBaseUrl } from "@/lib/tenant/console-url";
 
 function parseDate(value: unknown): { ok: true; value: Date | null } | { ok: false } {
   if (value === undefined || value === null || value === "") return { ok: true, value: null };
@@ -77,7 +78,7 @@ export const POST = withTenantRoute(async (req: NextRequest) => {
           vendorName: user.name,
           vendorEmail: user.email,
           siteName: site.name,
-          consoleUrl: (process.env.MANAGER_PUBLIC_URL ?? "").replace(/\/$/, ""),
+          consoleUrl: await consoleBaseUrl(),
         });
         await sendMail({ to: admins, subject: m.subject, html: m.html, text: m.text });
       }

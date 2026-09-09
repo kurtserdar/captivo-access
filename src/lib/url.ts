@@ -1,23 +1,40 @@
 import { NextRequest } from "next/server";
+import { multiTenantEnabled } from "@/lib/tenant/enabled";
+import { consoleDomain, slugFromHost } from "@/lib/tenant/console-domain";
 
 /**
  * The manager's browser-facing base URL (no trailing slash), for building
- * absolute user-facing links (e.g. invite links).
+ * absolute user-facing links (e.g. invite links, the OIDC redirect URI).
  *
- * Prefers `MANAGER_PUBLIC_URL` (the configured public address). Otherwise it
+ * Cloud (MULTI_TENANT): when the request arrived on a tenant console host
+ * (`<slug>.<consoleDomain>`), that host IS the base — a tenant's invite links,
+ * OIDC callback and post-login redirects must stay on the tenant's own host
+ * (MANAGER_PUBLIC_URL is the platform host there, which resolves to the wrong
+ * tenant). Self-host: unchanged.
+ *
+ * Otherwise prefers `MANAGER_PUBLIC_URL` (the configured public address), then
  * derives the origin from the request's forwarded/Host headers. It must NOT use
  * `req.nextUrl.origin`, which in a standalone/containerized server resolves to
  * the server's own hostname (e.g. the Docker container id), not the address the
  * browser used — falling back to it only as a last resort.
  */
-export function managerBaseUrl(req: NextRequest): string {
+export function managerBaseUrlFromHeaders(
+  h: { get(name: string): string | null },
+  opts: { defaultProto?: string; fallbackOrigin?: string } = {},
+): string {
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto")?.split(",")[0]?.trim() || opts.defaultProto || "https";
+  if (multiTenantEnabled() && host && slugFromHost(host, consoleDomain())) return `${proto}://${host}`;
   const configured = process.env.MANAGER_PUBLIC_URL?.trim();
   if (configured) return configured.replace(/\/+$/, "");
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
-  const proto =
-    req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
-    req.nextUrl.protocol.replace(":", "");
-  return host ? `${proto}://${host}` : req.nextUrl.origin;
+  return host ? `${proto}://${host}` : (opts.fallbackOrigin ?? "");
+}
+
+export function managerBaseUrl(req: NextRequest): string {
+  return managerBaseUrlFromHeaders(req.headers, {
+    defaultProto: req.nextUrl.protocol.replace(":", ""),
+    fallbackOrigin: req.nextUrl.origin,
+  });
 }
 
 // Placeholder used when the connector tunnel (WSS) endpoint can't be resolved

@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { deriveTunnelUrl, isLocalManagerUrl } from "./url";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { deriveTunnelUrl, isLocalManagerUrl, managerBaseUrlFromHeaders } from "./url";
 
 describe("deriveTunnelUrl", () => {
   it("swaps manager.<domain> → connect.<domain> and https → wss", () => {
@@ -40,5 +40,43 @@ describe("isLocalManagerUrl", () => {
   it("is false for a real public manager URL", () => {
     expect(isLocalManagerUrl("https://manager.access.captivo.io")).toBe(false);
     expect(isLocalManagerUrl("https://manager.access.example.com/")).toBe(false);
+  });
+});
+
+describe("managerBaseUrlFromHeaders", () => {
+  const H = (m: Record<string, string>) => ({ get: (k: string) => m[k.toLowerCase()] ?? null });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("self-host: MANAGER_PUBLIC_URL wins over the request host", () => {
+    vi.stubEnv("MULTI_TENANT", "0");
+    vi.stubEnv("MANAGER_PUBLIC_URL", "https://manager.access.example.com/");
+    expect(managerBaseUrlFromHeaders(H({ host: "manager.access.example.com" }))).toBe("https://manager.access.example.com");
+  });
+
+  it("self-host without MANAGER_PUBLIC_URL: derives from forwarded headers", () => {
+    vi.stubEnv("MULTI_TENANT", "0");
+    vi.stubEnv("MANAGER_PUBLIC_URL", "");
+    expect(managerBaseUrlFromHeaders(H({ "x-forwarded-host": "m.example.com", "x-forwarded-proto": "https" }))).toBe("https://m.example.com");
+    expect(managerBaseUrlFromHeaders(H({}), { fallbackOrigin: "http://abc:3100" })).toBe("http://abc:3100");
+  });
+
+  it("cloud: a tenant console host is its own base (not the platform MANAGER_PUBLIC_URL)", () => {
+    vi.stubEnv("MULTI_TENANT", "1");
+    vi.stubEnv("CONSOLE_DOMAIN", "cloud.example.com");
+    vi.stubEnv("MANAGER_PUBLIC_URL", "https://platform.cloud.example.com");
+    expect(managerBaseUrlFromHeaders(H({ "x-forwarded-host": "acme.cloud.example.com", "x-forwarded-proto": "https" }))).toBe("https://acme.cloud.example.com");
+    // the platform host itself is a console host too → same value as configured
+    expect(managerBaseUrlFromHeaders(H({ "x-forwarded-host": "platform.cloud.example.com", "x-forwarded-proto": "https" }))).toBe("https://platform.cloud.example.com");
+  });
+
+  it("cloud: a non-console host (custom domain, site host) falls back to MANAGER_PUBLIC_URL", () => {
+    vi.stubEnv("MULTI_TENANT", "1");
+    vi.stubEnv("CONSOLE_DOMAIN", "cloud.example.com");
+    vi.stubEnv("MANAGER_PUBLIC_URL", "https://platform.cloud.example.com");
+    expect(managerBaseUrlFromHeaders(H({ "x-forwarded-host": "portal.acme.com", "x-forwarded-proto": "https" }))).toBe("https://platform.cloud.example.com");
+    expect(managerBaseUrlFromHeaders(H({ "x-forwarded-host": "captivo.acme.cloud.example.com" }))).toBe("https://platform.cloud.example.com");
   });
 });

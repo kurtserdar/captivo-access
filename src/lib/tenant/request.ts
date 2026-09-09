@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { notFound } from "next/navigation";
-import { accessDomain } from "@/lib/domain/custom-domain";
-import { slugFromHost, resolveTenantBySlug } from "@/lib/tenant/resolve";
+import { consoleDomain, slugFromHost } from "@/lib/tenant/console-domain";
+import { resolveTenantBySlug } from "@/lib/tenant/resolve";
 import { withTenant } from "@/lib/tenant/scope";
 import { multiTenantEnabled } from "@/lib/tenant/enabled";
 
@@ -17,10 +17,7 @@ import { multiTenantEnabled } from "@/lib/tenant/enabled";
 export async function resolveRequestTenant(): Promise<string | null> {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
-  const consoleDomain =
-    process.env.CONSOLE_DOMAIN?.trim() ||
-    accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN);
-  const slug = slugFromHost(host, consoleDomain);
+  const slug = slugFromHost(host, consoleDomain());
   if (!slug) return null;
   return resolveTenantBySlug(slug);
 }
@@ -31,10 +28,7 @@ export async function resolveRequestTenant(): Promise<string | null> {
 export async function resolveRequestTenantSlug(): Promise<string | null> {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
-  const consoleDomain =
-    process.env.CONSOLE_DOMAIN?.trim() ||
-    accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN);
-  return slugFromHost(host, consoleDomain);
+  return slugFromHost(host, consoleDomain());
 }
 
 // Wraps a route handler so its DB work runs under the request's tenant scope.

@@ -2,7 +2,7 @@ import { base } from "@/lib/db";
 import { withTenant } from "@/lib/tenant/scope";
 import { createInvite } from "@/lib/auth/invite";
 import { isValidTenantSlug } from "@/lib/tenant/constants";
-import { accessDomain } from "@/lib/domain/custom-domain";
+import { consoleDomain } from "@/lib/tenant/console-domain";
 
 export class PlatformError extends Error {
   code: string;
@@ -86,12 +86,9 @@ export async function createTenant(input: { name: string; slug: string; adminEma
 
   // The first admin accepts the invite at the tenant's own console host,
   // <slug>.<consoleDomain>. Prefer CONSOLE_DOMAIN; fall back to the access domain.
-  const consoleDomain =
-    process.env.CONSOLE_DOMAIN?.trim() ||
-    accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN) ||
-    "";
-  const inviteUrl = consoleDomain
-    ? `https://${slug}.${consoleDomain}/invite/${token}`
+  const domain = consoleDomain() ?? "";
+  const inviteUrl = domain
+    ? `https://${slug}.${domain}/invite/${token}`
     : `/invite/${token}`;
 
   return { tenant: { id, slug, name }, inviteToken: token, inviteUrl };
