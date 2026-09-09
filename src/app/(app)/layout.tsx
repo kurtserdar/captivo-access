@@ -15,6 +15,8 @@ import { TopNav } from "./_shell/topnav";
 import { TimezoneProvider } from "./_shell/timezone-context";
 import { withRequestTenant } from "@/lib/tenant/request";
 import { PlatformAnnouncement } from "@/components/platform-announcement";
+import { SupportBanner } from "./_shell/support-banner";
+import { supportSessionInfo } from "@/lib/support/session";
 
 // requireUser() must be read fresh from the DB on every request (session/role changes reflect immediately).
 export const dynamic = "force-dynamic";
@@ -26,6 +28,7 @@ async function AppLayoutImpl({ children }: { children: React.ReactNode }) {
   // (no PLATFORM users exist there).
   if (isPlatformAdmin(user.role)) redirect("/platform");
   const tz = await resolvedDisplayTimezone(user.id);
+  const support = await supportSessionInfo().catch(() => null);
   const showGrants = can(user.role, "approve_grants");
   const showRead = can(user.role, "read_console");
   const showConfig = can(user.role, "configure");
@@ -54,6 +57,7 @@ async function AppLayoutImpl({ children }: { children: React.ReactNode }) {
         showLive={showRead}
       />
       <PlatformAnnouncement />
+      {support && <SupportBanner expiresAt={support.expiresAt.toISOString()} actorEmail={support.actorEmail} reason={support.reason} />}
       {showConfig && (
         <UpdateBanner
           enabled={updateEnabled}

@@ -7,6 +7,7 @@ import { parseGuacParams } from "@/lib/gateway/guac-params";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
 import { withTenantRoute } from "@/lib/tenant/request";
+import { capabilityAllowed } from "@/lib/tenant/envelope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export const PUT = withTenantRoute(async (req: NextRequest, { params }: { params
   const admin = await getCurrentUser();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(admin.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (!vaultEnabled()) return NextResponse.json({ error: "vault_disabled" }, { status: 403 });
+  if (!vaultEnabled() || !(await capabilityAllowed("vault"))) return NextResponse.json({ error: "vault_disabled" }, { status: 403 });
 
   const { id } = await params;
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;

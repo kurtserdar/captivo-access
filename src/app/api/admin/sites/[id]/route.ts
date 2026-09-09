@@ -8,6 +8,7 @@ import { isolationEnabled } from "@/lib/isolation/enabled";
 import { encrypt } from "@/lib/crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { validateSiteInput } from "@/lib/site/validate";
+import { capabilityAllowed } from "@/lib/tenant/envelope";
 import { siteHostSuffix } from "@/lib/site/host-suffix";
 import { crossTenantHostnameTaken } from "@/lib/site/hostname";
 import { parseLogoUpload } from "@/lib/site/logo";
@@ -22,7 +23,8 @@ export const PATCH = withTenantRoute(async (req: NextRequest, ctx: { params: Pro
   const { id } = await ctx.params;
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled(), requireSecret: false, recordingEnabled: recordingEnabled(), isolationEnabled: isolationEnabled(), hostSuffix: await siteHostSuffix() });
+  const [capGateway, capRecording, capIsolated] = await Promise.all([capabilityAllowed("gateway"), capabilityAllowed("recording"), capabilityAllowed("isolated")]);
+  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled() && capGateway, requireSecret: false, recordingEnabled: recordingEnabled() && capRecording, isolationEnabled: isolationEnabled() && capIsolated, hostSuffix: await siteHostSuffix() });
   if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.error === "native_gateway_disabled" || v.error === "isolation_disabled" ? 403 : 400 });
 
   const connector = await db.connector.findUnique({ where: { id: v.connectorId }, select: { id: true } });

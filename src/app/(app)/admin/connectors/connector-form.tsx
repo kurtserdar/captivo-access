@@ -10,6 +10,8 @@ function errorMessage(code: string | undefined): string {
       return "A connector name is required.";
     case "forbidden":
       return "Admin privileges are required for this action.";
+    case "limit_reached":
+      return "Your plan's connector limit is reached — contact your platform operator to raise it.";
     default:
       return "Couldn't create the connector, please try again.";
   }

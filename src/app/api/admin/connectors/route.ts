@@ -9,6 +9,7 @@ import { buildInstallCommand } from "@/lib/connector/repair";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
 import { withTenantRoute } from "@/lib/tenant/request";
+import { assertWithinLimit, LimitError } from "@/lib/tenant/envelope";
 
 export const POST = withTenantRoute(async (req: NextRequest) => {
   const admin = await getCurrentUser();
@@ -23,6 +24,12 @@ export const POST = withTenantRoute(async (req: NextRequest) => {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   if (!name) {
     return NextResponse.json({ error: "name_required" }, { status: 400 });
+  }
+  try {
+    await assertWithinLimit("maxConnectors", await db.connector.count({ where: { status: { not: "REVOKED" } } }));
+  } catch (e) {
+    if (e instanceof LimitError) return NextResponse.json({ error: "limit_reached", limit: e.key, max: e.max }, { status: 409 });
+    throw e;
   }
   const { code } = await createPairing(name);
   const managerUrl = managerBaseUrl(req);

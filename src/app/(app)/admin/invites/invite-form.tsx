@@ -14,6 +14,8 @@ function errorMessage(code: string | undefined): string {
       return "Admin privileges are required for this action.";
     case "email_registered":
       return "This email already has an account.";
+    case "limit_reached":
+      return "Your plan's user limit is reached — contact your platform operator to raise it.";
     default:
       return "Couldn't create the invite, please try again.";
   }

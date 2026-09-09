@@ -10,6 +10,7 @@ import { inviteEmail } from "@/lib/email/templates";
 import type { Role } from "@/generated/prisma/enums";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
+import { assertWithinLimit, LimitError } from "@/lib/tenant/envelope";
 import { withTenantRoute } from "@/lib/tenant/request";
 
 export const POST = withTenantRoute(async (req: NextRequest) => {
@@ -42,6 +43,13 @@ export const POST = withTenantRoute(async (req: NextRequest) => {
   });
   if (existing) {
     return NextResponse.json({ error: "email_registered" }, { status: 409 });
+  }
+
+  try {
+    await assertWithinLimit("maxUsers", await db.user.count());
+  } catch (e) {
+    if (e instanceof LimitError) return NextResponse.json({ error: "limit_reached", limit: e.key, max: e.max }, { status: 409 });
+    throw e;
   }
 
   const { token } = await createInvite({

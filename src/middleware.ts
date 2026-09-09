@@ -6,6 +6,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // build (node:url / argon2 wasm export errors). We keep the constant as a
 // literal here; it must stay in sync with the value in session.ts ("ca_session").
 const SESSION_COOKIE = "ca_session";
+const SUPPORT_COOKIE = "ca_support"; // platform support session on a tenant host (see lib/support/session.ts)
 
 const PROTECTED = ["/settings", "/admin"]; // under (app)
 const PUBLIC = ["/login", "/recover", "/setup", "/invite", "/api/auth", "/api/health"];
@@ -15,7 +16,7 @@ export function middleware(req: NextRequest) {
   if (PUBLIC.some((p) => pathname === p || pathname.startsWith(p + "/")) || pathname.startsWith("/_next")) {
     return NextResponse.next();
   }
-  const hasSession = !!req.cookies.get(SESSION_COOKIE)?.value;
+  const hasSession = !!req.cookies.get(SESSION_COOKIE)?.value || !!req.cookies.get(SUPPORT_COOKIE)?.value;
   if (PROTECTED.some((p) => pathname === p || pathname.startsWith(p + "/")) && !hasSession) {
     return NextResponse.redirect(new URL("/login", req.nextUrl));
   }

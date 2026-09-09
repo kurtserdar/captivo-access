@@ -32,6 +32,8 @@ function errorMessage(code: string | undefined, isEdit: boolean): string {
       return "Connector and name are required.";
     case "forbidden":
       return "Admin privileges are required for this action.";
+    case "limit_reached":
+      return "Your plan's resource limit is reached — contact your platform operator to raise it.";
     default:
       return isEdit ? "Couldn't save the resource, please try again." : "Couldn't create the resource, please try again.";
   }

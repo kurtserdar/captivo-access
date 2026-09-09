@@ -41,7 +41,7 @@ export function PlatformConfigForm({ initial, platformSmtp, signupUrl }: { initi
       </div>
 
       <div className="card">
-        <div className="card-head"><div><h2>New tenant defaults</h2><div className="sub">Applied to a tenant's policy when it is created. Existing tenants are not changed. Empty = the product default.</div></div></div>
+        <div className="card-head"><div><h2>New tenant defaults</h2><div className="sub">Applied to a tenant&apos;s policy when it is created. Existing tenants are not changed. Empty = the product default.</div></div></div>
         <div className="settings">
           <div className="setting"><div className="setting-main"><span className="setting-label">Recording mode</span></div><div className="setting-ctl"><select className="select" value={s.defaults.recordingMode} onChange={(e) => setD({ recordingMode: e.target.value })}><option value="">Product default (per resource)</option><option value="off">Off</option><option value="per_resource">Per resource</option><option value="required">Required</option></select></div></div>
           <div className="setting"><div className="setting-main"><span className="setting-label">Keystroke logging</span></div><div className="setting-ctl"><select className="select" value={s.defaults.keystrokeLoggingMode} onChange={(e) => setD({ keystrokeLoggingMode: e.target.value })}><option value="">Product default (per resource)</option><option value="off">Off</option><option value="per_resource">Per resource</option><option value="required">Required</option></select></div></div>

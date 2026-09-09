@@ -199,7 +199,10 @@ export async function resolvedClipboardDefault(): Promise<string> {
 // Recording retention in days; 0 = keep forever. UI-only (no env).
 export async function resolvedRecordingRetentionDays(): Promise<number> {
   const s = await getPlatformSettings();
-  return s.recordingRetentionDays && s.recordingRetentionDays > 0 ? s.recordingRetentionDays : 0;
+  const own = s.recordingRetentionDays && s.recordingRetentionDays > 0 ? s.recordingRetentionDays : 0;
+  // Cloud: the platform may cap a tenant's retention (0 = forever → the cap).
+  const { capRecordingRetention } = await import("@/lib/tenant/envelope");
+  return capRecordingRetention(own);
 }
 
 const LOG_LEVELS = ["debug", "info", "warn", "error"];
@@ -244,6 +247,10 @@ export async function resolvedKeystrokeLoggingMode(): Promise<KeystrokeMode> {
 
 export const RECORDING_MODES = ["off", "per_resource", "required"] as const;
 export async function resolvedRecordingMode(): Promise<string> {
+  // Cloud: a tenant whose recording capability is switched off by the platform
+  // records nothing, whatever its own policy says.
+  const { capabilityAllowed } = await import("@/lib/tenant/envelope");
+  if (!(await capabilityAllowed("recording"))) return "off";
   const s = await getPlatformSettings();
   if (s.recordingMode && (RECORDING_MODES as readonly string[]).includes(s.recordingMode)) return s.recordingMode;
   const v = process.env.RECORDING_MODE?.trim().toLowerCase();

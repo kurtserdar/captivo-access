@@ -14,6 +14,7 @@ export function TenantActions({ tenant }: { tenant: T }) {
   const { confirm, dialog } = useConfirm();
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [support, setSupport] = useState<{ open: boolean; reason: string; error: string | null }>({ open: false, reason: "", error: null });
   const [invite, setInvite] = useState<{ open: boolean; email: string; name: string; result: { inviteUrl: string; emailed: boolean } | null; error: string | null }>({ open: false, email: "", name: "", result: null, error: null });
 
   async function call(path: string, body?: unknown, label?: string) {
@@ -38,6 +39,19 @@ export function TenantActions({ tenant }: { tenant: T }) {
     const r = await call("logout", {}, undefined);
     if (r) setMsg(`${r.sessions} session${r.sessions === 1 ? "" : "s"} ended.`);
   }
+  async function openSupport(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy("support");
+    try {
+      const res = await fetch(`/api/platform/tenants/${tenant.id}/support`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason: support.reason }) });
+      const b = await res.json().catch(() => ({}));
+      if (!res.ok || !b?.url) { setSupport((s) => ({ ...s, error: b?.error === "reason_required" ? "Give a reason (it is shown to the tenant's admins in their audit log)." : `Couldn't start support access (${b?.error ?? res.status}).` })); return; }
+      window.open(b.url, "_blank", "noopener");
+      setSupport({ open: false, reason: "", error: null });
+      setMsg("Support session opened in a new tab (1 hour).");
+      router.refresh();
+    } finally { setBusy(null); }
+  }
   async function sendInvite(e: React.FormEvent) {
     e.preventDefault();
     setBusy("invite");
@@ -57,9 +71,18 @@ export function TenantActions({ tenant }: { tenant: T }) {
         {!tenant.deleted && <button type="button" className="btn sm" disabled={busy === "logout"} onClick={forceLogout}>End all sessions</button>}
         <a className="btn sm" href={`/api/platform/tenants/${tenant.id}/export`}>Export JSON</a>
         {!tenant.deleted && <button type="button" className={`btn sm ${tenant.status === "ACTIVE" ? "" : "primary"}`} disabled={busy === "status"} onClick={toggleStatus}>{tenant.status === "ACTIVE" ? "Suspend" : "Activate"}</button>}
-        {!tenant.deleted && tenant.status === "ACTIVE" && <a className="btn sm primary" href={`/api/platform/tenants/${tenant.id}/support`}>Open as support</a>}
+        {!tenant.deleted && tenant.status === "ACTIVE" && <button type="button" className="btn sm primary" onClick={() => setSupport((s) => ({ ...s, open: !s.open }))}>Open as support</button>}
       </div>
       {msg && <span className="cell-sub">{msg}</span>}
+      {support.open && (
+        <form className="card" style={{ minWidth: 360 }} onSubmit={openSupport}>
+          <div className="card-head bare"><h3>Open the tenant console as support</h3></div>
+          <p className="cell-sub" style={{ marginBottom: 8 }}>Starts a 1-hour admin session in <b>{tenant.slug}</b> in a new tab, without touching your platform login. The tenant sees a &quot;Captivo Support&quot; user, a banner, and this reason in its audit log.</p>
+          <div className="field"><label className="field-label">Reason</label><input className="input" required minLength={3} maxLength={300} placeholder="e.g. Ticket #412 — connector shows offline" value={support.reason} onChange={(e) => setSupport((s) => ({ ...s, reason: e.target.value }))} /></div>
+          {support.error && <p className="notice error">{support.error}</p>}
+          <div className="row-actions"><button className="btn primary sm" type="submit" disabled={busy === "support" || support.reason.trim().length < 3}>{busy === "support" ? "Opening…" : "Open console"}</button><button type="button" className="btn sm" onClick={() => setSupport({ open: false, reason: "", error: null })}>Cancel</button></div>
+        </form>
+      )}
       {invite.open && (
         <form className="card" style={{ minWidth: 360 }} onSubmit={sendInvite}>
           <div className="card-head bare"><h3>Invite an admin</h3></div>

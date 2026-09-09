@@ -10,6 +10,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { validateSiteInput } from "@/lib/site/validate";
 import { siteHostSuffix } from "@/lib/site/host-suffix";
 import { crossTenantHostnameTaken } from "@/lib/site/hostname";
+import { capabilityAllowed, assertWithinLimit, LimitError } from "@/lib/tenant/envelope";
 import { parseLogoUpload } from "@/lib/site/logo";
 import { recordAdminAction } from "@/lib/audit/admin";
 import { clientIp } from "@/lib/request-ip";
@@ -25,8 +26,16 @@ export const POST = withTenantRoute(async (req: NextRequest) => {
   }
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled(), requireSecret: true, recordingEnabled: recordingEnabled(), isolationEnabled: isolationEnabled(), hostSuffix: await siteHostSuffix() });
+  // Capabilities: the deployment flag, overridable per tenant from the platform console.
+  const [capGateway, capRecording, capIsolated] = await Promise.all([capabilityAllowed("gateway"), capabilityAllowed("recording"), capabilityAllowed("isolated")]);
+  const v = validateSiteInput(body, { nativeGateway: nativeGatewayEnabled() && capGateway, requireSecret: true, recordingEnabled: recordingEnabled() && capRecording, isolationEnabled: isolationEnabled() && capIsolated, hostSuffix: await siteHostSuffix() });
   if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.error === "native_gateway_disabled" || v.error === "isolation_disabled" ? 403 : 400 });
+  try {
+    await assertWithinLimit("maxSites", await db.site.count());
+  } catch (e) {
+    if (e instanceof LimitError) return NextResponse.json({ error: "limit_reached", limit: e.key, max: e.max }, { status: 409 });
+    throw e;
+  }
 
   const connector = await db.connector.findUnique({ where: { id: v.connectorId }, select: { id: true } });
   if (!connector) {

@@ -690,6 +690,7 @@ model SupportHandoff {
   reason     String
   expiresAt  DateTime
   usedAt     DateTime?
+  sessionId  String? // the support Session created on handoff (for the in-console banner)
   createdAt  DateTime  @default(now())
 
   @@unique([tenantId, tokenHash])
