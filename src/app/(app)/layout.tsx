@@ -14,6 +14,7 @@ import { resolvedDisplayTimezone } from "@/lib/settings/timezone";
 import { TopNav } from "./_shell/topnav";
 import { TimezoneProvider } from "./_shell/timezone-context";
 import { withRequestTenant } from "@/lib/tenant/request";
+import { PlatformAnnouncement } from "@/components/platform-announcement";
 
 // requireUser() must be read fresh from the DB on every request (session/role changes reflect immediately).
 export const dynamic = "force-dynamic";
@@ -52,6 +53,7 @@ async function AppLayoutImpl({ children }: { children: React.ReactNode }) {
         roleLabel={ROLE_LABELS[user.role] ?? user.role}
         showLive={showRead}
       />
+      <PlatformAnnouncement />
       {showConfig && (
         <UpdateBanner
           enabled={updateEnabled}

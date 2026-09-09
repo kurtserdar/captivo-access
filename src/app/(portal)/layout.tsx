@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/current-user";
 import { isConsoleUser } from "@/lib/auth/roles";
 import { resolvedDisplayTimezone } from "@/lib/settings/timezone";
 import { TimezoneProvider } from "@/app/(app)/_shell/timezone-context";
+import { PlatformAnnouncement } from "@/components/platform-announcement";
 import { LogoutButton } from "../(app)/logout-button";
 import { PortalNav } from "./_nav/portal-nav";
 import { PortalMobileNav } from "./_nav/portal-mobile-nav";
@@ -38,6 +39,7 @@ async function PortalLayoutImpl({ children }: { children: React.ReactNode }) {
         </div>
         <PortalMobileNav isAdmin={isConsoleUser(user.role)} initials={initials} />
       </header>
+      <PlatformAnnouncement />
       <div className="vp-body">{children}</div>
     </div>
     </TimezoneProvider>

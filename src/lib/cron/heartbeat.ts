@@ -3,11 +3,13 @@ import { currentTenantId } from "@/lib/tenant/context";
 import { getPlatformSettings } from "@/lib/settings/platform";
 
 export type CronJob = "site-health" | "audit-retention" | "recording-retention" | "audit-anchor";
+// Platform-level (Cloud) maintenance job; recorded under the platform tenant only.
+export type PlatformJob = "platform-ops";
 
 // recordCronRun stamps a heartbeat for a cron endpoint. Called on every
 // authorized hit (even a no-op run) so "the cron is scheduled" is provable.
 // Best-effort — never fails the cron itself.
-export async function recordCronRun(job: CronJob): Promise<void> {
+export async function recordCronRun(job: CronJob | PlatformJob): Promise<void> {
   await db.cronRun
     .upsert({ where: { tenantId_job: { tenantId: currentTenantId(), job } }, create: { tenantId: currentTenantId(), job, ranAt: new Date() }, update: { ranAt: new Date() } })
     .catch(() => {});
