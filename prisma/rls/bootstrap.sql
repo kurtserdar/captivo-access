@@ -27,7 +27,8 @@ BEGIN
     'Site','VaultCredential','AccessGrant','AuditEvent','AuditChainState','AuditAnchor',
     'AdminAuditAnchor','SmtpConfig','BrandingConfig','Notification','OidcConfig',
     'DirectoryConfig','GroupMapping','SessionPolicy','CronRun','PlatformSettings',
-    'UpdateCheckConfig','SessionRecording','RecordingChunk','SessionKeyEvent','AdminAuditEvent'
+    'UpdateCheckConfig','SessionRecording','RecordingChunk','SessionKeyEvent','AdminAuditEvent',
+    'SupportHandoff'
   ] LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', t);
@@ -66,7 +67,8 @@ BEGIN
     'Site','VaultCredential','AccessGrant','AuditEvent','AuditChainState','AuditAnchor',
     'AdminAuditAnchor','SmtpConfig','BrandingConfig','Notification','OidcConfig',
     'DirectoryConfig','GroupMapping','SessionPolicy','CronRun','PlatformSettings',
-    'UpdateCheckConfig','SessionRecording','RecordingChunk','SessionKeyEvent','AdminAuditEvent'
+    'UpdateCheckConfig','SessionRecording','RecordingChunk','SessionKeyEvent','AdminAuditEvent',
+    'SupportHandoff'
   ] LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS trg_tenant_from_guc ON %I', t);
     EXECUTE format('CREATE TRIGGER trg_tenant_from_guc BEFORE INSERT ON %I FOR EACH ROW EXECUTE FUNCTION set_tenant_from_guc()', t);
@@ -78,7 +80,7 @@ END $$;
 -- its host. Read-only, STABLE, search_path pinned; EXECUTE granted only to app.
 CREATE OR REPLACE FUNCTION resolve_tenant_by_slug(p_slug text)
 RETURNS text LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
-  SELECT id FROM "Tenant" WHERE slug = p_slug AND status = 'ACTIVE'
+  SELECT id FROM "Tenant" WHERE slug = p_slug AND status = 'ACTIVE' AND "deletedAt" IS NULL
 $$;
 CREATE OR REPLACE FUNCTION resolve_tenant_by_hostname(p_host text)
 RETURNS text LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
@@ -104,11 +106,14 @@ BEGIN
   RETURN p_id;
 END $$;
 
+DROP FUNCTION IF EXISTS platform_list_tenants();
 CREATE OR REPLACE FUNCTION platform_list_tenants()
-RETURNS TABLE(id text, slug text, name text, status text, "createdAt" timestamptz, "adminCount" bigint)
+RETURNS TABLE(id text, slug text, name text, status text, "createdAt" timestamptz, "adminCount" bigint,
+              plan text, "trialEndsAt" timestamptz, "deletedAt" timestamptz, limits jsonb, capabilities jsonb, notes text, "updatedAt" timestamptz)
 LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
   SELECT t.id, t.slug, t.name, t.status, t."createdAt",
-         (SELECT count(*) FROM "User" u WHERE u."tenantId" = t.id) AS "adminCount"
+         (SELECT count(*) FROM "User" u WHERE u."tenantId" = t.id AND u.role = 'ADMIN') AS "adminCount",
+         t.plan, t."trialEndsAt", t."deletedAt", t.limits, t.capabilities, t.notes, t."updatedAt"
   FROM "Tenant" t
   WHERE t.id NOT IN ('platform', 'default')
   ORDER BY t."createdAt" DESC
@@ -157,7 +162,7 @@ RETURNS text LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
 
 CREATE OR REPLACE FUNCTION list_active_tenant_ids()
 RETURNS SETOF text LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
-  SELECT id FROM "Tenant" WHERE status = 'ACTIVE' AND id NOT IN ('platform', 'default') $$;
+  SELECT id FROM "Tenant" WHERE status = 'ACTIVE' AND "deletedAt" IS NULL AND id NOT IN ('platform', 'default') $$;
 
 CREATE OR REPLACE FUNCTION list_connector_token_candidates()
 RETURNS TABLE(id text, "tenantId" text, "tokenHash" text)
@@ -192,3 +197,154 @@ GRANT EXECUTE ON FUNCTION list_pairing_candidates() TO app;
 -- 8. Custom (BYO) vendor hostnames must be globally unique (managed hosts are
 -- per-tenant-unique via the slug suffix; only customDomain hosts need this).
 CREATE UNIQUE INDEX IF NOT EXISTS site_custom_hostname_uq ON "Site" (hostname) WHERE "customDomain";
+
+-- 8. Platform console (Cloud): cross-tenant reads + tenant lifecycle. Same
+-- contract as section 6 — RLS-bypass mechanics only; authorization is app-level
+-- (requirePlatformAdmin). Read functions are STABLE; mutations refuse the
+-- reserved tenants.
+CREATE OR REPLACE FUNCTION platform_tenant_stats()
+RETURNS TABLE(id text, users bigint, admins bigint, vendors bigint, sites bigint, connectors bigint, "connectorsOnline" bigint,
+              "grantsActive" bigint, "requestsPending" bigint, "auditEvents" bigint, recordings bigint, "recordingBytes" numeric,
+              "sessions24h" bigint, "lastActivity" timestamptz)
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT t.id,
+    (SELECT count(*) FROM "User" u WHERE u."tenantId" = t.id),
+    (SELECT count(*) FROM "User" u WHERE u."tenantId" = t.id AND u.role = 'ADMIN'),
+    (SELECT count(*) FROM "User" u WHERE u."tenantId" = t.id AND u.role = 'VENDOR'),
+    (SELECT count(*) FROM "Site" s WHERE s."tenantId" = t.id),
+    (SELECT count(*) FROM "Connector" c WHERE c."tenantId" = t.id AND c.status <> 'REVOKED'),
+    (SELECT count(*) FROM "Connector" c WHERE c."tenantId" = t.id AND c.status = 'ONLINE'),
+    (SELECT count(*) FROM "AccessGrant" g WHERE g."tenantId" = t.id AND g.status = 'ACTIVE' AND (g."requiresApproval" = false OR g."approvedAt" IS NOT NULL) AND (g."endsAt" IS NULL OR g."endsAt" > now())),
+    (SELECT count(*) FROM "AccessGrant" g WHERE g."tenantId" = t.id AND g.status = 'ACTIVE' AND g."requiresApproval" = true AND g."approvedAt" IS NULL),
+    (SELECT count(*) FROM "AuditEvent" a WHERE a."tenantId" = t.id),
+    (SELECT count(*) FROM "SessionRecording" r WHERE r."tenantId" = t.id),
+    (SELECT coalesce(sum(r.bytes), 0) FROM "SessionRecording" r WHERE r."tenantId" = t.id),
+    (SELECT count(*) FROM "Session" s WHERE s."tenantId" = t.id AND s."lastSeenAt" > now() - interval '24 hours'),
+    (SELECT greatest(
+        (SELECT max(a."timestamp") FROM "AuditEvent" a WHERE a."tenantId" = t.id),
+        (SELECT max(s."lastSeenAt") FROM "Session" s WHERE s."tenantId" = t.id),
+        (SELECT max(e."timestamp") FROM "AdminAuditEvent" e WHERE e."tenantId" = t.id)))
+  FROM "Tenant" t
+  WHERE t.id NOT IN ('platform', 'default')
+$$;
+
+CREATE OR REPLACE FUNCTION platform_find_users(p_email text)
+RETURNS TABLE("tenantId" text, slug text, "tenantName" text, id text, email text, name text, role text, status text, "createdAt" timestamptz)
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT u."tenantId", t.slug, t.name, u.id, u.email, u.name, u.role::text, u.status::text, u."createdAt"
+  FROM "User" u JOIN "Tenant" t ON t.id = u."tenantId"
+  WHERE u.email ILIKE '%' || p_email || '%' AND t.id <> 'default'
+  ORDER BY u."createdAt" DESC
+  LIMIT 100
+$$;
+
+CREATE OR REPLACE FUNCTION platform_recent_admin_events(p_limit int, p_tenant text)
+RETURNS TABLE("tenantId" text, slug text, id text, "timestamp" timestamptz, "actorEmail" text, action text, "targetType" text, "targetId" text, summary text)
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT e."tenantId", t.slug, e.id, e."timestamp", e."actorEmail", e.action, e."targetType", e."targetId", e.summary
+  FROM "AdminAuditEvent" e JOIN "Tenant" t ON t.id = e."tenantId"
+  WHERE (p_tenant IS NULL OR e."tenantId" = p_tenant) AND t.id <> 'default'
+  ORDER BY e."timestamp" DESC
+  LIMIT greatest(1, least(p_limit, 500))
+$$;
+
+CREATE OR REPLACE FUNCTION platform_recent_access_events(p_limit int, p_tenant text)
+RETURNS TABLE("tenantId" text, slug text, id text, "timestamp" timestamptz, "userEmail" text, "siteName" text, host text, decision text, reason text)
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT a."tenantId", t.slug, a.id, a."timestamp", a."userEmail", a."siteName", a.host, a.decision::text, a.reason
+  FROM "AuditEvent" a JOIN "Tenant" t ON t.id = a."tenantId"
+  WHERE (p_tenant IS NULL OR a."tenantId" = p_tenant) AND t.id <> 'default'
+  ORDER BY a."timestamp" DESC
+  LIMIT greatest(1, least(p_limit, 500))
+$$;
+
+CREATE OR REPLACE FUNCTION platform_cron_runs()
+RETURNS TABLE("tenantId" text, slug text, job text, "ranAt" timestamptz)
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT c."tenantId", t.slug, c.job, c."ranAt"
+  FROM "CronRun" c JOIN "Tenant" t ON t.id = c."tenantId"
+  WHERE t.id <> 'default'
+  ORDER BY t.slug, c.job
+$$;
+
+CREATE OR REPLACE FUNCTION platform_update_tenant(p_id text, p_name text, p_plan text, p_trial_ends timestamptz, p_limits jsonb, p_capabilities jsonb, p_notes text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF p_id IN ('platform', 'default') THEN RAISE EXCEPTION 'reserved tenant'; END IF;
+  IF p_plan NOT IN ('trial', 'standard', 'enterprise') THEN RAISE EXCEPTION 'invalid plan: %', p_plan; END IF;
+  UPDATE "Tenant" SET name = p_name, plan = p_plan, "trialEndsAt" = p_trial_ends, limits = p_limits,
+                      capabilities = p_capabilities, notes = p_notes, "updatedAt" = now()
+  WHERE id = p_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION platform_delete_tenant(p_id text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF p_id IN ('platform', 'default') THEN RAISE EXCEPTION 'reserved tenant'; END IF;
+  UPDATE "Tenant" SET "deletedAt" = now(), status = 'SUSPENDED', "updatedAt" = now() WHERE id = p_id AND "deletedAt" IS NULL;
+  DELETE FROM "Session" WHERE "tenantId" = p_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION platform_restore_tenant(p_id text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF p_id IN ('platform', 'default') THEN RAISE EXCEPTION 'reserved tenant'; END IF;
+  UPDATE "Tenant" SET "deletedAt" = NULL, status = 'ACTIVE', "updatedAt" = now() WHERE id = p_id;
+END $$;
+
+-- Hard delete: only a soft-deleted tenant; every tenant-scoped table cascades via FK.
+CREATE OR REPLACE FUNCTION platform_purge_tenant(p_id text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF p_id IN ('platform', 'default') THEN RAISE EXCEPTION 'reserved tenant'; END IF;
+  DELETE FROM "Tenant" WHERE id = p_id AND "deletedAt" IS NOT NULL;
+END $$;
+
+CREATE OR REPLACE FUNCTION platform_purge_candidates(p_days int)
+RETURNS SETOF text LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT id FROM "Tenant" WHERE "deletedAt" IS NOT NULL AND "deletedAt" < now() - make_interval(days => p_days) AND id NOT IN ('platform', 'default')
+$$;
+
+CREATE OR REPLACE FUNCTION platform_expired_trials()
+RETURNS SETOF text LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT id FROM "Tenant" WHERE plan = 'trial' AND "trialEndsAt" IS NOT NULL AND "trialEndsAt" < now()
+    AND status = 'ACTIVE' AND "deletedAt" IS NULL AND id NOT IN ('platform', 'default')
+$$;
+
+-- The platform tenant's SMTP settings, for the opt-in fallback used by tenants
+-- that have not configured their own mail. Read by ANY tenant request; the
+-- password is needed to send, so the caller must never echo it back to a UI.
+CREATE OR REPLACE FUNCTION platform_smtp_config()
+RETURNS TABLE(host text, port int, secure boolean, username text, password text, "fromName" text, "fromEmail" text)
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT host, port, secure, username, password, "fromName", "fromEmail" FROM "SmtpConfig" WHERE "tenantId" = 'platform' AND enabled = true
+$$;
+
+REVOKE ALL ON FUNCTION platform_tenant_stats() FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_find_users(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_recent_admin_events(int, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_recent_access_events(int, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_cron_runs() FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_update_tenant(text, text, text, timestamptz, jsonb, jsonb, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_delete_tenant(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_restore_tenant(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_purge_tenant(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_purge_candidates(int) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_expired_trials() FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_smtp_config() FROM PUBLIC;
+
+SELECT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app') AS have_role \gset
+\if :have_role
+GRANT EXECUTE ON FUNCTION platform_tenant_stats() TO app;
+GRANT EXECUTE ON FUNCTION platform_find_users(text) TO app;
+GRANT EXECUTE ON FUNCTION platform_recent_admin_events(int, text) TO app;
+GRANT EXECUTE ON FUNCTION platform_recent_access_events(int, text) TO app;
+GRANT EXECUTE ON FUNCTION platform_cron_runs() TO app;
+GRANT EXECUTE ON FUNCTION platform_update_tenant(text, text, text, timestamptz, jsonb, jsonb, text) TO app;
+GRANT EXECUTE ON FUNCTION platform_delete_tenant(text) TO app;
+GRANT EXECUTE ON FUNCTION platform_restore_tenant(text) TO app;
+GRANT EXECUTE ON FUNCTION platform_purge_tenant(text) TO app;
+GRANT EXECUTE ON FUNCTION platform_purge_candidates(int) TO app;
+GRANT EXECUTE ON FUNCTION platform_expired_trials() TO app;
+GRANT EXECUTE ON FUNCTION platform_smtp_config() TO app;
+\endif

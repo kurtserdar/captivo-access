@@ -20,6 +20,15 @@ model Tenant {
   name      String
   status    String   @default("ACTIVE") // ACTIVE | SUSPENDED
   createdAt DateTime @default(now())
+  // --- Platform console (Cloud) ---
+  plan         String    @default("standard") // trial | standard | enterprise
+  trialEndsAt  DateTime? // plan=trial: auto-suspended by the platform-ops cron after this
+  deletedAt    DateTime? // soft-deleted (hidden from resolvers); purged 30 days later
+  limits       Json? // { maxUsers?, maxSites?, maxConnectors?, maxRecordingRetentionDays? } — null/absent = unlimited
+  capabilities Json? // { recording?, isolated?, gateway?, vault? } booleans — absent = deployment default
+  notes        String? // internal operator notes (never shown to the tenant)
+  updatedAt    DateTime  @default(now()) @updatedAt
+  supportHandoffs SupportHandoff[]
 
   users             User[]
   passkeys          Passkey[]
@@ -649,5 +658,40 @@ model AdminAuditEvent {
   @@index([action, timestamp])
   @@index([targetType, targetId])
   @@index([seq])
+  @@index([tenantId])
+}
+
+// Platform-wide configuration (Cloud). ONE row (id = "platform"). Deliberately NOT
+// tenant-scoped / not under RLS: every tenant request may read it (announcement
+// banner, signup toggle, SMTP fallback flag); only platform admins write it
+// (app-level authorization).
+model PlatformConfig {
+  id                String    @id @default("platform")
+  announcementText  String?
+  announcementLevel String? // info | warn | danger
+  announcementUntil DateTime?
+  newTenantDefaults Json? // PlatformSettings subset applied to newly created tenants
+  opsEmail          String? // platform operations digest recipient
+  smtpFallback      Boolean   @default(false) // tenants with no SMTP send via the platform tenant's SMTP
+  signupEnabled     Boolean   @default(false) // public /signup on the platform host
+  updatedAt         DateTime  @default(now()) @updatedAt
+}
+
+// One-time handoff for a platform admin opening a tenant console as support.
+// Created INSIDE the target tenant's scope so the tenant-host handoff route can
+// read it under RLS; consumed once; short-lived.
+model SupportHandoff {
+  id         String    @id @default(cuid())
+  tenantId   String    @default("default")
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tokenHash  String
+  actorId    String
+  actorEmail String
+  reason     String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([tenantId, tokenHash])
   @@index([tenantId])
 }
