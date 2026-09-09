@@ -17,7 +17,7 @@ function errorMessage(code: string | undefined): string {
 
 export function RecoverySetup({ accountName }: { accountName: string }) {
   const [secret, setSecret] = useState<string | null>(null);
-  const [otpauth, setOtpauth] = useState<string | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export function RecoverySetup({ accountName }: { accountName: string }) {
         return;
       }
       setSecret(result.secret);
-      setOtpauth(result.otpauth);
+      setQr(typeof result.qr === "string" ? result.qr : null);
     } catch {
       setError("Couldn't set up recovery, please try again.");
     } finally {
@@ -82,12 +82,23 @@ export function RecoverySetup({ accountName }: { accountName: string }) {
 
   return (
     <form onSubmit={handleConfirm}>
-      <p>
-        Add the key below to your authenticator app manually (for the account{" "}
-        {accountName}), then enter the generated 6-digit code.
-      </p>
+      {qr ? (
+        <>
+          <p>
+            Scan this QR code with your authenticator app (Google Authenticator, 1Password, etc.)
+            for the account {accountName}, then enter the generated 6-digit code.
+          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element -- inline data URL, not an optimizable asset */}
+          <img src={qr} alt="QR code for the authenticator app" width={220} height={220} style={{ display: "block", margin: "8px 0", borderRadius: 8 }} />
+          <p className="cell-sub">Can&apos;t scan? Enter this key manually instead:</p>
+        </>
+      ) : (
+        <p>
+          Add the key below to your authenticator app manually (for the account{" "}
+          {accountName}), then enter the generated 6-digit code.
+        </p>
+      )}
       <code className="code secret">{secret}</code>
-      {otpauth && <code className="code secret">{otpauth}</code>}
       <div className="field">
         <label className="field-label" htmlFor="recovery-code">
           Verification code

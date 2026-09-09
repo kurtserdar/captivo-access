@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import QRCode from "qrcode";
 import { getCurrentUser } from "@/lib/current-user";
 import { generateTotpSecret, totpKeyUri } from "@/lib/auth/totp";
+
+export const runtime = "nodejs";
 
 // The secret is NOT SAVED here yet — it's only encrypted and stored after
 // the code is verified via /api/recovery POST (an unconfirmed secret never
@@ -13,5 +16,13 @@ export async function POST() {
 
   const secret = generateTotpSecret();
   const otpauth = totpKeyUri(secret, user.email, "Captivo Access");
-  return NextResponse.json({ secret, otpauth });
+  // QR of the otpauth URI so the authenticator app can be enrolled by scanning;
+  // rendered server-side (PNG data URL) so the client bundle stays free of it.
+  let qr: string | null = null;
+  try {
+    qr = await QRCode.toDataURL(otpauth, { errorCorrectionLevel: "M", margin: 1, width: 220 });
+  } catch {
+    qr = null; // manual entry still works
+  }
+  return NextResponse.json({ secret, otpauth, qr });
 }
