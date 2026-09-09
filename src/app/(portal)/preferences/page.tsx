@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
 import { TimezoneForm } from "@/app/(app)/settings/preferences/timezone-form";
+import { NameForm } from "@/app/(app)/settings/preferences/name-form";
 import { withRequestTenant } from "@/lib/tenant/request";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export const metadata = { title: "Preferences" };
 // timezone their access windows, requests and history are shown (and entered) in.
 async function PreferencesPageImpl() {
   const user = await requireUser();
-  const u = await db.user.findUnique({ where: { id: user.id }, select: { timezone: true } });
+  const u = await db.user.findUnique({ where: { id: user.id }, select: { timezone: true, name: true, directoryManaged: true } });
   return (
     <div className="vp-home">
       <div className="vp-head">
@@ -18,6 +19,11 @@ async function PreferencesPageImpl() {
           <h1 className="vp-greet">Preferences</h1>
           <p className="vp-sub">Your personal display settings for this account.</p>
         </div>
+      </div>
+      <div className="vp-railcard">
+        <h2 style={{ fontSize: "1rem", margin: 0 }}>Your name</h2>
+        <p className="vp-sub" style={{ margin: 0 }}>How you&apos;re greeted and shown to the admins who approve your access.</p>
+        <NameForm initial={u?.name ?? ""} locked={u?.directoryManaged ?? false} />
       </div>
       <div className="vp-railcard">
         <h2 style={{ fontSize: "1rem", margin: 0 }}>Display timezone</h2>

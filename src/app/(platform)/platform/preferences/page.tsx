@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { withRequestTenant } from "@/lib/tenant/request";
 import { requirePlatformAdmin } from "@/lib/platform/auth";
 import { TimezoneForm } from "@/app/(app)/settings/preferences/timezone-form";
+import { NameForm } from "@/app/(app)/settings/preferences/name-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Preferences" };
@@ -12,8 +13,8 @@ export const metadata = { title: "Preferences" };
 export default async function PlatformPreferencesPage() {
   const current = await withRequestTenant(async () => {
     const user = await requirePlatformAdmin();
-    const u = await db.user.findUnique({ where: { id: user.id }, select: { timezone: true } });
-    return u?.timezone ?? "";
+    const u = await db.user.findUnique({ where: { id: user.id }, select: { timezone: true, name: true } });
+    return { timezone: u?.timezone ?? "", name: u?.name ?? "" };
   });
   return (
     <section>
@@ -24,9 +25,11 @@ export default async function PlatformPreferencesPage() {
           <p className="cell-sub"><Link href="/platform" className="link-button">← Tenants</Link></p>
         </div>
       </div>
+      <h2 style={{ fontSize: "1rem", marginBottom: 8 }}>Your name</h2>
+      <div style={{ marginBottom: 24 }}><NameForm initial={current.name} /></div>
       <h2 style={{ fontSize: "1rem", marginBottom: 8 }}>Display timezone</h2>
       <p className="cell-sub" style={{ marginBottom: 12 }}>Dates and times you see here are shown in this timezone. Leave on the default to use your browser&apos;s timezone.</p>
-      <TimezoneForm initial={current} />
+      <TimezoneForm initial={current.timezone} />
     </section>
   );
 }

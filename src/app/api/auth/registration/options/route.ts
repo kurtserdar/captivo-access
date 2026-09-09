@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { genRegistrationOptions } from "@/lib/auth/webauthn";
 import { setChallenge } from "@/lib/auth/challenge";
 import { verifyInvite } from "@/lib/auth/invite";
+import { normalizeDisplayName } from "@/lib/auth/display-name";
 import { readRecoverToken } from "@/lib/auth/recover-token";
 import { getCurrentUser } from "@/lib/current-user";
 import { db } from "@/lib/db";
@@ -66,7 +67,9 @@ async function handler(req: NextRequest) {
     // userHandle matches the persistent User.id (see the note in the setup
     // branch).
     const uid = randomUUID();
-    const options = await genRegistrationOptions({ id: uid, email: invite.email, name: invite.name }, []);
+    // The invitee may confirm/correct their display name on the enrollment form.
+    const name = normalizeDisplayName(body.name) ?? invite.name;
+    const options = await genRegistrationOptions({ id: uid, email: invite.email, name }, []);
     await setChallenge(options.challenge, "reg", uid);
     return NextResponse.json(options);
   }

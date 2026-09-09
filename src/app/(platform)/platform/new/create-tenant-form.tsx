@@ -21,6 +21,7 @@ export function CreateTenantForm() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
+  const [adminName, setAdminName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ slug: string; inviteUrl: string } | null>(null);
@@ -33,7 +34,7 @@ export function CreateTenantForm() {
       const res = await fetch("/api/platform/tenants", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug, adminEmail }),
+        body: JSON.stringify({ name, slug, adminEmail, adminName }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -77,6 +78,11 @@ export function CreateTenantForm() {
           onChange={(e) => setAdminEmail(e.target.value)}
           required
         />
+      </div>
+      <div className="field">
+        <label className="field-label">First admin name (optional)</label>
+        <input className="input" value={adminName} onChange={(e) => setAdminName(e.target.value)} maxLength={100} autoComplete="off" />
+        <p className="cell-sub">Leave empty to let them enter it when they accept the invite.</p>
       </div>
       {error && (
         <p className="notice error" role="alert">

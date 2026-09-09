@@ -4,12 +4,41 @@ import { accessDomain, wildcardRecord } from "@/lib/domain/custom-domain";
 import { DomainVerifier } from "./domain-verifier";
 import { CopyButton } from "@/app/(app)/_shell/copy-button";
 import { withRequestTenant } from "@/lib/tenant/request";
+import { multiTenantEnabled } from "@/lib/tenant/enabled";
+import { siteHostSuffix } from "@/lib/site/host-suffix";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Custom domain" };
 
 async function AdminDomainPageImpl() {
   await requireCapability("configure");
+
+  // Cloud: DNS and TLS for the tenant's app namespace are provisioned by the
+  // platform — there is no record for the tenant to add. (Not linked from the
+  // nav on Cloud; reachable by URL only.)
+  if (multiTenantEnabled()) {
+    const suffix = await siteHostSuffix();
+    return (
+      <main>
+        <div className="page-head">
+          <div>
+            <div className="page-title-row"><h1>Domain</h1></div>
+            <p>Managed for you — nothing to configure.</p>
+          </div>
+        </div>
+        <div className="card">
+          <p>
+            Your apps are published under <code>*{suffix ?? ".<your-tenant-domain>"}</code>. DNS and HTTPS certificates
+            for that namespace are provisioned automatically by the platform.
+          </p>
+          <p className="cell-sub">
+            To publish an app on a domain you own instead (e.g. <code>portal.yourcompany.com</code>), open the resource,
+            switch its address to <b>Custom domain</b>, point your DNS at the address shown there and click Verify.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   const domain = accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN);
   let serverIp: string | null = null;

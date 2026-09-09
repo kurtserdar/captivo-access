@@ -25,7 +25,7 @@ export interface PlatformTenant {
 // Minimal email sanity check (the invite is the real proof of address).
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function validateCreateInput(input: { name: string; slug: string; adminEmail: string }) {
+export function validateCreateInput(input: { name: string; slug: string; adminEmail: string; adminName?: string }) {
   if (!input.name.trim()) throw new PlatformError("invalid_name");
   if (!isValidTenantSlug(input.slug)) throw new PlatformError("invalid_slug");
   if (!EMAIL_RE.test(input.adminEmail.trim())) throw new PlatformError("invalid_email");
@@ -60,7 +60,7 @@ export async function setTenantStatus(id: string, status: "ACTIVE" | "SUSPENDED"
   await base.$executeRawUnsafe(`SELECT platform_set_tenant_status($1, $2)`, id, status);
 }
 
-export async function createTenant(input: { name: string; slug: string; adminEmail: string }) {
+export async function createTenant(input: { name: string; slug: string; adminEmail: string; adminName?: string }) {
   validateCreateInput(input);
   const id = crypto.randomUUID();
   const name = input.name.trim();
@@ -81,7 +81,9 @@ export async function createTenant(input: { name: string; slug: string; adminEma
   // invite machinery under the new tenant's scope (the insert trigger stamps
   // tenantId; RLS WITH CHECK passes). createdById is null (system-provisioned).
   const { token } = await withTenant(id, () =>
-    createInvite({ email: input.adminEmail, name: input.adminEmail, role: "ADMIN", createdById: null }),
+    // The admin's name when the operator knows it; otherwise the email stands in
+    // and the invitee is asked for their name at enrollment.
+    createInvite({ email: input.adminEmail, name: input.adminName?.trim() || input.adminEmail, role: "ADMIN", createdById: null }),
   );
 
   // The first admin accepts the invite at the tenant's own console host,

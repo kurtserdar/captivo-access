@@ -9,8 +9,9 @@ async function handler(req: NextRequest) {
   const name = typeof body.name === "string" ? body.name : "";
   const slug = typeof body.slug === "string" ? body.slug.toLowerCase().trim() : "";
   const adminEmail = typeof body.adminEmail === "string" ? body.adminEmail : "";
+  const adminName = typeof body.adminName === "string" ? body.adminName : undefined;
   try {
-    const result = await createTenant({ name, slug, adminEmail });
+    const result = await createTenant({ name, slug, adminEmail, adminName });
     return NextResponse.json(result);
   } catch (e) {
     if (e instanceof PlatformError) return NextResponse.json({ error: e.code }, { status: 400 });

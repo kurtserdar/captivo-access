@@ -1,5 +1,6 @@
 import { can } from "@/lib/auth/roles";
 import type { Role } from "@/generated/prisma/enums";
+import { multiTenantEnabled } from "@/lib/tenant/enabled";
 
 export type NavIconKey =
   | "connectors" | "resources" | "domain"
@@ -45,7 +46,9 @@ export function buildNavModel(role: Role, counts: { pending: number; unread: num
       { heading: "Connectivity", items: [
         { label: "Connectors", href: "/admin/connectors", icon: "connectors", desc: "Outbound agents linking your sites" },
         { label: "Resources", href: "/admin/sites", icon: "resources", desc: "Hosts & apps vendors can reach" },
-        { label: "Custom domain", href: "/admin/domain", icon: "domain", desc: "Your own hostname for the portal" },
+        // Self-host only: the operator runs DNS for the wildcard app domain. On
+        // Cloud the platform provisions each tenant's namespace, nothing to do.
+        ...(multiTenantEnabled() ? [] : [{ label: "Custom domain", href: "/admin/domain", icon: "domain" as const, desc: "Your own hostname for the portal" }]),
       ] },
       { heading: "Identity & access", items: [
         { label: "Directory", href: "/admin/directory", icon: "directory", desc: "Sync users from your IdP groups" },

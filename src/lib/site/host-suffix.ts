@@ -1,6 +1,7 @@
 import { multiTenantEnabled } from "@/lib/tenant/enabled";
 import { accessDomain } from "@/lib/domain/custom-domain";
 import { resolveRequestTenantSlug } from "@/lib/tenant/request";
+import { consoleDomain } from "@/lib/tenant/console-domain";
 
 // The fixed, server-owned suffix appended to a vendor resource's subdomain LABEL
 // to form its public hostname. The operator/tenant only ever types the label.
@@ -17,11 +18,9 @@ import { resolveRequestTenantSlug } from "@/lib/tenant/request";
 // the field as a plain full hostname.
 export async function siteHostSuffix(): Promise<string | null> {
   if (multiTenantEnabled()) {
-    const consoleDomain =
-      process.env.CONSOLE_DOMAIN?.trim() ||
-      accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN);
+    const domain = consoleDomain();
     const slug = await resolveRequestTenantSlug();
-    if (slug && consoleDomain) return `.${slug}.${consoleDomain}`;
+    if (slug && domain) return `.${slug}.${domain}`;
   }
   const domain = accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN);
   return domain ? `.${domain}` : null;

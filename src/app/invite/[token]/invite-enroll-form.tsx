@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { startRegistration } from "@simplewebauthn/browser";
+import { DISPLAY_NAME_MAX } from "@/lib/auth/display-name";
 
 function errorMessage(code: string | undefined): string {
   switch (code) {
@@ -13,24 +14,31 @@ function errorMessage(code: string | undefined): string {
       return "Passkey verification failed.";
     case "invalid_body":
       return "Invalid request.";
+    case "invalid_name":
+      return "Enter your name (up to 100 characters).";
     default:
       return "Something went wrong, please try again.";
   }
 }
 
-export function InviteEnrollForm({ token }: { token: string }) {
+export function InviteEnrollForm({ token, initialName }: { token: string; initialName: string }) {
+  const [name, setName] = useState(initialName);
   const [passkeyLabel, setPasskeyLabel] = useState("Primary passkey");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
     setError(null);
+    if (!name.trim()) {
+      setError(errorMessage("invalid_name"));
+      return;
+    }
     setBusy(true);
     try {
       const optionsRes = await fetch("/api/auth/registration/options", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "invite", inviteToken: token }),
+        body: JSON.stringify({ mode: "invite", inviteToken: token, name }),
       });
       const options = await optionsRes.json().catch(() => ({}));
       if (!optionsRes.ok) {
@@ -43,7 +51,7 @@ export function InviteEnrollForm({ token }: { token: string }) {
       const verifyRes = await fetch("/api/auth/registration/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "invite", inviteToken: token, response, label: passkeyLabel }),
+        body: JSON.stringify({ mode: "invite", inviteToken: token, name, response, label: passkeyLabel }),
       });
       const result = await verifyRes.json().catch(() => ({}));
       if (!verifyRes.ok || !result?.ok) {
@@ -62,6 +70,21 @@ export function InviteEnrollForm({ token }: { token: string }) {
   return (
     <div>
       <div className="field">
+        <label className="field-label" htmlFor="invite-name">
+          Your name
+        </label>
+        <input
+          id="invite-name"
+          type="text"
+          className="input"
+          value={name}
+          maxLength={DISPLAY_NAME_MAX}
+          onChange={(e) => setName(e.target.value)}
+          autoComplete="name"
+          required
+        />
+      </div>
+      <div className="field">
         <label className="field-label" htmlFor="invite-passkey-label">
           Passkey name
         </label>
@@ -79,7 +102,7 @@ export function InviteEnrollForm({ token }: { token: string }) {
           {error}
         </p>
       )}
-      <button type="button" className="btn primary" onClick={handleClick} disabled={busy}>
+      <button type="button" className="btn primary" onClick={handleClick} disabled={busy || !name.trim()}>
         {busy ? "Registering…" : "Register with passkey"}
       </button>
     </div>

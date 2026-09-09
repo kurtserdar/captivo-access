@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { buildNavModel } from "./model";
 
 describe("buildNavModel", () => {
@@ -44,5 +44,18 @@ describe("buildNavModel", () => {
     expect(m.groups).toEqual([]);
     expect(m.showSearch).toBe(false);
     expect(m.showNotifications).toBe(false);
+  });
+});
+
+describe("buildNavModel — Cloud", () => {
+  afterEach(() => vi.unstubAllEnvs());
+  const hrefs = (role: "ADMIN") => buildNavModel(role, { pending: 0, unread: 0 }).groups.flatMap((g) => g.columns.flatMap((c) => c.items.map((i) => i.href)));
+  it("hides the self-host Custom domain page when MULTI_TENANT is on", () => {
+    vi.stubEnv("MULTI_TENANT", "1");
+    expect(hrefs("ADMIN")).not.toContain("/admin/domain");
+  });
+  it("shows it on self-host", () => {
+    vi.stubEnv("MULTI_TENANT", "0");
+    expect(hrefs("ADMIN")).toContain("/admin/domain");
   });
 });

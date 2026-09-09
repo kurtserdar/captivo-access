@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { can } from "@/lib/auth/roles";
 import { accessDomain, wildcardRecord, classifyVerify } from "@/lib/domain/custom-domain";
 import { withTenantRoute } from "@/lib/tenant/request";
+import { multiTenantEnabled } from "@/lib/tenant/enabled";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,8 @@ export const POST = withTenantRoute(async () => {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!can(user.role, "configure")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  // Cloud: the wildcard record is the platform's, not the tenant's — nothing to verify.
+  if (multiTenantEnabled()) return NextResponse.json({ error: "not_applicable" }, { status: 404 });
 
   const domain = accessDomain(process.env.MANAGER_PUBLIC_URL, process.env.ACCESS_DOMAIN);
   if (!domain) return NextResponse.json({ status: "undetermined", reason: "no_domain" });

@@ -9,6 +9,7 @@ import { createSession, sessionCookieMaxAgeSeconds, SESSION_COOKIE } from "@/lib
 import { cookieSecure, cookieDomain } from "@/lib/auth/cookies";
 import { hasAnyUser } from "@/lib/auth/bootstrap";
 import { verifyInvite } from "@/lib/auth/invite";
+import { normalizeDisplayName } from "@/lib/auth/display-name";
 import { readRecoverToken, clearRecoverToken } from "@/lib/auth/recover-token";
 import { getCurrentUser } from "@/lib/current-user";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -144,6 +145,11 @@ async function handler(req: NextRequest) {
     if (!invite) {
       return NextResponse.json({ error: "invite_invalid" }, { status: 410 });
     }
+    // Display name confirmed on the enrollment form; the invite's when omitted.
+    if (body.name !== undefined && normalizeDisplayName(body.name) === null) {
+      return NextResponse.json({ error: "invalid_name" }, { status: 400 });
+    }
+    const displayName = normalizeDisplayName(body.name) ?? invite.name;
 
     const expectedChallenge = await readChallenge("reg");
     if (!expectedChallenge) {
@@ -180,7 +186,7 @@ async function handler(req: NextRequest) {
           data: {
             ...(uid ? { id: uid } : {}),
             email: invite.email,
-            name: invite.name,
+            name: displayName,
             role: invite.role,
             phone: invite.phone,
             company: invite.company,
