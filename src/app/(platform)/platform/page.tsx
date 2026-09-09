@@ -3,6 +3,7 @@ import { withRequestTenant } from "@/lib/tenant/request";
 import { requirePlatformAdmin } from "@/lib/platform/auth";
 import { listTenants } from "@/lib/platform/tenants";
 import { StatusToggle } from "./status-toggle";
+import { LocalTime } from "@/app/(app)/_shell/local-time";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Tenants" };
@@ -49,7 +50,7 @@ export default async function TenantsPage() {
                     <span className={`pill ${STATUS_PILL[t.status] ?? "neutral"}`}>{t.status}</span>
                   </td>
                   <td className="cell-sub">{t.adminCount}</td>
-                  <td className="cell-sub">{new Date(t.createdAt).toISOString().slice(0, 10)}</td>
+                  <td className="cell-sub"><LocalTime iso={new Date(t.createdAt).toISOString()} mode="date" /></td>
                   <td><StatusToggle id={t.id} status={t.status} /></td>
                 </tr>
               ))}
